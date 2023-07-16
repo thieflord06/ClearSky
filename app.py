@@ -57,7 +57,10 @@ username = os.getlogin()
 
 logger.info(log_version)
 logger.debug("Ran from: " + current_dir)
-logger.debug("Ran by: " + username)
+try:
+    logger.debug("Ran by: " + username)
+except OSError:
+    logger.debug("Ran by: No login available.")
 logger.debug("Ran at: " + str(current_time))
 
 app = Flask(__name__)
