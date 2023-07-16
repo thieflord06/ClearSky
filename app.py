@@ -5,7 +5,7 @@ from datetime import datetime
 from waitress import serve
 import logging.config
 import configparser
-from tkinter import messagebox
+# from tkinter import messagebox
 import os
 import sys
 import uuid
@@ -14,9 +14,9 @@ import uuid
 # ============================= Pre-checks // Set up logging and debugging information =================================
 # Checks if .ini file exits locally and exits if it doesn't
 if not os.path.exists('config.ini'):
-    messagebox.showerror("No Config file", "Config.ini file does not exist\nPlace config.ini in: " + str(os.getcwd()) +
-                         "\nRe-run program")
-    sys.exit(0)
+    # messagebox.showerror("No Config file", "Config.ini file does not exist\nPlace config.ini in: " + str(os.getcwd()) +
+    #                      "\nRe-run program")
+    # sys.exit(0)
 
 # Read log directory from .ini and if directory structure doesn't, exist create it.
 config = configparser.ConfigParser()
@@ -25,14 +25,14 @@ config.read("config.ini")
 try:
     log_dir = config.get("handler_fileHandler", "logdir")
 except (configparser.NoOptionError, configparser.NoSectionError, configparser.MissingSectionHeaderError):
-    messagebox.showerror("Invalid file", "Incompatible config.ini file.")
+    # messagebox.showerror("Invalid file", "Incompatible config.ini file.")
     sys.exit()
 try:
     if os.path.exists(log_dir) is False:
         os.makedirs(log_dir)
 except PermissionError:
-    messagebox.showerror("Cannot create log directory\nChange 'agrs' and 'logdir' in config.ini "
-                         "path to a path with permissions")
+    # messagebox.showerror("Cannot create log directory\nChange 'agrs' and 'logdir' in config.ini "
+    #                      "path to a path with permissions")
     sys.exit()
 
 # load logging configuration file
