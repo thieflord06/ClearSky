@@ -9,7 +9,7 @@ import configparser
 import os
 import sys
 import uuid
-
+import platform
 # ======================================================================================================================
 # ============================= Pre-checks // Set up logging and debugging information =================================
 # Checks if .ini file exits locally and exits if it doesn't
@@ -24,7 +24,11 @@ config = configparser.ConfigParser()
 config.read("config.ini")
 
 try:
-    log_dir = config.get("handler_fileHandler", "logdir")
+    os = platform.platform()
+    if "Windows" in os:
+        log_dir = config.get("handler_fileHandler", "logdir")
+    else:
+        log_dir = config.get("linux", "logdir")
 except (configparser.NoOptionError, configparser.NoSectionError, configparser.MissingSectionHeaderError):
     # messagebox.showerror("Invalid file", "Incompatible config.ini file.")
     sys.exit()
