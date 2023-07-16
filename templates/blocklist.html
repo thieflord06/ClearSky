@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Block List</title>
+</head>
+<body>
+    <h1>Block List: {{ user }}</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Blocked on</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for block, timestamp in block_list %}
+            <tr>
+                <td>{{ block }}</td>
+                <td>{{ timestamp }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="/">Return to Home Page</a>
+</body>
+</html>
