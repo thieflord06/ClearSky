@@ -24,8 +24,9 @@ config = configparser.ConfigParser()
 config.read("config.ini")
 
 try:
-    os = platform.platform()
-    if "Windows" in os:
+    log_dir = None
+    current_os = platform.platform()
+    if current_os.find("Windows"):
         log_dir = config.get("handler_fileHandler", "logdir")
     else:
         log_dir = config.get("linux", "logdir")
