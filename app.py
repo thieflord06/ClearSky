@@ -14,6 +14,7 @@ import uuid
 # ============================= Pre-checks // Set up logging and debugging information =================================
 # Checks if .ini file exits locally and exits if it doesn't
 if not os.path.exists('config.ini'):
+    print("No Config file", "Config.ini file does not exist\nPlace config.ini in: " + str(os.getcwd()) + "\nRe-run program")
     # messagebox.showerror("No Config file", "Config.ini file does not exist\nPlace config.ini in: " + str(os.getcwd()) +
     #                      "\nRe-run program")
     # sys.exit(0)
