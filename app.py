@@ -114,8 +114,8 @@ def selection_handle():
         return render_template('result.html', result=result)
     elif selection == "3":
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Block list requested for: " + identifier)
-        blocklist = get_user_block_list_html(identifier)
-        return render_template('blocklist.html', block_list=blocklist, user=identifier)
+        blocklist, count = get_user_block_list_html(identifier)
+        return render_template('blocklist.html', block_list=blocklist, user=identifier, count=count)
 
 
 @app.route('/blocklist')
@@ -127,8 +127,10 @@ def get_user_block_list_html(ident):
             handles.append(handle)
     else:
         handles = [f"{ident} hasn't blocked anyone."]
+
+    total_blocked = len(handles)
     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Blocklist Request: " + ident + " | " + str(list(zip(handles, timestamps))))
-    return zip(handles, timestamps)
+    return zip(handles, timestamps), total_blocked
 
 
 def resolve_handle(info):
