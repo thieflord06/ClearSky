@@ -23,7 +23,6 @@ if not os.path.exists('config.ini'):
 config = configparser.ConfigParser()
 config.read("config.ini")
 
-use_linux_args = False
 try:
     log_dir = None
     current_os = platform.platform()
@@ -31,9 +30,11 @@ try:
     if "Windows" in current_os:
         log_dir = config.get("handler_fileHandler", "logdir")
     else:
+        print(config.get("handler_fileHandler", "args"))
         linux_args = config.get("linux", "args")
-        config.set("handler_fileHandler", "args", str(linux_args))
         log_dir = config.get("linux", "logdir")
+        config.set("handler_fileHandler", "args", str(linux_args))
+        print(config.get("handler_fileHandler", "args"))
 except (configparser.NoOptionError, configparser.NoSectionError, configparser.MissingSectionHeaderError):
     # messagebox.showerror("Invalid file", "Incompatible config.ini file.")
     sys.exit()
