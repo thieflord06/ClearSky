@@ -45,12 +45,6 @@ except PermissionError:
     #                      "path to a path with permissions")
     sys.exit()
 
-# load logging configuration file
-handler_args = config.get("handlers", "args")
-linux_args = config.get("linux", "args")
-
-args = eval(linux_args if use_linux_args else handler_args)
-
 logging.config.fileConfig('config.ini')
 logger = logging.getLogger()
 
