@@ -19,3 +19,21 @@ nav {
 .menu li:last-child {
     margin-right: 0;
 }
+
+/* Mobile styles */
+@media (max-width: 480px) {
+    nav {
+        padding: 5px;
+    }
+
+    .menu {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-bottom: 10px;
+    }
+
+    .menu li {
+        margin: 5px;
+    }
+}
