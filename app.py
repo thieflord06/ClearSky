@@ -213,6 +213,11 @@ def generate_session_number():
     return str(uuid.uuid4().hex)
 
 
+@app.route('/status')
+def always_200():
+    return "OK", 200
+
+
 ip_address = config.get("server", "ip")
 port_address = config.get("server", "port")
 
