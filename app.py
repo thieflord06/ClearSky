@@ -69,9 +69,17 @@ app = Flask(__name__)
 app.secret_key = 'your-secret-key'
 
 
-def getIP():
-    client_ip = request.remote_addr
-    return client_ip
+def get_ip():
+    if 'X-Forwarded-For' in request.headers:
+        # Get the client's IP address from the X-Forwarded-For header
+        ip = request.headers['X-Forwarded-For']
+        # The client's IP address may contain multiple comma-separated values
+        # Extract the first IP address from the list
+        ip = ip.split(',')[0].strip()
+    else:
+        # Use the remote address if the X-Forwarded-For header is not available
+        ip = request.remote_addr
+    return ip
 
 
 @app.route('/')
@@ -86,7 +94,7 @@ def index():
 @app.route('/selection_handle', methods=['POST'])
 def selection_handle():
     global session_ip
-    session_ip = getIP()
+    session_ip = get_ip()
     identifier = request.form['identifier']
     selection = request.form['selection']
     if selection == "1":
