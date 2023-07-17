@@ -43,7 +43,7 @@ except PermissionError:
     sys.exit()
 
 # load logging configuration file
-logging.config.fileConfig('r_config.ini')
+logging.config.fileConfig('config.ini')
 logger = logging.getLogger()
 
 title_name = "ClearSky"
