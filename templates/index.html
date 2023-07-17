@@ -1,10 +1,6 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>ClearSky Search Tools</title>
-</head>
-<body>
-    <h1>ClearSky Search Tools</h1>
+{% extends "base.html" %}
+
+{% block content %}
     <form action="/selection_handle" method="POST">
         <label for="identifier">Enter DID or Handle:</label>
         <input type="text" name="identifier" id="identifier">
@@ -20,5 +16,4 @@
         <br>
         <input type="submit" value="Submit">
     </form>
-</body>
-</html>
+{% endblock %}

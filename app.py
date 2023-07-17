@@ -170,38 +170,52 @@ def resolve_did(did):
 def get_user_block_list(ident):
     base_url = "https://bsky.social/xrpc/"
     collection = "app.bsky.graph.block"
+    limit = 100
+    blocked_users = []
+    created_dates = []
+    cursor = None
 
-    url = urllib.parse.urljoin(base_url, "com.atproto.repo.listRecords")
-    params = {
-        "repo": ident,
-        "collection": collection
-    }
+    while True:
+        url = urllib.parse.urljoin(base_url, "com.atproto.repo.listRecords")
+        params = {
+            "repo": ident,
+            "limit": limit,
+            "collection": collection,
+            "cursor": cursor
+        }
 
-    encoded_params = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
-    full_url = f"{url}?{encoded_params}"
-    logger.debug(full_url)
-    response = requests.get(full_url)
+        if cursor:
+            params["cursor"] = cursor
 
-    if response.status_code == 200:
-        blocked_users = []
-        created_dates = []
-        response_json = response.json()
-        records = response_json.get("records", [])
-        for record in records:
-            value = record.get("value", {})
-            subject = value.get("subject")
-            created_at_value = value.get("createdAt")
-            if subject:
-                blocked_users.append(subject)
-            if created_at_value:
-                created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S.%fZ").date()
-                created_dates.append(created_date)
+        encoded_params = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
+        full_url = f"{url}?{encoded_params}"
+        logger.debug(full_url)
+        response = requests.get(full_url)
 
-        if not blocked_users:
-            return [], [str(datetime.now().date())]
+        if response.status_code == 200:
+            response_json = response.json()
+            records = response_json.get("records", [])
 
-        # Return the blocked users and created_at timestamps if needed
-        return blocked_users, created_dates
+            for record in records:
+                value = record.get("value", {})
+                subject = value.get("subject")
+                created_at_value = value.get("createdAt")
+                if subject:
+                    blocked_users.append(subject)
+                if created_at_value:
+                    created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S.%fZ").date()
+                    created_dates.append(created_date)
+
+            cursor = response_json.get("cursor")
+            if not cursor:
+                break
+
+    # cursor = response_json.get("cursor")
+    if not blocked_users:
+        return [], [str(datetime.now().date())]
+
+    # Return the blocked users and created_at timestamps if needed
+    return blocked_users, created_dates
 
 
 def process_did_list_to_handle(did_list):
@@ -220,6 +234,11 @@ def generate_session_number():
 @app.route('/status')
 def always_200():
     return "OK", 200
+
+
+@app.route('/contact')
+def contact():
+    return render_template('contact.html')
 
 
 ip_address = config.get("server", "ip")

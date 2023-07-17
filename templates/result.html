@@ -1,11 +1,9 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Result</title>
-</head>
-<body>
+{% extends "base.html" %}
+
+{% block title %}Result{% endblock %}
+
+{% block content %}
     <h1>Result</h1>
     <p>{{ result }}</p>
-<a href="/">Go Back</a>
-</body>
-</html>
+    <a href="/">Go Back</a>
+{% endblock %}

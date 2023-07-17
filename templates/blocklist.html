@@ -1,9 +1,6 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Block List</title>
-</head>
-<body>
+{% extends 'base.html' %}
+
+{% block content %}
     <h1>Block List: {{ user }}</h1>
     <table>
         <thead>
@@ -23,5 +20,4 @@
     </table>
 
     <a href="/">Go Back</a>
-</body>
-</html>
+{% endblock %}
