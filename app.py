@@ -56,6 +56,7 @@ current_time = runtime.strftime("%m%d%Y::%H:%M:%S")
 try:
     username = os.getlogin()
 except OSError:
+    username = None
     pass
 logger.info(log_version)
 logger.debug("Ran from: " + current_dir)
