@@ -20,6 +20,26 @@ nav {
     margin-right: 0;
 }
 
+.contact-container {
+    margin: 20px;
+}
+
+.contact-container h1 {
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+.contact-container p {
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+.go-back-link {
+    display: block;
+    text-align: center;
+    font-size: 16px;
+}
+
 /* Mobile styles */
 @media (max-width: 480px) {
     nav {
@@ -35,5 +55,57 @@ nav {
 
     .menu li {
         margin: 5px;
+    }
+}
+
+/* styles.css */
+
+.table-container {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+table th,
+table td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+/* Mobile styles */
+@media (max-width: 480px) {
+    table th,
+    table td {
+        font-size: 14px;
+        padding: 6px;
+    }
+}
+
+/* styles for mobile */
+@media (max-width: 480px) {
+    .result-container {
+        margin: 20px;
+    }
+
+    .result-container h1 {
+        font-size: 24px;
+        margin-bottom: 10px;
+    }
+
+    .result-container p {
+        font-size: 16px;
+        margin-bottom: 20px;
+    }
+
+    .result-container .btn {
+        display: block;
+        width: 100%;
+        text-align: center;
+        font-size: 16px;
+        margin-top: 10px;
     }
 }

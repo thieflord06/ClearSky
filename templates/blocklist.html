@@ -3,22 +3,23 @@
 {% block content %}
     <h1>Block List: {{ user }}</h1>
     <p>Total Blocked Users: {{ count }}</p>
-    <table>
-        <thead>
-            <tr>
-                <th>User</th>
-                <th>Blocked on</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for block, timestamp in block_list %}
-            <tr>
-                <td>{{ block }}</td>
-                <td>{{ timestamp }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <a href="/">Go Back</a>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Blocked on</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for block, timestamp in block_list %}
+                <tr>
+                    <td>{{ block }}</td>
+                    <td>{{ timestamp }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <a href="/" class="go-back-link">Go Back</a>
 {% endblock %}
