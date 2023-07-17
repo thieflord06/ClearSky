@@ -30,11 +30,9 @@ try:
     if "Windows" in current_os:
         log_dir = config.get("handler_fileHandler", "logdir")
     else:
-        print(config.get("handler_fileHandler", "args"))
         linux_args = config.get("linux", "args")
         log_dir = config.get("linux", "logdir")
         config.set("handler_fileHandler", "args", str(linux_args))
-        print(config.get("handler_fileHandler", "args"))
         with open('config.ini', 'w') as configfile:
             config.write(configfile)
             configfile.close()
