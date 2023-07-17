@@ -53,14 +53,13 @@ current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
 current_time = runtime.strftime("%m%d%Y::%H:%M:%S")
-username = os.getlogin()
-
+try:
+    username = os.getlogin()
+except OSError:
+    pass
 logger.info(log_version)
 logger.debug("Ran from: " + current_dir)
-try:
-    logger.debug("Ran by: " + username)
-except OSError:
-    logger.debug("Ran by: No login available.")
+logger.debug("Ran by: " + username)
 logger.debug("Ran at: " + str(current_time))
 
 app = Flask(__name__)
