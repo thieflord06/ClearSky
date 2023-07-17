@@ -95,7 +95,7 @@ def index():
 def selection_handle():
     global session_ip
     session_ip = get_ip()
-    identifier = request.form['identifier']
+    identifier = request.form['identifier'].lower()
     selection = request.form['selection']
     if selection == "1":
         logger.info(str(session_ip) + " > " + str(*session.values()) + ": " + "DID resolve request made for: " + identifier)
