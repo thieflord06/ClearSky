@@ -25,7 +25,9 @@ try:
     log_dir = None
     current_os = platform.platform()
     if "Windows" in current_os:
-        log_dir = config.get("handler_fileHandler", "logdir")
+        windows_args = config.get("windows", "args")
+        log_dir = config.get("windows", "logdir")
+        config.set("handler_fileHandler", "args", str(windows_args))
     else:
         linux_args = config.get("linux", "args")
         log_dir = config.get("linux", "logdir")
