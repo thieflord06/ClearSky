@@ -251,7 +251,7 @@ def get_all_users():
 def get_all_users_count():
     users = len(get_all_users())
 
-    return users
+    return str(users)
 
 
 def get_single_user_blocks(ident):
