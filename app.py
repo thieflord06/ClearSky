@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, session
 import requests
 import urllib.parse
 from datetime import datetime
+import re
 from waitress import serve
 import logging.config
 import configparser
@@ -73,6 +74,19 @@ app = Flask(__name__)
 app.secret_key = 'your-secret-key'
 
 
+def validate_identifier(identifier):
+    did_regex = r'^did:[a-z]+:[a-zA-Z0-9._:%-]*[a-zA-Z0-9._-]$'
+    domain_regex = r'^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$'
+
+    did_match = re.match(did_regex, identifier)
+    domain_match = re.match(domain_regex, identifier)
+
+    if did_match or domain_match:
+        return True
+    else:
+        return False
+
+
 def get_ip():
     if 'X-Forwarded-For' in request.headers:
         # Get the client's IP address from the X-Forwarded-For header
@@ -101,6 +115,10 @@ def selection_handle():
     session_ip = get_ip()
     identifier = request.form['identifier'].lower()
     identifier = identifier.replace('@', '')
+
+    if not validate_identifier(identifier):
+        return render_template('error.html', message="Invalid Identifier")
+
     selection = request.form['selection']
     if selection == "1":
         logger.info(str(session_ip) + " > " + str(*session.values()) + ": " + "DID resolve request made for: " + identifier)
