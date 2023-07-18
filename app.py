@@ -5,7 +5,6 @@ from datetime import datetime
 from waitress import serve
 import logging.config
 import configparser
-# from tkinter import messagebox
 import os
 import sys
 import uuid
@@ -15,14 +14,13 @@ import platform
 # Checks if .ini file exits locally and exits if it doesn't
 if not os.path.exists('config.ini'):
     print("No Config file", "Config.ini file does not exist\nPlace config.ini in: " + str(os.getcwd()) + "\nRe-run program")
-    # messagebox.showerror("No Config file", "Config.ini file does not exist\nPlace config.ini in: " + str(os.getcwd()) +
-    #                      "\nRe-run program")
-    # sys.exit(0)
+    sys.exit()
 
 # Read log directory from .ini and if directory structure doesn't, exist create it.
 config = configparser.ConfigParser()
 config.read("config.ini")
 
+# Check OS and assigns log location based on file OS file system
 try:
     log_dir = None
     current_os = platform.platform()
@@ -37,14 +35,12 @@ try:
             config.write(configfile)
             configfile.close()
 except (configparser.NoOptionError, configparser.NoSectionError, configparser.MissingSectionHeaderError):
-    # messagebox.showerror("Invalid file", "Incompatible config.ini file.")
     sys.exit()
 try:
     if os.path.exists(log_dir) is False:
         os.makedirs(log_dir)
 except PermissionError:
-    # messagebox.showerror("Cannot create log directory\nChange 'agrs' and 'logdir' in config.ini "
-    #                      "path to a path with permissions")
+    print("Cannot create log directory\nChange 'agrs' and 'logdir' in config.ini path to a path with permissions")
     sys.exit()
 
 logging.config.fileConfig('config.ini')
@@ -60,7 +56,7 @@ current_time = runtime.strftime("%m%d%Y::%H:%M:%S")
 try:
     username = os.getlogin()
 except OSError:
-    username = ""
+    username = "Cannot get username"
     pass
 logger.info(log_version)
 logger.debug("Ran from: " + current_dir)
@@ -73,25 +69,26 @@ app = Flask(__name__)
 app.secret_key = 'your-secret-key'
 
 
-def get_ip():
-    if 'X-Forwarded-For' in request.headers:
-        # Get the client's IP address from the X-Forwarded-For header
-        ip = request.headers['X-Forwarded-For']
-        # The client's IP address may contain multiple comma-separated values
-        # Extract the first IP address from the list
-        ip = ip.split(',')[0].strip()
-    else:
-        # Use the remote address if the X-Forwarded-For header is not available
-        ip = request.remote_addr
-    return ip
-
-
+# ======================================================================================================================
+# ================================================== HTML Pages ========================================================
 @app.route('/')
 def index():
     # Generate a new session number and store it in the session
     if 'session_number' not in session:
         session['session_number'] = generate_session_number()
     return render_template('index.html')
+
+
+@app.route('/status')
+def always_200():
+
+    return "OK", 200
+
+
+@app.route('/contact')
+def contact():
+
+    return render_template('contact.html')
 
 
 # Handles selection for form
@@ -106,15 +103,18 @@ def selection_handle():
         logger.info(str(session_ip) + " > " + str(*session.values()) + ": " + "DID resolve request made for: " + identifier)
         result = resolve_handle(identifier)
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + result)
+
         return render_template('result.html', result=result)
     elif selection == "2":
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Handle resolve request made for: " + identifier)
         result = resolve_did(identifier)
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + str(result))
+
         return render_template('result.html', result=result)
     elif selection == "3":
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Block list requested for: " + identifier)
         blocklist, count = get_user_block_list_html(identifier)
+
         return render_template('blocklist.html', block_list=blocklist, user=identifier, count=count)
 
 
@@ -130,10 +130,31 @@ def get_user_block_list_html(ident):
 
     total_blocked = len(handles)
     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Blocklist Request Result: " + ident + " | " + str(list(zip(handles, timestamps))))
+
     return zip(handles, timestamps), total_blocked
 
 
-def resolve_handle(info):
+# ======================================================================================================================
+# ======================================================= Logic ========================================================
+def generate_session_number():
+
+    return str(uuid.uuid4().hex)
+
+
+def get_ip():  # Get IP address of session request
+    if 'X-Forwarded-For' in request.headers:
+        # Get the client's IP address from the X-Forwarded-For header
+        ip = request.headers['X-Forwarded-For']
+        # The client's IP address may contain multiple comma-separated values
+        # Extract the first IP address from the list
+        ip = ip.split(',')[0].strip()
+    else:
+        # Use the remote address if the X-Forwarded-For header is not available
+        ip = request.remote_addr
+    return ip
+
+
+def resolve_handle(info):  # Take Handle and get DID
     base_url = "https://bsky.social/xrpc/"
     url = urllib.parse.urljoin(base_url, "com.atproto.identity.resolveHandle")
     params = {
@@ -145,10 +166,11 @@ def resolve_handle(info):
     logger.debug(full_url)
     get_response = requests.get(full_url)
     response = get_response.json().values()
+
     return list(response)[0]
 
 
-def resolve_did(did):
+def resolve_did(did):  # Take DID and get handle
     handle = did
     base_url = "https://bsky.social/xrpc/"
     url = urllib.parse.urljoin(base_url, "com.atproto.repo.describeRepo")
@@ -164,6 +186,7 @@ def resolve_did(did):
     if get_response.status_code == 200:
         response_json = get_response.json()
         records = response_json["handle"]
+
         return records
     else:
         print("Error:", get_response.status_code)
@@ -224,23 +247,8 @@ def process_did_list_to_handle(did_list):
     handle_list = []
     for item in did_list:
         handle_list.append(resolve_did(item))
+
     return handle_list
-
-
-def generate_session_number():
-    # Implement your own session number generation logic here
-    # This is just a placeholder example
-    return str(uuid.uuid4().hex)
-
-
-@app.route('/status')
-def always_200():
-    return "OK", 200
-
-
-@app.route('/contact')
-def contact():
-    return render_template('contact.html')
 
 
 ip_address = config.get("server", "ip")
