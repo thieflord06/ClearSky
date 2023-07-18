@@ -58,7 +58,7 @@ logger = logging.getLogger()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "0.2.1"
+version = "0.2.2"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -250,8 +250,8 @@ def get_all_users():
 
 def get_all_users_count():
     users = len(get_all_users())
-
-    return str(users)
+    formatted_count = "{:,}".format(users)
+    return str(formatted_count)
 
 
 def get_single_user_blocks(ident):
