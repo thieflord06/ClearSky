@@ -116,6 +116,11 @@ def selection_handle():
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Block list requested for: " + identifier)
         blocklist, count = get_user_block_list_html(identifier)
         return render_template('blocklist.html', block_list=blocklist, user=identifier, count=count)
+    elif selection == "4":
+        logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Block list requested for: " + identifier)
+        blocks, dates = get_single_user_blocks(identifier)
+        count = len(blocks)
+        return render_template('blocklist.html', user=identifier, block_list=blocks, count=count)
 
 
 @app.route('/blocklist')
@@ -169,6 +174,52 @@ def resolve_did(did):
         print("Error:", get_response.status_code)
 
 
+def get_all_users():
+    base_url = "https://bsky.social/xrpc/"
+    limit = 1000
+    cursor = None
+    records = []
+
+    while True:
+        url = urllib.parse.urljoin(base_url, "com.atproto.sync.listRepos")
+        params = {
+            "limit": limit,
+        }
+        if cursor:
+            params["cursor"] = cursor
+
+        encoded_params = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
+        full_url = f"{url}?{encoded_params}"
+        logger.debug(full_url)
+        response = requests.get(full_url)
+
+        if response.status_code == 200:
+            response_json = response.json()
+            repos = response_json.get("repos", [])
+            for repo in repos:
+                records.append(repo["did"])
+
+            cursor = response_json.get("cursor")
+            if not cursor:
+                break
+
+    logger.debug(str(records))
+    return records
+
+
+def get_single_user_blocks(ident):
+    users = get_all_users()
+    ident_user = resolve_handle(ident)
+    blocked_by_list = []
+    block_date = []
+    for user in users:
+        single_block_list, block_date = get_user_block_list(user)
+        if ident_user in single_block_list:
+            blocked_by_list.append(user)
+            logger.info("Block match found for: " + ident)
+    return blocked_by_list, block_date
+
+
 def get_user_block_list(ident):
     base_url = "https://bsky.social/xrpc/"
     collection = "app.bsky.graph.block"
@@ -183,7 +234,7 @@ def get_user_block_list(ident):
             "repo": ident,
             "limit": limit,
             "collection": collection,
-            "cursor": cursor
+            # "cursor": cursor
         }
 
         if cursor:
@@ -205,7 +256,10 @@ def get_user_block_list(ident):
                 if subject:
                     blocked_users.append(subject)
                 if created_at_value:
-                    created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S.%fZ").date()
+                    try:
+                        created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S.%fZ").date()
+                    except ValueError:
+                        created_date = None
                     created_dates.append(created_date)
 
             cursor = response_json.get("cursor")
