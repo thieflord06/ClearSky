@@ -105,12 +105,12 @@ def selection_handle():
     if selection == "1":
         logger.info(str(session_ip) + " > " + str(*session.values()) + ": " + "DID resolve request made for: " + identifier)
         result = resolve_handle(identifier)
-        logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request: " + identifier + " | " + result)
+        logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + result)
         return render_template('result.html', result=result)
     elif selection == "2":
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Handle resolve request made for: " + identifier)
         result = resolve_did(identifier)
-        logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request: " + identifier + " | " + str(result))
+        logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + str(result))
         return render_template('result.html', result=result)
     elif selection == "3":
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Block list requested for: " + identifier)
@@ -129,7 +129,7 @@ def get_user_block_list_html(ident):
         handles = [f"{ident} hasn't blocked anyone."]
 
     total_blocked = len(handles)
-    logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Blocklist Request: " + ident + " | " + str(list(zip(handles, timestamps))))
+    logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Blocklist Request Result: " + ident + " | " + str(list(zip(handles, timestamps))))
     return zip(handles, timestamps), total_blocked
 
 
