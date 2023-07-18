@@ -58,7 +58,7 @@ logger = logging.getLogger()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "0.1.0"
+version = "0.1.1"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -128,9 +128,16 @@ def selection_handle():
 
         return render_template('blocklist.html', block_list=blocklist, user=identifier, count=count)
     elif selection == "4":
+        logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count requested")
+        count = get_all_users_count()
+        logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count: " + count)
+
+        return render_template('total_users.html', count=count)
+    elif selection == "5":
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Block list requested for: " + identifier)
         blocks, dates = get_single_user_blocks(identifier)
         count = len(blocks)
+
         return render_template('blocklist.html', user=identifier, block_list=blocks, count=count)
 
 
@@ -239,6 +246,12 @@ def get_all_users():
 
     logger.debug(str(records))
     return records
+
+
+def get_all_users_count():
+    users = len(get_all_users())
+
+    return users
 
 
 def get_single_user_blocks(ident):
