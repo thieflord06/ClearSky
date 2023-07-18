@@ -27,11 +27,20 @@ try:
     if "Windows" in current_os:
         windows_args = config.get("windows", "args")
         log_dir = config.get("windows", "logdir")
+        log_name = config.get("windows", "log_name")
         config.set("handler_fileHandler", "args", str(windows_args))
+        config.set("handler_fileHandler", "logdir", str(log_dir))
+        config.set("handler_fileHandler", "log_name", str(log_name))
+        with open('config.ini', 'w') as configfile:
+            config.write(configfile)
+            configfile.close()
     else:
         linux_args = config.get("linux", "args")
         log_dir = config.get("linux", "logdir")
+        log_name = config.get("linux", "log_name")
         config.set("handler_fileHandler", "args", str(linux_args))
+        config.set("handler_fileHandler", "logdir", str(log_dir))
+        config.set("handler_fileHandler", "log_name", str(log_name))
         with open('config.ini', 'w') as configfile:
             config.write(configfile)
             configfile.close()
@@ -63,7 +72,8 @@ logger.info(log_version)
 logger.debug("Ran from: " + current_dir)
 logger.debug("Ran by: " + username)
 logger.debug("Ran at: " + str(current_time))
-
+logger.info("File Log level: " + str(config.get("handler_fileHandler", "level")))
+logger.info("Stdout Log level: " + str(config.get("handler_consoleHandler", "level")))
 app = Flask(__name__)
 
 # Configure session secret key
