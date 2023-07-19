@@ -58,7 +58,7 @@ logger = logging.getLogger()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "0.2.2"
+version = "0.2.3"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -107,6 +107,7 @@ def contact():
 def selection_handle():
     global session_ip
     session_ip = get_ip()
+    logger.debug(request.form)
     identifier = request.form['identifier'].lower()
     identifier = identifier.replace('@', '')
     selection = request.form['selection']

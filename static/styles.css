@@ -109,3 +109,8 @@ table td {
         margin-top: 10px;
     }
 }
+
+.grayed-out {
+  color: #999999;
+  background-color: #f0f0f0;
+}
