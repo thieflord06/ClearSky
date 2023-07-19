@@ -30,9 +30,8 @@
     </div>
 
     <script>
-        const selection = document.getElementById('selection');
-        const identifier = document.getElementById('identifier');
-        const identifierHidden = document.getElementById('identifier_hidden');
+        const selectionForm = document.getElementById('search-form');
+        const loadingScreen = document.getElementById('loading-screen');
 
         // Add event listener to the selection dropdown
         selection.addEventListener('change', function() {
@@ -47,49 +46,37 @@
                 identifierHidden.value = '';
             }
         });
-    </script>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const loadingScreen = document.getElementById("loading-screen");
-            const searchForm = document.getElementById("search-form");
-            const identifier = document.getElementById("identifier");
-            const identifierHidden = document.getElementById("identifier_hidden");
+        // Function to show the loading screen
+        function showLoadingScreen() {
+            loadingScreen.style.display = 'block';
+        }
 
-            // Function to show the loading screen
-            function showLoadingScreen() {
-                loadingScreen.style.display = "block";
-            }
+        // Function to hide the loading screen
+        function hideLoadingScreen() {
+            loadingScreen.style.display = 'none';
+        }
 
-            // Function to hide the loading screen
-            function hideLoadingScreen() {
-                loadingScreen.style.display = "none";
-            }
+        // Add event listener to the form submit button
+        selectionForm.addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent the default form submission
+            showLoadingScreen(); // Show the loading screen
 
-            // Add event listener to the form submit button
-            searchForm.addEventListener("submit", function (event) {
-                event.preventDefault(); // Prevent the default form submission
-                showLoadingScreen(); // Show the loading screen
-
-                // Update the identifierHidden value before submitting the form
-                identifierHidden.value = identifier.value;
-
-                // Perform your form submission or AJAX request using JavaScript Fetch API or Axios
-                fetch("/selection_handle", {
-                    method: "POST",
-                    body: new FormData(searchForm)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    // Process the results here
-                    // Once the results are ready, hide the loading screen
-                    hideLoadingScreen();
-                    // Display the results on the page or redirect to a new page with the results
-                })
-                .catch(error => {
-                    // Handle any errors here
-                    hideLoadingScreen(); // Hide the loading screen in case of an error
-                });
+            // Perform your form submission or AJAX request using JavaScript Fetch API or Axios
+            fetch('/selection_handle', {
+                method: 'POST',
+                body: new FormData(selectionForm)
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Process the results here
+                // Once the results are ready, hide the loading screen
+                hideLoadingScreen();
+                // Display the results on the page or redirect to a new page with the results
+            })
+            .catch(error => {
+                // Handle any errors here
+                hideLoadingScreen(); // Hide the loading screen in case of an error
             });
         });
     </script>

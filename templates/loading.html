@@ -24,47 +24,8 @@
     }
 </style>
 
-<div id="loading-screen" style="display: block;"><div id="loading-screen" style="display: block;">
+<div id="loading-screen" style="Display: block;">
     <div class="loading-spinner"></div>
     <h1>Please wait...</h1>
 </div>
-
-<!-- Add the following JavaScript code -->
-<script>
-    // Function to show the loading screen
-    function showLoadingScreen() {
-        document.getElementById('loading-screen').style.display = 'block';
-    }
-
-    // Function to hide the loading screen
-    function hideLoadingScreen() {
-        document.getElementById('loading-screen').style.display = 'none';
-    }
-
-    // Fetch function to perform AJAX request and handle loading screen
-    function performAjaxRequest(url, formData) {
-        showLoadingScreen();
-
-        fetch(url, {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            hideLoadingScreen();
-            // Process the results here and update the page
-        })
-        .catch(error => {
-            hideLoadingScreen();
-            // Handle errors here
-        });
-    }
-
-    // Add event listener to the form submit button
-    document.getElementById('search-form').addEventListener('submit', function(event) {
-        event.preventDefault();
-        const formData = new FormData(this);
-        performAjaxRequest('/selection_handle', formData);
-    });
-</script>
 {% endblock %}
