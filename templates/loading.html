@@ -1,27 +1,70 @@
-  <!DOCTYPE html>
-  <html>
-  <head>
-      <title>Loading</title>
-      <style>
-          /* CSS styles for the loading spinner */
-          .loading-spinner {
-              border: 16px solid #f3f3f3;
-              border-top: 16px solid #3498db;
-              border-radius: 50%;
-              width: 120px;
-              height: 120px;
-              animation: spin 2s linear infinite;
-              margin: 50px auto;
-          }
+{% extends "base.html" %}
 
-          @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-          }
-      </style>
-  </head>
-  <body>
-      <div class="loading-spinner"></div>
-      <h1>Please wait...</h1>
-  </body>
-  </html>
+{% block content %}
+<style>
+    /* CSS styles for the loading spinner */
+    .loading-spinner {
+        border: 16px solid #f3f3f3;
+        border-top: 16px solid #3498db;
+        border-radius: 50%;
+        width: 120px;
+        height: 120px;
+        animation: spin 2s linear infinite;
+        margin: 50px auto;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    h1 {
+        font-size: 24px;
+        margin-top: 20px;
+    }
+</style>
+
+<div id="loading-screen" style="display: block;"><div id="loading-screen" style="display: block;">
+    <div class="loading-spinner"></div>
+    <h1>Please wait...</h1>
+</div>
+
+<!-- Add the following JavaScript code -->
+<script>
+    // Function to show the loading screen
+    function showLoadingScreen() {
+        document.getElementById('loading-screen').style.display = 'block';
+    }
+
+    // Function to hide the loading screen
+    function hideLoadingScreen() {
+        document.getElementById('loading-screen').style.display = 'none';
+    }
+
+    // Fetch function to perform AJAX request and handle loading screen
+    function performAjaxRequest(url, formData) {
+        showLoadingScreen();
+
+        fetch(url, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoadingScreen();
+            // Process the results here and update the page
+        })
+        .catch(error => {
+            hideLoadingScreen();
+            // Handle errors here
+        });
+    }
+
+    // Add event listener to the form submit button
+    document.getElementById('search-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const formData = new FormData(this);
+        performAjaxRequest('/selection_handle', formData);
+    });
+</script>
+{% endblock %}

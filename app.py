@@ -90,6 +90,11 @@ def index():
     return render_template('index.html')
 
 
+@app.route('/loading', methods=['POST'])
+def loading():
+    return render_template('loading.html')
+
+
 @app.route('/status')
 def always_200():
 

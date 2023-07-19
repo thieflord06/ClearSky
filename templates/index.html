@@ -2,7 +2,7 @@
 
 {% block content %}
     <div class="form-container">
-        <form action="/selection_handle" method="POST">
+        <form id="search-form" action="/selection_handle" method="POST">
             <div class="form-group">
                 <label for="identifier">Enter DID or Handle:</label>
                 <input type="text" name="identifier" id="identifier" class="form-control">
@@ -15,7 +15,7 @@
                     <option value="2">Get Handle</option>
                     <option value="3">Get Block List of a User</option>
                     <option value="4">Get Total Users Count</option>
-                    <option value="5">Get Blocks of single user</option>
+                    <option value="5">Get Blocks of a Single User</option>
                 </select>
             </div>
             <div class="form-group">
@@ -24,7 +24,12 @@
         </form>
     </div>
 
-<script>
+    <div id="loading-screen" style="display: none;">
+        <!-- Add the loading.html template here -->
+        {% include "loading.html" %}
+    </div>
+
+    <script>
         const selection = document.getElementById('selection');
         const identifier = document.getElementById('identifier');
         const identifierHidden = document.getElementById('identifier_hidden');
@@ -41,6 +46,51 @@
                 identifier.readOnly = false;
                 identifierHidden.value = '';
             }
+        });
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const loadingScreen = document.getElementById("loading-screen");
+            const searchForm = document.getElementById("search-form");
+            const identifier = document.getElementById("identifier");
+            const identifierHidden = document.getElementById("identifier_hidden");
+
+            // Function to show the loading screen
+            function showLoadingScreen() {
+                loadingScreen.style.display = "block";
+            }
+
+            // Function to hide the loading screen
+            function hideLoadingScreen() {
+                loadingScreen.style.display = "none";
+            }
+
+            // Add event listener to the form submit button
+            searchForm.addEventListener("submit", function (event) {
+                event.preventDefault(); // Prevent the default form submission
+                showLoadingScreen(); // Show the loading screen
+
+                // Update the identifierHidden value before submitting the form
+                identifierHidden.value = identifier.value;
+
+                // Perform your form submission or AJAX request using JavaScript Fetch API or Axios
+                fetch("/selection_handle", {
+                    method: "POST",
+                    body: new FormData(searchForm)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Process the results here
+                    // Once the results are ready, hide the loading screen
+                    hideLoadingScreen();
+                    // Display the results on the page or redirect to a new page with the results
+                })
+                .catch(error => {
+                    // Handle any errors here
+                    hideLoadingScreen(); // Hide the loading screen in case of an error
+                });
+            });
         });
     </script>
 {% endblock %}
