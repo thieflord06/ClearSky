@@ -58,7 +58,7 @@ logger = logging.getLogger()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "0.2.3"
+version = "0.2.4"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -111,6 +111,9 @@ def selection_handle():
     identifier = request.form['identifier'].lower()
     identifier = identifier.replace('@', '')
     selection = request.form['selection']
+    if selection != "4":
+        if not identifier:
+            return render_template('error.html')
     if selection == "1":
         logger.info(str(session_ip) + " > " + str(*session.values()) + ": " + "DID resolve request made for: " + identifier)
         result = resolve_handle(identifier)
