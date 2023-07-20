@@ -90,8 +90,9 @@ def index():
     return render_template('index.html')
 
 
-@app.route('/loading', methods=['POST'])
+@app.route('/loading')
 def loading():
+
     return render_template('loading.html')
 
 

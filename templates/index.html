@@ -29,9 +29,17 @@
         {% include "loading.html" %}
     </div>
 
+    <div id="result-container" style="display: none;">
+        <h1>Result</h1>
+        <p id="result-text"></p>
+        <a href="/" class="btn btn-primary">Go Back</a>
+    </div>
+
     <script>
         const selectionForm = document.getElementById('search-form');
         const loadingScreen = document.getElementById('loading-screen');
+        const resultContainer = document.getElementById('result-container');
+        const resultText = document.getElementById('result-text');
 
         // Add event listener to the selection dropdown
         selection.addEventListener('change', function() {
@@ -72,10 +80,16 @@
                 // Process the results here
                 // Once the results are ready, hide the loading screen
                 hideLoadingScreen();
-                // Display the results on the page or redirect to a new page with the results
+
+                // Update the result text in the result container
+                resultText.textContent = data.result;
+
+                // Show the result container
+                resultContainer.style.display = 'block';
             })
             .catch(error => {
                 // Handle any errors here
+                console.error("Error fetching data:", error);
                 hideLoadingScreen(); // Hide the loading screen in case of an error
             });
         });
