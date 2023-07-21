@@ -114,3 +114,7 @@ table td {
   color: #999999;
   background-color: #f0f0f0;
 }
+
+#loading-screen {
+    display: none;
+}

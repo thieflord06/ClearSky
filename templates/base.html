@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>ClearSky Search Tools</title>
+    <title>ClearSky Search Tool</title>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
     <style>
         /* CSS styles for the powered by ATP label */
@@ -37,7 +37,7 @@
     </style>
 </head>
 <body>
-    <h1>ClearSky Search Tools</h1>
+    <h1>ClearSky Search Tool</h1>
     <nav>
         <ul class="menu">
             <li><a href="/">Home</a></li>
@@ -48,5 +48,8 @@
     {% endblock %}
 
     <div class="atp-label">Powered by ATP</div>
+    {% if request.path == '/' %} {# Check if the current page is the index page #}
+        <script src="{{ url_for('static', filename='script.js') }}"></script> {# Include script.js only for the index page #}
+    {% endif %}
 </body>
 </html>

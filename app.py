@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, session
+from flask import Flask, render_template, request, session, jsonify
 import requests
 import urllib.parse
 from datetime import datetime
@@ -87,6 +87,7 @@ def index():
     # Generate a new session number and store it in the session
     if 'session_number' not in session:
         session['session_number'] = generate_session_number()
+
     return render_template('index.html')
 
 
@@ -124,34 +125,39 @@ def selection_handle():
         logger.info(str(session_ip) + " > " + str(*session.values()) + ": " + "DID resolve request made for: " + identifier)
         result = resolve_handle(identifier)
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + result)
+        # logger.debug(jsonify({"result": result}))
 
-        return render_template('result.html', result=result)
+        # return render_template('result.html', result=result)
+        return jsonify({"result": result})
     elif selection == "2":
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Handle resolve request made for: " + identifier)
         result = resolve_did(identifier)
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + str(result))
 
-        return render_template('result.html', result=result)
+        # return render_template('result.html', result=result)
+        return jsonify({"result": result})
     elif selection == "3":
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Block list requested for: " + identifier)
         blocklist, count = get_user_block_list_html(identifier)
 
-        return render_template('blocklist.html', block_list=blocklist, user=identifier, count=count)
+        # return render_template('blocklist.html', block_list=blocklist, user=identifier, count=count)
+        return jsonify({"block_list": blocklist, "user": identifier, "count": count})
     elif selection == "4":
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count requested")
         count = get_all_users_count()
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count: " + count)
 
-        return render_template('total_users.html', count=count)
+        # return render_template('total_users.html', count=count)
+        return jsonify({"count": count})
     elif selection == "5":
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Block list requested for: " + identifier)
         blocks, dates = get_single_user_blocks(identifier)
         count = len(blocks)
 
-        return render_template('blocklist.html', user=identifier, block_list=blocks, count=count)
+        # return render_template('blocklist.html', user=identifier, block_list=blocks, count=count)
+        return jsonify({"user": identifier, "block_list": blocks, "count": count})
 
 
-@app.route('/blocklist')
 def get_user_block_list_html(ident):
     blocked_users, timestamps = get_user_block_list(ident)
     handles = []
@@ -162,9 +168,17 @@ def get_user_block_list_html(ident):
         handles = [f"{ident} hasn't blocked anyone."]
 
     total_blocked = len(handles)
-    logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Blocklist Request Result: " + ident + " | " + str(list(zip(handles, timestamps))))
+    logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Blocklist Request Result: " + ident + " | " + "Total blocked: " + str(total_blocked) + " :: " + str(list(zip(handles, timestamps))))
 
-    return zip(handles, timestamps), total_blocked
+    # Return the list of dictionaries instead of the zip object
+    block_list = []
+    for handle, timestamp in zip(handles, timestamps):
+        block_list.append({"handle": handle, "timestamp": timestamp})
+
+    # total_blocked = len(block_list)
+    # logger.debug(block_list)
+    return block_list, total_blocked
+    # return zip(handles, timestamps), total_blocked
 
 
 # ======================================================================================================================

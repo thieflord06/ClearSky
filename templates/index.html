@@ -25,7 +25,6 @@
     </div>
 
     <div id="loading-screen" style="display: none;">
-        <!-- Add the loading.html template here -->
         {% include "loading.html" %}
     </div>
 
@@ -34,64 +33,4 @@
         <p id="result-text"></p>
         <a href="/" class="btn btn-primary">Go Back</a>
     </div>
-
-    <script>
-        const selectionForm = document.getElementById('search-form');
-        const loadingScreen = document.getElementById('loading-screen');
-        const resultContainer = document.getElementById('result-container');
-        const resultText = document.getElementById('result-text');
-
-        // Add event listener to the selection dropdown
-        selection.addEventListener('change', function() {
-            if (selection.value === '4') {
-                // If "Get Total Users Count" is selected, disable the identifier field and update the hidden field
-                identifier.readOnly = true;
-                identifierHidden.value = identifier.value;
-                identifier.value = '';
-            } else {
-                // Enable the identifier field and clear the hidden field
-                identifier.readOnly = false;
-                identifierHidden.value = '';
-            }
-        });
-
-        // Function to show the loading screen
-        function showLoadingScreen() {
-            loadingScreen.style.display = 'block';
-        }
-
-        // Function to hide the loading screen
-        function hideLoadingScreen() {
-            loadingScreen.style.display = 'none';
-        }
-
-        // Add event listener to the form submit button
-        selectionForm.addEventListener('submit', function(event) {
-            event.preventDefault(); // Prevent the default form submission
-            showLoadingScreen(); // Show the loading screen
-
-            // Perform your form submission or AJAX request using JavaScript Fetch API or Axios
-            fetch('/selection_handle', {
-                method: 'POST',
-                body: new FormData(selectionForm)
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Process the results here
-                // Once the results are ready, hide the loading screen
-                hideLoadingScreen();
-
-                // Update the result text in the result container
-                resultText.textContent = data.result;
-
-                // Show the result container
-                resultContainer.style.display = 'block';
-            })
-            .catch(error => {
-                // Handle any errors here
-                console.error("Error fetching data:", error);
-                hideLoadingScreen(); // Hide the loading screen in case of an error
-            });
-        });
-    </script>
 {% endblock %}
