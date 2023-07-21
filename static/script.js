@@ -36,28 +36,72 @@ function hideBlockListContainer() {
 }
 
 // Function to display the blocklist data
-// Function to display the blocklist data
 function showBlockList(data) {
     resultText.innerHTML = ''; // Clear the previous result text
 
     // Create a new div to hold the block list items
-    const blockListContainer = document.createElement('div');
+    const blockListDiv = document.createElement('div');
 
     data.forEach(item => {
         const blockItem = document.createElement('p');
         // Extract the date part from the timestamp (index 0 to 10)
         const datePart = item.timestamp.slice(4, 12);
         blockItem.textContent = `Handle: ${item.handle}, Date: ${datePart}`;
-        blockListContainer.appendChild(blockItem);
+        blockListDiv.appendChild(blockItem);
     });
 
     // Append the block list container to the result text
-    resultText.appendChild(blockListContainer);
+    resultText.appendChild(blockListDiv);
 
     // Show the result container
     resultContainer.style.display = 'block';
 }
 
+// Function to display the total user count
+function showTotalUsersCount(data) {
+    // Clear the previous result text
+    resultText.innerHTML = '';
+
+    const resultParagraph = document.createElement('p');
+    resultParagraph.textContent = `Total Users Count: ${data.count}`;
+
+    // Append the result paragraph to the result text
+    resultText.appendChild(resultParagraph);
+
+    // Show the result container
+    resultContainer.style.display = 'block';
+}
+
+
+// Function to display the result data
+function showResult(data) {
+    // Check if the selection is for "Get Total Users Count" (option 4)
+    if (selection.value === '4') {
+        // For the "Total Users Count" option, show the result in total_users.html
+        showTotalUsersCount(data);
+    } else {
+        // For other selections (options 1, 2, 3, 5), update the result text as before
+        resultText.innerHTML = ''; // Clear the previous result text
+
+        const resultContent = document.createElement('div');
+
+        if (data.result) {
+            const resultParagraph = document.createElement('p');
+            resultParagraph.textContent = data.result;
+            resultContent.appendChild(resultParagraph);
+        } else {
+            const noResultParagraph = document.createElement('p');
+            noResultParagraph.textContent = 'No result found.';
+            resultContent.appendChild(noResultParagraph);
+        }
+
+        // Append the result content to the result text
+        resultText.appendChild(resultContent);
+
+        // Show the result container
+        resultContainer.style.display = 'block';
+    }
+}
 
 // Add event listener to the form submit button
 selectionForm.addEventListener('submit', function (event) {
@@ -81,14 +125,8 @@ selectionForm.addEventListener('submit', function (event) {
         // Process the JSON data here
         hideLoadingScreen(); // Hide the loading screen once the results are ready
 
-        // Check if the selection is for "Get Block List of a User" (option 3)
-        if (selection.value === '3') {
-            // Call the showBlockList function to display the blocklist data
-            showBlockList(data.block_list);
-        } else {
-            // For other selections (options 1, 2, 4, 5), update the result text as before
-            resultText.textContent = data.result;
-        }
+        // Call the showResult function to display the data based on selection value
+        showResult(data);
 
         // Show the result container
         resultContainer.style.display = 'block';
