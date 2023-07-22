@@ -29,7 +29,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function showResultContainer() {
         console.log('showResultContainer() called');
         resultContainer.style.display = 'block';
-        blockListContainer.style.display = 'none';
         indexContainer.style.display = 'none';
     }
 
@@ -42,7 +41,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function showBlockListContainer() {
         console.log('showBlockListContainer() called');
-//        resultContainer.style.display = 'none';
         blockListContainer.style.display = 'block';
         indexContainer.style.display = 'none'; //
     }
@@ -53,21 +51,18 @@ document.addEventListener('DOMContentLoaded', function() {
         indexContainer.style.display = 'block'; //
     }
 
-    function hideAllContainers() {
-        resultContainer.style.display = 'none';
-        blockListContainer.style.display = 'none';
-        indexContainer.style.display = 'block';
-    }
-
     // Function to display the result data
     function showResult(data) {
         console.log('showResult() called');
-        console.log(data)
-//        resultText.innerHTML = ''; // Clear the previous result text
+        resultText.innerHTML = ''; // Clear the previous result text
 
-        if (data.block_list) {
+        if (data.result) {
+            const resultParagraph = document.createElement('p');
+            resultParagraph.textContent = data.result;
+            resultText.appendChild(resultParagraph);
+        } else if (data.block_list) {
             if (Array.isArray(data.block_list)) {
-                // Display block list container
+                // Option 3: Block List of a specific user
                 const blockListDiv = document.createElement('div');
                 const userHeading = document.createElement('h2');
                 const blockCount = document.createElement('h3');
@@ -84,11 +79,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     blockListDiv.appendChild(blockItem);
                 });
                 resultText.appendChild(blockListDiv);
-                showBlockListContainer(); // Show block list container
+                showBlockListContainer();
             }
-        } else if (data.result) {
-            // Display result container
-            const resultParagraph = document.createElement('p');
+        } else if (typeof data.count === 'number') {
             resultParagraph.textContent = data.result;
             resultText.appendChild(resultParagraph);
             showResultContainer(); // Show result container
@@ -97,14 +90,17 @@ document.addEventListener('DOMContentLoaded', function() {
             const countParagraph = document.createElement('p');
             countParagraph.textContent = `Total User count: ${data.count}`;
             resultText.appendChild(countParagraph);
-            showResultContainer(); // Show result container
+            showResultContainer();
         } else {
-            // Display result container with no result found message
             const noResultParagraph = document.createElement('p');
             noResultParagraph.textContent = 'No result found.';
             resultText.appendChild(noResultParagraph);
             showResultContainer(); // Show result container
         }
+
+        // Show the result container
+        showResultContainer();
+        showBlockListContainer();
     }
 
     // Function to handle errors and show the index container if needed
@@ -126,7 +122,6 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Form submit button clicked');
 
         if (requestInProgress) {
-            console.log('Request in progress.')
             // A request is already in progress, do not make another request
             return;
         }
@@ -134,8 +129,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Mark that a request is in progress
         requestInProgress = true;
 
-        submitButton.disabled = true; // Disable the form submission button
         showLoadingScreen(); // Show the loading screen
+        submitButton.disabled = true; // Disable the form submission button
 
         // Perform your form submission or AJAX request using JavaScript Fetch API or Axios
         fetch('/selection_handle', {
