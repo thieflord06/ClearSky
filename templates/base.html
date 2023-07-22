@@ -37,19 +37,20 @@
     </style>
 </head>
 <body>
-    <h1>ClearSky Search Tool</h1>
-    <nav>
-        <ul class="menu">
-            <li><a href="/">Home</a></li>
-            <li><a href="/contact">Contact</a></li>
-        </ul>
-    </nav>
+    <div id="base-container">
+        <h1>ClearSky Search Tool</h1>
+        <nav>
+            <ul class="menu">
+                <li><a href="/">Home</a></li>
+                <li><a href="/contact">Contact</a></li>
+            </ul>
+        </nav>
+    </div>
     {% block content %}
     {% endblock %}
-
     <div class="atp-label">Powered by ATP</div>
-    {% if request.path == '/' %} {# Check if the current page is the index page #}
-        <script src="{{ url_for('static', filename='script.js') }}"></script> {# Include script.js only for the index page #}
-    {% endif %}
+<!--    {% if request.path == '/' %} {# Check if the current page is the index page #}-->
+<!--        <script src="{{ url_for('static', filename='script.js') }}"></script> {# Include script.js only for the index page #}-->
+<!--    {% endif %}-->
 </body>
 </html>
