@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>ClearSky Search Tools</title>
+    <title>ClearSky Search Tool</title>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
     <style>
         /* CSS styles for the powered by ATP label */
@@ -37,16 +37,17 @@
     </style>
 </head>
 <body>
-    <h1>ClearSky Search Tools</h1>
-    <nav>
-        <ul class="menu">
-            <li><a href="/">Home</a></li>
-            <li><a href="/contact">Contact</a></li>
-        </ul>
-    </nav>
+    <div id="base-container">
+        <h1>ClearSky Search Tool</h1>
+        <nav>
+            <ul class="menu">
+                <li><a href="/">Home</a></li>
+                <li><a href="/contact">Contact</a></li>
+            </ul>
+        </nav>
+    </div>
     {% block content %}
     {% endblock %}
-
     <div class="atp-label">Powered by ATP</div>
 </body>
 </html>
