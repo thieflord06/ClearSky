@@ -5,8 +5,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const resultText = document.getElementById('result-text');
     const indexContainer = document.getElementById('index-container');
     const formContainer = document.getElementById('form-container');
-    const baseContainer = document.getElementById('base-container')
-    const blockListContainer = document.getElementById('block-list-container')
+    const baseContainer = document.getElementById('base-container');
+    const blockListContainer = document.getElementById('blocklist-container');
 
     let requestInProgress = false;
     const submitButton = document.getElementById('submit-button');
@@ -15,92 +15,118 @@ document.addEventListener('DOMContentLoaded', function() {
     function showLoadingScreen() {
         console.log('showLoadingScreen() called');
         loadingScreen.style.display = 'block';
-        indexContainer.style.display = 'none';
     }
 
     // Function to hide the loading screen
     function hideLoadingScreen() {
         console.log('hideLoadingScreen() called');
         loadingScreen.style.display = 'none';
-        indexContainer.style.display = 'block';
     }
 
     // Function to show the result container
     function showResultContainer() {
         console.log('showResultContainer() called');
         resultContainer.style.display = 'block';
-        indexContainer.style.display = 'none';
     }
 
     // Function to hide the result container
     function hideResultContainer() {
         console.log('hideResultContainer() called');
         resultContainer.style.display = 'none';
-        indexContainer.style.display = 'block';
     }
 
     function showBlockListContainer() {
         console.log('showBlockListContainer() called');
         blockListContainer.style.display = 'block';
-        indexContainer.style.display = 'none'; //
+    }
+
+    function hideBaseContainer() {
+        console.log('hideBaseContainer() called.');
+        baseContainer.style.display = 'none';
+    }
+
+    function showBaseContainer() {
+        console.log('showBaseContainer() called.');
+        baseContainer.style.display = 'block';
     }
 
     function hideBlockListContainer() {
         console.log('hideBlockListContainer() called');
         blockListContainer.style.display = 'none';
-        indexContainer.style.display = 'block'; //
+    }
+
+    function hideIndexContainer() {
+        console.log('hideIndexContainer() called');
+        indexContainer.style.display = 'none';
+    }
+
+    function showIndexContainer() {
+        console.log('showIndexContainer() called.');
+        indexContainer.style.display = 'block';
     }
 
     // Function to display the result data
     function showResult(data) {
         console.log('showResult() called');
+        console.log(data);
+        console.log(data.count);
         resultText.innerHTML = ''; // Clear the previous result text
 
         if (data.result) {
             const resultParagraph = document.createElement('p');
             resultParagraph.textContent = data.result;
             resultText.appendChild(resultParagraph);
-        } else if (data.block_list) {
+            hideLoadingScreen();
+            showResultContainer();
+        }
+        else if (data.block_list) {
             if (Array.isArray(data.block_list)) {
-                // Option 3: Block List of a specific user
-                const blockListDiv = document.createElement('div');
-                const userHeading = document.createElement('h2');
-                const blockCount = document.createElement('h3');
-                blockCount.textContent = `Count: ${data.count}`;
-                userHeading.textContent = `Block List: ${data.user}`;
+                const blockListData = document.getElementById('block-list-data');
+                const userHeading = document.getElementById('user-heading');
+                const blockCount = document.getElementById('block-count');
+                const fragment = document.createDocumentFragment();
 
-                blockListDiv.appendChild(userHeading);
+                userHeading.textContent = 'Block List for User: ' + data.user;
+                blockCount.textContent = `Total Blocked Users: ${data.count}`;
+
+                blockListData.innerHTML = '';
 
                 data.block_list.forEach(item => {
-                    const blockItem = document.createElement('p');
                     const timestamp = new Date(item.timestamp);
                     const formattedDate = timestamp.toLocaleDateString(); // Format date as per locale
+                    const blockItem = document.createElement('li');
+
                     blockItem.textContent = `Handle: ${item.handle}, Date: ${formattedDate}`;
-                    blockListDiv.appendChild(blockItem);
+                    blockListData.appendChild(blockItem);
+
+                    hideLoadingScreen();
+                    showBlockListContainer();
                 });
-                resultText.appendChild(blockListDiv);
-                showBlockListContainer();
             }
-        } else if (typeof data.count === 'number') {
-            resultParagraph.textContent = data.result;
-            resultText.appendChild(resultParagraph);
-            showResultContainer(); // Show result container
-        } else if (typeof data.count === 'number') {
+            else {
+                const noResultParagraph = document.createElement('p');
+                noResultParagraph.textContent = 'No result found.';
+                resultText.appendChild(noResultParagraph);
+                hideLoadingScreen();
+                showResultContainer(); // Show result container
+            }
+        }
+        else if (data.count) {
             // Display result container with total count
-            const countParagraph = document.createElement('p');
-            countParagraph.textContent = `Total User count: ${data.count}`;
-            resultText.appendChild(countParagraph);
+            console.log(data.count);
+//                const countParagraph = document.createElement('p');
+            resultText.textContent = `Total User count: ${data.count}`;
+//                resultText.appendChild(countParagraph);
+            hideLoadingScreen();
             showResultContainer();
-        } else {
+        }
+        else {
             const noResultParagraph = document.createElement('p');
             noResultParagraph.textContent = 'No result found.';
             resultText.appendChild(noResultParagraph);
+            hideLoadingScreen();
             showResultContainer(); // Show result container
         }
-
-        // Show the result container
-        showResultContainer();
-        showBlockListContainer();
     }
 
     // Function to handle errors and show the index container if needed
@@ -129,8 +155,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Mark that a request is in progress
         requestInProgress = true;
 
-        showLoadingScreen(); // Show the loading screen
         submitButton.disabled = true; // Disable the form submission button
+        hideBaseContainer();
+        hideIndexContainer();
+        showLoadingScreen(); // Show the loading screen
 
         // Perform your form submission or AJAX request using JavaScript Fetch API or Axios
         fetch('/selection_handle', {
@@ -147,11 +175,9 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(data => {
             // Update the resultText container with the server response
+            console.log("show data in submit event listener.");
+            console.log(data);
             showResult(data);
-            // Hide the loading screen
-            hideLoadingScreen();
-            indexContainer.style.display = 'none';
-            baseContainer.style.display = 'none';
 
             // Reset the requestInProgress flag to allow future requests
             requestInProgress = false;
@@ -160,7 +186,8 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             // Handle any errors here
             handleErrors(error); // Call the function to handle errors and show the index container
-
+            showBaseContainer();
+            showIndexContainer();
         // Reset the requestInProgress flag in case of an error
         requestInProgress = false;
         submitButton.disabled = false;

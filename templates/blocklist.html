@@ -4,11 +4,10 @@
     <div id="block-list-container">
         <div id="block-list">
             <h1>Block List</h1>
-            <h2>Block List for User: {{ user }}</h2>
-            <h3>Total Blocked Users: {{ count }}</h3>
-            {% for item in block_list %}
-                <p>Handle: {{ item.handle }}, Timestamp: {{ item.timestamp }}</p>
-            {% endfor %}
+            <h2 id="user-heading"></h2>
+            <h3 id="block-count"></h3>
+            <ul id="block-list-data">
+            </ul>
         </div>
         <a href="/" class="btn btn-primary">Go Back</a>
     </div>

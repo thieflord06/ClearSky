@@ -148,7 +148,7 @@ def selection_handle():
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count: " + str(count))
 
         # return render_template('total_users.html', count=count)
-        return jsonify({"block_list": {"count": count}})
+        return jsonify({"count": count})
     elif selection == "5":
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Block list requested for: " + identifier)
         blocks, dates = get_single_user_blocks(identifier)
