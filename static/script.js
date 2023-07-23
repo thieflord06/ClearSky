@@ -68,8 +68,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to display the result data
     function showResult(data) {
         console.log('showResult() called');
-        console.log(data);
-        console.log(data.count);
         resultText.innerHTML = ''; // Clear the previous result text
 
         if (data.result) {
@@ -113,7 +111,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         else if (data.count) {
             // Display result container with total count
-            console.log(data.count);
 //                const countParagraph = document.createElement('p');
             resultText.textContent = `Total User count: ${data.count}`;
 //                resultText.appendChild(countParagraph);
@@ -148,7 +145,6 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Form submit button clicked');
 
         optionSelected = document.getElementById("selection").value;
-        console.log(optionSelected);
 
         if (optionSelected === "5") {
             var confirmed = window.confirm("This will take an extremely long time! Do you want to proceed?");
@@ -186,8 +182,6 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(data => {
             // Update the resultText container with the server response
-            console.log("show data in submit event listener.");
-            console.log(data);
             showResult(data);
 
             // Reset the requestInProgress flag to allow future requests

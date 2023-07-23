@@ -125,16 +125,27 @@ table td {
     }
 
     #block-list-container {
-        max-width: 800px; /* Optionally set a maximum width for the block list container */
+        max-width: 0 auto; /* Optionally set a maximum width for the block list container */
         margin: 0 auto; /* Center the block list container horizontally */
         padding: 20px;
     }
 
     #block-list {
-        max-height: 400px; /* Set the maximum height for the block list container */
+        max-height: 600px; /* Set the maximum height for the block list container */
+        overflow-x: auto;
         overflow-y: auto; /* Enable vertical scrolling if the content exceeds the max-height */
-        border: 1px solid #ccc; /* Optional border for the block list container */
-        padding: 10px; /* Optional padding for the block list container */
+        border: 4px solid #ccc; /* Optional border for the block list container */
+        padding: 0px; /* Optional padding for the block list container */
+    }
+
+    #block-list-data {
+        /* Set a specific width for the block list content */
+        width: 100%; /* You can adjust this value as needed */
+        /* Enable horizontal scrolling for long lines of text */
+        overflow-x: auto;
+        padding: 0; /* Remove padding to reduce extra space */
+        margin: 0; /* Remove margins to reduce extra space */
+        word-break: break-all;
     }
 
     #block-list h1,
@@ -146,6 +157,7 @@ table td {
     #block-list ul {
         list-style-type: none;
         padding: 0;
+        margin: 0; /* Remove margins to reduce extra space */
     }
 
     #block-list li {
