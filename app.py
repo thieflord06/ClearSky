@@ -343,7 +343,8 @@ def get_user_block_list(ident):
             cursor = response_json.get("cursor")
             if not cursor:
                 break
-
+        else:
+            break
     # cursor = response_json.get("cursor")
     if not blocked_users:
         return [], [str(datetime.now().date())]
