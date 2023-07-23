@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 data.block_list.forEach(item => {
                     const timestamp = new Date(item.timestamp);
-                    const formattedDate = timestamp.toLocaleDateString(); // Format date as per locale
+                    const formattedDate = timestamp.toLocaleDateString('en-US', {timeZone: 'UTC'}); // Format date
                     const blockItem = document.createElement('li');
 
                     blockItem.textContent = `Handle: ${item.handle}, Date: ${formattedDate}`;
