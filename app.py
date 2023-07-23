@@ -156,9 +156,10 @@ def selection_handle():
         return jsonify({"count": count})
     elif selection == "5":
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Block list requested for: " + identifier)
-        blocks, dates = get_single_user_blocks(identifier)
-        count = len(blocks)
-
+        # blocks, dates = get_single_user_blocks(identifier)
+        # count = len(blocks)
+        blocks = None
+        count = 1
         # return render_template('blocklist.html', user=identifier, block_list=blocks, count=count)
         return jsonify({"user": identifier, "block_list": blocks, "count": count})
 

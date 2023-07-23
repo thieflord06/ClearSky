@@ -160,9 +160,25 @@ document.addEventListener('DOMContentLoaded', function() {
         if (selection.value === '5') {
             // If Option 5 is selected, redirect to the "Coming Soon" page
 //            window.location.href = '/coming_soon';
-            hideBaseContainer();
-            hideIndexContainer();
-            showComingSoonContainer();
+            fetch('/selection_handle', {
+                method: 'POST',
+                body: new FormData(selectionForm)
+            })
+            .then(response => {
+                // Check if the response status is successful (HTTP 200-299)
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                hideBaseContainer();
+                hideIndexContainer();
+                showComingSoonContainer();
+//                return; // Return to prevent further execution
+            })
+            .catch(error => {
+                // Handle any errors here
+                console.error('Error submitting form:', error);
+                // You can show an error message to the user if needed
+            });
             return; // Return to prevent further execution
         }
 //        if (optionSelected === "5") {
