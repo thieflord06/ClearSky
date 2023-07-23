@@ -58,7 +58,7 @@ logger = logging.getLogger()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "0.2.4"
+version = "0.2.6"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
