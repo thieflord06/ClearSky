@@ -147,6 +147,17 @@ document.addEventListener('DOMContentLoaded', function() {
         event.preventDefault(); // Prevent the default form submission
         console.log('Form submit button clicked');
 
+        optionSelected = document.getElementById("selection").value;
+        console.log(optionSelected);
+
+        if (optionSelected === "5") {
+            var confirmed = window.confirm("This will take an extremely long time! Do you want to proceed?");
+//            alert("This will take a long time!");
+            if (!confirmed) {
+                return;
+            }
+        }
+
         if (requestInProgress) {
             // A request is already in progress, do not make another request
             return;
