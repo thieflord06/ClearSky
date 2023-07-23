@@ -86,7 +86,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const blockCount = document.getElementById('block-count');
                 const fragment = document.createDocumentFragment();
 
-                userHeading.textContent = 'Block List for User: ' + data.user;
+                userHeading.textContent = 'For User: ' + data.user;
                 blockCount.textContent = `Total Blocked Users: ${data.count}`;
 
                 blockListData.innerHTML = '';
