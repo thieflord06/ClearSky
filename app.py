@@ -173,7 +173,10 @@ def get_user_block_list_html(ident):
     else:
         handles = [f"{ident} hasn't blocked anyone."]
 
-    total_blocked = len(handles)
+    if not blocked_users:
+        total_blocked = len(handles) - 1
+    else:
+        total_blocked = len(handles)
     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Blocklist Request Result: " + ident + " | " + "Total blocked: " + str(total_blocked) + " :: " + str(list(zip(handles, timestamps))))
 
     # Return the list of dictionaries instead of the zip object
