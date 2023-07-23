@@ -124,6 +124,14 @@ table td {
         margin-top: 10px;
     }
 
+    #comingsoon-container {
+    display: block;
+    width: 100%;
+    text-align: center;
+    font-size: 20px;
+    margin-top: 10px;
+    }
+
     #block-list-container {
         max-width: 0 auto; /* Optionally set a maximum width for the block list container */
         margin: 0 auto; /* Center the block list container horizontally */

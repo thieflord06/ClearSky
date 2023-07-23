@@ -97,6 +97,11 @@ def loading():
     return render_template('loading.html')
 
 
+@app.route('/coming_soon')
+def coming_soon():
+    return render_template('coming_soon.html')
+
+
 @app.route('/status')
 def always_200():
 

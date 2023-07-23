@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const formContainer = document.getElementById('form-container');
     const baseContainer = document.getElementById('base-container');
     const blockListContainer = document.getElementById('blocklist-container');
+    const comingSoonContainer = document.getElementById('comingsoon-container');
 
     let requestInProgress = false;
     const submitButton = document.getElementById('submit-button');
@@ -15,6 +16,16 @@ document.addEventListener('DOMContentLoaded', function() {
     function showLoadingScreen() {
         console.log('showLoadingScreen() called');
         loadingScreen.style.display = 'block';
+    }
+
+    function showComingSoonContainer() {
+        console.log('showLoadingScreen() called');
+        comingSoonContainer.style.display = 'block';
+    }
+
+    function hideComingSoonContainer() {
+        console.log('hideLoadingScreen() called');
+        comingSoonContainer.style.display = 'none';
     }
 
     // Function to hide the loading screen
@@ -146,13 +157,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
         optionSelected = document.getElementById("selection").value;
 
-        if (optionSelected === "5") {
-            var confirmed = window.confirm("This will take an extremely long time! Do you want to proceed?");
-//            alert("This will take a long time!");
-            if (!confirmed) {
-                return;
-            }
+        if (selection.value === '5') {
+            // If Option 5 is selected, redirect to the "Coming Soon" page
+//            window.location.href = '/coming_soon';
+            hideBaseContainer();
+            hideIndexContainer();
+            showComingSoonContainer();
+            return; // Return to prevent further execution
         }
+//        if (optionSelected === "5") {
+//            var confirmed = window.confirm("This will take an extremely long time! Do you want to proceed?");
+////            alert("This will take a long time!");
+//            if (!confirmed) {
+//                return;
+//            }
+//        }
 
         if (requestInProgress) {
             // A request is already in progress, do not make another request
