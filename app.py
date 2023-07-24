@@ -11,6 +11,7 @@ import uuid
 import platform
 import sqlite3
 import argparse
+from tqdm import tqdm
 # ======================================================================================================================
 # ============================= Pre-checks // Set up logging and debugging information =================================
 # Checks if .ini file exits locally and exits if it doesn't
@@ -361,9 +362,12 @@ def get_single_user_blocks(ident):
 
             return resolved_handles, block_dates, count
         else:
-            error_text = "error"
-            logger.warning("Blocklist db empty.")
-            return error_text, error_text, 0
+            no_blocks = ident + ": has not been blocked by anyone."
+            date = datetime.now().date()
+            return list(no_blocks), date, len(no_blocks) - 1
+            # error_text = "error"
+            # logger.warning("Blocklist db empty.")
+            # return error_text, error_text, 0
     else:
         logger.error("No db to get data.")
         error_text = "error"
@@ -422,7 +426,7 @@ def get_single_users_blocks_db(get_dids=False):
     all_dids = get_all_users_db(get_dids=get_dids)
     create_blocklist_table()
 
-    for ident in all_dids:
+    for ident in tqdm(all_dids, desc="Updating blocklists", unit="DID", ncols=100):
         user_did = ident[0]
         update_blocklist_table(user_did)
 
