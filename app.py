@@ -392,25 +392,25 @@ def update_blocklist_table(ident):
     # for ident in all_dids:
     #     blocked_by_list, block_date = get_user_block_list(ident)
 
+    # Check if each record already exists in the blocklists table
+    # existing_records = set()
+    # cursor.execute('SELECT user_did, blocked_did FROM blocklists')
+    # for row in cursor.fetchall():
+    #     existing_records.add((row[0], row[1]))
+
     # Prepare the data to be inserted into the database
     data = []
     for blocked_did, date in zip(blocked_by_list, block_date):
         data.append((ident, blocked_did, date))
 
-    # Check if each record already exists in the blocklists table
-    existing_records = set()
-    cursor.execute('SELECT user_did, blocked_did FROM blocklists')
-    for row in cursor.fetchall():
-        existing_records.add((row[0], row[1]))
-
     # Insert only the records that do not already exist in the table
-    data_to_insert = []
-    for record in data:
-        if record not in existing_records:
-            data_to_insert.append(record)
+    # data_to_insert = []
+    # for record in data:
+    #     if record not in existing_records:
+    #         data_to_insert.append(record)
 
     # Insert the data into the blocklists table
-    cursor.executemany('INSERT INTO blocklists (user_did, blocked_did, block_date) VALUES (?, ?, ?)', data_to_insert)
+    cursor.executemany('INSERT OR IGNORE INTO blocklists (user_did, blocked_did, block_date) VALUES (?, ?, ?)', data)
 
     # Commit the changes and close the connection to the database
     conn.commit()
