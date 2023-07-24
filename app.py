@@ -30,19 +30,23 @@ try:
         windows_args = config.get("windows", "args")
         log_dir = config.get("windows", "logdir")
         log_name = config.get("windows", "log_name")
+        linux_users_db = config.get("windows", "users_db_path")
         config.set("handler_fileHandler", "args", str(windows_args))
         config.set("handler_fileHandler", "logdir", str(log_dir))
         config.set("handler_fileHandler", "log_name", str(log_name))
+        config.set("database", "users_db_path", str(linux_users_db))
         with open('config.ini', 'w') as configfile:
             config.write(configfile)
             configfile.close()
     else:
+        linux_users_db = config.get("linux", "users_db_path")
         linux_args = config.get("linux", "args")
         log_dir = config.get("linux", "logdir")
         log_name = config.get("linux", "log_name")
         config.set("handler_fileHandler", "args", str(linux_args))
         config.set("handler_fileHandler", "logdir", str(log_dir))
         config.set("handler_fileHandler", "log_name", str(log_name))
+        config.set("database", "users_db_path", str(linux_users_db))
         with open('config.ini', 'w') as configfile:
             config.write(configfile)
             configfile.close()
@@ -51,6 +55,7 @@ except (configparser.NoOptionError, configparser.NoSectionError, configparser.Mi
 try:
     if os.path.exists(log_dir) is False:
         os.makedirs(log_dir)
+        os.makedirs(linux_users_db)
 except PermissionError:
     print("Cannot create log directory\nChange 'agrs' and 'logdir' in config.ini path to a path with permissions")
     sys.exit()
@@ -81,7 +86,7 @@ app = Flask(__name__)
 # Configure session secret key
 app.secret_key = 'your-secret-key'
 users_db_folder_path = config.get("database", "users_db_path")
-users_db_filename = 'user_cache.db'
+users_db_filename = 'users_cache.db'
 users_db_path = users_db_folder_path + users_db_filename
 
 
