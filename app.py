@@ -9,6 +9,8 @@ import os
 import sys
 import uuid
 import platform
+import sqlite3
+import argparse
 # ======================================================================================================================
 # ============================= Pre-checks // Set up logging and debugging information =================================
 # Checks if .ini file exits locally and exits if it doesn't
@@ -28,19 +30,23 @@ try:
         windows_args = config.get("windows", "args")
         log_dir = config.get("windows", "logdir")
         log_name = config.get("windows", "log_name")
+        linux_users_db = config.get("windows", "users_db_path")
         config.set("handler_fileHandler", "args", str(windows_args))
         config.set("handler_fileHandler", "logdir", str(log_dir))
         config.set("handler_fileHandler", "log_name", str(log_name))
+        config.set("database", "users_db_path", str(linux_users_db))
         with open('config.ini', 'w') as configfile:
             config.write(configfile)
             configfile.close()
     else:
+        linux_users_db = config.get("linux", "users_db_path")
         linux_args = config.get("linux", "args")
         log_dir = config.get("linux", "logdir")
         log_name = config.get("linux", "log_name")
         config.set("handler_fileHandler", "args", str(linux_args))
         config.set("handler_fileHandler", "logdir", str(log_dir))
         config.set("handler_fileHandler", "log_name", str(log_name))
+        config.set("database", "users_db_path", str(linux_users_db))
         with open('config.ini', 'w') as configfile:
             config.write(configfile)
             configfile.close()
@@ -49,6 +55,7 @@ except (configparser.NoOptionError, configparser.NoSectionError, configparser.Mi
 try:
     if os.path.exists(log_dir) is False:
         os.makedirs(log_dir)
+        os.makedirs(linux_users_db)
 except PermissionError:
     print("Cannot create log directory\nChange 'agrs' and 'logdir' in config.ini path to a path with permissions")
     sys.exit()
@@ -78,6 +85,9 @@ app = Flask(__name__)
 
 # Configure session secret key
 app.secret_key = 'your-secret-key'
+users_db_folder_path = config.get("database", "users_db_path")
+users_db_filename = 'users_cache.db'
+users_db_path = users_db_folder_path + users_db_filename
 
 
 # ======================================================================================================================
@@ -271,18 +281,51 @@ def get_all_users():
             response_json = response.json()
             repos = response_json.get("repos", [])
             for repo in repos:
-                records.append(repo["did"])
+                records.append((repo["did"],))
 
             cursor = response_json.get("cursor")
             if not cursor:
                 break
-
-    logger.debug(str(records))
     return records
 
 
+def get_all_users_db(run_update=False):
+    if not run_update:
+        # Attempt to fetch data from the cache (SQLite database)
+        conn = sqlite3.connect(users_db_path)
+        cursor = conn.cursor()
+
+        cursor.execute('SELECT did FROM users')
+        cached_users = cursor.fetchall()
+        conn.close()  # Left off at logic for getting all users and then adding it to db
+
+        if cached_users:
+            records = count_users_table()
+            return records
+            # If data is found in the cache, return it directly
+
+    records = get_all_users()
+
+    # Clear the existing data by truncating the table
+    if run_update:
+        truncate_users_table()
+
+    # Store the fetched users data in the cache (SQLite database)
+    conn = sqlite3.connect(users_db_path)
+    cursor = conn.cursor()
+
+    cursor.executemany('INSERT INTO users (did) VALUES (?)', records)
+    conn.commit()
+    conn.close()
+
+    logger.debug(str(records))
+    return len(records)
+
+
 def get_all_users_count():
-    users = len(get_all_users())
+    users = get_all_users_db()
+    if not isinstance(users, int):
+        return users
     # formatted_count = "{:,}".format(users)
     return users
     # return formatted_count
@@ -364,9 +407,81 @@ def process_did_list_to_handle(did_list):
     return handle_list
 
 
+def create_user_cache_database():
+    logger.debug(users_db_path)
+
+    # Check if the database file exists
+    if not os.path.exists(users_db_path):
+        try:
+            if not os.path.exists(users_db_folder_path):
+                os.makedirs(users_db_folder_path)
+        except PermissionError:
+            logger.warning("Cannot create log directory\nChange 'db_path' in config.ini path to a path with permissions")
+            sys.exit()
+
+        logger.info("Creating database.")
+        conn = sqlite3.connect(users_db_path)
+        cursor = conn.cursor()
+
+        # Create the users table if it doesn't exist
+        cursor.execute('''
+                CREATE TABLE IF NOT EXISTS users (
+                    did TEXT UNIQUE
+                )
+            ''')
+
+        conn.commit()
+        conn.close()
+    else:
+        logger.warning(f"Database '{users_db_filename}' already exists. Skipping creation.")
+
+
+def truncate_users_table():
+    conn = sqlite3.connect(users_db_path)
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM users')
+    conn.commit()
+    conn.close()
+
+
+def count_users_table():
+    # Connect to the SQLite database
+    conn = sqlite3.connect(users_db_path)
+    cursor = conn.cursor()
+
+    # Execute the SQL query to count the rows in the "users" table
+    cursor.execute('SELECT COUNT(*) FROM users')
+    count = cursor.fetchone()[0]
+
+    # Close the connection to the database
+    conn.close()
+
+    return count
+
+
+create_user_cache_database()
 ip_address = config.get("server", "ip")
 port_address = config.get("server", "port")
 
+# python app.py --update-users-db // command to update users db
+# python app.py --fetch-users-count // command to get current count in db
 if __name__ == '__main__':
-    logger.info("Web server starting at: " + ip_address + ":" + port_address)
-    serve(app, host=ip_address, port=port_address)
+    parser = argparse.ArgumentParser(description='ClearSky Web Server')
+    parser.add_argument('--update-users-db', action='store_true', help='Update the database with all users')
+    parser.add_argument('--fetch-users-count', action='store_true', help='Fetch the count of users')
+    args = parser.parse_args()
+
+    if args.update_users_db:
+        # Call the function to update the database with all users
+        logger.info("Users db update requested.")
+        get_all_users_db(True)
+        logger.info("Users db update finished.")
+        sys.exit()
+    elif args.fetch_users_count:
+        # Call the function to fetch the count of users
+        count = count_users_table()
+        logger.info(f"Total users in the database: {count}")
+        sys.exit()
+    else:
+        logger.info("Web server starting at: " + ip_address + ":" + port_address)
+        serve(app, host=ip_address, port=port_address)
