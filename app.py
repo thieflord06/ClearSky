@@ -166,10 +166,11 @@ def selection_handle():
         return jsonify({"count": count})
     elif selection == "5":
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Block list requested for: " + identifier)
-        # blocks, dates = get_single_user_blocks(identifier)
+        blocks, dates, count = get_single_user_blocks(identifier)
+        logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Blocklist Request Result: " + identifier + " | " + "Block by: " + str(blocks) + " :: " + "Total count: " + str(count))
         # count = len(blocks)
-        blocks = None
-        count = 1
+        # blocks = None
+        # count = 1
         # return render_template('blocklist.html', user=identifier, block_list=blocks, count=count)
         return jsonify({"user": identifier, "block_list": blocks, "count": count})
 
@@ -289,17 +290,19 @@ def get_all_users():
     return records
 
 
-def get_all_users_db(run_update=False):
+def get_all_users_db(run_update=False, get_dids=False):
     if not run_update:
-        # Attempt to fetch data from the cache (SQLite database)
-        conn = sqlite3.connect(users_db_path)
-        cursor = conn.cursor()
+        if os.path.exists(users_db_path):
+            # Attempt to fetch data from the cache (SQLite database)
+            conn = sqlite3.connect(users_db_path)
+            cursor = conn.cursor()
 
-        cursor.execute('SELECT did FROM users')
-        cached_users = cursor.fetchall()
-        conn.close()  # Left off at logic for getting all users and then adding it to db
-
-        if cached_users:
+            cursor.execute('SELECT did FROM users')
+            cached_users = cursor.fetchall()
+            conn.close()  # Left off at logic for getting all users and then adding it to db
+        if get_dids:
+            return cached_users
+        elif cached_users:
             records = count_users_table()
             return records
             # If data is found in the cache, return it directly
@@ -332,16 +335,85 @@ def get_all_users_count():
 
 
 def get_single_user_blocks(ident):
-    users = get_all_users()
-    ident_user = resolve_handle(ident)
-    blocked_by_list = []
-    block_date = []
-    for user in users:
-        single_block_list, block_date = get_user_block_list(user)
-        if ident_user in single_block_list:
-            blocked_by_list.append(user)
-            logger.info("Block match found for: " + ident)
-    return blocked_by_list, block_date
+    if os.path.exists(users_db_path):
+        # Connect to the SQLite database
+        conn = sqlite3.connect(users_db_path)
+        cursor = conn.cursor()
+
+        # Execute the SQL query to get all the user_dids that have the specified did in their blocklist
+        cursor.execute('SELECT user_did, block_date FROM blocklists WHERE blocked_did = ?', (ident,))
+        result = cursor.fetchall()
+
+        # Close the connection to the database
+        conn.close()
+
+        if result:
+            # Extract the user_dids from the query result
+            user_dids = [item[0] for item in result]
+            block_dates = [item[1] for item in result]
+            count = len(user_dids)
+
+            resolved_handles = []
+
+            for user_did in user_dids:
+                handle = resolve_did(user_did)
+                resolved_handles.append(handle)
+
+            return resolved_handles, block_dates, count
+        else:
+            error_text = "error"
+            logger.warning("Blocklist db empty.")
+            return error_text, error_text, 0
+    else:
+        logger.error("No db to get data.")
+        error_text = "error"
+        return error_text, error_text, 0
+
+
+def update_blocklist_table(ident):
+    blocked_by_list, block_date = get_user_block_list(ident)
+    # all_dids = get_all_users_db(get_dids=get_dids)
+
+    if not blocked_by_list:
+        return
+
+    # resolve_handles = []
+    # for  user_did in blocked_by_list:
+    #     handle = resolve_did(user_did)
+    #     resolve_handles.append(handle)
+
+    # Connect to the SQLite database
+    conn = sqlite3.connect(users_db_path)
+    cursor = conn.cursor()
+
+    # Create the blocklists table if it doesn't exist
+    # create_blocklist_table()
+
+    # for ident in all_dids:
+    #     blocked_by_list, block_date = get_user_block_list(ident)
+
+
+    # Prepare the data to be inserted into the database
+    data = []
+    for blocked_did, date in zip(blocked_by_list, block_date):
+        data.append((ident, blocked_did, date))
+
+    # Insert the data into the blocklists table
+    cursor.executemany('INSERT INTO blocklists (user_did, blocked_did, block_date) VALUES (?, ?, ?)', data)
+
+    # Commit the changes and close the connection to the database
+    conn.commit()
+    conn.close()
+
+
+def get_single_users_blocks_db(get_dids=False):
+    truncate_blocklists_table()
+    all_dids = get_all_users_db(get_dids=get_dids)
+    create_blocklist_table()
+
+    for ident in all_dids:
+        user_did = ident[0]
+        update_blocklist_table(user_did)
 
 
 def get_user_block_list(ident):
@@ -436,10 +508,59 @@ def create_user_cache_database():
         logger.warning(f"Database '{users_db_filename}' already exists. Skipping creation.")
 
 
+def create_blocklist_table():
+    if os.path.exists(users_db_path):
+        conn = sqlite3.connect(users_db_path)
+        cursor = conn.cursor()
+
+        # Check if the "blocklists" table already exists
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='blocklists'")
+        table_exists = cursor.fetchone()
+
+    if not table_exists:
+        logger.info("Creating blocklist table.")
+        # Connect to the SQLite database
+        conn = sqlite3.connect(users_db_path)
+        cursor = conn.cursor()
+
+        # Define the schema for the new table
+        schema = '''
+            CREATE TABLE IF NOT EXISTS blocklists (
+                user_did TEXT,
+                blocked_did TEXT,
+                block_date TEXT,
+                PRIMARY KEY (user_did, blocked_did)
+            )
+        '''
+
+        cursor.execute(schema)
+
+        # Create an index on the user_did column
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_user_did ON blocklists (user_did)')
+
+        # Create an index on the blocked_did column
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_blocked_did ON blocklists (blocked_did)')
+
+        # Execute the CREATE TABLE query to create the new table
+
+        conn.commit()
+        conn.close()
+    else:
+        logger.info("'Blocklist' table already exists. Skipping creation.")
+
+
 def truncate_users_table():
     conn = sqlite3.connect(users_db_path)
     cursor = conn.cursor()
     cursor.execute('DELETE FROM users')
+    conn.commit()
+    conn.close()
+
+
+def truncate_blocklists_table():
+    conn = sqlite3.connect(users_db_path)
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM blocklists')
     conn.commit()
     conn.close()
 
@@ -459,17 +580,23 @@ def count_users_table():
     return count
 
 
-create_user_cache_database()
 ip_address = config.get("server", "ip")
 port_address = config.get("server", "port")
 
 # python app.py --update-users-db // command to update users db
 # python app.py --fetch-users-count // command to get current count in db
+# python app.py --update-blocklists-db // command to update all users blocklists
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='ClearSky Web Server')
     parser.add_argument('--update-users-db', action='store_true', help='Update the database with all users')
     parser.add_argument('--fetch-users-count', action='store_true', help='Fetch the count of users')
+    parser.add_argument('--update-blocklists-db', action='store_true', help='Fetch the count of users')
     args = parser.parse_args()
+
+    if os.path.exists(users_db_path):
+        create_user_cache_database()
+        create_blocklist_table()
 
     if args.update_users_db:
         # Call the function to update the database with all users
@@ -482,6 +609,10 @@ if __name__ == '__main__':
         count = count_users_table()
         logger.info(f"Total users in the database: {count}")
         sys.exit()
+    elif args.update_blocklists_db:
+        logger.info("Blocklists db update requested.")
+        get_single_users_blocks_db(True)
+        logger.info("Blocklist db update finished.")
     else:
         logger.info("Web server starting at: " + ip_address + ":" + port_address)
         serve(app, host=ip_address, port=port_address)
