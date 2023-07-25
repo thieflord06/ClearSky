@@ -672,10 +672,16 @@ if __name__ == '__main__':
         logger.info("Truncate users table finished.")
     elif args.delete_database:
         logger.warning("Delete database requested.")
+        reference = "sudo delete database"
         confirmation = input("Are you sure you want to delete? (type: 'sudo delete database' to confirm > ")
-        if confirmation == "sudo delete database":
-            while os.path.exists(users_db_path):
-                os.remove(users_db_path)
+        if confirmation.lower() == reference:
+            if os.path.exists(users_db_path):
+                try:
+                    os.remove(users_db_path)
+                except PermissionError:
+                    logger.warning("File in use close out process.")
+                    sys.exit()
+        logger.debug(confirmation)
         logger.warning("No confirmation for: delete database. Command not executed.")
     else:
         logger.info("Web server starting at: " + ip_address + ":" + port_address)
