@@ -523,7 +523,7 @@ def create_blocklist_table():
         conn.commit()
         conn.close()
     else:
-        logger.info("'Blocklist' table already exists. Skipping creation.")
+        logger.warning("'Blocklist' table already exists. Skipping creation.")
 
 
 def count_users_table():
@@ -588,49 +588,48 @@ def get_all_users_db(run_update=False, get_dids=False):
 
 def update_blocklist_table(ident):
     blocked_by_list, block_date = get_user_block_list(ident)
-    # all_dids = get_all_users_db(get_dids=get_dids)
 
     if not blocked_by_list:
         return
-
-    # resolve_handles = []
-    # for  user_did in blocked_by_list:
-    #     handle = resolve_did(user_did)
-    #     resolve_handles.append(handle)
 
     # Connect to the SQLite database
     conn = sqlite3.connect(users_db_path)
     cursor = conn.cursor()
 
-    # Create the blocklists table if it doesn't exist
-    # create_blocklist_table()
-
-    # for ident in all_dids:
-    #     blocked_by_list, block_date = get_user_block_list(ident)
-
-    # Check if each record already exists in the blocklists table
-    # existing_records = set()
-    # cursor.execute('SELECT user_did, blocked_did FROM blocklists')
-    # for row in cursor.fetchall():
-    #     existing_records.add((row[0], row[1]))
+    # Retrieve the existing blocklist entries for the specified ident
+    cursor.execute('SELECT blocked_did, block_date FROM blocklists WHERE user_did = ?', (ident,))
+    existing_records = cursor.fetchall()
+    existing_blocklist_entries = set(existing_records)
 
     # Prepare the data to be inserted into the database
     data = []
     for blocked_did, date in zip(blocked_by_list, block_date):
         data.append((ident, blocked_did, date))
 
-    # Insert only the records that do not already exist in the table
-    # data_to_insert = []
-    # for record in data:
-    #     if record not in existing_records:
-    #         data_to_insert.append(record)
+    # Convert the new blocklist entries to a set for comparison
+    new_blocklist_entries = set(data)
 
-    # Insert the data into the blocklists table
-    cursor.executemany('INSERT OR IGNORE INTO blocklists (user_did, blocked_did, block_date) VALUES (?, ?, ?)', data)
+    # Check if there are differences between the existing and new blocklist entries
+    if existing_blocklist_entries != new_blocklist_entries:
+        # Begin the transaction
+        conn.execute('BEGIN TRANSACTION')
 
-    # Commit the changes and close the connection to the database
-    conn.commit()
-    conn.close()
+        try:
+            # Delete existing blocklist entries for the specified ident
+            cursor.execute('DELETE FROM blocklists WHERE user_did = ?', (ident,))
+
+            # Insert the new blocklist entries
+            cursor.executemany('INSERT INTO blocklists (user_did, blocked_did, block_date) VALUES (?, ?, ?)', data)
+
+            # Commit the transaction
+            conn.commit()
+        except Exception as e:
+            # Rollback the transaction if an error occurs
+            conn.rollback()
+            raise e
+        finally:
+            # Close the connection to the database
+            conn.close()
 
 
 def truncate_users_table():
@@ -669,12 +668,14 @@ port_address = config.get("server", "port")
 # python app.py --truncate-blocklists_table-db // command to update all users blocklists
 # python app.py --truncate-users_table-db // command to update all users blocklists
 # python app.py --delete-database // command to delete entire database
+# python app.py --retrieve-blocklists-db // initial/re-initialize get for blocklists database
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='ClearSky Web Server: ' + version)
     parser.add_argument('--update-users-db', action='store_true', help='Update the database with all users')
     parser.add_argument('--fetch-users-count', action='store_true', help='Fetch the count of users')
-    parser.add_argument('--update-blocklists-db', action='store_true', help='update the database with all blocks')
+    parser.add_argument('--update-blocklists-db', action='store_true', help='Update the blocklists table')
+    parser.add_argument('--retrieve-blocklists-db', action='store_true', help='Initial/re-initialize get for blocklists database')
     parser.add_argument('--truncate-blocklists_table-db', action='store_true', help='delete blocklists table')
     parser.add_argument('--truncate-users_table-db', action='store_true', help='delete users table')
     parser.add_argument('--delete-database', action='store_true', help='delete entire database')
@@ -691,10 +692,11 @@ if __name__ == '__main__':
         count = count_users_table()
         logger.info(f"Total users in the database: {count}")
         sys.exit()
-    elif args.update_blocklists_db:
-        logger.info("Blocklists db update requested.")
+    elif args.retrieve_blocklists_db:
+        logger.info("Get Blocklists db requested.")
+        truncate_blocklists_table()
         get_single_users_blocks_db(True)
-        logger.info("Blocklist db update finished.")
+        logger.info("Blocklist db fetch finished.")
     elif args.truncate_blocklists_table_db:
         logger.warning("Truncate blocklists table requested.")
         truncate_blocklists_table()
@@ -703,6 +705,10 @@ if __name__ == '__main__':
         logger.warning("Truncate users table requested.")
         truncate_users_table()
         logger.info("Truncate users table finished.")
+    elif args.update_blocklists_db:
+        logger.info("Update Blocklists db requested.")
+        get_single_users_blocks_db()
+        logger.info("Update Blocklists db finished.")
     elif args.delete_database:
         logger.warning("Delete database requested.")
         reference = "sudo delete database"
