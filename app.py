@@ -204,7 +204,7 @@ def selection_handle():
         if "did" in identifier:
             identifier = resolve_did(identifier)
 
-        if not []:
+        if type(blocks) != list:
             blocks = ["None"]
             dates = [datetime.now().date()]
             count = 0
@@ -668,6 +668,7 @@ port_address = config.get("server", "port")
 # python app.py --update-blocklists-db // command to update all users blocklists
 # python app.py --truncate-blocklists_table-db // command to update all users blocklists
 # python app.py --truncate-users_table-db // command to update all users blocklists
+# python app.py --delete-database // command to delete entire database
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='ClearSky Web Server: ' + version)
