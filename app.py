@@ -379,7 +379,7 @@ def get_single_user_blocks(ident):
         else:
             no_blocks = ident + ": has not been blocked by anyone."
             date = datetime.now().date()
-            return list(no_blocks), date, len(no_blocks) - 1
+            return no_blocks, date, len(no_blocks) - 1
             # error_text = "error"
             # logger.warning("Blocklist db empty.")
             # return error_text, error_text, 0
