@@ -153,6 +153,8 @@ def selection_handle():
         # return render_template('result.html', result=result)
         return jsonify({"result": result})
     elif selection == "3":
+        if "did" in identifier:
+            identifier = resolve_did(identifier)
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Block list requested for: " + identifier)
         blocklist, count = get_user_block_list_html(identifier)
 
@@ -168,12 +170,23 @@ def selection_handle():
     elif selection == "5":
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Block list requested for: " + identifier)
         blocks, dates, count = get_single_user_blocks(identifier)
+        if "did" in identifier:
+            identifier = resolve_did(identifier)
+
+        response_data = {
+            "who_block_list": blocks,
+            "user": identifier,
+            "date": dates,
+            "counts": count
+        }
+
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Blocklist Request Result: " + identifier + " | " + "Block by: " + str(blocks) + " :: " + "Total count: " + str(count))
         # count = len(blocks)
         # blocks = None
         # count = 1
         # return render_template('blocklist.html', user=identifier, block_list=blocks, count=count)
-        return jsonify({"user": identifier, "block_list": blocks, "count": count})
+        return jsonify(response_data)
+        # return jsonify({"user": identifier, "block_list": blocks, "count": count})
 
 
 def get_user_block_list_html(ident):

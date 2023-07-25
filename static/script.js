@@ -128,6 +128,31 @@ document.addEventListener('DOMContentLoaded', function() {
             hideLoadingScreen();
             showResultContainer();
         }
+        else if (data.who_block_list) {
+            const blockListData = document.getElementById('block-list-data');
+            const userHeading = document.getElementById('user-heading');
+            const blockCount = document.getElementById('block-count');
+            const fragment = document.createDocumentFragment();
+
+            userHeading.textContent = 'For User: ' + data.user;
+            blockCount.textContent = `Total Users that block this account: ${data.counts}`;
+
+            blockListData.innerHTML = '';
+
+        data.who_block_list.forEach((item, index) => {
+            const timestamp = new Date(data.date[index]);
+            const formattedDate = timestamp.toLocaleDateString('en-US', { timeZone: 'UTC' });
+            const blockItem = document.createElement('li');
+            console.log(data.who_block_list);
+            console.log(item)
+
+            blockItem.innerHTML = `Handle: ${item}, Date: ${formattedDate}`;
+            blockListData.appendChild(blockItem);
+        });
+
+                hideLoadingScreen();
+                showBlockListContainer();
+        }
         else {
             const noResultParagraph = document.createElement('p');
             noResultParagraph.textContent = 'No result found.';
