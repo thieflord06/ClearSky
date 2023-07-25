@@ -630,12 +630,16 @@ port_address = config.get("server", "port")
 # python app.py --update-users-db // command to update users db
 # python app.py --fetch-users-count // command to get current count in db
 # python app.py --update-blocklists-db // command to update all users blocklists
+# python app.py --truncate-blocklists_table-db // command to update all users blocklists
+# python app.py --truncate-users_table-db // command to update all users blocklists
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='ClearSky Web Server')
+    parser = argparse.ArgumentParser(description='ClearSky Web Server: ' + version)
     parser.add_argument('--update-users-db', action='store_true', help='Update the database with all users')
     parser.add_argument('--fetch-users-count', action='store_true', help='Fetch the count of users')
-    parser.add_argument('--update-blocklists-db', action='store_true', help='Fetch the count of users')
+    parser.add_argument('--truncate-blocklists_table-db', action='store_true', help='delete blocklists table')
+    parser.add_argument('--truncate-users_table-db', action='store_true', help='delete users table')
+    parser.add_argument('--delete-database', action='store_true', help='delete entire database')
     args = parser.parse_args()
 
     if os.path.exists(users_db_path):
@@ -657,6 +661,20 @@ if __name__ == '__main__':
         logger.info("Blocklists db update requested.")
         get_single_users_blocks_db(True)
         logger.info("Blocklist db update finished.")
+    elif args.truncate_blocklists_table_db:
+        logger.warning("Truncate blocklists table requested.")
+        truncate_blocklists_table()
+        logger.info("Truncate blocklists table finished.")
+    elif args.truncate_users_table_db:
+        logger.warning("Truncate users table requested.")
+        truncate_users_table()
+        logger.info("Truncate users table finished.")
+    elif args.delete_database:
+        logger.warning("Delete database requested.")
+        confirmation = input("Are you sure you want to delete? (type: 'sudo delete database' to confirm > ")
+        if confirmation == "sudo delete database":
+            while os.path.exists(users_db_path):
+                os.remove(users_db_path)
     else:
         logger.info("Web server starting at: " + ip_address + ":" + port_address)
         serve(app, host=ip_address, port=port_address)
