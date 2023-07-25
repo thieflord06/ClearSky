@@ -12,6 +12,7 @@ import platform
 import sqlite3
 import argparse
 from tqdm import tqdm
+import threading
 # ======================================================================================================================
 # ============================= Pre-checks // Set up logging and debugging information =================================
 # Checks if .ini file exits locally and exits if it doesn't
@@ -89,6 +90,34 @@ app.secret_key = 'your-secret-key'
 users_db_folder_path = config.get("database", "users_db_path")
 users_db_filename = 'users_cache.db'
 users_db_path = users_db_folder_path + users_db_filename
+
+
+def start_thread():
+    # Start the command handling thread
+    command_thread = threading.Thread(target=handle_commands)
+    command_thread.daemon = True
+    command_thread.start()
+
+
+def handle_commands():
+    while True:
+        try:
+            command = input("Enter a command: ").strip().lower()
+
+            # Handle different commands
+            if command == 'exit':
+                sys.exit()
+            elif command == 'create database':
+                create_user_cache_database()
+            elif command == 'delete database':
+                logger.warning("Delete database requested.")
+                delete_database()
+            else:
+                logger.warning("Invalid command. Try again.")
+        except EOFError:
+            # EOFError will be raised when the user presses Ctrl+D (Unix) or Ctrl+Z (Windows) to signal end-of-file.
+            # If you want to handle this behavior, you can add specific logic here.
+            break
 
 
 # ======================================================================================================================
@@ -428,98 +457,6 @@ def get_user_block_list(ident):
 
 # ======================================================================================================================
 # ========================================= database handling functions ================================================
-def update_blocklist_table(ident):
-    blocked_by_list, block_date = get_user_block_list(ident)
-    # all_dids = get_all_users_db(get_dids=get_dids)
-
-    if not blocked_by_list:
-        return
-
-    # resolve_handles = []
-    # for  user_did in blocked_by_list:
-    #     handle = resolve_did(user_did)
-    #     resolve_handles.append(handle)
-
-    # Connect to the SQLite database
-    conn = sqlite3.connect(users_db_path)
-    cursor = conn.cursor()
-
-    # Create the blocklists table if it doesn't exist
-    # create_blocklist_table()
-
-    # for ident in all_dids:
-    #     blocked_by_list, block_date = get_user_block_list(ident)
-
-    # Check if each record already exists in the blocklists table
-    # existing_records = set()
-    # cursor.execute('SELECT user_did, blocked_did FROM blocklists')
-    # for row in cursor.fetchall():
-    #     existing_records.add((row[0], row[1]))
-
-    # Prepare the data to be inserted into the database
-    data = []
-    for blocked_did, date in zip(blocked_by_list, block_date):
-        data.append((ident, blocked_did, date))
-
-    # Insert only the records that do not already exist in the table
-    # data_to_insert = []
-    # for record in data:
-    #     if record not in existing_records:
-    #         data_to_insert.append(record)
-
-    # Insert the data into the blocklists table
-    cursor.executemany('INSERT OR IGNORE INTO blocklists (user_did, blocked_did, block_date) VALUES (?, ?, ?)', data)
-
-    # Commit the changes and close the connection to the database
-    conn.commit()
-    conn.close()
-
-
-def get_all_users_db(run_update=False, get_dids=False):
-    if not run_update:
-        if os.path.exists(users_db_path):
-            # Attempt to fetch data from the cache (SQLite database)
-            conn = sqlite3.connect(users_db_path)
-            cursor = conn.cursor()
-
-            cursor.execute('SELECT did FROM users')
-            cached_users = cursor.fetchall()
-            conn.close()  # Left off at logic for getting all users and then adding it to db
-        if get_dids:
-            return cached_users
-        elif cached_users:
-            records = count_users_table()
-            return records
-            # If data is found in the cache, return it directly
-
-    records = get_all_users()
-
-    # Clear the existing data by truncating the table
-    # if run_update:
-         # truncate_users_table()
-
-    # Store the fetched users data in the cache (SQLite database)
-    conn = sqlite3.connect(users_db_path)
-    cursor = conn.cursor()
-
-    cursor.executemany('INSERT OR IGNORE INTO users (did) VALUES (?)', records)
-    conn.commit()
-    conn.close()
-
-    logger.debug(str(records))
-    return len(records)
-
-
-def get_single_users_blocks_db(get_dids=False):
-    # truncate_blocklists_table()
-    all_dids = get_all_users_db(get_dids=get_dids)
-    create_blocklist_table()
-
-    for ident in tqdm(all_dids, desc="Updating blocklists", unit="DID", ncols=100):
-        user_did = ident[0]
-        update_blocklist_table(user_did)
-
-
 def create_user_cache_database():
     logger.debug(users_db_path)
 
@@ -569,8 +506,7 @@ def create_blocklist_table():
             CREATE TABLE IF NOT EXISTS blocklists (
                 user_did TEXT,
                 blocked_did TEXT,
-                block_date TEXT,
-                # PRIMARY KEY (user_did, blocked_did)
+                block_date TEXT
             )
         '''
 
@@ -590,6 +526,113 @@ def create_blocklist_table():
         logger.info("'Blocklist' table already exists. Skipping creation.")
 
 
+def count_users_table():
+    # Connect to the SQLite database
+    conn = sqlite3.connect(users_db_path)
+    cursor = conn.cursor()
+
+    # Execute the SQL query to count the rows in the "users" table
+    cursor.execute('SELECT COUNT(*) FROM users')
+    count = cursor.fetchone()[0]
+
+    # Close the connection to the database
+    conn.close()
+
+    return count
+
+
+def get_single_users_blocks_db(get_dids=False):
+    # truncate_blocklists_table()
+    all_dids = get_all_users_db(get_dids=get_dids)
+    create_blocklist_table()
+
+    for ident in tqdm(all_dids, desc="Updating blocklists", unit="DID", ncols=100):
+        user_did = ident[0]
+        update_blocklist_table(user_did)
+
+
+def get_all_users_db(run_update=False, get_dids=False):
+    if not run_update:
+        if os.path.exists(users_db_path):
+            # Attempt to fetch data from the cache (SQLite database)
+            conn = sqlite3.connect(users_db_path)
+            cursor = conn.cursor()
+
+            cursor.execute('SELECT did FROM users')
+            cached_users = cursor.fetchall()
+            conn.close()  # Left off at logic for getting all users and then adding it to db
+        if get_dids:
+            return cached_users
+        elif cached_users:
+            records = count_users_table()
+            return records
+            # If data is found in the cache, return it directly
+
+    records = get_all_users()
+
+    # Clear the existing data by truncating the table
+    # if run_update:
+         # truncate_users_table()
+
+    # Store the fetched users data in the cache (SQLite database)
+    conn = sqlite3.connect(users_db_path)
+    cursor = conn.cursor()
+
+    cursor.executemany('INSERT OR IGNORE INTO users (did) VALUES (?)', records)
+    conn.commit()
+    conn.close()
+
+    logger.debug(str(records))
+    return len(records)
+
+
+def update_blocklist_table(ident):
+    blocked_by_list, block_date = get_user_block_list(ident)
+    # all_dids = get_all_users_db(get_dids=get_dids)
+
+    if not blocked_by_list:
+        return
+
+    # resolve_handles = []
+    # for  user_did in blocked_by_list:
+    #     handle = resolve_did(user_did)
+    #     resolve_handles.append(handle)
+
+    # Connect to the SQLite database
+    conn = sqlite3.connect(users_db_path)
+    cursor = conn.cursor()
+
+    # Create the blocklists table if it doesn't exist
+    # create_blocklist_table()
+
+    # for ident in all_dids:
+    #     blocked_by_list, block_date = get_user_block_list(ident)
+
+    # Check if each record already exists in the blocklists table
+    # existing_records = set()
+    # cursor.execute('SELECT user_did, blocked_did FROM blocklists')
+    # for row in cursor.fetchall():
+    #     existing_records.add((row[0], row[1]))
+
+    # Prepare the data to be inserted into the database
+    data = []
+    for blocked_did, date in zip(blocked_by_list, block_date):
+        data.append((ident, blocked_did, date))
+
+    # Insert only the records that do not already exist in the table
+    # data_to_insert = []
+    # for record in data:
+    #     if record not in existing_records:
+    #         data_to_insert.append(record)
+
+    # Insert the data into the blocklists table
+    cursor.executemany('INSERT OR IGNORE INTO blocklists (user_did, blocked_did, block_date) VALUES (?, ?, ?)', data)
+
+    # Commit the changes and close the connection to the database
+    conn.commit()
+    conn.close()
+
+
 def truncate_users_table():
     conn = sqlite3.connect(users_db_path)
     cursor = conn.cursor()
@@ -606,26 +649,24 @@ def truncate_blocklists_table():
     conn.close()
 
 
-def count_users_table():
-    # Connect to the SQLite database
-    conn = sqlite3.connect(users_db_path)
-    cursor = conn.cursor()
-
-    # Execute the SQL query to count the rows in the "users" table
-    cursor.execute('SELECT COUNT(*) FROM users')
-    count = cursor.fetchone()[0]
-
-    # Close the connection to the database
-    conn.close()
-
-    return count
+def delete_database():
+    if os.path.exists(users_db_path):
+        try:
+            os.remove(users_db_path)
+        except PermissionError:
+            logger.warning("File in use close out process.")
+            sys.exit()
 
 
 # ======================================================================================================================
 # =============================================== Main Logic ===========================================================
-
 ip_address = config.get("server", "ip")
 port_address = config.get("server", "port")
+
+if os.path.exists(users_db_path):
+    create_user_cache_database()
+    create_blocklist_table()
+
 
 # python app.py --update-users-db // command to update users db
 # python app.py --fetch-users-count // command to get current count in db
@@ -642,10 +683,6 @@ if __name__ == '__main__':
     parser.add_argument('--truncate-users_table-db', action='store_true', help='delete users table')
     parser.add_argument('--delete-database', action='store_true', help='delete entire database')
     args = parser.parse_args()
-
-    if os.path.exists(users_db_path):
-        create_user_cache_database()
-        create_blocklist_table()
 
     if args.update_users_db:
         # Call the function to update the database with all users
@@ -675,14 +712,11 @@ if __name__ == '__main__':
         reference = "sudo delete database"
         confirmation = input("Are you sure you want to delete? (type: 'sudo delete database' to confirm > ")
         if confirmation.lower() == reference:
-            if os.path.exists(users_db_path):
-                try:
-                    os.remove(users_db_path)
-                except PermissionError:
-                    logger.warning("File in use close out process.")
-                    sys.exit()
+            delete_database()
         logger.debug(confirmation)
         logger.warning("No confirmation for: delete database. Command not executed.")
     else:
+        start_thread()
+
         logger.info("Web server starting at: " + ip_address + ":" + port_address)
         serve(app, host=ip_address, port=port_address)
