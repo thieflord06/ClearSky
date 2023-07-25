@@ -637,6 +637,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='ClearSky Web Server: ' + version)
     parser.add_argument('--update-users-db', action='store_true', help='Update the database with all users')
     parser.add_argument('--fetch-users-count', action='store_true', help='Fetch the count of users')
+    parser.add_argument('--update-blocklists-db', action='store_true', help='update the database with all blocks')
     parser.add_argument('--truncate-blocklists_table-db', action='store_true', help='delete blocklists table')
     parser.add_argument('--truncate-users_table-db', action='store_true', help='delete users table')
     parser.add_argument('--delete-database', action='store_true', help='delete entire database')
@@ -657,7 +658,7 @@ if __name__ == '__main__':
         count = count_users_table()
         logger.info(f"Total users in the database: {count}")
         sys.exit()
-    elif args.update_blocklists_table_db:
+    elif args.update_blocklists_db:
         logger.info("Blocklists db update requested.")
         get_single_users_blocks_db(True)
         logger.info("Blocklist db update finished.")
