@@ -330,7 +330,7 @@ def get_all_users_db(run_update=False, get_dids=False):
     records = get_all_users()
 
     # Clear the existing data by truncating the table
-    if run_update:
+    # if run_update:
          # truncate_users_table()
 
     # Store the fetched users data in the cache (SQLite database)
