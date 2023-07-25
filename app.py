@@ -178,6 +178,7 @@ def selection_handle():
         if not []:
             blocks = ["None"]
             dates = [datetime.now().date()]
+            count = 0
         response_data = {
             "who_block_list": blocks,
             "user": identifier,
