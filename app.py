@@ -541,9 +541,8 @@ def count_users_table():
     return count
 
 
-def get_single_users_blocks_db(get_dids=False):
-    # truncate_blocklists_table()
-    all_dids = get_all_users_db(get_dids=get_dids)
+def get_single_users_blocks_db(run_update=False, get_dids=False):
+    all_dids = get_all_users_db(run_update=run_update, get_dids=get_dids)
     create_blocklist_table()
 
     for ident in tqdm(all_dids, desc="Updating blocklists", unit="DID", ncols=100):
@@ -641,11 +640,13 @@ def truncate_users_table():
 
 
 def truncate_blocklists_table():
+    logger.warning("Truncating blocklists table.")
     conn = sqlite3.connect(users_db_path)
     cursor = conn.cursor()
     cursor.execute('DELETE FROM blocklists')
     conn.commit()
     conn.close()
+    logger.info("Blocklists truncate complete.")
 
 
 def delete_database():
@@ -695,7 +696,7 @@ if __name__ == '__main__':
     elif args.retrieve_blocklists_db:
         logger.info("Get Blocklists db requested.")
         truncate_blocklists_table()
-        get_single_users_blocks_db(True)
+        get_single_users_blocks_db(run_update=True, get_dids=False)
         logger.info("Blocklist db fetch finished.")
     elif args.truncate_blocklists_table_db:
         logger.warning("Truncate blocklists table requested.")
@@ -707,7 +708,7 @@ if __name__ == '__main__':
         logger.info("Truncate users table finished.")
     elif args.update_blocklists_db:
         logger.info("Update Blocklists db requested.")
-        get_single_users_blocks_db()
+        get_single_users_blocks_db(run_update=False, get_dids=True)
         logger.info("Update Blocklists db finished.")
     elif args.delete_database:
         logger.warning("Delete database requested.")
