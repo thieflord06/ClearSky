@@ -175,6 +175,8 @@ def selection_handle():
         if "did" in identifier:
             identifier = resolve_did(identifier)
 
+        if not list(blocks):
+            blocks = ["None"]
         response_data = {
             "who_block_list": blocks,
             "user": identifier,
@@ -377,6 +379,7 @@ def get_single_user_blocks(ident):
 
             return resolved_handles, block_dates, count
         else:
+            ident = resolve_handle(ident)
             no_blocks = ident + ": has not been blocked by anyone."
             date = datetime.now().date()
             return no_blocks, date, len(no_blocks) - 1
