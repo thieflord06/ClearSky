@@ -331,13 +331,13 @@ def get_all_users_db(run_update=False, get_dids=False):
 
     # Clear the existing data by truncating the table
     if run_update:
-        truncate_users_table()
+        # truncate_users_table()
 
     # Store the fetched users data in the cache (SQLite database)
     conn = sqlite3.connect(users_db_path)
     cursor = conn.cursor()
 
-    cursor.executemany('INSERT INTO users (did) VALUES (?)', records)
+    cursor.executemany('INSERT OR IGNORE INTO users (did) VALUES (?)', records)
     conn.commit()
     conn.close()
 
@@ -442,7 +442,7 @@ def update_blocklist_table(ident):
 
 
 def get_single_users_blocks_db(get_dids=False):
-    truncate_blocklists_table()
+    # truncate_blocklists_table()
     all_dids = get_all_users_db(get_dids=get_dids)
     create_blocklist_table()
 
