@@ -66,7 +66,7 @@ logger = logging.getLogger()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "1.0"
+version = "1.0.1"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -168,6 +168,8 @@ def selection_handle():
         # return render_template('total_users.html', count=count)
         return jsonify({"count": count})
     elif selection == "5":
+        if "did" not in identifier:
+            identifier = resolve_handle(identifier)
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Block list requested for: " + identifier)
         blocks, dates, count = get_single_user_blocks(identifier)
         if "did" in identifier:
