@@ -663,11 +663,6 @@ def delete_database():
 ip_address = config.get("server", "ip")
 port_address = config.get("server", "port")
 
-if os.path.exists(users_db_path):
-    create_user_cache_database()
-    create_blocklist_table()
-
-
 # python app.py --update-users-db // command to update users db
 # python app.py --fetch-users-count // command to get current count in db
 # python app.py --update-blocklists-db // command to update all users blocklists
@@ -717,6 +712,10 @@ if __name__ == '__main__':
         logger.warning("No confirmation for: delete database. Command not executed.")
     else:
         start_thread()
+
+        if os.path.exists(users_db_folder_path):
+            create_user_cache_database()
+            create_blocklist_table()
 
         logger.info("Web server starting at: " + ip_address + ":" + port_address)
         serve(app, host=ip_address, port=port_address)
