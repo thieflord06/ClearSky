@@ -354,7 +354,7 @@ def get_all_users():
 def get_all_users_count():
     users = get_all_users_db()
     if not isinstance(users, int):
-        return users
+        return len(users)
     # formatted_count = "{:,}".format(users)
     return users
     # return formatted_count
@@ -582,7 +582,7 @@ def get_all_users_db(run_update=False, get_dids=False):
     conn.close()
 
     logger.debug(str(records))
-    return len(records)
+    return records
 
 
 def update_blocklist_table(ident):
@@ -632,11 +632,13 @@ def update_blocklist_table(ident):
 
 
 def truncate_users_table():
+    logger.warning("Truncating Users table.")
     conn = sqlite3.connect(users_db_path)
     cursor = conn.cursor()
     cursor.execute('DELETE FROM users')
     conn.commit()
     conn.close()
+    logger.info("Users table truncate complete.")
 
 
 def truncate_blocklists_table():
@@ -653,6 +655,7 @@ def delete_database():
     if os.path.exists(users_db_path):
         try:
             os.remove(users_db_path)
+            logger.info("Database deleted.")
         except PermissionError:
             logger.warning("File in use close out process.")
             sys.exit()
@@ -696,6 +699,7 @@ if __name__ == '__main__':
     elif args.retrieve_blocklists_db:
         logger.info("Get Blocklists db requested.")
         truncate_blocklists_table()
+        truncate_users_table()
         get_single_users_blocks_db(run_update=True, get_dids=False)
         logger.info("Blocklist db fetch finished.")
     elif args.truncate_blocklists_table_db:
