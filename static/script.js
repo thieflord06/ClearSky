@@ -143,8 +143,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const timestamp = new Date(data.date[index]);
             const formattedDate = timestamp.toLocaleDateString('en-US', { timeZone: 'UTC' });
             const blockItem = document.createElement('li');
-            console.log(data.who_block_list);
-            console.log(item)
+//            console.log(data.who_block_list);
+//            console.log(item)
 
             blockItem.innerHTML = `Handle: ${item}, Date: ${formattedDate}`;
             blockListData.appendChild(blockItem);
@@ -182,30 +182,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
         optionSelected = document.getElementById("selection").value;
 
-        if (selection.value === '5') {
-            // If Option 5 is selected, redirect to the "Coming Soon" page
-//            window.location.href = '/coming_soon';
-            fetch('/selection_handle', {
-                method: 'POST',
-                body: new FormData(selectionForm)
-            })
-            .then(response => {
-                // Check if the response status is successful (HTTP 200-299)
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                hideBaseContainer();
-                hideIndexContainer();
-                showComingSoonContainer();
-//                return; // Return to prevent further execution
-            })
-            .catch(error => {
-                // Handle any errors here
-                console.error('Error submitting form:', error);
-                // You can show an error message to the user if needed
-            });
-            return; // Return to prevent further execution
-        }
+//        if (selection.value === '5') {
+//            // If Option 5 is selected, redirect to the "Coming Soon" page
+////            window.location.href = '/coming_soon';
+//            fetch('/selection_handle', {
+//                method: 'POST',
+//                body: new FormData(selectionForm)
+//            })
+//            .then(response => {
+//                // Check if the response status is successful (HTTP 200-299)
+//                if (!response.ok) {
+//                    throw new Error('Network response was not ok');
+//                }
+//                hideBaseContainer();
+//                hideIndexContainer();
+//                showComingSoonContainer();
+////                return; // Return to prevent further execution
+//            })
+//            .catch(error => {
+//                // Handle any errors here
+//                console.error('Error submitting form:', error);
+//                // You can show an error message to the user if needed
+//            });
+//            return; // Return to prevent further execution
+//        }
 //        if (optionSelected === "5") {
 //            var confirmed = window.confirm("This will take an extremely long time! Do you want to proceed?");
 ////            alert("This will take a long time!");
