@@ -657,7 +657,7 @@ if __name__ == '__main__':
         count = count_users_table()
         logger.info(f"Total users in the database: {count}")
         sys.exit()
-    elif args.update_blocklists_db:
+    elif args.update_blocklists_table_db:
         logger.info("Blocklists db update requested.")
         get_single_users_blocks_db(True)
         logger.info("Blocklist db update finished.")
@@ -675,6 +675,7 @@ if __name__ == '__main__':
         if confirmation == "sudo delete database":
             while os.path.exists(users_db_path):
                 os.remove(users_db_path)
+        logger.warning("No confirmation for: delete database. Command not executed.")
     else:
         logger.info("Web server starting at: " + ip_address + ":" + port_address)
         serve(app, host=ip_address, port=port_address)
