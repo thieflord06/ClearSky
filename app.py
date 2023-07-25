@@ -222,7 +222,7 @@ def get_user_block_list_html(ident):
 
 
 # ======================================================================================================================
-# ======================================================= Logic ========================================================
+# ============================================= Main functions =========================================================
 def generate_session_number():
 
     return str(uuid.uuid4().hex)
@@ -241,6 +241,8 @@ def get_ip():  # Get IP address of session request
     return ip
 
 
+# ======================================================================================================================
+# ============================================= On-Wire requests =======================================================
 def resolve_handle(info):  # Take Handle and get DID
     base_url = "https://bsky.social/xrpc/"
     url = urllib.parse.urljoin(base_url, "com.atproto.identity.resolveHandle")
@@ -279,6 +281,16 @@ def resolve_did(did):  # Take DID and get handle
         print("Error:", get_response.status_code)
 
 
+def process_did_list_to_handle(did_list):
+    handle_list = []
+    for item in did_list:
+        handle_list.append(resolve_did(item))
+
+    return handle_list
+
+
+# ======================================================================================================================
+# ============================================= Features functions =====================================================
 def get_all_users():
     base_url = "https://bsky.social/xrpc/"
     limit = 1000
@@ -308,41 +320,6 @@ def get_all_users():
             if not cursor:
                 break
     return records
-
-
-def get_all_users_db(run_update=False, get_dids=False):
-    if not run_update:
-        if os.path.exists(users_db_path):
-            # Attempt to fetch data from the cache (SQLite database)
-            conn = sqlite3.connect(users_db_path)
-            cursor = conn.cursor()
-
-            cursor.execute('SELECT did FROM users')
-            cached_users = cursor.fetchall()
-            conn.close()  # Left off at logic for getting all users and then adding it to db
-        if get_dids:
-            return cached_users
-        elif cached_users:
-            records = count_users_table()
-            return records
-            # If data is found in the cache, return it directly
-
-    records = get_all_users()
-
-    # Clear the existing data by truncating the table
-    # if run_update:
-         # truncate_users_table()
-
-    # Store the fetched users data in the cache (SQLite database)
-    conn = sqlite3.connect(users_db_path)
-    cursor = conn.cursor()
-
-    cursor.executemany('INSERT OR IGNORE INTO users (did) VALUES (?)', records)
-    conn.commit()
-    conn.close()
-
-    logger.debug(str(records))
-    return len(records)
 
 
 def get_all_users_count():
@@ -392,63 +369,6 @@ def get_single_user_blocks(ident):
         logger.error("No db to get data.")
         error_text = "error"
         return error_text, error_text, 0
-
-
-def update_blocklist_table(ident):
-    blocked_by_list, block_date = get_user_block_list(ident)
-    # all_dids = get_all_users_db(get_dids=get_dids)
-
-    if not blocked_by_list:
-        return
-
-    # resolve_handles = []
-    # for  user_did in blocked_by_list:
-    #     handle = resolve_did(user_did)
-    #     resolve_handles.append(handle)
-
-    # Connect to the SQLite database
-    conn = sqlite3.connect(users_db_path)
-    cursor = conn.cursor()
-
-    # Create the blocklists table if it doesn't exist
-    # create_blocklist_table()
-
-    # for ident in all_dids:
-    #     blocked_by_list, block_date = get_user_block_list(ident)
-
-    # Check if each record already exists in the blocklists table
-    # existing_records = set()
-    # cursor.execute('SELECT user_did, blocked_did FROM blocklists')
-    # for row in cursor.fetchall():
-    #     existing_records.add((row[0], row[1]))
-
-    # Prepare the data to be inserted into the database
-    data = []
-    for blocked_did, date in zip(blocked_by_list, block_date):
-        data.append((ident, blocked_did, date))
-
-    # Insert only the records that do not already exist in the table
-    # data_to_insert = []
-    # for record in data:
-    #     if record not in existing_records:
-    #         data_to_insert.append(record)
-
-    # Insert the data into the blocklists table
-    cursor.executemany('INSERT OR IGNORE INTO blocklists (user_did, blocked_did, block_date) VALUES (?, ?, ?)', data)
-
-    # Commit the changes and close the connection to the database
-    conn.commit()
-    conn.close()
-
-
-def get_single_users_blocks_db(get_dids=False):
-    # truncate_blocklists_table()
-    all_dids = get_all_users_db(get_dids=get_dids)
-    create_blocklist_table()
-
-    for ident in tqdm(all_dids, desc="Updating blocklists", unit="DID", ncols=100):
-        user_did = ident[0]
-        update_blocklist_table(user_did)
 
 
 def get_user_block_list(ident):
@@ -506,12 +426,98 @@ def get_user_block_list(ident):
     return blocked_users, created_dates
 
 
-def process_did_list_to_handle(did_list):
-    handle_list = []
-    for item in did_list:
-        handle_list.append(resolve_did(item))
+# ======================================================================================================================
+# ========================================= database handling functions ================================================
+def update_blocklist_table(ident):
+    blocked_by_list, block_date = get_user_block_list(ident)
+    # all_dids = get_all_users_db(get_dids=get_dids)
 
-    return handle_list
+    if not blocked_by_list:
+        return
+
+    # resolve_handles = []
+    # for  user_did in blocked_by_list:
+    #     handle = resolve_did(user_did)
+    #     resolve_handles.append(handle)
+
+    # Connect to the SQLite database
+    conn = sqlite3.connect(users_db_path)
+    cursor = conn.cursor()
+
+    # Create the blocklists table if it doesn't exist
+    # create_blocklist_table()
+
+    # for ident in all_dids:
+    #     blocked_by_list, block_date = get_user_block_list(ident)
+
+    # Check if each record already exists in the blocklists table
+    # existing_records = set()
+    # cursor.execute('SELECT user_did, blocked_did FROM blocklists')
+    # for row in cursor.fetchall():
+    #     existing_records.add((row[0], row[1]))
+
+    # Prepare the data to be inserted into the database
+    data = []
+    for blocked_did, date in zip(blocked_by_list, block_date):
+        data.append((ident, blocked_did, date))
+
+    # Insert only the records that do not already exist in the table
+    # data_to_insert = []
+    # for record in data:
+    #     if record not in existing_records:
+    #         data_to_insert.append(record)
+
+    # Insert the data into the blocklists table
+    cursor.executemany('INSERT OR IGNORE INTO blocklists (user_did, blocked_did, block_date) VALUES (?, ?, ?)', data)
+
+    # Commit the changes and close the connection to the database
+    conn.commit()
+    conn.close()
+
+
+def get_all_users_db(run_update=False, get_dids=False):
+    if not run_update:
+        if os.path.exists(users_db_path):
+            # Attempt to fetch data from the cache (SQLite database)
+            conn = sqlite3.connect(users_db_path)
+            cursor = conn.cursor()
+
+            cursor.execute('SELECT did FROM users')
+            cached_users = cursor.fetchall()
+            conn.close()  # Left off at logic for getting all users and then adding it to db
+        if get_dids:
+            return cached_users
+        elif cached_users:
+            records = count_users_table()
+            return records
+            # If data is found in the cache, return it directly
+
+    records = get_all_users()
+
+    # Clear the existing data by truncating the table
+    # if run_update:
+         # truncate_users_table()
+
+    # Store the fetched users data in the cache (SQLite database)
+    conn = sqlite3.connect(users_db_path)
+    cursor = conn.cursor()
+
+    cursor.executemany('INSERT OR IGNORE INTO users (did) VALUES (?)', records)
+    conn.commit()
+    conn.close()
+
+    logger.debug(str(records))
+    return len(records)
+
+
+def get_single_users_blocks_db(get_dids=False):
+    # truncate_blocklists_table()
+    all_dids = get_all_users_db(get_dids=get_dids)
+    create_blocklist_table()
+
+    for ident in tqdm(all_dids, desc="Updating blocklists", unit="DID", ncols=100):
+        user_did = ident[0]
+        update_blocklist_table(user_did)
 
 
 def create_user_cache_database():
@@ -614,6 +620,9 @@ def count_users_table():
 
     return count
 
+
+# ======================================================================================================================
+# =============================================== Main Logic ===========================================================
 
 ip_address = config.get("server", "ip")
 port_address = config.get("server", "port")
