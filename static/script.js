@@ -206,13 +206,13 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             return; // Return to prevent further execution
         }
-        if (optionSelected === "5") {
-            var confirmed = window.confirm("This will take an extremely long time! Do you want to proceed?");
-//            alert("This will take a long time!");
-            if (!confirmed) {
-                return;
-            }
-        }
+//        if (optionSelected === "5") {
+//            var confirmed = window.confirm("This will take an extremely long time! Do you want to proceed?");
+////            alert("This will take a long time!");
+//            if (!confirmed) {
+//                return;
+//            }
+//        }
 
         if (requestInProgress) {
             // A request is already in progress, do not make another request
