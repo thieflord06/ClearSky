@@ -331,7 +331,7 @@ def get_all_users_db(run_update=False, get_dids=False):
 
     # Clear the existing data by truncating the table
     if run_update:
-        # truncate_users_table()
+         # truncate_users_table()
 
     # Store the fetched users data in the cache (SQLite database)
     conn = sqlite3.connect(users_db_path)
@@ -564,7 +564,7 @@ def create_blocklist_table():
                 user_did TEXT,
                 blocked_did TEXT,
                 block_date TEXT,
-                PRIMARY KEY (user_did, blocked_did)
+                # PRIMARY KEY (user_did, blocked_did)
             )
         '''
 
