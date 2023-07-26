@@ -282,8 +282,18 @@ def resolve_handle(info):  # Take Handle and get DID
     encoded_params = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
     full_url = f"{url}?{encoded_params}"
     logger.debug(full_url)
-    get_response = requests.get(full_url)
-    response = get_response.json().values()
+    try:
+        get_response = requests.get(full_url)
+        response = get_response.json().values()
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error occurred while making the API call: {e}")
+        return "Error"
+    except requests.exceptions.JSONDecodeError as e:
+        logger.error(f"Error occurred while parsing JSON response: {e}")
+        return "Error"
+    except Exception as e:
+        logger.error(f"An unexpected error occurred: {e}")
+        return "Error"
 
     return list(response)[0]
 
