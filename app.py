@@ -602,12 +602,13 @@ def get_single_users_blocks_db(run_update=False, get_dids=False):
     all_dids = get_all_users_db(run_update=run_update, get_dids=get_dids)
     create_blocklist_table()
 
-    for ident in tqdm(all_dids, desc="Updating blocklists", unit="DID", ncols=100):
+    for i, ident in enumerate(tqdm(all_dids, desc="Updating blocklists", unit="DID", ncols=100)):
         user_did = ident[0]
         update_blocklist_table(user_did)
 
         # Sleep for 60 seconds every 5 minutes
-        if (all_dids.index(ident) + 1) % 20 == 0:  # Assuming you have 100 dids in all_dids
+        if (i + 1) % (300000 // 100) == 0:  # Assuming you have 100 dids in all_dids
+            logger.info("Pausing...")
             time.sleep(60)
 
 
