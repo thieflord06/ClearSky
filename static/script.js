@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const blockListContainer = document.getElementById('blocklist-container');
     const comingSoonContainer = document.getElementById('comingsoon-container');
     const errorContainer = document.getElementById('error-container');
+    const pendingRequestContainer = document.getElementById('pending-request-container');
 
     let requestInProgress = false;
     const submitButton = document.getElementById('submit-button');
@@ -43,6 +44,16 @@ document.addEventListener('DOMContentLoaded', function() {
     function hideErrorContainer() {
         console.log('hideErrorContainer() called');
         errorContainer.style.display = 'none';
+    }
+
+    function showInProgressContainer() {
+        console.log('showInProgressContainer() called');
+        pendingRequestContainer.sytle.display = 'block'
+    }
+
+    function hideInProgressContainer() {
+        console.log('hideInProgressContainer() called');
+        pendingRequestContainer.sytle.display = 'none'
     }
 
     // Function to show the result container
@@ -193,6 +204,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         optionSelected = document.getElementById("selection").value;
 
+//        // Mark that a request is in progress
+//        requestInProgress = true;
+
         if (selection.value === '5') {
             // If Option 5 is selected, redirect to the "Coming Soon" page
             fetch('/selection_handle', {
@@ -229,6 +243,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (requestInProgress) {
             // A request is already in progress, do not make another request
+            hideIndexContainer();
+            hideIndexContainer();
+            showInProgressContainer();
             return;
         }
 

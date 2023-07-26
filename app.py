@@ -475,7 +475,19 @@ def get_user_block_list(ident):
         encoded_params = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
         full_url = f"{url}?{encoded_params}"
         logger.debug(full_url)
-        response = requests.get(full_url)
+
+        try:
+            response = requests.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
+            response.raise_for_status()  # Raise an exception for any HTTP error status codes
+        except requests.exceptions.ReadTimeout as e:
+            logger.warning("Request timed out. Retrying... Retry count: %d", retry_count)
+            retry_count += 1
+            time.sleep(5)
+            continue
+        except requests.exceptions.RequestException as e:
+            logger.warning("Error during API call: %s", e)
+            retry_count += 1
+            time.sleep(5)
 
         if response.status_code == 200:
             response_json = response.json()
