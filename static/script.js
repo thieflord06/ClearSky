@@ -184,7 +184,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (selection.value === '5') {
             // If Option 5 is selected, redirect to the "Coming Soon" page
-//            window.location.href = '/coming_soon';
+            window.location.href = '/coming_soon';
             fetch('/selection_handle', {
                 method: 'POST',
                 body: new FormData(selectionForm)
@@ -197,7 +197,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 hideBaseContainer();
                 hideIndexContainer();
                 showComingSoonContainer();
-//                return; // Return to prevent further execution
+                return; // Return to prevent further execution
             })
             .catch(error => {
                 // Handle any errors here
