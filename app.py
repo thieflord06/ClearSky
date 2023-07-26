@@ -92,32 +92,32 @@ users_db_filename = 'users_cache.db'
 users_db_path = users_db_folder_path + users_db_filename
 
 
-def start_thread():
-    # Start the command handling thread
-    command_thread = threading.Thread(target=handle_commands)
-    command_thread.daemon = True
-    command_thread.start()
+# def start_thread():
+#     # Start the command handling thread
+#     command_thread = threading.Thread(target=handle_commands)
+#     command_thread.daemon = True
+#     command_thread.start()
 
 
-def handle_commands():
-    while True:
-        try:
-            command = input("Enter a command: ").strip().lower()
-
-            # Handle different commands
-            if command == 'exit':
-                sys.exit()
-            elif command == 'create database':
-                create_user_cache_database()
-            elif command == 'delete database':
-                logger.warning("Delete database requested.")
-                delete_database()
-            else:
-                logger.warning("Invalid command. Try again.")
-        except EOFError:
-            # EOFError will be raised when the user presses Ctrl+D (Unix) or Ctrl+Z (Windows) to signal end-of-file.
-            # If you want to handle this behavior, you can add specific logic here.
-            break
+# def handle_commands():
+#     while True:
+#         try:
+#             command = input("Enter a command: ").strip().lower()
+#
+#             # Handle different commands
+#             if command == 'exit':
+#                 sys.exit()
+#             elif command == 'create database':
+#                 create_user_cache_database()
+#             elif command == 'delete database':
+#                 logger.warning("Delete database requested.")
+#                 delete_database()
+#             else:
+#                 logger.warning("Invalid command. Try again.")
+#         except EOFError:
+#             # EOFError will be raised when the user presses Ctrl+D (Unix) or Ctrl+Z (Windows) to signal end-of-file.
+#             # If you want to handle this behavior, you can add specific logic here.
+#             break
 
 
 # ======================================================================================================================
@@ -723,7 +723,7 @@ if __name__ == '__main__':
         logger.debug(confirmation)
         logger.warning("No confirmation for: delete database. Command not executed.")
     else:
-        start_thread()
+        # start_thread()
 
         if os.path.exists(users_db_folder_path):
             create_user_cache_database()
