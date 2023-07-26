@@ -328,7 +328,7 @@ def resolve_did(did):  # Take DID and get handle
     full_url = f"{url}?{encoded_params}"
     logger.debug(full_url)
 
-    max_retries = 3
+    max_retries = 5
     retry_count = 0
 
     while retry_count < max_retries:
@@ -342,7 +342,7 @@ def resolve_did(did):  # Take DID and get handle
         else:
             retry_count += 1
             print("Error:", get_response.status_code)
-            time.sleep(5)
+            time.sleep(10)
 
 #    If max_retries is reached and the request still fails, raise an exception or handle it as needed
     logger.warning("Failed to resolve DID after multiple retries.")
