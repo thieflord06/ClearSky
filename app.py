@@ -332,29 +332,41 @@ def resolve_did(did):  # Take DID and get handle
     retry_count = 0
 
     while retry_count < max_retries:
-        get_response = requests.get(full_url)
+        try:
+            get_response = requests.get(full_url)
+            response_json = get_response.json()
+            logger.debug("response: " + str(response_json))
+        except requests.exceptions.RequestException as e:
+            retry_count += 1
+            logger.error(f"Error occurred while making the API call: {e}")
+            continue
+        except requests.exceptions.JSONDecodeError as e:
+            retry_count += 1
+            logger.error(f"Error occurred while parsing JSON response: {e}")
+            continue
+        except Exception as e:
+            retry_count += 1
+            logger.error(f"An unexpected error occurred: {e}")
+            continue
 
         if get_response.status_code == 200:
-            response_json = get_response.json()
             records = response_json["handle"]
-
-            return records
-        else:
-            response_json = get_response.json()
             error_message = response_json.get("message", "")
             logger.debug(error_message)
             if "could not find user" in error_message.lower():
                 logger.warning("User not found. Skipping...")
                 return
             else:
-                retry_count += 1
-                logger.warning("Error:" + str(get_response.status_code))
-                logger.warning("Retrying: " + str(full_url))
-                time.sleep(10)
+                return records
+        else:
+            retry_count += 1
+            logger.warning("Error:" + str(get_response.status_code))
+            logger.warning("Retrying: " + str(full_url))
+            time.sleep(10)
 
     #    If max_retries is reached and the request still fails, raise an exception or handle it as needed
     logger.warning("Failed to resolve: " + did + " after multiple retries.")
-    return
+    return "Error"
 
 
 def process_did_list_to_handle(did_list):
