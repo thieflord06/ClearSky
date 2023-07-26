@@ -12,7 +12,7 @@ import platform
 import sqlite3
 import argparse
 from tqdm import tqdm
-import threading
+import re
 # ======================================================================================================================
 # ============================= Pre-checks // Set up logging and debugging information =================================
 # Checks if .ini file exits locally and exits if it doesn't
@@ -163,65 +163,69 @@ def selection_handle():
     identifier = request.form['identifier'].lower()
     identifier = identifier.replace('@', '')
     selection = request.form['selection']
-    if selection != "4":
-        if not identifier:
-            return render_template('error.html')
-    if selection == "1":
-        logger.info(str(session_ip) + " > " + str(*session.values()) + ": " + "DID resolve request made for: " + identifier)
-        result = resolve_handle(identifier)
-        logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + result)
-        # logger.debug(jsonify({"result": result}))
 
-        # return render_template('result.html', result=result)
-        return jsonify({"result": result})
-    elif selection == "2":
-        logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Handle resolve request made for: " + identifier)
-        result = resolve_did(identifier)
-        logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + str(result))
-
-        # return render_template('result.html', result=result)
-        return jsonify({"result": result})
-    elif selection == "3":
-        if "did" in identifier:
-            identifier = resolve_did(identifier)
-        logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Block list requested for: " + identifier)
-        blocklist, count = get_user_block_list_html(identifier)
-
-        # return render_template('blocklist.html', block_list=blocklist, user=identifier, count=count)
-        return jsonify({"block_list": blocklist, "user": identifier, "count": count})
-    elif selection == "4":
+    if selection == "4":
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count requested")
         count = get_all_users_count()
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count: " + str(count))
 
         # return render_template('total_users.html', count=count)
         return jsonify({"count": count})
-    elif selection == "5":
-        if "did" not in identifier:
-            identifier = resolve_handle(identifier)
-        logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Block list requested for: " + identifier)
-        blocks, dates, count = get_single_user_blocks(identifier)
-        if "did" in identifier:
-            identifier = resolve_did(identifier)
 
-        if type(blocks) != list:
-            blocks = ["None"]
-            dates = [datetime.now().date()]
-            count = 0
-        response_data = {
-            "who_block_list": blocks,
-            "user": identifier,
-            "date": dates,
-            "counts": count
-        }
+    if is_did(identifier) or is_handle(identifier):
+        if selection != "4":
+            if not identifier:
+                return render_template('error.html')
+            if selection == "1":
+                logger.info(str(session_ip) + " > " + str(*session.values()) + ": " + "DID resolve request made for: " + identifier)
+                result = resolve_handle(identifier)
+                logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + result)
+                # logger.debug(jsonify({"result": result}))
 
-        logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Blocklist Request Result: " + identifier + " | " + "Block by: " + str(blocks) + " :: " + "Total count: " + str(count))
-        # count = len(blocks)
-        # blocks = None
-        # count = 1
-        # return render_template('blocklist.html', user=identifier, block_list=blocks, count=count)
-        return jsonify(response_data)
-        # return jsonify({"user": identifier, "block_list": blocks, "count": count})
+                # return render_template('result.html', result=result)
+                return jsonify({"result": result})
+            elif selection == "2":
+                logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Handle resolve request made for: " + identifier)
+                result = resolve_did(identifier)
+                logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + str(result))
+
+                # return render_template('result.html', result=result)
+                return jsonify({"result": result})
+            elif selection == "3":
+                if "did" in identifier:
+                    identifier = resolve_did(identifier)
+                logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Block list requested for: " + identifier)
+                blocklist, count = get_user_block_list_html(identifier)
+
+                # return render_template('blocklist.html', block_list=blocklist, user=identifier, count=count)
+                return jsonify({"block_list": blocklist, "user": identifier, "count": count})
+            elif selection == "5":
+                if "did" not in identifier:
+                    identifier = resolve_handle(identifier)
+                logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Block list requested for: " + identifier)
+                blocks, dates, count = get_single_user_blocks(identifier)
+                if "did" in identifier:
+                    identifier = resolve_did(identifier)
+
+                if type(blocks) != list:
+                    blocks = ["None"]
+                    dates = [datetime.now().date()]
+                    count = 0
+                response_data = {
+                    "who_block_list": blocks,
+                    "user": identifier,
+                    "date": dates,
+                    "counts": count
+                }
+                logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Blocklist Request Result: " + identifier + " | " + "Block by: " + str(blocks) + " :: " + "Total count: " + str(count))
+                # count = len(blocks)
+                # blocks = None
+                # count = 1
+                # return render_template('blocklist.html', user=identifier, block_list=blocks, count=count)
+                return jsonify(response_data)
+                # return jsonify({"user": identifier, "block_list": blocks, "count": count})
+    else:
+        return render_template('error.html')
 
 
 def get_user_block_list_html(ident):
@@ -268,6 +272,16 @@ def get_ip():  # Get IP address of session request
         # Use the remote address if the X-Forwarded-For header is not available
         ip = request.remote_addr
     return ip
+
+
+def is_did(identifier):
+    did_pattern = r'^did:[a-z]+:[a-zA-Z0-9._:%-]*[a-zA-Z0-9._-]$'
+    return re.match(did_pattern, identifier) is not None
+
+
+def is_handle(identifier):
+    handle_pattern = r'^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$'
+    return re.match(handle_pattern, identifier) is not None
 
 
 # ======================================================================================================================
