@@ -584,6 +584,8 @@ def get_single_users_blocks_db(run_update=False, get_dids=False):
 
 
 def get_all_users_db(run_update=False, get_dids=False):
+    batch_size = 1000
+
     if not run_update:
         if os.path.exists(users_db_path):
             # Attempt to fetch data from the cache (SQLite database)
@@ -611,8 +613,13 @@ def get_all_users_db(run_update=False, get_dids=False):
     conn = sqlite3.connect(users_db_path)
     cursor = conn.cursor()
 
-    cursor.executemany('INSERT OR IGNORE INTO users (did) VALUES (?)', records)
-    conn.commit()
+    # Insert data in batches
+    for i in range(0, len(records), batch_size):
+        batch_data = records[i : i + batch_size]
+        cursor.executemany('INSERT OR IGNORE INTO users (did) VALUES (?)', batch_data)
+        conn.commit()
+        logger.debug("Batch committed.")
+
     conn.close()
 
     logger.info("Users db updated.")
