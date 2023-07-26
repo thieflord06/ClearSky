@@ -1,3 +1,5 @@
+import time
+
 from flask import Flask, render_template, request, session, jsonify
 import requests
 import urllib.parse
@@ -340,6 +342,7 @@ def process_did_list_to_handle(did_list):
     handle_list = []
     for item in did_list:
         handle_list.append(resolve_did(item))
+        time.sleep(2)
 
     return handle_list
 
@@ -467,6 +470,7 @@ def get_user_block_list(ident):
                     except ValueError:
                         created_date = None
                     created_dates.append(created_date)
+                    time.sleep(2)
 
             cursor = response_json.get("cursor")
             if not cursor:
