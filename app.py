@@ -502,8 +502,11 @@ def get_user_block_list(ident):
             logger.warning("Error during API call. Status code: %s", response.status_code)
             time.sleep(5)
     # cursor = response_json.get("cursor")
-    if not blocked_users:
+    if not blocked_users and retry_count != max_retries:
         return [], [str(datetime.now().date())]
+    if retry_count == max_retries:
+        logger.warning("Could not get block list for: " + ident)
+        return [], []
 
     # Return the blocked users and created_at timestamps if needed
     return blocked_users, created_dates
