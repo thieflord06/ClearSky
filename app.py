@@ -607,6 +607,7 @@ def get_all_users_db(run_update=False, get_dids=False):
          # truncate_users_table()
 
     # Store the fetched users data in the cache (SQLite database)
+    logger.info("Updating db.")
     conn = sqlite3.connect(users_db_path)
     cursor = conn.cursor()
 
@@ -614,8 +615,9 @@ def get_all_users_db(run_update=False, get_dids=False):
     conn.commit()
     conn.close()
 
+    logger.info("Users db updated.")
     logger.debug(str(records))
-    return records
+    # return records
 
 
 def update_blocklist_table(ident):
