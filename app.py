@@ -506,7 +506,7 @@ def get_user_block_list(ident):
         return [], [str(datetime.now().date())]
     if retry_count == max_retries:
         logger.warning("Could not get block list for: " + ident)
-        return [], []
+        return ["error"], [str(datetime.now().date())]
 
     # Return the blocked users and created_at timestamps if needed
     return blocked_users, created_dates
