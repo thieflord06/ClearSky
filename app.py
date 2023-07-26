@@ -327,22 +327,31 @@ def resolve_did(did):  # Take DID and get handle
     encoded_params = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
     full_url = f"{url}?{encoded_params}"
     logger.debug(full_url)
-    get_response = requests.get(full_url)
 
-    if get_response.status_code == 200:
-        response_json = get_response.json()
-        records = response_json["handle"]
+    max_retries = 3
+    retry_count = 0
 
-        return records
-    else:
-        print("Error:", get_response.status_code)
+    while retry_count < max_retries:
+        get_response = requests.get(full_url)
+
+        if get_response.status_code == 200:
+            response_json = get_response.json()
+            records = response_json["handle"]
+
+            return records
+        else:
+            retry_count += 1
+            print("Error:", get_response.status_code)
+            time.sleep(5)
+
+#    If max_retries is reached and the request still fails, raise an exception or handle it as needed
+    logger.warning("Failed to resolve DID after multiple retries.")
 
 
 def process_did_list_to_handle(did_list):
     handle_list = []
     for item in did_list:
         handle_list.append(resolve_did(item))
-        time.sleep(1)
 
     return handle_list
 
@@ -439,8 +448,10 @@ def get_user_block_list(ident):
     blocked_users = []
     created_dates = []
     cursor = None
+    retry_count = 0
+    max_retries = 3
 
-    while True:
+    while retry_count < max_retries:
         url = urllib.parse.urljoin(base_url, "com.atproto.repo.listRecords")
         params = {
             "repo": ident,
@@ -475,11 +486,12 @@ def get_user_block_list(ident):
                     created_dates.append(created_date)
 
             cursor = response_json.get("cursor")
-            time.sleep(1)
             if not cursor:
                 break
         else:
-            break
+            retry_count += 1
+            logger.warning("Error during API call. Status code: %s", response.status_code)
+            time.sleep(5)
     # cursor = response_json.get("cursor")
     if not blocked_users:
         return [], [str(datetime.now().date())]
@@ -619,6 +631,11 @@ def get_all_users_db(run_update=False, get_dids=False):
         cursor.executemany('INSERT OR IGNORE INTO users (did) VALUES (?)', batch_data)
         conn.commit()
         logger.debug("Batch committed.")
+
+        # Pause for 1 minute every 5 minutes
+        if i > 0 and i % (batch_size * 5) == 0:
+            logger.info("Pausing for 1 minute...")
+            time.sleep(60)
 
     conn.close()
 
