@@ -340,12 +340,21 @@ def resolve_did(did):  # Take DID and get handle
 
             return records
         else:
-            retry_count += 1
-            print("Error:", get_response.status_code)
-            time.sleep(10)
+            response_json = get_response.json()
+            error_message = response_json.get("message", "")
+            logger.debug(error_message)
+            if "could not find user" in error_message.lower():
+                logger.warning("User not found. Skipping...")
+                return
+            else:
+                retry_count += 1
+                logger.warning("Error:" + str(get_response.status_code))
+                logger.warning("Retrying: " + str(full_url))
+                time.sleep(10)
 
-#    If max_retries is reached and the request still fails, raise an exception or handle it as needed
-    logger.warning("Failed to resolve DID after multiple retries.")
+    #    If max_retries is reached and the request still fails, raise an exception or handle it as needed
+    logger.warning("Failed to resolve: " + did + " after multiple retries.")
+    return
 
 
 def process_did_list_to_handle(did_list):

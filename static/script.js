@@ -219,13 +219,13 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             return; // Return to prevent further execution
         }
-//        if (optionSelected === "5") {
+        if (optionSelected === "3") {
 //            var confirmed = window.confirm("This will take an extremely long time! Do you want to proceed?");
-////            alert("This will take a long time!");
+            alert("If the user has many blocks, this may take some time.");
 //            if (!confirmed) {
 //                return;
 //            }
-//        }
+        }
 
         if (requestInProgress) {
             // A request is already in progress, do not make another request
