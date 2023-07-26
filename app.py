@@ -300,7 +300,7 @@ def resolve_handle(info):  # Take Handle and get DID
     try:
         get_response = requests.get(full_url)
         response = get_response.json().values()
-        logger.debug("response: " + response)
+        logger.debug("response: " + str(response))
     except requests.exceptions.RequestException as e:
         logger.error(f"Error occurred while making the API call: {e}")
         return "Error"
