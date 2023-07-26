@@ -299,21 +299,35 @@ def resolve_handle(info):  # Take Handle and get DID
     encoded_params = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
     full_url = f"{url}?{encoded_params}"
     logger.debug(full_url)
-    try:
-        get_response = requests.get(full_url)
-        response = get_response.json().values()
-        logger.debug("response: " + str(response))
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error occurred while making the API call: {e}")
-        return "Error"
-    except requests.exceptions.JSONDecodeError as e:
-        logger.error(f"Error occurred while parsing JSON response: {e}")
-        return "Error"
-    except Exception as e:
-        logger.error(f"An unexpected error occurred: {e}")
-        return "Error"
 
-    return list(response)[0]
+    max_retries = 5
+    retry_count = 0
+
+    while retry_count < max_retries:
+        try:
+            get_response = requests.get(full_url)
+            response = get_response.json().values()
+            logger.debug("response: " + str(response))
+        except requests.exceptions.RequestException as e:
+            retry_count += 1
+            logger.error(f"Error occurred while making the API call: {e}")
+            time.sleep(2)
+            continue
+        except requests.exceptions.JSONDecodeError as e:
+            retry_count += 1
+            logger.error(f"Error occurred while parsing JSON response: {e}")
+            time.sleep(2)
+            continue
+        except Exception as e:
+            retry_count += 1
+            logger.error(f"An unexpected error occurred: {e}")
+            time.sleep(2)
+            continue
+
+        return list(response)[0]
+
+    logger.warning("Resolve error for: " + info + " after multiple retries.")
+    return "error"
 
 
 def resolve_did(did):  # Take DID and get handle
@@ -339,14 +353,17 @@ def resolve_did(did):  # Take DID and get handle
         except requests.exceptions.RequestException as e:
             retry_count += 1
             logger.error(f"Error occurred while making the API call: {e}")
+            time.sleep(2)
             continue
         except requests.exceptions.JSONDecodeError as e:
             retry_count += 1
             logger.error(f"Error occurred while parsing JSON response: {e}")
+            time.sleep(2)
             continue
         except Exception as e:
             retry_count += 1
             logger.error(f"An unexpected error occurred: {e}")
+            time.sleep(2)
             continue
 
         if get_response.status_code == 200:
@@ -500,6 +517,7 @@ def get_user_block_list(ident):
             logger.warning("Error during API call: %s", e)
             retry_count += 1
             time.sleep(5)
+            continue
 
         if response.status_code == 200:
             response_json = response.json()
@@ -525,7 +543,8 @@ def get_user_block_list(ident):
             retry_count += 1
             logger.warning("Error during API call. Status code: %s", response.status_code)
             time.sleep(5)
-    # cursor = response_json.get("cursor")
+            continue
+
     if not blocked_users and retry_count != max_retries:
         return [], [str(datetime.now().date())]
     if retry_count == max_retries:
