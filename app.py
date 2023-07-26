@@ -377,6 +377,9 @@ def get_all_users():
             cursor = response_json.get("cursor")
             if not cursor:
                 break
+        else:
+            logger.warning("Response status code: " + str(response.status_code))
+            pass
     return records
 
 
