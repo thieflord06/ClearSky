@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const baseContainer = document.getElementById('base-container');
     const blockListContainer = document.getElementById('blocklist-container');
     const comingSoonContainer = document.getElementById('comingsoon-container');
+    const errorContainer = document.getElementById('error-container');
 
     let requestInProgress = false;
     const submitButton = document.getElementById('submit-button');
@@ -32,6 +33,16 @@ document.addEventListener('DOMContentLoaded', function() {
     function hideLoadingScreen() {
         console.log('hideLoadingScreen() called');
         loadingScreen.style.display = 'none';
+    }
+
+    function showErrorContainer() {
+        console.log('showErrorContainer() called');
+        errorContainer.style.display = 'block';
+    }
+
+    function hideErrorContainer() {
+        console.log('hideErrorContainer() called');
+        errorContainer.style.display = 'none';
     }
 
     // Function to show the result container
@@ -200,6 +211,9 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 // Handle any errors here
+                hideBaseContainer();
+                hideIndexContainer();
+                showErrorContainer();
                 console.error('Error submitting form:', error);
                 // You can show an error message to the user if needed
             });
@@ -250,8 +264,9 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             // Handle any errors here
             handleErrors(error); // Call the function to handle errors and show the index container
-            showBaseContainer();
-            showIndexContainer();
+            hideBaseContainer();
+            hideIndexContainer();
+            showErrorContainer();
         // Reset the requestInProgress flag in case of an error
         requestInProgress = false;
         submitButton.disabled = false;

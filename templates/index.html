@@ -40,6 +40,9 @@
     <div id="comingsoon-container" style="display: none;">
         {% include "coming_soon.html" %}
     </div>
+    <div id="error-container" style="display: none;">
+        {% include "error.html" %}
+    </div>
     {% if request.path == '/' %} {# Check if the current page is the index page #}
         <script src="{{ url_for('static', filename='script.js') }}"></script> {# Include script.js only for the index page #}
     {% endif %}
