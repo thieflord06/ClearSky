@@ -161,6 +161,7 @@ def selection_handle():
     session_ip = get_ip()
     logger.debug(request.form)
     identifier = request.form['identifier'].lower()
+    identifier = identifier.strip()
     identifier = identifier.replace('@', '')
     selection = request.form['selection']
 
@@ -299,6 +300,7 @@ def resolve_handle(info):  # Take Handle and get DID
     try:
         get_response = requests.get(full_url)
         response = get_response.json().values()
+        logger.debug("response: " + response)
     except requests.exceptions.RequestException as e:
         logger.error(f"Error occurred while making the API call: {e}")
         return "Error"
