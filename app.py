@@ -655,6 +655,7 @@ def update_blocklist_table(ident):
         except Exception as e:
             # Rollback the transaction if an error occurs
             conn.rollback()
+            logger.warning("Rolledback.")
             raise e
         finally:
             # Close the connection to the database
