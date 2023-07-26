@@ -458,7 +458,7 @@ def get_user_block_list(ident):
     created_dates = []
     cursor = None
     retry_count = 0
-    max_retries = 3
+    max_retries = 5
 
     while retry_count < max_retries:
         url = urllib.parse.urljoin(base_url, "com.atproto.repo.listRecords")
@@ -602,6 +602,10 @@ def get_single_users_blocks_db(run_update=False, get_dids=False):
     for ident in tqdm(all_dids, desc="Updating blocklists", unit="DID", ncols=100):
         user_did = ident[0]
         update_blocklist_table(user_did)
+
+        # Sleep for 60 seconds every 5 minutes
+        if (all_dids.index(ident) + 1) % 100 == 0:  # Assuming you have 100 dids in all_dids
+            time.sleep(60)
 
 
 def get_all_users_db(run_update=False, get_dids=False):
