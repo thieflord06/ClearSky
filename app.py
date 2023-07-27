@@ -521,6 +521,13 @@ def get_user_block_list(ident):
             time.sleep(5)
             continue
 
+        if not response.status_code == 200:
+            error_message = response_json.get("message", "")
+            logger.debug(error_message)
+
+            if "could not find repo" in error_message.lower():
+                logger.warning("User not found. Skipping...")
+                return
         if response.status_code == 200:
             response_json = response.json()
             records = response_json.get("records", [])
