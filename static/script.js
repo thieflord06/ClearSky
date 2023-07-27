@@ -235,11 +235,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         if (optionSelected === "3") {
 //            var confirmed = window.confirm("This will take an extremely long time! Do you want to proceed?");
-            alert("If the user has many blocks, this may take some time.");
+            alert("Getting results may take some time, if the user is blocking a lot of accounts.");
 //            if (!confirmed) {
 //                return;
 //            }
         }
+        if (optionSelected === "5") {
+            alert("Getting results may take some time, if the user is blocked by a lot of accounts.");
+}
 
         if (requestInProgress) {
             // A request is already in progress, do not make another request
