@@ -242,7 +242,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         if (optionSelected === "5") {
             alert("Getting results may take some time, if the user is blocked by a lot of accounts.");
-}
+        }
 
         if (requestInProgress) {
             // A request is already in progress, do not make another request
