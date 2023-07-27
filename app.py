@@ -625,7 +625,7 @@ def create_blocklist_table():
         conn.commit()
         conn.close()
     else:
-        logger.warning("'Blocklist' table already exists. Skipping creation.")
+        logger.warning("'Blocklists' table already exists. Skipping creation.")
 
 
 def count_users_table():
