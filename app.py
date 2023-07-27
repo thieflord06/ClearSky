@@ -220,7 +220,7 @@ def selection_handle():
                     "date": dates,
                     "counts": count
                 }
-                logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Blocklist Request Result: " + identifier + " | " + "Block by: " + str(blocks) + " :: " + "Total count: " + str(count))
+                logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Blocklist Request Result: " + identifier + " | " + "Blocked by: " + str(blocks) + " :: " + "Total count: " + str(count))
                 # count = len(blocks)
                 # blocks = None
                 # count = 1
