@@ -394,7 +394,7 @@ def get_all_users():
 
 
 def get_all_users_count():
-    users = get_all_users_db()
+    users = get_all_users_db(False, True)
     if not isinstance(users, int):
         return len(users)
     # formatted_count = "{:,}".format(users)
@@ -569,7 +569,7 @@ async def update_user_handle(ident, handle):
 
 
 async def get_all_users_db(run_update=False, get_dids=False):
-    batch_size = 1000
+    batch_size = 10000
 
     if not run_update:
         # Fetch data from the PostgreSQL database if needed
