@@ -318,6 +318,12 @@ def resolve_handle(info):  # Take Handle and get DID
             logger.error(f"Error occurred while parsing JSON response: {e}")
             time.sleep(2)
             continue
+        except TimeoutError:
+            # Handle the timeout error here
+            logger.warning("Request timed out. Retrying... Retry count: %d", retry_count)
+            retry_count += 1
+            time.sleep(5)  # Wait for a few seconds before retrying
+            continue
         except Exception as e:
             retry_count += 1
             logger.error(f"An unexpected error occurred: {e}")

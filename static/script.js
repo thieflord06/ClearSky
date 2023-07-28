@@ -10,9 +10,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const comingSoonContainer = document.getElementById('comingsoon-container');
     const errorContainer = document.getElementById('error-container');
     const pendingRequestContainer = document.getElementById('pending-request-container');
+    const timeoutContainer = document.getElementById('timeout-container');
+    const TIMEOUT_DURATION = 180000;
 
     let requestInProgress = false;
     const submitButton = document.getElementById('submit-button');
+
+    function handleTimeout() {
+        // Perform actions when the server doesn't respond within the specified timeout
+        // For example, you can display an error message or take other appropriate actions.
+        console.log('Server request timed out. Please try again later.');
+        hideInProgressContainer(); // Hide the "request in progress" container if it was shown
+        showTimeoutContainer(); // Show the error container with a timeout message
+    }
 
     // Function to show the loading screen
     function showLoadingScreen() {
@@ -258,6 +268,12 @@ document.addEventListener('DOMContentLoaded', function() {
         hideBaseContainer();
         hideIndexContainer();
         showLoadingScreen(); // Show the loading screen
+
+        // Set up the timeout
+        const timeoutId = setTimeout(() => {
+            // Function to execute if the timeout occurs before the server responds
+            handleTimeout(); // You need to implement this function (see Step 3)
+        }, TIMEOUT_DURATION);
 
         // Perform your form submission or AJAX request using JavaScript Fetch API or Axios
         fetch('/selection_handle', {

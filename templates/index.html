@@ -46,6 +46,9 @@
     <div id="pending-request-container" style="display: none;">
         {% include "pending_request.html" %}
     </div>
+    <div id="timeout-container" style="display: none;">
+        {% include "pending_request.html" %}
+    </div>
     {% if request.path == '/' %} {# Check if the current page is the index page #}
         <script src="{{ url_for('static', filename='script.js') }}"></script> {# Include script.js only for the index page #}
     {% endif %}
