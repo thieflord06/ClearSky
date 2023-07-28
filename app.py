@@ -591,6 +591,11 @@ async def get_all_users_db(run_update=False, get_dids=False):
         # Get all DIDs
         records = get_all_users()
 
+        # Transform the records into a list of tuples with the correct format for insertion
+        formatted_records = [(record[0],) for record in records]
+
+        logger.info(f"Total DIDs: {len(formatted_records)}")
+
         # Store the fetched users data in the PostgreSQL database
         pool = await asyncpg.create_pool(
             user=pg_user,
@@ -604,9 +609,16 @@ async def get_all_users_db(run_update=False, get_dids=False):
         async with pool.acquire() as connection:
             async with connection.transaction():
                 # Insert data in batches
-                for i in range(0, len(records), batch_size):
+                for i in range(0, len(formatted_records), batch_size):
                     batch_data = records[i: i + batch_size]
-                    await connection.executemany('INSERT INTO users (did) VALUES ($1) ON CONFLICT DO NOTHING', batch_data)
+                    try:
+                        await connection.executemany('INSERT INTO users (did) VALUES ($1) ON CONFLICT DO NOTHING',
+                                                     batch_data)
+                        logger.info(
+                            f"Inserted batch {i // batch_size + 1} of {len(formatted_records) // batch_size + 1} batches.")
+                    except Exception as e:
+                        logger.error(f"Error inserting batch {i // batch_size + 1}: {str(e)}")
+                    # await connection.executemany('INSERT INTO users (did) VALUES ($1) ON CONFLICT DO NOTHING', batch_data)
 
         # Return the records when run_update is false and get_count is called
         return records
@@ -709,7 +721,7 @@ async def main():
     if args.update_users_db:
         # Call the function to update the database with all users
         logger.info("Users db update requested.")
-        await get_all_users_db(True)
+        await get_all_users_db(True, False)
         logger.info("Users db update finished.")
         sys.exit()
     elif args.fetch_users_count:
