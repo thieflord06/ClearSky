@@ -8,6 +8,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const baseContainer = document.getElementById('base-container');
     const blockListContainer = document.getElementById('blocklist-container');
     const comingSoonContainer = document.getElementById('comingsoon-container');
+    const errorContainer = document.getElementById('error-container');
+    const pendingRequestContainer = document.getElementById('pending-request-container');
 
     let requestInProgress = false;
     const submitButton = document.getElementById('submit-button');
@@ -32,6 +34,26 @@ document.addEventListener('DOMContentLoaded', function() {
     function hideLoadingScreen() {
         console.log('hideLoadingScreen() called');
         loadingScreen.style.display = 'none';
+    }
+
+    function showErrorContainer() {
+        console.log('showErrorContainer() called');
+        errorContainer.style.display = 'block';
+    }
+
+    function hideErrorContainer() {
+        console.log('hideErrorContainer() called');
+        errorContainer.style.display = 'none';
+    }
+
+    function showInProgressContainer() {
+        console.log('showInProgressContainer() called');
+        pendingRequestContainer.sytle.display = 'block'
+    }
+
+    function hideInProgressContainer() {
+        console.log('hideInProgressContainer() called');
+        pendingRequestContainer.sytle.display = 'none'
     }
 
     // Function to show the result container
@@ -182,9 +204,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         optionSelected = document.getElementById("selection").value;
 
+//        // Mark that a request is in progress
+//        requestInProgress = true;
+
 //        if (selection.value === '5') {
 //            // If Option 5 is selected, redirect to the "Coming Soon" page
-////            window.location.href = '/coming_soon';
 //            fetch('/selection_handle', {
 //                method: 'POST',
 //                body: new FormData(selectionForm)
@@ -197,25 +221,33 @@ document.addEventListener('DOMContentLoaded', function() {
 //                hideBaseContainer();
 //                hideIndexContainer();
 //                showComingSoonContainer();
-////                return; // Return to prevent further execution
+//                return; // Return to prevent further execution
 //            })
 //            .catch(error => {
 //                // Handle any errors here
+//                hideBaseContainer();
+//                hideIndexContainer();
+//                showErrorContainer();
 //                console.error('Error submitting form:', error);
 //                // You can show an error message to the user if needed
 //            });
 //            return; // Return to prevent further execution
 //        }
-//        if (optionSelected === "5") {
+        if (optionSelected === "3") {
 //            var confirmed = window.confirm("This will take an extremely long time! Do you want to proceed?");
-////            alert("This will take a long time!");
+            alert("Getting results may take some time, if the user is blocking a lot of accounts.");
 //            if (!confirmed) {
 //                return;
 //            }
-//        }
-
+        }
+        if (optionSelected === "5") {
+            alert("Getting results may take some time, if the user is blocked by a lot of accounts.");
+        }
         if (requestInProgress) {
             // A request is already in progress, do not make another request
+            hideIndexContainer();
+            hideIndexContainer();
+            showInProgressContainer();
             return;
         }
 
@@ -251,8 +283,9 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             // Handle any errors here
             handleErrors(error); // Call the function to handle errors and show the index container
-            showBaseContainer();
-            showIndexContainer();
+            hideBaseContainer();
+            hideIndexContainer();
+            showErrorContainer();
         // Reset the requestInProgress flag in case of an error
         requestInProgress = false;
         submitButton.disabled = false;

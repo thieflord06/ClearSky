@@ -1,3 +1,5 @@
+import time
+
 from flask import Flask, render_template, request, session, jsonify
 import requests
 import urllib.parse
@@ -12,7 +14,7 @@ import platform
 import sqlite3
 import argparse
 from tqdm import tqdm
-import threading
+import re
 # ======================================================================================================================
 # ============================= Pre-checks // Set up logging and debugging information =================================
 # Checks if .ini file exits locally and exits if it doesn't
@@ -67,7 +69,7 @@ logger = logging.getLogger()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "1.0.1"
+version = "1.1.0"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -92,32 +94,32 @@ users_db_filename = 'users_cache.db'
 users_db_path = users_db_folder_path + users_db_filename
 
 
-def start_thread():
-    # Start the command handling thread
-    command_thread = threading.Thread(target=handle_commands)
-    command_thread.daemon = True
-    command_thread.start()
+# def start_thread():
+#     # Start the command handling thread
+#     command_thread = threading.Thread(target=handle_commands)
+#     command_thread.daemon = True
+#     command_thread.start()
 
 
-def handle_commands():
-    while True:
-        try:
-            command = input("Enter a command: ").strip().lower()
-
-            # Handle different commands
-            if command == 'exit':
-                sys.exit()
-            elif command == 'create database':
-                create_user_cache_database()
-            elif command == 'delete database':
-                logger.warning("Delete database requested.")
-                delete_database()
-            else:
-                logger.warning("Invalid command. Try again.")
-        except EOFError:
-            # EOFError will be raised when the user presses Ctrl+D (Unix) or Ctrl+Z (Windows) to signal end-of-file.
-            # If you want to handle this behavior, you can add specific logic here.
-            break
+# def handle_commands():
+#     while True:
+#         try:
+#             command = input("Enter a command: ").strip().lower()
+#
+#             # Handle different commands
+#             if command == 'exit':
+#                 sys.exit()
+#             elif command == 'create database':
+#                 create_user_cache_database()
+#             elif command == 'delete database':
+#                 logger.warning("Delete database requested.")
+#                 delete_database()
+#             else:
+#                 logger.warning("Invalid command. Try again.")
+#         except EOFError:
+#             # EOFError will be raised when the user presses Ctrl+D (Unix) or Ctrl+Z (Windows) to signal end-of-file.
+#             # If you want to handle this behavior, you can add specific logic here.
+#             break
 
 
 # ======================================================================================================================
@@ -161,67 +163,72 @@ def selection_handle():
     session_ip = get_ip()
     logger.debug(request.form)
     identifier = request.form['identifier'].lower()
+    identifier = identifier.strip()
     identifier = identifier.replace('@', '')
     selection = request.form['selection']
-    if selection != "4":
-        if not identifier:
-            return render_template('error.html')
-    if selection == "1":
-        logger.info(str(session_ip) + " > " + str(*session.values()) + ": " + "DID resolve request made for: " + identifier)
-        result = resolve_handle(identifier)
-        logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + result)
-        # logger.debug(jsonify({"result": result}))
 
-        # return render_template('result.html', result=result)
-        return jsonify({"result": result})
-    elif selection == "2":
-        logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Handle resolve request made for: " + identifier)
-        result = resolve_did(identifier)
-        logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + str(result))
-
-        # return render_template('result.html', result=result)
-        return jsonify({"result": result})
-    elif selection == "3":
-        if "did" in identifier:
-            identifier = resolve_did(identifier)
-        logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Block list requested for: " + identifier)
-        blocklist, count = get_user_block_list_html(identifier)
-
-        # return render_template('blocklist.html', block_list=blocklist, user=identifier, count=count)
-        return jsonify({"block_list": blocklist, "user": identifier, "count": count})
-    elif selection == "4":
+    if selection == "4":
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count requested")
         count = get_all_users_count()
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count: " + str(count))
 
         # return render_template('total_users.html', count=count)
         return jsonify({"count": count})
-    elif selection == "5":
-        if "did" not in identifier:
-            identifier = resolve_handle(identifier)
-        logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Block list requested for: " + identifier)
-        blocks, dates, count = get_single_user_blocks(identifier)
-        if "did" in identifier:
-            identifier = resolve_did(identifier)
 
-        if type(blocks) != list:
-            blocks = ["None"]
-            dates = [datetime.now().date()]
-            count = 0
-        response_data = {
-            "who_block_list": blocks,
-            "user": identifier,
-            "date": dates,
-            "counts": count
-        }
+    if is_did(identifier) or is_handle(identifier):
+        if selection != "4":
+            if not identifier:
+                return render_template('error.html')
+            if selection == "1":
+                logger.info(str(session_ip) + " > " + str(*session.values()) + ": " + "DID resolve request made for: " + identifier)
+                result = resolve_handle(identifier)
+                logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + result)
+                # logger.debug(jsonify({"result": result}))
 
-        logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Blocklist Request Result: " + identifier + " | " + "Block by: " + str(blocks) + " :: " + "Total count: " + str(count))
-        # count = len(blocks)
-        # blocks = None
-        # count = 1
-        # return render_template('blocklist.html', user=identifier, block_list=blocks, count=count)
-        return jsonify(response_data)
-        # return jsonify({"user": identifier, "block_list": blocks, "count": count})
+                # return render_template('result.html', result=result)
+                return jsonify({"result": result})
+            elif selection == "2":
+                logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Handle resolve request made for: " + identifier)
+                result = resolve_did(identifier)
+                logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + str(result))
+
+                # return render_template('result.html', result=result)
+                return jsonify({"result": result})
+            elif selection == "3":
+                if "did" in identifier:
+                    identifier = resolve_did(identifier)
+                logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Block list requested for: " + identifier)
+                blocklist, count = get_user_block_list_html(identifier)
+
+                # return render_template('blocklist.html', block_list=blocklist, user=identifier, count=count)
+                return jsonify({"block_list": blocklist, "user": identifier, "count": count})
+            elif selection == "5":
+                if "did" not in identifier:
+                    identifier = resolve_handle(identifier)
+                logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Block list requested for: " + identifier)
+                blocks, dates, count = get_single_user_blocks(identifier)
+                if "did" in identifier:
+                    identifier = resolve_did(identifier)
+
+                if type(blocks) != list:
+                    blocks = ["None"]
+                    dates = [datetime.now().date()]
+                    count = 0
+                response_data = {
+                    "who_block_list": blocks,
+                    "user": identifier,
+                    "date": dates,
+                    "counts": count
+                }
+                logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Blocklist Request Result: " + identifier + " | " + "Blocked by: " + str(blocks) + " :: " + "Total count: " + str(count))
+                # count = len(blocks)
+                # blocks = None
+                # count = 1
+                # return render_template('blocklist.html', user=identifier, block_list=blocks, count=count)
+                return jsonify(response_data)
+                # return jsonify({"user": identifier, "block_list": blocks, "count": count})
+    else:
+        return render_template('error.html')
 
 
 def get_user_block_list_html(ident):
@@ -270,6 +277,16 @@ def get_ip():  # Get IP address of session request
     return ip
 
 
+def is_did(identifier):
+    did_pattern = r'^did:[a-z]+:[a-zA-Z0-9._:%-]*[a-zA-Z0-9._-]$'
+    return re.match(did_pattern, identifier) is not None
+
+
+def is_handle(identifier):
+    handle_pattern = r'^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$'
+    return re.match(handle_pattern, identifier) is not None
+
+
 # ======================================================================================================================
 # ============================================= On-Wire requests =======================================================
 def resolve_handle(info):  # Take Handle and get DID
@@ -282,10 +299,35 @@ def resolve_handle(info):  # Take Handle and get DID
     encoded_params = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
     full_url = f"{url}?{encoded_params}"
     logger.debug(full_url)
-    get_response = requests.get(full_url)
-    response = get_response.json().values()
 
-    return list(response)[0]
+    max_retries = 5
+    retry_count = 0
+
+    while retry_count < max_retries:
+        try:
+            get_response = requests.get(full_url)
+            response = get_response.json().values()
+            logger.debug("response: " + str(response))
+        except requests.exceptions.RequestException as e:
+            retry_count += 1
+            logger.error(f"Error occurred while making the API call: {e}")
+            time.sleep(2)
+            continue
+        except requests.exceptions.JSONDecodeError as e:
+            retry_count += 1
+            logger.error(f"Error occurred while parsing JSON response: {e}")
+            time.sleep(2)
+            continue
+        except Exception as e:
+            retry_count += 1
+            logger.error(f"An unexpected error occurred: {e}")
+            time.sleep(2)
+            continue
+
+        return list(response)[0]
+
+    logger.warning("Resolve error for: " + info + " after multiple retries.")
+    return "error"
 
 
 def resolve_did(did):  # Take DID and get handle
@@ -299,15 +341,51 @@ def resolve_did(did):  # Take DID and get handle
     encoded_params = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
     full_url = f"{url}?{encoded_params}"
     logger.debug(full_url)
-    get_response = requests.get(full_url)
 
-    if get_response.status_code == 200:
-        response_json = get_response.json()
-        records = response_json["handle"]
+    max_retries = 5
+    retry_count = 0
 
-        return records
-    else:
-        print("Error:", get_response.status_code)
+    while retry_count < max_retries:
+        try:
+            get_response = requests.get(full_url)
+            response_json = get_response.json()
+            logger.debug("response: " + str(response_json))
+        except requests.exceptions.RequestException as e:
+            retry_count += 1
+            logger.error(f"Error occurred while making the API call: {e}")
+            time.sleep(2)
+            continue
+        except requests.exceptions.JSONDecodeError as e:
+            retry_count += 1
+            logger.error(f"Error occurred while parsing JSON response: {e}")
+            time.sleep(2)
+            continue
+        except Exception as e:
+            retry_count += 1
+            logger.error(f"An unexpected error occurred: {e}")
+            time.sleep(2)
+            continue
+
+        if get_response.status_code == 200:
+            records = response_json["handle"]
+            return records
+        else:
+            error_message = response_json.get("message", "")
+            logger.debug(error_message)
+
+            if "could not find user" in error_message.lower():
+                logger.warning("User not found. Skipping...")
+                return
+            else:
+                pass
+                retry_count += 1
+                logger.warning("Error:" + str(get_response.status_code))
+                logger.warning("Retrying: " + str(full_url))
+                time.sleep(10)
+
+    #    If max_retries is reached and the request still fails, raise an exception or handle it as needed
+    logger.warning("Failed to resolve: " + did + " after multiple retries.")
+    return "Error"
 
 
 def process_did_list_to_handle(did_list):
@@ -348,6 +426,9 @@ def get_all_users():
             cursor = response_json.get("cursor")
             if not cursor:
                 break
+        else:
+            logger.warning("Response status code: " + str(response.status_code))
+            pass
     return records
 
 
@@ -407,8 +488,10 @@ def get_user_block_list(ident):
     blocked_users = []
     created_dates = []
     cursor = None
+    retry_count = 0
+    max_retries = 5
 
-    while True:
+    while retry_count < max_retries:
         url = urllib.parse.urljoin(base_url, "com.atproto.repo.listRecords")
         params = {
             "repo": ident,
@@ -423,8 +506,28 @@ def get_user_block_list(ident):
         encoded_params = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
         full_url = f"{url}?{encoded_params}"
         logger.debug(full_url)
-        response = requests.get(full_url)
 
+        try:
+            response = requests.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
+            response.raise_for_status()  # Raise an exception for any HTTP error status codes
+        except requests.exceptions.ReadTimeout as e:
+            logger.warning("Request timed out. Retrying... Retry count: %d", retry_count)
+            retry_count += 1
+            time.sleep(5)
+            continue
+        except requests.exceptions.RequestException as e:
+            logger.warning("Error during API call: %s", e)
+            retry_count += 1
+            time.sleep(5)
+            continue
+
+        if not response.status_code == 200:
+            error_message = response_json.get("message", "")
+            logger.debug(error_message)
+
+            if "could not find repo" in error_message.lower():
+                logger.warning("User not found. Skipping...")
+                return
         if response.status_code == 200:
             response_json = response.json()
             records = response_json.get("records", [])
@@ -446,9 +549,15 @@ def get_user_block_list(ident):
             if not cursor:
                 break
         else:
-            break
-    # cursor = response_json.get("cursor")
-    if not blocked_users:
+            retry_count += 1
+            logger.warning("Error during API call. Status code: %s", response.status_code)
+            time.sleep(5)
+            continue
+
+    if retry_count == max_retries:
+        logger.warning("Could not get block list for: " + ident)
+        return ["error"], [str(datetime.now().date())]
+    if not blocked_users and retry_count != max_retries:
         return [], [str(datetime.now().date())]
 
     # Return the blocked users and created_at timestamps if needed
@@ -523,7 +632,7 @@ def create_blocklist_table():
         conn.commit()
         conn.close()
     else:
-        logger.warning("'Blocklist' table already exists. Skipping creation.")
+        logger.warning("'Blocklists' table already exists. Skipping creation.")
 
 
 def count_users_table():
@@ -545,12 +654,19 @@ def get_single_users_blocks_db(run_update=False, get_dids=False):
     all_dids = get_all_users_db(run_update=run_update, get_dids=get_dids)
     create_blocklist_table()
 
-    for ident in tqdm(all_dids, desc="Updating blocklists", unit="DID", ncols=100):
+    for i, ident in enumerate(tqdm(all_dids, desc="Updating blocklists", unit="DID", ncols=100)):
         user_did = ident[0]
         update_blocklist_table(user_did)
 
+        # Sleep for 60 seconds every 5 minutes
+        if (i + 1) % (300000 // 100) == 0:  # Assuming you have 100 dids in all_dids
+            logger.info("Pausing...")
+            time.sleep(60)
+
 
 def get_all_users_db(run_update=False, get_dids=False):
+    batch_size = 1000
+
     if not run_update:
         if os.path.exists(users_db_path):
             # Attempt to fetch data from the cache (SQLite database)
@@ -574,15 +690,27 @@ def get_all_users_db(run_update=False, get_dids=False):
          # truncate_users_table()
 
     # Store the fetched users data in the cache (SQLite database)
+    logger.info("Updating db.")
     conn = sqlite3.connect(users_db_path)
     cursor = conn.cursor()
 
-    cursor.executemany('INSERT OR IGNORE INTO users (did) VALUES (?)', records)
-    conn.commit()
+    # Insert data in batches
+    for i in range(0, len(records), batch_size):
+        batch_data = records[i : i + batch_size]
+        cursor.executemany('INSERT OR IGNORE INTO users (did) VALUES (?)', batch_data)
+        conn.commit()
+        logger.debug("Batch committed.")
+
+        # Pause for 1 minute every 5 minutes
+        # if i > 0 and i % (batch_size * 5) == 0:
+        #     logger.info("Pausing for 1 minute...")
+        #     time.sleep(60)
+
     conn.close()
 
+    logger.info("Users db updated.")
     logger.debug(str(records))
-    return records
+    # return records
 
 
 def update_blocklist_table(ident):
@@ -625,6 +753,7 @@ def update_blocklist_table(ident):
         except Exception as e:
             # Rollback the transaction if an error occurs
             conn.rollback()
+            logger.warning("Rolledback.")
             raise e
         finally:
             # Close the connection to the database
@@ -723,7 +852,7 @@ if __name__ == '__main__':
         logger.debug(confirmation)
         logger.warning("No confirmation for: delete database. Command not executed.")
     else:
-        start_thread()
+        # start_thread()
 
         if os.path.exists(users_db_folder_path):
             create_user_cache_database()
