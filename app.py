@@ -326,7 +326,13 @@ def resolve_did(did):  # Take DID and get handle
             logger.error(f"An unexpected error occurred: {e}")
             time.sleep(2)
             continue
+        if not get_response.status_code == 200:
+            error_message = response_json.get("message", "")
+            logger.debug(error_message)
 
+            if "repo must be a valid did or a handle" in error_message.lower():
+                logger.warning("User not found. Skipping...")
+                return
         if get_response.status_code == 200:
             records = response_json["handle"]
             return records
@@ -345,7 +351,7 @@ def resolve_did(did):  # Take DID and get handle
                 time.sleep(10)
 
     #    If max_retries is reached and the request still fails, raise an exception or handle it as needed
-    logger.warning("Failed to resolve: " + did + " after multiple retries.")
+    logger.warning("Failed to resolve: " + str(did) + " after multiple retries.")
     return "Error"
 
 
@@ -721,7 +727,12 @@ async def main():
     if args.update_users_db:
         # Call the function to update the database with all users
         logger.info("Users db update requested.")
-        await get_all_users_db(True, False)
+        all_dids = await get_all_users_db(True, False)
+        logger.info("Update users handle requested.")
+        for did in all_dids:
+            handle = resolve_did(did)
+            str_did = did[0]
+            await update_user_handle(str(str_did), handle)
         logger.info("Users db update finished.")
         sys.exit()
     elif args.fetch_users_count:
