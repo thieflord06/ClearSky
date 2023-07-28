@@ -701,10 +701,10 @@ def get_all_users_db(run_update=False, get_dids=False):
         conn.commit()
         logger.debug("Batch committed.")
 
-        # Pause for 1 minute every 5 minutes
-        if i > 0 and i % (batch_size * 5) == 0:
-            logger.info("Pausing for 1 minute...")
-            time.sleep(60)
+        # # Pause for 1 minute every 5 minutes
+        # if i > 0 and i % (batch_size * 5) == 0:
+        #     logger.info("Pausing for 1 minute...")
+        #     time.sleep(60)
 
     conn.close()
 
