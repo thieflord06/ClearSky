@@ -96,34 +96,6 @@ users_db_filename = 'users_cache.db'
 users_db_path = users_db_folder_path + users_db_filename
 
 
-# def start_thread():
-#     # Start the command handling thread
-#     command_thread = threading.Thread(target=handle_commands)
-#     command_thread.daemon = True
-#     command_thread.start()
-
-
-# def handle_commands():
-#     while True:
-#         try:
-#             command = input("Enter a command: ").strip().lower()
-#
-#             # Handle different commands
-#             if command == 'exit':
-#                 sys.exit()
-#             elif command == 'create database':
-#                 create_user_cache_database()
-#             elif command == 'delete database':
-#                 logger.warning("Delete database requested.")
-#                 delete_database()
-#             else:
-#                 logger.warning("Invalid command. Try again.")
-#         except EOFError:
-#             # EOFError will be raised when the user presses Ctrl+D (Unix) or Ctrl+Z (Windows) to signal end-of-file.
-#             # If you want to handle this behavior, you can add specific logic here.
-#             break
-
-
 # ======================================================================================================================
 # ================================================== HTML Pages ========================================================
 @app.route('/')
@@ -174,9 +146,7 @@ def selection_handle():
         count = get_all_users_count()
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count: " + str(count))
 
-        # return render_template('total_users.html', count=count)
         return jsonify({"count": count})
-
     if is_did(identifier) or is_handle(identifier):
         if selection != "4":
             if not identifier:
@@ -185,16 +155,13 @@ def selection_handle():
                 logger.info(str(session_ip) + " > " + str(*session.values()) + ": " + "DID resolve request made for: " + identifier)
                 result = resolve_handle(identifier)
                 logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + result)
-                # logger.debug(jsonify({"result": result}))
 
-                # return render_template('result.html', result=result)
                 return jsonify({"result": result})
             elif selection == "2":
                 logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Handle resolve request made for: " + identifier)
                 result = resolve_did(identifier)
                 logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + str(result))
 
-                # return render_template('result.html', result=result)
                 return jsonify({"result": result})
             elif selection == "3":
                 if "did" in identifier:
@@ -202,7 +169,6 @@ def selection_handle():
                 logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Block list requested for: " + identifier)
                 blocklist, count = get_user_block_list_html(identifier)
 
-                # return render_template('blocklist.html', block_list=blocklist, user=identifier, count=count)
                 return jsonify({"block_list": blocklist, "user": identifier, "count": count})
             elif selection == "5":
                 if "did" not in identifier:
@@ -223,10 +189,6 @@ def selection_handle():
                     "counts": count
                 }
                 logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Blocklist Request Result: " + identifier + " | " + "Blocked by: " + str(blocks) + " :: " + "Total count: " + str(count))
-                # count = len(blocks)
-                # blocks = None
-                # count = 1
-                # return render_template('blocklist.html', user=identifier, block_list=blocks, count=count)
                 return jsonify(response_data)
                 # return jsonify({"user": identifier, "block_list": blocks, "count": count})
     else:
@@ -253,10 +215,7 @@ def get_user_block_list_html(ident):
     for handle, timestamp in zip(handles, timestamps):
         block_list.append({"handle": handle, "timestamp": timestamp})
 
-    # total_blocked = len(block_list)
-    # logger.debug(block_list)
     return block_list, total_blocked
-    # return zip(handles, timestamps), total_blocked
 
 
 # ======================================================================================================================
@@ -443,44 +402,37 @@ def get_all_users_count():
     # return formatted_count
 
 
-def get_single_user_blocks(ident):
-    if os.path.exists(users_db_path):
-        # Connect to the SQLite database
-        conn = sqlite3.connect(users_db_path)
-        cursor = conn.cursor()
+async def get_single_user_blocks(ident):
+    # Create a connection pool to the PostgreSQL database
+    pool = await asyncpg.create_pool(
+        user=pg_user,
+        password=pg_password,
+        host=pg_host,
+        database=pg_database
+    )
 
-        # Execute the SQL query to get all the user_dids that have the specified did in their blocklist
-        cursor.execute('SELECT user_did, block_date FROM blocklists WHERE blocked_did = ?', (ident,))
-        result = cursor.fetchall()
+    # Execute the SQL query to get all the user_dids that have the specified did in their blocklist
+    pool.execute('SELECT user_did, block_date FROM blocklists WHERE blocked_did = ?', (ident,))
+    result = pool.fetchall()
 
-        # Close the connection to the database
-        conn.close()
+    if result:
+        # Extract the user_dids from the query result
+        user_dids = [item[0] for item in result]
+        block_dates = [item[1] for item in result]
+        count = len(user_dids)
 
-        if result:
-            # Extract the user_dids from the query result
-            user_dids = [item[0] for item in result]
-            block_dates = [item[1] for item in result]
-            count = len(user_dids)
+        resolved_handles = []
 
-            resolved_handles = []
+        for user_did in user_dids:
+            handle = resolve_did(user_did)
+            resolved_handles.append(handle)
 
-            for user_did in user_dids:
-                handle = resolve_did(user_did)
-                resolved_handles.append(handle)
-
-            return resolved_handles, block_dates, count
-        else:
-            # ident = resolve_handle(ident)
-            no_blocks = ident + ": has not been blocked by anyone."
-            date = datetime.now().date()
-            return no_blocks, date, len(no_blocks) - 1
-            # error_text = "error"
-            # logger.warning("Blocklist db empty.")
-            # return error_text, error_text, 0
+        return resolved_handles, block_dates, count
     else:
-        logger.error("No db to get data.")
-        error_text = "error"
-        return error_text, error_text, 0
+        # ident = resolve_handle(ident)
+        no_blocks = ident + ": has not been blocked by anyone."
+        date = datetime.now().date()
+        return no_blocks, date, len(no_blocks) - 1
 
 
 def get_user_block_list(ident):
@@ -590,7 +542,6 @@ async def count_users_table():
 
 def get_single_users_blocks_db(run_update=False, get_dids=False):
     all_dids = get_all_users_db(run_update=run_update, get_dids=get_dids)
-    create_blocklist_table()
 
     for i, ident in enumerate(tqdm(all_dids, desc="Updating blocklists", unit="DID", ncols=100)):
         user_did = ident[0]
@@ -600,6 +551,21 @@ def get_single_users_blocks_db(run_update=False, get_dids=False):
         if (i + 1) % (300000 // 100) == 0:  # Assuming you have 100 dids in all_dids
             logger.info("Pausing...")
             time.sleep(60)
+
+
+async def update_user_handle(ident, handle):
+    # Create a connection pool to the PostgreSQL database
+    pool = await asyncpg.create_pool(
+        user=pg_user,
+        password=pg_password,
+        host=pg_host,
+        database=pg_database
+    )
+
+    async with pool.acquire() as connection:
+        async with connection.transaction():
+            # Update the user's handle in the "users" table
+            await connection.execute('UPDATE users SET handle = $1 WHERE did = $2', handle, ident)
 
 
 async def get_all_users_db(run_update=False, get_dids=False):
@@ -621,28 +587,29 @@ async def get_all_users_db(run_update=False, get_dids=False):
 
             # Fetch the total count of users in the "users" table
             return await connection.fetchval('SELECT COUNT(*) FROM users')
+    else:
+        # Get all DIDs
+        records = get_all_users()
 
-    records = get_all_users()
+        # Store the fetched users data in the PostgreSQL database
+        pool = await asyncpg.create_pool(
+            user=pg_user,
+            password=pg_password,
+            host=pg_host,
+            database=pg_database
+        )
 
-    # Store the fetched users data in the PostgreSQL database
-    pool = await asyncpg.create_pool(
-        user=pg_user,
-        password=pg_password,
-        host=pg_host,
-        database=pg_database
-    )
+        logger.info("Connected")
 
-    logger.info("Connected")
+        async with pool.acquire() as connection:
+            async with connection.transaction():
+                # Insert data in batches
+                for i in range(0, len(records), batch_size):
+                    batch_data = records[i: i + batch_size]
+                    await connection.executemany('INSERT INTO users (did) VALUES ($1) ON CONFLICT DO NOTHING', batch_data)
 
-    async with pool.acquire() as connection:
-        async with connection.transaction():
-            # Insert data in batches
-            for i in range(0, len(records), batch_size):
-                batch_data = records[i: i + batch_size]
-                await connection.executemany('INSERT INTO users (did) VALUES ($1) ON CONFLICT DO NOTHING', batch_data)
-
-    # Return the records for initial fetch
-    return records
+        # Return the records when run_update is false and get_count is called
+        return records
 
 
 async def update_blocklist_table(ident):
@@ -752,8 +719,8 @@ async def main():
         sys.exit()
     elif args.retrieve_blocklists_db:
         logger.info("Get Blocklists db requested.")
-        truncate_blocklists_table()
-        truncate_users_table()
+        # truncate_blocklists_table()
+        # truncate_users_table()
         get_single_users_blocks_db(run_update=True, get_dids=False)
         logger.info("Blocklist db fetch finished.")
     elif args.truncate_blocklists_table_db:
@@ -777,12 +744,6 @@ async def main():
         logger.debug(confirmation)
         logger.warning("No confirmation for: delete database. Command not executed.")
     else:
-        # start_thread()
-
-        # if os.path.exists(users_db_folder_path):
-        #     create_user_cache_database()
-        #     create_blocklist_table()
-
         logger.info("Web server starting at: " + ip_address + ":" + port_address)
         await serve(app, host=ip_address, port=port_address)
 
