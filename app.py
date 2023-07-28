@@ -1,5 +1,5 @@
 import time
-
+import asyncpg
 from flask import Flask, render_template, request, session, jsonify
 import requests
 import urllib.parse
@@ -15,6 +15,8 @@ import sqlite3
 import argparse
 from tqdm import tqdm
 import re
+import asyncio
+import hypercorn
 # ======================================================================================================================
 # ============================= Pre-checks // Set up logging and debugging information =================================
 # Checks if .ini file exits locally and exits if it doesn't
@@ -566,88 +568,24 @@ def get_user_block_list(ident):
 
 # ======================================================================================================================
 # ========================================= database handling functions ================================================
-def create_user_cache_database():
-    logger.debug(users_db_path)
-
-    # Check if the database file exists
-    if not os.path.exists(users_db_path):
-        try:
-            if not os.path.exists(users_db_folder_path):
-                os.makedirs(users_db_folder_path)
-        except PermissionError:
-            logger.warning("Cannot create log directory\nChange 'db_path' in config.ini path to a path with permissions")
-            sys.exit()
-
-        logger.info("Creating database.")
-        conn = sqlite3.connect(users_db_path)
-        cursor = conn.cursor()
-
-        # Create the users table if it doesn't exist
-        cursor.execute('''
-                CREATE TABLE IF NOT EXISTS users (
-                    did TEXT UNIQUE
-                )
-            ''')
-
-        conn.commit()
-        conn.close()
-    else:
-        logger.warning(f"Database '{users_db_filename}' already exists. Skipping creation.")
+pg_user = config.get("database", "pg_user")
+pg_password = config.get("database", "pg_password")
+pg_host = config.get("database", "pg_host")
+pg_database = config.get("database", "pg_database")
 
 
-def create_blocklist_table():
-    if os.path.exists(users_db_path):
-        conn = sqlite3.connect(users_db_path)
-        cursor = conn.cursor()
+async def count_users_table():
+    # Create a connection pool to the PostgreSQL database
+    pool = await asyncpg.create_pool(
+        user=pg_user,
+        password=pg_password,
+        host=pg_host,
+        database=pg_database
+    )
 
-        # Check if the "blocklists" table already exists
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='blocklists'")
-        table_exists = cursor.fetchone()
-
-    if not table_exists:
-        logger.info("Creating blocklist table.")
-        # Connect to the SQLite database
-        conn = sqlite3.connect(users_db_path)
-        cursor = conn.cursor()
-
-        # Define the schema for the new table
-        schema = '''
-            CREATE TABLE IF NOT EXISTS blocklists (
-                user_did TEXT,
-                blocked_did TEXT,
-                block_date TEXT
-            )
-        '''
-
-        cursor.execute(schema)
-
-        # Create an index on the user_did column
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_user_did ON blocklists (user_did)')
-
-        # Create an index on the blocked_did column
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_blocked_did ON blocklists (blocked_did)')
-
-        # Execute the CREATE TABLE query to create the new table
-
-        conn.commit()
-        conn.close()
-    else:
-        logger.warning("'Blocklists' table already exists. Skipping creation.")
-
-
-def count_users_table():
-    # Connect to the SQLite database
-    conn = sqlite3.connect(users_db_path)
-    cursor = conn.cursor()
-
-    # Execute the SQL query to count the rows in the "users" table
-    cursor.execute('SELECT COUNT(*) FROM users')
-    count = cursor.fetchone()[0]
-
-    # Close the connection to the database
-    conn.close()
-
-    return count
+    async with pool.acquire() as connection:
+        # Execute the SQL query to count the rows in the "users" table
+        return await connection.fetchval('SELECT COUNT(*) FROM users')
 
 
 def get_single_users_blocks_db(run_update=False, get_dids=False):
@@ -664,100 +602,86 @@ def get_single_users_blocks_db(run_update=False, get_dids=False):
             time.sleep(60)
 
 
-def get_all_users_db(run_update=False, get_dids=False):
+async def get_all_users_db(run_update=False, get_dids=False):
     batch_size = 1000
 
     if not run_update:
-        if os.path.exists(users_db_path):
-            # Attempt to fetch data from the cache (SQLite database)
-            conn = sqlite3.connect(users_db_path)
-            cursor = conn.cursor()
+        # Fetch data from the PostgreSQL database if needed
+        pool = await asyncpg.create_pool(
+            user=pg_user,
+            password=pg_password,
+            host=pg_host,
+            database=pg_database
+        )
 
-            cursor.execute('SELECT did FROM users')
-            cached_users = cursor.fetchall()
-            conn.close()  # Left off at logic for getting all users and then adding it to db
-        if get_dids:
-            return cached_users
-        elif cached_users:
-            records = count_users_table()
-            return records
-            # If data is found in the cache, return it directly
+        async with pool.acquire() as connection:
+            if get_dids:
+                # Return the user_dids from the "users" table
+                return await connection.fetch('SELECT did FROM users')
+
+            # Fetch the total count of users in the "users" table
+            return await connection.fetchval('SELECT COUNT(*) FROM users')
 
     records = get_all_users()
 
-    # Clear the existing data by truncating the table
-    # if run_update:
-         # truncate_users_table()
+    # Store the fetched users data in the PostgreSQL database
+    pool = await asyncpg.create_pool(
+        user=pg_user,
+        password=pg_password,
+        host=pg_host,
+        database=pg_database
+    )
 
-    # Store the fetched users data in the cache (SQLite database)
-    logger.info("Updating db.")
-    conn = sqlite3.connect(users_db_path)
-    cursor = conn.cursor()
+    logger.info("Connected")
 
-    # Insert data in batches
-    for i in range(0, len(records), batch_size):
-        batch_data = records[i : i + batch_size]
-        cursor.executemany('INSERT OR IGNORE INTO users (did) VALUES (?)', batch_data)
-        conn.commit()
-        logger.debug("Batch committed.")
+    async with pool.acquire() as connection:
+        async with connection.transaction():
+            # Insert data in batches
+            for i in range(0, len(records), batch_size):
+                batch_data = records[i: i + batch_size]
+                await connection.executemany('INSERT INTO users (did) VALUES ($1) ON CONFLICT DO NOTHING', batch_data)
 
-        # # Pause for 1 minute every 5 minutes
-        # if i > 0 and i % (batch_size * 5) == 0:
-        #     logger.info("Pausing for 1 minute...")
-        #     time.sleep(60)
-
-    conn.close()
-
-    logger.info("Users db updated.")
-    logger.debug(str(records))
-    # return records
+    # Return the records for initial fetch
+    return records
 
 
-def update_blocklist_table(ident):
+async def update_blocklist_table(ident):
     blocked_by_list, block_date = get_user_block_list(ident)
 
     if not blocked_by_list:
         return
 
-    # Connect to the SQLite database
-    conn = sqlite3.connect(users_db_path)
-    cursor = conn.cursor()
+        # Create a connection pool to the PostgreSQL database
+    pool = await asyncpg.create_pool(
+        user=pg_user,
+        password=pg_password,
+        host=pg_host,
+        database=pg_database
+    )
 
-    # Retrieve the existing blocklist entries for the specified ident
-    cursor.execute('SELECT blocked_did, block_date FROM blocklists WHERE user_did = ?', (ident,))
-    existing_records = cursor.fetchall()
-    existing_blocklist_entries = set(existing_records)
+    async with pool.acquire() as connection:
+        async with connection.transaction():
+            # Retrieve the existing blocklist entries for the specified ident
+            existing_records = await connection.fetch(
+                'SELECT blocked_did, block_date FROM blocklists WHERE user_did = $1', ident
+            )
+            existing_blocklist_entries = {(record['blocked_did'], record['block_date']) for record in existing_records}
 
-    # Prepare the data to be inserted into the database
-    data = []
-    for blocked_did, date in zip(blocked_by_list, block_date):
-        data.append((ident, blocked_did, date))
+            # Prepare the data to be inserted into the database
+            data = [(ident, blocked_did, date) for blocked_did, date in zip(blocked_by_list, block_date)]
 
-    # Convert the new blocklist entries to a set for comparison
-    new_blocklist_entries = set(data)
+            # Convert the new blocklist entries to a set for comparison
+            new_blocklist_entries = {(record['blocked_did'], record['block_date']) for record in data}
 
-    # Check if there are differences between the existing and new blocklist entries
-    if existing_blocklist_entries != new_blocklist_entries:
-        # Begin the transaction
-        conn.execute('BEGIN TRANSACTION')
+            # Check if there are differences between the existing and new blocklist entries
+            if existing_blocklist_entries != new_blocklist_entries:
+                # Delete existing blocklist entries for the specified ident
+                await connection.execute('DELETE FROM blocklists WHERE user_did = $1', ident)
 
-        try:
-            # Delete existing blocklist entries for the specified ident
-            cursor.execute('DELETE FROM blocklists WHERE user_did = ?', (ident,))
-
-            # Insert the new blocklist entries
-            cursor.executemany('INSERT INTO blocklists (user_did, blocked_did, block_date) VALUES (?, ?, ?)', data)
-
-            # Commit the transaction
-            conn.commit()
-        except Exception as e:
-            # Rollback the transaction if an error occurs
-            conn.rollback()
-            logger.warning("Rolledback.")
-            raise e
-        finally:
-            # Close the connection to the database
-            conn.close()
+                # Insert the new blocklist entries
+                await connection.executemany(
+                    'INSERT INTO blocklists (user_did, blocked_did, block_date) VALUES ($1, $2, $3)', data
+                )
 
 
 def truncate_users_table():
@@ -803,7 +727,8 @@ port_address = config.get("server", "port")
 # python app.py --delete-database // command to delete entire database
 # python app.py --retrieve-blocklists-db // initial/re-initialize get for blocklists database
 
-if __name__ == '__main__':
+
+async def main():
     parser = argparse.ArgumentParser(description='ClearSky Web Server: ' + version)
     parser.add_argument('--update-users-db', action='store_true', help='Update the database with all users')
     parser.add_argument('--fetch-users-count', action='store_true', help='Fetch the count of users')
@@ -817,12 +742,12 @@ if __name__ == '__main__':
     if args.update_users_db:
         # Call the function to update the database with all users
         logger.info("Users db update requested.")
-        get_all_users_db(True)
+        await get_all_users_db(True)
         logger.info("Users db update finished.")
         sys.exit()
     elif args.fetch_users_count:
         # Call the function to fetch the count of users
-        count = count_users_table()
+        count = await count_users_table()
         logger.info(f"Total users in the database: {count}")
         sys.exit()
     elif args.retrieve_blocklists_db:
@@ -854,9 +779,12 @@ if __name__ == '__main__':
     else:
         # start_thread()
 
-        if os.path.exists(users_db_folder_path):
-            create_user_cache_database()
-            create_blocklist_table()
+        # if os.path.exists(users_db_folder_path):
+        #     create_user_cache_database()
+        #     create_blocklist_table()
 
         logger.info("Web server starting at: " + ip_address + ":" + port_address)
-        serve(app, host=ip_address, port=port_address)
+        await serve(app, host=ip_address, port=port_address)
+
+if __name__ == '__main__':
+    asyncio.run(main())
