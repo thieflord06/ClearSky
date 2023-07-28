@@ -1,5 +1,5 @@
 import time
-
+import threading
 from flask import Flask, render_template, request, session, jsonify
 import requests
 import urllib.parse
@@ -318,6 +318,12 @@ def resolve_handle(info):  # Take Handle and get DID
             logger.error(f"Error occurred while parsing JSON response: {e}")
             time.sleep(2)
             continue
+        except TimeoutError:
+            # Handle the timeout error here
+            logger.warning("Request timed out. Retrying... Retry count: %d", retry_count)
+            retry_count += 1
+            time.sleep(5)  # Wait for a few seconds before retrying
+            continue
         except Exception as e:
             retry_count += 1
             logger.error(f"An unexpected error occurred: {e}")
@@ -366,6 +372,13 @@ def resolve_did(did):  # Take DID and get handle
             time.sleep(2)
             continue
 
+        if not get_response.status_code == 200:
+            error_message = response_json.get("message", "")
+            logger.debug(error_message)
+
+            if "repo must be a valid did or a handle" in error_message.lower():
+                logger.warning("User not found. Skipping...")
+                return
         if get_response.status_code == 200:
             records = response_json["handle"]
             return records
@@ -859,4 +872,7 @@ if __name__ == '__main__':
             create_blocklist_table()
 
         logger.info("Web server starting at: " + ip_address + ":" + port_address)
-        serve(app, host=ip_address, port=port_address)
+        # serve(app, host=ip_address, port=port_address)
+
+        main_thread = threading.Thread(target=serve, args=(app,), kwargs={'host': ip_address, 'port': port_address})
+        main_thread.start()
