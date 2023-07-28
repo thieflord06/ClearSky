@@ -366,6 +366,13 @@ def resolve_did(did):  # Take DID and get handle
             time.sleep(2)
             continue
 
+        if not get_response.status_code == 200:
+            error_message = response_json.get("message", "")
+            logger.debug(error_message)
+
+            if "repo must be a valid did or a handle" in error_message.lower():
+                logger.warning("User not found. Skipping...")
+                return
         if get_response.status_code == 200:
             records = response_json["handle"]
             return records
