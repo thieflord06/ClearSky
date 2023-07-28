@@ -1,5 +1,5 @@
 import time
-
+import threading
 from flask import Flask, render_template, request, session, jsonify
 import requests
 import urllib.parse
@@ -859,4 +859,7 @@ if __name__ == '__main__':
             create_blocklist_table()
 
         logger.info("Web server starting at: " + ip_address + ":" + port_address)
-        serve(app, host=ip_address, port=port_address)
+        # serve(app, host=ip_address, port=port_address)
+
+        main_thread = threading.Thread(target=serve, args=(app,), kwargs={'host': ip_address, 'port': port_address})
+        main_thread.start()
