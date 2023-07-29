@@ -218,10 +218,14 @@ document.addEventListener('DOMContentLoaded', function() {
 //        requestInProgress = true;
 
         if (selection.value === '5') {
+        // Create a new FormData object and add a flag to indicate "Option 5" should not be processed
+        const formData = new FormData(selectionForm);
+        formData.append('skipOption5', 'true');
+
             // If Option 5 is selected, redirect to the "Coming Soon" page
             fetch('/selection_handle', {
                 method: 'POST',
-                body: new FormData(selectionForm)
+                body: FormData
             })
             .then(response => {
                 // Check if the response status is successful (HTTP 200-299)

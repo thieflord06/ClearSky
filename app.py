@@ -167,6 +167,9 @@ def selection_handle():
     identifier = identifier.replace('@', '')
     selection = request.form['selection']
 
+    # Check if the flag to skip "Option 5" is present in the form data
+    skip_option5 = request.form.get('skipOption5', '').lower() == 'true'
+
     if selection == "4":
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count requested")
         count = get_all_users_count()
@@ -202,7 +205,7 @@ def selection_handle():
 
                 # return render_template('blocklist.html', block_list=blocklist, user=identifier, count=count)
                 return jsonify({"block_list": blocklist, "user": identifier, "count": count})
-            elif selection == "5":
+            elif selection == "5" and not skip_option5:
                 if "did" not in identifier:
                     identifier = resolve_handle(identifier)
                 logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Block list requested for: " + identifier)
