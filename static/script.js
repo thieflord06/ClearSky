@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const TIMEOUT_DURATION = 180000;
 
     let requestInProgress = false;
+    let optionSelected;
     const submitButton = document.getElementById('submit-button');
 
     function handleTimeout() {
@@ -217,36 +218,36 @@ document.addEventListener('DOMContentLoaded', function() {
 //        // Mark that a request is in progress
 //        requestInProgress = true;
 
-        if (selection.value === '5') {
-        // Create a new FormData object and add a flag to indicate "Option 5" should not be processed
-        const formData = new FormData(selectionForm);
-        formData.append('skipOption5', 'true');
-
-            // If Option 5 is selected, redirect to the "Coming Soon" page
-            fetch('/selection_handle', {
-                method: 'POST',
-                body: FormData
-            })
-            .then(response => {
-                // Check if the response status is successful (HTTP 200-299)
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                hideBaseContainer();
-                hideIndexContainer();
-                showComingSoonContainer();
-                return; // Return to prevent further execution
-            })
-            .catch(error => {
-                // Handle any errors here
-                hideBaseContainer();
-                hideIndexContainer();
-                showErrorContainer();
-                console.error('Error submitting form:', error);
-                // You can show an error message to the user if needed
-            });
-            return; // Return to prevent further execution
-        }
+//        if (selection.value === '5') {
+//            // Create a new FormData object and add a flag to indicate "Option 5" should not be processed
+//            const formData = new FormData(selectionForm);
+//            formData.append('skipOption5', 'true');
+//
+//            // If Option 5 is selected, redirect to the "Coming Soon" page
+//            fetch('/selection_handle', {
+//                method: 'POST',
+//                body: FormData
+//            })
+//            .then(response => {
+//                // Check if the response status is successful (HTTP 200-299)
+//                if (!response.ok) {
+//                    throw new Error('Network response was not ok');
+//                }
+//                hideBaseContainer();
+//                hideIndexContainer();
+//                showComingSoonContainer();
+//                return; // Return to prevent further execution
+//            })
+//            .catch(error => {
+//                // Handle any errors here
+//                hideBaseContainer();
+//                hideIndexContainer();
+//                showErrorContainer();
+//                console.error('Error submitting form:', error);
+//                // You can show an error message to the user if needed
+//            });
+//            return; // Return to prevent further execution
+//        }
         if (optionSelected === "3") {
 //            var confirmed = window.confirm("This will take an extremely long time! Do you want to proceed?");
             alert("Getting results may take some time, if the user is blocking a lot of accounts.");
