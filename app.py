@@ -69,7 +69,7 @@ logger = logging.getLogger()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "1.1.0"
+version = "1.1.1"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -844,18 +844,22 @@ if __name__ == '__main__':
         truncate_users_table()
         get_single_users_blocks_db(run_update=True, get_dids=False)
         logger.info("Blocklist db fetch finished.")
+        sys.exit()
     elif args.truncate_blocklists_table_db:
         logger.warning("Truncate blocklists table requested.")
         truncate_blocklists_table()
         logger.info("Truncate blocklists table finished.")
+        sys.exit()
     elif args.truncate_users_table_db:
         logger.warning("Truncate users table requested.")
         truncate_users_table()
         logger.info("Truncate users table finished.")
+        sys.exit()
     elif args.update_blocklists_db:
         logger.info("Update Blocklists db requested.")
         get_single_users_blocks_db(run_update=False, get_dids=True)
         logger.info("Update Blocklists db finished.")
+        sys.exit()
     elif args.delete_database:
         logger.warning("Delete database requested.")
         reference = "sudo delete database"
@@ -864,6 +868,7 @@ if __name__ == '__main__':
             delete_database()
         logger.debug(confirmation)
         logger.warning("No confirmation for: delete database. Command not executed.")
+        sys.exit()
     else:
         # start_thread()
 
