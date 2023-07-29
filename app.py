@@ -746,18 +746,22 @@ async def main():
         # truncate_users_table()
         get_single_users_blocks_db(run_update=True, get_dids=False)
         logger.info("Blocklist db fetch finished.")
+        sys.exit()
     elif args.truncate_blocklists_table_db:
         logger.warning("Truncate blocklists table requested.")
         truncate_blocklists_table()
         logger.info("Truncate blocklists table finished.")
+        sys.exit()
     elif args.truncate_users_table_db:
         logger.warning("Truncate users table requested.")
         truncate_users_table()
         logger.info("Truncate users table finished.")
+        sys.exit()
     elif args.update_blocklists_db:
         logger.info("Update Blocklists db requested.")
         get_single_users_blocks_db(run_update=False, get_dids=True)
         logger.info("Update Blocklists db finished.")
+        sys.exit()
     elif args.delete_database:
         logger.warning("Delete database requested.")
         reference = "sudo delete database"
@@ -766,6 +770,7 @@ async def main():
             delete_database()
         logger.debug(confirmation)
         logger.warning("No confirmation for: delete database. Command not executed.")
+        sys.exit()
     else:
         logger.info("Web server starting at: " + ip_address + ":" + port_address)
         await serve(app, host=ip_address, port=port_address)
