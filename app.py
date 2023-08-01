@@ -532,7 +532,7 @@ async def fetch_handles_batch(batch_dids):
         # Apply strip('\'\",') to remove leading/trailing quotes or commas
         did = did[0].strip('\'\",')
         handle = resolve_handle(did)
-        handles.append(handle)
+        handles.append((did, handle))
     return handles
     # tasks = [resolve_did(did.strip('\'\",')) for did in batch_dids]
     # return await asyncio.gather(*tasks)
@@ -687,7 +687,11 @@ async def main():
         total_dids = len(all_dids)
         for i in range(0, total_dids, batch_size):
             batch_dids = all_dids[i:i + batch_size]
-            batch_handles = await fetch_handles_batch(batch_dids)
+            batch_handles_and_dids = await fetch_handles_batch(batch_dids)
+
+            batch_dids, batch_handles = zip(*batch_handles_and_dids)
+            batch_dids = list(batch_dids)
+            batch_handles = list(batch_handles)
 
             # Update the database with the batch of handles
             async with connection_pool.acquire() as connection:
