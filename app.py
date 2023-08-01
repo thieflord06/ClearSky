@@ -683,7 +683,7 @@ async def main():
         logger.info("Users db update requested.")
         all_dids = await get_all_users_db(True, False)
         logger.info("Update users handles requested.")
-        batch_size = 10000
+        batch_size = 1000
         total_dids = len(all_dids)
         for i in range(0, total_dids, batch_size):
             batch_dids = all_dids[i:i + batch_size]
