@@ -4,3 +4,4 @@ waitress>=2.1.2
 dnspython>=2.3.0
 tqdm>=4.65.0
 asyncpg>=0.28.0
+hypercorn>=0.14.4
