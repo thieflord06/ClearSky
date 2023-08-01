@@ -371,6 +371,8 @@ def get_all_users():
     cursor = None
     records = []
 
+    logger.info("Getting all dids.")
+
     while True:
         url = urllib.parse.urljoin(base_url, "com.atproto.sync.listRepos")
         params = {
@@ -524,6 +526,17 @@ def get_user_block_list(ident):
     return blocked_users, created_dates
 
 
+async def fetch_handles_batch(batch_dids):
+    handles = []
+    for did in batch_dids:
+        # Apply strip('\'\",') to remove leading/trailing quotes or commas
+        did = did[0].strip('\'\",')
+        handle = resolve_handle(did)
+        handles.append(handle)
+    return handles
+    # tasks = [resolve_did(did.strip('\'\",')) for did in batch_dids]
+    # return await asyncio.gather(*tasks)
+
 # ======================================================================================================================
 # ========================================= database handling functions ================================================
 pg_user = config.get("database", "pg_user")
@@ -531,17 +544,21 @@ pg_password = config.get("database", "pg_password")
 pg_host = config.get("database", "pg_host")
 pg_database = config.get("database", "pg_database")
 
+connection_pool = None
 
-async def count_users_table():
-    # Create a connection pool to the PostgreSQL database
-    pool = await asyncpg.create_pool(
+
+async def create_connection_pool():
+    global connection_pool
+    connection_pool = await asyncpg.create_pool(
         user=pg_user,
         password=pg_password,
         host=pg_host,
         database=pg_database
     )
 
-    async with pool.acquire() as connection:
+
+async def count_users_table():
+    async with connection_pool.acquire() as connection:
         # Execute the SQL query to count the rows in the "users" table
         return await connection.fetchval('SELECT COUNT(*) FROM users')
 
@@ -560,33 +577,15 @@ def get_single_users_blocks_db(run_update=False, get_dids=False):
 
 
 async def update_user_handle(ident, handle):
-    # Create a connection pool to the PostgreSQL database
-    pool = await asyncpg.create_pool(
-        user=pg_user,
-        password=pg_password,
-        host=pg_host,
-        database=pg_database
-    )
-
-    async with pool.acquire() as connection:
-        async with connection.transaction():
-            # Update the user's handle in the "users" table
-            await connection.execute('UPDATE users SET handle = $1 WHERE did = $2', handle, ident)
+    async with connection_pool.acquire() as connection:
+        await connection.execute('UPDATE users SET handle = $1 WHERE did = $2', handle, ident)
 
 
 async def get_all_users_db(run_update=False, get_dids=False):
     batch_size = 10000
 
     if not run_update:
-        # Fetch data from the PostgreSQL database if needed
-        pool = await asyncpg.create_pool(
-            user=pg_user,
-            password=pg_password,
-            host=pg_host,
-            database=pg_database
-        )
-
-        async with pool.acquire() as connection:
+        async with connection_pool.acquire() as connection:
             if get_dids:
                 # Return the user_dids from the "users" table
                 return await connection.fetch('SELECT did FROM users')
@@ -602,17 +601,8 @@ async def get_all_users_db(run_update=False, get_dids=False):
 
         logger.info(f"Total DIDs: {len(formatted_records)}")
 
-        # Store the fetched users data in the PostgreSQL database
-        pool = await asyncpg.create_pool(
-            user=pg_user,
-            password=pg_password,
-            host=pg_host,
-            database=pg_database
-        )
-
-        logger.info("Connected")
-
-        async with pool.acquire() as connection:
+        async with connection_pool.acquire() as connection:
+            logger.info("Connected to db.")
             async with connection.transaction():
                 # Insert data in batches
                 for i in range(0, len(formatted_records), batch_size):
@@ -636,15 +626,8 @@ async def update_blocklist_table(ident):
     if not blocked_by_list:
         return
 
-        # Create a connection pool to the PostgreSQL database
-    pool = await asyncpg.create_pool(
-        user=pg_user,
-        password=pg_password,
-        host=pg_host,
-        database=pg_database
-    )
-
-    async with pool.acquire() as connection:
+    async with connection_pool.acquire() as connection:
+        logger.info("Connected to db.")
         async with connection.transaction():
             # Retrieve the existing blocklist entries for the specified ident
             existing_records = await connection.fetch(
@@ -667,38 +650,6 @@ async def update_blocklist_table(ident):
                 await connection.executemany(
                     'INSERT INTO blocklists (user_did, blocked_did, block_date) VALUES ($1, $2, $3)', data
                 )
-
-
-def truncate_users_table():
-    logger.warning("Truncating Users table.")
-    conn = sqlite3.connect(users_db_path)
-    cursor = conn.cursor()
-    cursor.execute('DELETE FROM users')
-    conn.commit()
-    conn.close()
-    logger.info("Users table truncate complete.")
-
-
-def truncate_blocklists_table():
-    logger.warning("Truncating blocklists table.")
-    conn = sqlite3.connect(users_db_path)
-    cursor = conn.cursor()
-    cursor.execute('DELETE FROM blocklists')
-    conn.commit()
-    conn.close()
-    logger.info("Blocklists truncate complete.")
-
-
-def delete_database():
-    if os.path.exists(users_db_path):
-        try:
-            os.remove(users_db_path)
-            logger.info("Database deleted.")
-        except PermissionError:
-            logger.warning("File in use close out process.")
-            sys.exit()
-
-
 # ======================================================================================================================
 # =============================================== Main Logic ===========================================================
 ip_address = config.get("server", "ip")
@@ -723,16 +674,35 @@ async def main():
     parser.add_argument('--truncate-users_table-db', action='store_true', help='delete users table')
     parser.add_argument('--delete-database', action='store_true', help='delete entire database')
     args = parser.parse_args()
+    total_handles_updated = 0
+
+    await create_connection_pool()  # Creates connection pool for db
 
     if args.update_users_db:
         # Call the function to update the database with all users
         logger.info("Users db update requested.")
         all_dids = await get_all_users_db(True, False)
-        logger.info("Update users handle requested.")
-        for did in all_dids:
-            handle = resolve_did(did)
-            str_did = did[0]
-            await update_user_handle(str(str_did), handle)
+        logger.info("Update users handles requested.")
+        batch_size = 10000
+        total_dids = len(all_dids)
+        for i in range(0, total_dids, batch_size):
+            batch_dids = all_dids[i:i + batch_size]
+            batch_handles = await fetch_handles_batch(batch_dids)
+
+            # Update the database with the batch of handles
+            async with connection_pool.acquire() as connection:
+                await connection.executemany('UPDATE users SET handle = $1 WHERE did = $2', zip(batch_handles, batch_dids))
+
+            # Update the total_handles_updated counter and log the progress
+            total_handles_updated += len(batch_handles)
+            logger.info(f"Handles updated: {total_handles_updated}/{total_dids}")
+
+            # Log the first few handles in the batch for verification
+            logger.info(f"First few handles in the batch: {batch_handles[:5]}")
+        # for did in all_dids:
+        #     str_did = did[0].strip('\'\",')
+        #     handle = resolve_did(str_did)
+        #     await update_user_handle(str(str_did), handle)
         logger.info("Users db update finished.")
         sys.exit()
     elif args.fetch_users_count:
@@ -747,29 +717,10 @@ async def main():
         get_single_users_blocks_db(run_update=True, get_dids=False)
         logger.info("Blocklist db fetch finished.")
         sys.exit()
-    elif args.truncate_blocklists_table_db:
-        logger.warning("Truncate blocklists table requested.")
-        truncate_blocklists_table()
-        logger.info("Truncate blocklists table finished.")
-        sys.exit()
-    elif args.truncate_users_table_db:
-        logger.warning("Truncate users table requested.")
-        truncate_users_table()
-        logger.info("Truncate users table finished.")
-        sys.exit()
     elif args.update_blocklists_db:
         logger.info("Update Blocklists db requested.")
         get_single_users_blocks_db(run_update=False, get_dids=True)
         logger.info("Update Blocklists db finished.")
-        sys.exit()
-    elif args.delete_database:
-        logger.warning("Delete database requested.")
-        reference = "sudo delete database"
-        confirmation = input("Are you sure you want to delete? (type: 'sudo delete database' to confirm > ")
-        if confirmation.lower() == reference:
-            delete_database()
-        logger.debug(confirmation)
-        logger.warning("No confirmation for: delete database. Command not executed.")
         sys.exit()
     else:
         logger.info("Web server starting at: " + ip_address + ":" + port_address)
