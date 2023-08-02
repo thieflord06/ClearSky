@@ -145,7 +145,7 @@ async def selection_handle():
 
     if selection == "4":
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count requested")
-        count = await get_all_users_db(get_count=True)
+        count = await get_user_count()
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count: " + str(count))
 
         return jsonify({"count": count})
@@ -417,13 +417,16 @@ async def get_user_handle(did):
         return handle
 
 
-async def get_all_users_count():
-    users = await get_all_users_db(False, False, True)
-    if not isinstance(users, int):
-        return len(users)
-    # formatted_count = "{:,}".format(users)
-    return users
-    # return formatted_count
+async def get_user_count():
+    async with asyncpg.create_pool(
+            user=pg_user,
+            password=pg_password,
+            host=pg_host,
+            database=pg_database
+    ) as new_connection_pool:
+        async with new_connection_pool.acquire() as connection:
+            count = await connection.fetchval('SELECT COUNT(*) FROM users')
+            return count
 
 
 async def get_single_user_blocks(ident):
@@ -594,25 +597,25 @@ async def update_user_handle(ident, handle):
 
 async def get_all_users_db(run_update=False, get_dids=False, get_count=False):
     batch_size = 10000
-    if get_count:
-        # Fetch the total count of users in the "users" table
-        async with connection_pool.acquire() as connection:
-            return await connection.fetchval('SELECT COUNT(*) FROM users')
-    if not run_update:
-        async with connection_pool.acquire() as connection:
+    async with connection_pool.acquire() as connection:
+        if get_count:
+            # Fetch the total count of users in the "users" table
+            count = await connection.fetchval('SELECT COUNT(*) FROM users')
+
+            return count
+        if not run_update:
             if get_dids:
                 # Return the user_dids from the "users" table
                 return await connection.fetch('SELECT did FROM users')
-    else:
-        # Get all DIDs
-        records = get_all_users()
+        else:
+            # Get all DIDs
+            records = get_all_users()
 
-        # Transform the records into a list of tuples with the correct format for insertion
-        formatted_records = [(record[0],) for record in records]
+            # Transform the records into a list of tuples with the correct format for insertion
+            formatted_records = [(record[0],) for record in records]
 
-        logger.info(f"Total DIDs: {len(formatted_records)}")
+            logger.info(f"Total DIDs: {len(formatted_records)}")
 
-        async with connection_pool.acquire() as connection:
             logger.info("Connected to db.")
             async with connection.transaction():
                 # Insert data in batches
