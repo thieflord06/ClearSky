@@ -359,14 +359,6 @@ async def resolve_did(did):  # Take DID and get handle
     return "Error"
 
 
-def process_did_list_to_handle(did_list):
-    handle_list = []
-    for item in did_list:
-        handle_list.append(resolve_did(item))
-
-    return handle_list
-
-
 # ======================================================================================================================
 # ============================================= Features functions =====================================================
 def get_all_users():
@@ -589,12 +581,7 @@ def get_single_users_blocks_db(run_update=False, get_dids=False):
             time.sleep(60)
 
 
-async def update_user_handle(ident, handle):
-    async with connection_pool.acquire() as connection:
-        await connection.execute('UPDATE users SET handle = $1 WHERE did = $2', handle, ident)
-
-
-async def get_all_users_db(run_update=False, get_dids=False, get_count=False):
+async def get_all_users_db(run_update=False, get_dids=False, get_count=False, init_db_run=False):
     batch_size = 10000
     async with connection_pool.acquire() as connection:
         if get_count:
@@ -615,19 +602,19 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False):
 
             logger.info(f"Total DIDs: {len(formatted_records)}")
 
-            logger.info("Connected to db.")
-            async with connection.transaction():
-                # Insert data in batches
-                for i in range(0, len(formatted_records), batch_size):
-                    batch_data = records[i: i + batch_size]
-                    try:
-                        await connection.executemany('INSERT INTO users (did) VALUES ($1) ON CONFLICT DO NOTHING',
-                                                     batch_data)
-                        logger.info(
-                            f"Inserted batch {i // batch_size + 1} of {len(formatted_records) // batch_size + 1} batches.")
-                    except Exception as e:
-                        logger.error(f"Error inserting batch {i // batch_size + 1}: {str(e)}")
-                    # await connection.executemany('INSERT INTO users (did) VALUES ($1) ON CONFLICT DO NOTHING', batch_data)
+            if init_db_run:
+                logger.info("Connected to db.")
+                async with connection.transaction():
+                    # Insert data in batches
+                    for i in range(0, len(formatted_records), batch_size):
+                        batch_data = records[i: i + batch_size]
+                        try:
+                            await connection.executemany('INSERT INTO users (did) VALUES ($1) ON CONFLICT DO NOTHING',
+                                                         batch_data)
+                            logger.info(
+                                f"Inserted batch {i // batch_size + 1} of {len(formatted_records) // batch_size + 1} batches.")
+                        except Exception as e:
+                            logger.error(f"Error inserting batch {i // batch_size + 1}: {str(e)}")
 
         # Return the records when run_update is false and get_count is called
         return records
@@ -670,6 +657,57 @@ async def does_did_and_handle_exist_in_database(did, handle):
         # Execute the SQL query to check if the given DID exists in the "users" table
         exists = await connection.fetchval('SELECT EXISTS(SELECT 1 FROM users WHERE did = $1 AND handle = $2)', did, handle)
         return exists
+
+
+async def update_user_handles(handles_to_update):
+    async with connection_pool.acquire() as connection:
+        async with connection.transaction():
+            # Create a temporary table to hold the handles to update
+            await connection.execute('CREATE TEMP TABLE temp_handles (did TEXT, handle TEXT) ON COMMIT DROP')
+
+            # Insert the handles into the temporary table
+            await connection.copy_records_to_table('temp_handles', records=handles_to_update)
+
+            # Perform the update using a SQL query with a JOIN between the temp table and the users table
+            await connection.execute('''
+                UPDATE users AS u
+                SET handle = t.handle
+                FROM temp_handles AS t
+                WHERE u.did = t.did
+            ''')
+
+        logger.info(f"Updated {len(handles_to_update)} handles in the database.")
+
+
+async def process_batch(batch_dids):
+    batch_handles_and_dids = await fetch_handles_batch(batch_dids)
+    logger.info("Batch resolved.")
+
+    # Split the batch of handles into smaller batches
+    batch_size = 100  # You can adjust this batch size based on your needs
+    handle_batches = [batch_handles_and_dids[i:i + batch_size] for i in range(0, len(batch_handles_and_dids), batch_size)]
+
+    # Update the database with the batch of handles
+    total_handles_updated = 0
+    for handle_batch in handle_batches:
+        # Collect handles that need to be updated in this batch
+        handles_to_update = []
+
+        for did, handle in handle_batch:
+            # Check if the DID and handle combination already exists in the database
+            if await does_did_and_handle_exist_in_database(did, handle):
+                logger.info(f"DID {did} with handle {handle} already exists in the database. Skipping...")
+            else:
+                handles_to_update.append((did, handle))
+
+        if handles_to_update:
+            # Update the database with the batch of handles
+            await update_user_handles(handles_to_update)
+            total_handles_updated += len(handles_to_update)
+
+        logger.info(f"Batch handles updated: {total_handles_updated}")
+
+    return total_handles_updated
 # ======================================================================================================================
 # =============================================== Main Logic ===========================================================
 ip_address = config.get("server", "ip")
@@ -686,7 +724,8 @@ port_address = config.get("server", "port")
 
 async def main():
     parser = argparse.ArgumentParser(description='ClearSky Web Server: ' + version)
-    parser.add_argument('--update-users-db', action='store_true', help='Update the database with all users')
+    parser.add_argument('--update-users-did-handle-db', action='store_true', help='Update the database with all users')
+    parser.add_argument('--update-users-did-only-db', action='store_true', help='Update the database with all users')
     parser.add_argument('--fetch-users-count', action='store_true', help='Fetch the count of users')
     parser.add_argument('--update-blocklists-db', action='store_true', help='Update the blocklists table')
     parser.add_argument('--retrieve-blocklists-db', action='store_true', help='Initial/re-initialize get for blocklists database')
@@ -694,11 +733,10 @@ async def main():
     parser.add_argument('--truncate-users_table-db', action='store_true', help='delete users table')
     parser.add_argument('--delete-database', action='store_true', help='delete entire database')
     args = parser.parse_args()
-    total_handles_updated = 0
 
     await create_connection_pool()  # Creates connection pool for db
 
-    if args.update_users_db:
+    if args.update_users_did_handle_db:
         # Call the function to update the database with all users
         logger.info("Users db update requested.")
         all_dids = await get_all_users_db(True, False)
@@ -709,27 +747,26 @@ async def main():
 
         total_handles_updated = 0
 
+        # Update the database with the batch of handles
         for i in range(0, total_dids, batch_size):
+            logger.info("Getting batch to resolve.")
             batch_dids = all_dids[i:i + batch_size]
-            batch_handles_and_dids = await fetch_handles_batch(batch_dids)
-            logger.info((str(batch_handles_and_dids)))
 
-            # Update the database with the batch of handles
-            for did, handle in batch_handles_and_dids:
-                # Check if the DID and handle combination already exists in the database
-                if await does_did_and_handle_exist_in_database(did, handle):
-                    logger.info(f"DID {did} with handle {handle} already exists in the database. Skipping...")
-                else:
-                    await update_user_handle(did, handle)
-                    total_handles_updated += 1
+            # Process the batch asynchronously
+            batch_handles_updated = await process_batch(batch_dids)
+            total_handles_updated += batch_handles_updated
 
-            # Log the progress
+            # Log progress for the current batch
             logger.info(f"Handles updated: {total_handles_updated}/{total_dids}")
-
-            # Log the first few handles in the batch for verification
-            logger.info(f"First few handles in the batch: {[handle for _, handle in batch_handles_and_dids[:5]]}")
+            logger.info(f"First few DIDs in the batch: {batch_dids[:5]}")
 
         logger.info("Users db update finished.")
+        sys.exit()
+    elif args.update_users_did_only_db:
+        # Call the function to update the database with all users dids
+        logger.info("Users db update requested.")
+        await get_all_users_db(True, False, init_db_run=True)
+        logger.info("Users db updated dids finished.")
         sys.exit()
     elif args.fetch_users_count:
         # Call the function to fetch the count of users
