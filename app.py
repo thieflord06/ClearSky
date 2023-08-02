@@ -539,7 +539,6 @@ async def fetch_handles_batch(batch_dids):
     for did in batch_dids:
         # Apply strip('\'\",') to remove leading/trailing quotes or commas
         did = did[0].strip('\',')
-        logger.info(str(did))
         handle = await resolve_did(did)
         handles.append((did, handle))
     return handles
@@ -664,6 +663,13 @@ async def update_blocklist_table(ident):
                 await connection.executemany(
                     'INSERT INTO blocklists (user_did, blocked_did, block_date) VALUES ($1, $2, $3)', data
                 )
+
+
+async def does_did_and_handle_exist_in_database(did, handle):
+    async with connection_pool.acquire() as connection:
+        # Execute the SQL query to check if the given DID exists in the "users" table
+        exists = await connection.fetchval('SELECT EXISTS(SELECT 1 FROM users WHERE did = $1 AND handle = $2)', did, handle)
+        return exists
 # ======================================================================================================================
 # =============================================== Main Logic ===========================================================
 ip_address = config.get("server", "ip")
@@ -701,6 +707,8 @@ async def main():
         batch_size = 1000
         total_dids = len(all_dids)
 
+        total_handles_updated = 0
+
         for i in range(0, total_dids, batch_size):
             batch_dids = all_dids[i:i + batch_size]
             batch_handles_and_dids = await fetch_handles_batch(batch_dids)
@@ -708,18 +716,19 @@ async def main():
 
             # Update the database with the batch of handles
             for did, handle in batch_handles_and_dids:
-                await update_user_handle(did, handle)
+                # Check if the DID and handle combination already exists in the database
+                if await does_did_and_handle_exist_in_database(did, handle):
+                    logger.info(f"DID {did} with handle {handle} already exists in the database. Skipping...")
+                else:
+                    await update_user_handle(did, handle)
+                    total_handles_updated += 1
 
-            # Update the total_handles_updated counter and log the progress
-            total_handles_updated += len(batch_handles_and_dids)
+            # Log the progress
             logger.info(f"Handles updated: {total_handles_updated}/{total_dids}")
 
             # Log the first few handles in the batch for verification
             logger.info(f"First few handles in the batch: {[handle for _, handle in batch_handles_and_dids[:5]]}")
-        # for did in all_dids:
-        #     str_did = did[0].strip('\'\",')
-        #     handle = resolve_did(str_did)
-        #     await update_user_handle(str(str_did), handle)
+
         logger.info("Users db update finished.")
         sys.exit()
     elif args.fetch_users_count:
