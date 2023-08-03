@@ -7,6 +7,10 @@ from tqdm import tqdm
 import logging
 import utils
 
+# Connection pool and lock
+connection_pool = None
+db_lock = asyncio.Lock()
+
 
 # ======================================================================================================================
 # ========================================= database handling functions ================================================
@@ -49,6 +53,7 @@ def get_single_users_blocks_db(run_update=False, get_dids=False):
 
 async def update_all_blocklists():
     all_dids = await get_all_users_db(False, True)
+    logger.info(str(all_dids))
     total_dids = len(all_dids)
     batch_size = 1000
 
@@ -251,7 +256,3 @@ pg_user = database_config["user"]
 pg_password = database_config["password"]
 pg_host = database_config["host"]
 pg_database = database_config["database"]
-
-# Connection pool and lock
-connection_pool = None
-db_lock = asyncio.Lock()

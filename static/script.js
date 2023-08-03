@@ -214,7 +214,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         optionSelected = document.getElementById("selection").value;
 
-        skipValue = true;
+        skipValue = false;
 
         // Update the value of the skipOption5 input field
         const skipOption5Input = document.getElementById('skipOption5');

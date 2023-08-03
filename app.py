@@ -305,7 +305,7 @@ async def main():
     parser.add_argument('--delete-database', action='store_true', help='delete entire database')
     args = parser.parse_args()
 
-    # await create_connection_pool()  # Creates connection pool for db
+    await database_handler.create_connection_pool()  # Creates connection pool for db
 
     if args.update_users_did_handle_db:
         # Call the function to update the database with all users
@@ -348,10 +348,7 @@ async def main():
         sys.exit()
     elif args.retrieve_blocklists_db:
         logger.info("Get Blocklists db requested.")
-        # truncate_blocklists_table()
-        # truncate_users_table()
         await database_handler.update_all_blocklists()
-        # get_single_users_blocks_db(run_update=True, get_dids=False)
         logger.info("Blocklist db fetch finished.")
         sys.exit()
     elif args.update_blocklists_db:
