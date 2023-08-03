@@ -4,7 +4,7 @@ import urllib.parse
 import asyncio
 import httpx
 from httpx import HTTPStatusError
-import logging
+from config_helper import logger
 
 
 # ======================================================================================================================
@@ -107,6 +107,3 @@ async def resolve_did(did):  # Take DID and get handle
 
     logger.warning("Failed to resolve: " + str(did) + " after multiple retries.")
     return "Error"
-
-# Initialize the logger
-logger = logging.getLogger(__name__)

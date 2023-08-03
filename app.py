@@ -1,71 +1,23 @@
+# app.py
+
 import asyncpg
 from flask import Flask, render_template, request, session, jsonify
 from datetime import datetime
 from waitress import serve
-import logging.config
-import logging
-import configparser
 import os
 import sys
 import uuid
-import platform
 import argparse
 import re
 import asyncio
 import database_handler
 import utils
 import on_wire
+import config_helper
+from config_helper import logger
 # ======================================================================================================================
 # ============================= Pre-checks // Set up logging and debugging information =================================
-# Checks if .ini file exits locally and exits if it doesn't
-if not os.path.exists('config.ini'):
-    print("No Config file", "Config.ini file does not exist\nPlace config.ini in: " + str(os.getcwd()) + "\nRe-run program")
-    sys.exit()
-
-# Read log directory from .ini and if directory structure doesn't, exist create it.
-config = configparser.ConfigParser()
-config.read("config.ini")
-
-# Check OS and assigns log location based on file OS file system
-try:
-    log_dir = None
-    current_os = platform.platform()
-    if "Windows" in current_os:
-        windows_args = config.get("windows", "args")
-        log_dir = config.get("windows", "logdir")
-        log_name = config.get("windows", "log_name")
-        linux_users_db = config.get("windows", "users_db_path")
-        config.set("handler_fileHandler", "args", str(windows_args))
-        config.set("handler_fileHandler", "logdir", str(log_dir))
-        config.set("handler_fileHandler", "log_name", str(log_name))
-        config.set("database", "users_db_path", str(linux_users_db))
-        with open('config.ini', 'w') as configfile:
-            config.write(configfile)
-            configfile.close()
-    else:
-        linux_users_db = config.get("linux", "users_db_path")
-        linux_args = config.get("linux", "args")
-        log_dir = config.get("linux", "logdir")
-        log_name = config.get("linux", "log_name")
-        config.set("handler_fileHandler", "args", str(linux_args))
-        config.set("handler_fileHandler", "logdir", str(log_dir))
-        config.set("handler_fileHandler", "log_name", str(log_name))
-        config.set("database", "users_db_path", str(linux_users_db))
-        with open('config.ini', 'w') as configfile:
-            config.write(configfile)
-            configfile.close()
-except (configparser.NoOptionError, configparser.NoSectionError, configparser.MissingSectionHeaderError):
-    sys.exit()
-try:
-    if os.path.exists(log_dir) is False:
-        os.makedirs(log_dir)
-        os.makedirs(linux_users_db)
-except PermissionError:
-    print("Cannot create log directory\nChange 'agrs' and 'logdir' in config.ini path to a path with permissions")
-    sys.exit()
-
-logging.config.fileConfig('config.ini')
-logger = logging.getLogger()
+config = config_helper.read_config()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
@@ -150,13 +102,11 @@ async def selection_handle():
 
     # Check if the flag to skip "Option 5" is present in the form data
     skip_option5 = request.form.get('skipOption5', '').lower()
-    logger.info("skip value: " + skip_option5)
     if skip_option5 == "true":
         skip_option5 = True
     elif skip_option5 == "false":
         skip_option5 = False
 
-    logger.info("after skip: " + str(skip_option5))
     if selection == "4":
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count requested")
         count = await utils.get_user_count()

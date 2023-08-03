@@ -4,8 +4,8 @@ import asyncio
 import asyncpg
 import time
 from tqdm import tqdm
-import logging
 import utils
+from config_helper import logger
 
 # Connection pool and lock
 connection_pool = None
@@ -245,8 +245,6 @@ async def process_batch(batch_dids):
 async def close_connection_pool():
     await connection_pool.close()
 
-
-logger = logging.getLogger(__name__)
 
 # Get the database configuration
 database_config = utils.get_database_config()

@@ -1,6 +1,5 @@
 # utils.py
 
-import configparser
 import asyncpg
 import httpx
 import urllib.parse
@@ -8,8 +7,9 @@ from datetime import datetime
 import asyncio
 import database_handler
 import requests
-import logging
+from config_helper import logger
 import on_wire
+import config_helper
 
 
 # ======================================================================================================================
@@ -202,13 +202,8 @@ async def fetch_handles_batch(batch_dids):
     # tasks = [resolve_did(did.strip('\'\",')) for did in batch_dids]
     # return await asyncio.gather(*tasks)
 
-
-# Read log directory from .ini and if directory structure doesn't, exist create it.
-config = configparser.ConfigParser()
-config.read("config.ini")
-
-# Initialize the logger
-logger = logging.getLogger(__name__)
+# config_helper.configure_logging()
+config = config_helper.read_config()
 
 # Get the database configuration
 database_config = get_database_config()
