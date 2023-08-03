@@ -527,12 +527,9 @@ async def get_user_block_list(ident):
 
 
 async def fetch_handles_batch(batch_dids):
-    handles = []
-    for did in batch_dids:
-        # Apply strip('\'\",') to remove leading/trailing quotes or commas
-        did = did[0].strip('\',')
-        handle = await resolve_did(did)
-        handles.append((did, handle))
+    tasks = [resolve_did(did[0].strip()) for did in batch_dids]
+    resolved_handles = await asyncio.gather(*tasks)
+    handles = [(did[0], handle) for did, handle in zip(batch_dids, resolved_handles) if handle is not None]
     return handles
     # tasks = [resolve_did(did.strip('\'\",')) for did in batch_dids]
     # return await asyncio.gather(*tasks)
@@ -663,17 +660,30 @@ async def update_user_handles(handles_to_update):
     async with connection_pool.acquire() as connection:
         async with connection.transaction():
             # Create a temporary table to hold the handles to update
-            await connection.execute('CREATE TEMP TABLE temp_handles (did TEXT, handle TEXT) ON COMMIT DROP')
-
-            # Insert the handles into the temporary table
-            await connection.copy_records_to_table('temp_handles', records=handles_to_update)
-
-            # Perform the update using a SQL query with a JOIN between the temp table and the users table
             await connection.execute('''
-                UPDATE users AS u
-                SET handle = t.handle
+                CREATE TEMP TABLE temp_handles (
+                    did TEXT PRIMARY KEY,
+                    handle TEXT
+                )
+            ''')
+
+            # Populate the temporary table with the handles to update
+            for did, handle in handles_to_update:
+                await connection.execute('''
+                    INSERT INTO temp_handles (did, handle)
+                    VALUES ($1, $2)
+                ''', did, handle)
+
+            # # Insert the handles into the temporary table
+            # await connection.copy_records_to_table('temp_handles', records=handles_to_update)
+
+            # Update the users table using the temporary table
+            await connection.execute('''
+                INSERT INTO users (did, handle)
+                SELECT t.did, t.handle
                 FROM temp_handles AS t
-                WHERE u.did = t.did
+                ON CONFLICT (did) DO UPDATE
+                SET handle = EXCLUDED.handle
             ''')
 
         logger.info(f"Updated {len(handles_to_update)} handles in the database.")
@@ -684,7 +694,7 @@ async def process_batch(batch_dids):
     logger.info("Batch resolved.")
 
     # Split the batch of handles into smaller batches
-    batch_size = 100  # You can adjust this batch size based on your needs
+    batch_size = 1000  # You can adjust this batch size based on your needs
     handle_batches = [batch_handles_and_dids[i:i + batch_size] for i in range(0, len(batch_handles_and_dids), batch_size)]
 
     # Update the database with the batch of handles
@@ -692,9 +702,10 @@ async def process_batch(batch_dids):
     for handle_batch in handle_batches:
         # Collect handles that need to be updated in this batch
         handles_to_update = []
-
+        logger.debug(str(handle_batch))
         for did, handle in handle_batch:
             # Check if the DID and handle combination already exists in the database
+            logger.debug("Did: " + str(did) + " | handle: " + str(handle))
             if await does_did_and_handle_exist_in_database(did, handle):
                 logger.info(f"DID {did} with handle {handle} already exists in the database. Skipping...")
             else:
@@ -702,8 +713,13 @@ async def process_batch(batch_dids):
 
         if handles_to_update:
             # Update the database with the batch of handles
-            await update_user_handles(handles_to_update)
-            total_handles_updated += len(handles_to_update)
+            async with connection_pool.acquire() as connection:
+                async with connection.transaction():
+                    await update_user_handles(handles_to_update)
+                    total_handles_updated += len(handles_to_update)
+
+            # # Commit changes after each batch update
+            # await connection_pool.acquire().commit()
 
         logger.info(f"Batch handles updated: {total_handles_updated}")
 
@@ -713,7 +729,8 @@ async def process_batch(batch_dids):
 ip_address = config.get("server", "ip")
 port_address = config.get("server", "port")
 
-# python app.py --update-users-db // command to update users db
+# python app.py --update-users-did-handle-db // command to update users db with dids and handles
+# python app.py --update-users-did-only-db // command to update users db with dids only
 # python app.py --fetch-users-count // command to get current count in db
 # python app.py --update-blocklists-db // command to update all users blocklists
 # python app.py --truncate-blocklists_table-db // command to update all users blocklists
@@ -744,24 +761,30 @@ async def main():
         logger.info("Update users handles requested.")
         batch_size = 1000
         total_dids = len(all_dids)
-
+        batch_tasks = []
         total_handles_updated = 0
 
-        # Update the database with the batch of handles
-        for i in range(0, total_dids, batch_size):
-            logger.info("Getting batch to resolve.")
-            batch_dids = all_dids[i:i + batch_size]
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                # Concurrently process batches and update the handles
+                for i in range(0, total_dids, batch_size):
+                    logger.info("Getting batch to resolve.")
+                    batch_dids = all_dids[i:i + batch_size]
+                    # batch_tasks.append(process_batch(batch_dids))
 
-            # Process the batch asynchronously
-            batch_handles_updated = await process_batch(batch_dids)
-            total_handles_updated += batch_handles_updated
+                    # Process the batch asynchronously
+                    batch_handles_updated = await process_batch(batch_dids)
+                    total_handles_updated += batch_handles_updated
 
-            # Log progress for the current batch
-            logger.info(f"Handles updated: {total_handles_updated}/{total_dids}")
-            logger.info(f"First few DIDs in the batch: {batch_dids[:5]}")
+                    # Commit changes after each batch update
+                    # await connection_pool.acquire().commit()
 
-        logger.info("Users db update finished.")
-        sys.exit()
+                    # Log progress for the current batch
+                    logger.info(f"Handles updated: {total_handles_updated}/{total_dids}")
+                    logger.info(f"First few DIDs in the batch: {batch_dids[:5]}")
+
+                logger.info("Users db update finished.")
+                sys.exit()
     elif args.update_users_did_only_db:
         # Call the function to update the database with all users dids
         logger.info("Users db update requested.")
