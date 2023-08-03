@@ -241,9 +241,6 @@ async def close_connection_pool():
     await connection_pool.close()
 
 
-logging.config.fileConfig('config.ini')
-logger = logging.getLogger()
-# Initialize the logger
 logger = logging.getLogger(__name__)
 
 # Get the database configuration

@@ -202,10 +202,6 @@ async def fetch_handles_batch(batch_dids):
 config = configparser.ConfigParser()
 config.read("config.ini")
 
-
-logging.config.fileConfig('config.ini')
-logger = logging.getLogger()
-
 # Initialize the logger
 logger = logging.getLogger(__name__)
 

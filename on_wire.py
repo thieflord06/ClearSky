@@ -108,8 +108,5 @@ async def resolve_did(did):  # Take DID and get handle
     logger.warning("Failed to resolve: " + str(did) + " after multiple retries.")
     return "Error"
 
-logging.config.fileConfig('config.ini')
-logger = logging.getLogger()
-
 # Initialize the logger
 logger = logging.getLogger(__name__)
