@@ -59,12 +59,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function showInProgressContainer() {
         console.log('showInProgressContainer() called');
-        pendingRequestContainer.sytle.display = 'block'
+        pendingRequestContainer.style.display = 'block'
     }
 
     function hideInProgressContainer() {
         console.log('hideInProgressContainer() called');
-        pendingRequestContainer.sytle.display = 'none'
+        pendingRequestContainer.style.display = 'none'
     }
 
     // Function to show the result container
@@ -215,39 +215,40 @@ document.addEventListener('DOMContentLoaded', function() {
 
         optionSelected = document.getElementById("selection").value;
 
-//        // Mark that a request is in progress
-//        requestInProgress = true;
+        // Mark that a request is in progress
+        requestInProgress = false;
 
-//        if (selection.value === '5') {
-//            // Create a new FormData object and add a flag to indicate "Option 5" should not be processed
-//            const formData = new FormData(selectionForm);
-//            formData.append('skipOption5', 'true');
-//
-//            // If Option 5 is selected, redirect to the "Coming Soon" page
-//            fetch('/selection_handle', {
-//                method: 'POST',
-//                body: FormData
-//            })
-//            .then(response => {
-//                // Check if the response status is successful (HTTP 200-299)
-//                if (!response.ok) {
-//                    throw new Error('Network response was not ok');
-//                }
-//                hideBaseContainer();
-//                hideIndexContainer();
-//                showComingSoonContainer();
-//                return; // Return to prevent further execution
-//            })
-//            .catch(error => {
-//                // Handle any errors here
-//                hideBaseContainer();
-//                hideIndexContainer();
-//                showErrorContainer();
-//                console.error('Error submitting form:', error);
-//                // You can show an error message to the user if needed
-//            });
-//            return; // Return to prevent further execution
-//        }
+        if (selection.value === '5') {
+            // Create a new FormData object and add a flag to indicate "Option 5" should not be processed
+            const formData = new FormData(selectionForm);
+            formData.append('skipOption5', 'true');
+
+            // If Option 5 is selected, redirect to the "Coming Soon" page
+            fetch('/selection_handle', {
+                method: 'POST',
+                body: formData
+//                body: new FormData(selectionForm)
+            })
+            .then(response => {
+                // Check if the response status is successful (HTTP 200-299)
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                hideBaseContainer();
+                hideIndexContainer();
+                showComingSoonContainer();
+                return; // Return to prevent further execution
+            })
+            .catch(error => {
+                // Handle any errors here
+                hideBaseContainer();
+                hideIndexContainer();
+                showErrorContainer();
+                console.error('Error submitting form:', error);
+                // You can show an error message to the user if needed
+            });
+            return; // Return to prevent further execution
+        }
         if (optionSelected === "3") {
 //            var confirmed = window.confirm("This will take an extremely long time! Do you want to proceed?");
             alert("Getting results may take some time, if the user is blocking a lot of accounts.");
@@ -267,7 +268,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Mark that a request is in progress
-        requestInProgress = true;
+        requestInProgress = false;
 
         submitButton.disabled = true; // Disable the form submission button
         hideBaseContainer();

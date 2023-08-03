@@ -149,7 +149,12 @@ async def selection_handle():
     selection = request.form['selection']
 
     # Check if the flag to skip "Option 5" is present in the form data
-    skip_option5 = request.form.get('skipOption5', '').lower() == 'true'
+    skip_option5 = request.form.get('skipOption5', '').lower()
+    logger.info("skip value: " + skip_option5)
+    if skip_option5 == "true":
+        skip_option5 = True
+    else:
+        skip_option5 = False
 
     if selection == "4":
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count requested")
@@ -201,6 +206,8 @@ async def selection_handle():
                 logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Blocklist Request Result: " + identifier + " | " + "Blocked by: " + str(blocks) + " :: " + "Total count: " + str(count))
                 return jsonify(response_data)
                 # return jsonify({"user": identifier, "block_list": blocks, "count": count})
+            elif skip_option5:
+                return jsonify({"message": "Option 5 skipped"})
     else:
         return render_template('error.html')
 
