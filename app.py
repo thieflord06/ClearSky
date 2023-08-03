@@ -659,6 +659,9 @@ async def does_did_and_handle_exist_in_database(did, handle):
 async def update_user_handles(handles_to_update):
     async with connection_pool.acquire() as connection:
         async with connection.transaction():
+            # Drop the temporary table if it exists
+            await connection.execute('DROP TABLE IF EXISTS temp_handles')
+
             # Create a temporary table to hold the handles to update
             await connection.execute('''
                 CREATE TEMP TABLE temp_handles (
@@ -707,12 +710,13 @@ async def process_batch(batch_dids):
             # Check if the DID and handle combination already exists in the database
             logger.debug("Did: " + str(did) + " | handle: " + str(handle))
             if await does_did_and_handle_exist_in_database(did, handle):
-                logger.info(f"DID {did} with handle {handle} already exists in the database. Skipping...")
+                logger.debug(f"DID {did} with handle {handle} already exists in the database. Skipping...")
             else:
                 handles_to_update.append((did, handle))
 
         if handles_to_update:
             # Update the database with the batch of handles
+            logger.info("committing batch.")
             async with connection_pool.acquire() as connection:
                 async with connection.transaction():
                     await update_user_handles(handles_to_update)
