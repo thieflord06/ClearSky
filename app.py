@@ -1,8 +1,5 @@
-import time
 import asyncpg
 from flask import Flask, render_template, request, session, jsonify
-import requests
-import urllib.parse
 from datetime import datetime
 from waitress import serve
 import logging.config
@@ -13,12 +10,11 @@ import sys
 import uuid
 import platform
 import argparse
-from tqdm import tqdm
 import re
 import asyncio
-import hypercorn
-import httpx
-from httpx import Timeout, HTTPStatusError
+import database_handler
+import utils
+import on_wire
 # ======================================================================================================================
 # ============================= Pre-checks // Set up logging and debugging information =================================
 # Checks if .ini file exits locally and exits if it doesn't
@@ -97,6 +93,15 @@ users_db_folder_path = config.get("database", "users_db_path")
 users_db_filename = 'users_cache.db'
 users_db_path = users_db_folder_path + users_db_filename
 
+# Get the database configuration
+database_config = utils.get_database_config()
+
+# Now you can access the configuration values using dictionary keys
+pg_user = database_config["user"]
+pg_password = database_config["password"]
+pg_host = database_config["host"]
+pg_database = database_config["database"]
+
 
 # ======================================================================================================================
 # ================================================== HTML Pages ========================================================
@@ -145,7 +150,7 @@ async def selection_handle():
 
     if selection == "4":
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count requested")
-        count = await get_user_count()
+        count = await utils.get_user_count()
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count: " + str(count))
 
         return jsonify({"count": count})
@@ -155,30 +160,30 @@ async def selection_handle():
                 return render_template('error.html')
             if selection == "1":
                 logger.info(str(session_ip) + " > " + str(*session.values()) + ": " + "DID resolve request made for: " + identifier)
-                result = await resolve_handle(identifier)
+                result = await on_wire.resolve_handle(identifier)
                 logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + result)
 
                 return jsonify({"result": result})
             elif selection == "2":
                 logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Handle resolve request made for: " + identifier)
-                result = await resolve_did(identifier)
+                result = await on_wire.resolve_did(identifier)
                 logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + str(result))
 
                 return jsonify({"result": result})
             elif selection == "3":
                 if "did" in identifier:
-                    identifier = await resolve_did(identifier)
+                    identifier = await on_wire.resolve_did(identifier)
                 logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Block list requested for: " + identifier)
                 blocklist, count = await get_user_block_list_html(identifier)
 
                 return jsonify({"block_list": blocklist, "user": identifier, "count": count})
             elif selection == "5":
                 if "did" not in identifier:
-                    identifier = await resolve_handle(identifier)
+                    identifier = await on_wire.resolve_handle(identifier)
                 logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Block list requested for: " + identifier)
-                blocks, dates, count = await get_single_user_blocks(identifier)
+                blocks, dates, count = await utils.get_single_user_blocks(identifier)
                 if "did" in identifier:
-                    identifier = await resolve_did(identifier)
+                    identifier = await on_wire.resolve_did(identifier)
 
                 if type(blocks) != list:
                     blocks = ["None"]
@@ -198,7 +203,7 @@ async def selection_handle():
 
 
 async def get_user_block_list_html(ident):
-    blocked_users, timestamps = await get_user_block_list(ident)
+    blocked_users, timestamps = await utils.get_user_block_list(ident)
     handles = []
     block_list = []
 
@@ -263,477 +268,6 @@ def is_handle(identifier):
 
 
 # ======================================================================================================================
-# ============================================= On-Wire requests =======================================================
-async def resolve_handle(info):  # Take Handle and get DID
-    base_url = "https://bsky.social/xrpc/"
-    url = urllib.parse.urljoin(base_url, "com.atproto.identity.resolveHandle")
-    params = {
-        "handle": info
-    }
-
-    encoded_params = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
-    full_url = f"{url}?{encoded_params}"
-    logger.debug(full_url)
-
-    max_retries = 5
-    retry_count = 0
-
-    while retry_count < max_retries:
-        try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(full_url)
-                response.raise_for_status()
-
-                response_json = response.json()
-                logger.debug("response: " + str(response_json))
-
-                result = list(response_json.values())[0]
-
-                return result
-        except (httpx.RequestError, HTTPStatusError) as e:
-            retry_count += 1
-            logger.error(f"Error occurred while making the API call: {e}")
-            await asyncio.sleep(2)
-            continue
-
-    logger.warning("Resolve error for: " + info + " after multiple retries.")
-    return "error"
-
-
-async def resolve_did(did):  # Take DID and get handle
-    handle = did
-    base_url = "https://bsky.social/xrpc/"
-    url = urllib.parse.urljoin(base_url, "com.atproto.repo.describeRepo")
-    params = {
-        "repo": handle
-    }
-
-    encoded_params = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
-    full_url = f"{url}?{encoded_params}"
-    logger.debug(full_url)
-
-    max_retries = 5
-    retry_count = 0
-
-    while retry_count < max_retries:
-        try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(full_url)
-                response.raise_for_status()
-
-                response_json = response.json()
-                logger.debug("response: " + str(response_json))
-
-                if response.status_code == 200:
-                    records = response_json.get("handle", "")
-                    return records
-                else:
-                    error_message = response_json.get("message", "")
-                    logger.debug(error_message)
-
-                    if "could not find user" in error_message.lower():
-                        logger.warning("User not found. Skipping...")
-                        return
-                    else:
-                        retry_count += 1
-                        logger.warning("Error:" + str(response.status_code))
-                        logger.warning("Retrying: " + str(full_url))
-                        await asyncio.sleep(10)
-        except httpx.RequestError as e:
-            retry_count += 1
-            logger.error(f"Error occurred while making the API call: {e}")
-            await asyncio.sleep(2)
-            continue
-        except httpx.DecodingError as e:
-            retry_count += 1
-            logger.error(f"Error occurred while parsing JSON response: {e}")
-            await asyncio.sleep(2)
-            continue
-        except httpx.HTTPStatusError as e:
-            retry_count += 1
-            logger.error(f"Error occurred while parsing JSON response: {e}")
-            await asyncio.sleep(2)
-            continue
-        except Exception as e:
-            retry_count += 1
-            logger.error(f"An unexpected error occurred: {e}")
-            await asyncio.sleep(2)
-            continue
-
-    logger.warning("Failed to resolve: " + str(did) + " after multiple retries.")
-    return "Error"
-
-
-# ======================================================================================================================
-# ============================================= Features functions =====================================================
-def get_all_users():
-    base_url = "https://bsky.social/xrpc/"
-    limit = 1000
-    cursor = None
-    records = []
-
-    logger.info("Getting all dids.")
-
-    while True:
-        url = urllib.parse.urljoin(base_url, "com.atproto.sync.listRepos")
-        params = {
-            "limit": limit,
-        }
-        if cursor:
-            params["cursor"] = cursor
-
-        encoded_params = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
-        full_url = f"{url}?{encoded_params}"
-        logger.debug(full_url)
-        response = requests.get(full_url)
-
-        if response.status_code == 200:
-            response_json = response.json()
-            repos = response_json.get("repos", [])
-            for repo in repos:
-                records.append((repo["did"],))
-
-            cursor = response_json.get("cursor")
-            if not cursor:
-                break
-        else:
-            logger.warning("Response status code: " + str(response.status_code))
-            pass
-    return records
-
-
-async def get_user_handle(did):
-    async with asyncpg.create_pool(
-        user=pg_user,
-        password=pg_password,
-        host=pg_host,
-        database=pg_database
-    ) as new_connection_pool:
-        async with new_connection_pool.acquire() as connection:
-            handle = await connection.fetchval('SELECT handle FROM users WHERE did = $1', did)
-        return handle
-
-
-async def get_user_count():
-    async with asyncpg.create_pool(
-            user=pg_user,
-            password=pg_password,
-            host=pg_host,
-            database=pg_database
-    ) as new_connection_pool:
-        async with new_connection_pool.acquire() as connection:
-            count = await connection.fetchval('SELECT COUNT(*) FROM users')
-            return count
-
-
-async def get_single_user_blocks(ident):
-    # Execute the SQL query to get all the user_dids that have the specified did in their blocklist
-    async with connection_pool.acquire() as connection:
-        result = await connection.fetch('SELECT user_did, block_date FROM blocklists WHERE blocked_did = $1', ident)
-
-    # # Execute the SQL query to get all the user_dids that have the specified did in their blocklist
-    # connection_pool.execute('SELECT user_did, block_date FROM blocklists WHERE blocked_did = ?', (ident,))
-    # result = connection_pool.fetchall()
-
-    if result:
-        # Extract the user_dids from the query result
-        user_dids = [item[0] for item in result]
-        block_dates = [item[1] for item in result]
-        count = len(user_dids)
-
-        resolved_handles = []
-
-        for user_did in user_dids:
-            handle = await get_user_handle(user_did)
-            resolved_handles.append(handle)
-
-        return resolved_handles, block_dates, count
-    else:
-        # ident = resolve_handle(ident)
-        no_blocks = ident + ": has not been blocked by anyone."
-        date = datetime.now().date()
-        return no_blocks, date, 0
-
-
-async def get_user_block_list(ident):
-    base_url = "https://bsky.social/xrpc/"
-    collection = "app.bsky.graph.block"
-    limit = 100
-    blocked_users = []
-    created_dates = []
-    cursor = None
-    retry_count = 0
-    max_retries = 5
-
-    while retry_count < max_retries:
-        url = urllib.parse.urljoin(base_url, "com.atproto.repo.listRecords")
-        params = {
-            "repo": ident,
-            "limit": limit,
-            "collection": collection,
-            # "cursor": cursor
-        }
-
-        if cursor:
-            params["cursor"] = cursor
-
-        encoded_params = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
-        full_url = f"{url}?{encoded_params}"
-        logger.debug(full_url)
-
-        try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
-                response.raise_for_status()  # Raise an exception for any HTTP error status codes
-        except httpx.ReadTimeout as e:
-            logger.warning("Request timed out. Retrying... Retry count: %d", retry_count)
-            retry_count += 1
-            await asyncio.sleep(5)
-            continue
-        except httpx.RequestException as e:
-            logger.warning("Error during API call: %s", e)
-            retry_count += 1
-            await asyncio.sleep(5)
-            continue
-
-        if response.status_code == 200:
-            response_json = response.json()
-            records = response_json.get("records", [])
-
-            for record in records:
-                value = record.get("value", {})
-                subject = value.get("subject")
-                created_at_value = value.get("createdAt")
-                if subject:
-                    blocked_users.append(subject)
-                if created_at_value:
-                    try:
-                        created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S.%fZ").date()
-                    except ValueError:
-                        created_date = None
-                    created_dates.append(created_date)
-
-            cursor = response_json.get("cursor")
-            if not cursor:
-                break
-        else:
-            retry_count += 1
-            logger.warning("Error during API call. Status code: %s", response.status_code)
-            await asyncio.sleep(5)
-            continue
-
-    if retry_count == max_retries:
-        logger.warning("Could not get block list for: " + ident)
-        return ["error"], [str(datetime.now().date())]
-    if not blocked_users and retry_count != max_retries:
-        return [], []
-
-    return blocked_users, created_dates
-
-
-async def fetch_handles_batch(batch_dids):
-    tasks = [resolve_did(did[0].strip()) for did in batch_dids]
-    resolved_handles = await asyncio.gather(*tasks)
-    handles = [(did[0], handle) for did, handle in zip(batch_dids, resolved_handles) if handle is not None]
-    return handles
-    # tasks = [resolve_did(did.strip('\'\",')) for did in batch_dids]
-    # return await asyncio.gather(*tasks)
-
-# ======================================================================================================================
-# ========================================= database handling functions ================================================
-pg_user = config.get("database", "pg_user")
-pg_password = config.get("database", "pg_password")
-pg_host = config.get("database", "pg_host")
-pg_database = config.get("database", "pg_database")
-
-connection_pool = None
-db_lock = asyncio.Lock()
-
-
-async def create_connection_pool():
-    global connection_pool
-
-    # Acquire the lock before creating the connection pool
-    async with db_lock:
-        if connection_pool is None:
-            connection_pool = await asyncpg.create_pool(
-                user=pg_user,
-                password=pg_password,
-                host=pg_host,
-                database=pg_database
-            )
-
-
-async def count_users_table():
-    async with connection_pool.acquire() as connection:
-        # Execute the SQL query to count the rows in the "users" table
-        return await connection.fetchval('SELECT COUNT(*) FROM users')
-
-
-def get_single_users_blocks_db(run_update=False, get_dids=False):
-    all_dids = get_all_users_db(run_update=run_update, get_dids=get_dids)
-
-    for i, ident in enumerate(tqdm(all_dids, desc="Updating blocklists", unit="DID", ncols=100)):
-        user_did = ident[0]
-        update_blocklist_table(user_did)
-
-        # Sleep for 60 seconds every 5 minutes
-        if (i + 1) % (300000 // 100) == 0:  # Assuming you have 100 dids in all_dids
-            logger.info("Pausing...")
-            time.sleep(60)
-
-
-async def get_all_users_db(run_update=False, get_dids=False, get_count=False, init_db_run=False):
-    batch_size = 10000
-    async with connection_pool.acquire() as connection:
-        if get_count:
-            # Fetch the total count of users in the "users" table
-            count = await connection.fetchval('SELECT COUNT(*) FROM users')
-
-            return count
-        if not run_update:
-            if get_dids:
-                # Return the user_dids from the "users" table
-                return await connection.fetch('SELECT did FROM users')
-        else:
-            # Get all DIDs
-            records = get_all_users()
-
-            # Transform the records into a list of tuples with the correct format for insertion
-            formatted_records = [(record[0],) for record in records]
-
-            logger.info(f"Total DIDs: {len(formatted_records)}")
-
-            if init_db_run:
-                logger.info("Connected to db.")
-                async with connection.transaction():
-                    # Insert data in batches
-                    for i in range(0, len(formatted_records), batch_size):
-                        batch_data = records[i: i + batch_size]
-                        try:
-                            await connection.executemany('INSERT INTO users (did) VALUES ($1) ON CONFLICT DO NOTHING',
-                                                         batch_data)
-                            logger.info(
-                                f"Inserted batch {i // batch_size + 1} of {len(formatted_records) // batch_size + 1} batches.")
-                        except Exception as e:
-                            logger.error(f"Error inserting batch {i // batch_size + 1}: {str(e)}")
-
-        # Return the records when run_update is false and get_count is called
-        return records
-
-
-async def update_blocklist_table(ident):
-    blocked_by_list, block_date = get_user_block_list(ident)
-
-    if not blocked_by_list:
-        return
-
-    async with connection_pool.acquire() as connection:
-        logger.info("Connected to db.")
-        async with connection.transaction():
-            # Retrieve the existing blocklist entries for the specified ident
-            existing_records = await connection.fetch(
-                'SELECT blocked_did, block_date FROM blocklists WHERE user_did = $1', ident
-            )
-            existing_blocklist_entries = {(record['blocked_did'], record['block_date']) for record in existing_records}
-
-            # Prepare the data to be inserted into the database
-            data = [(ident, blocked_did, date) for blocked_did, date in zip(blocked_by_list, block_date)]
-
-            # Convert the new blocklist entries to a set for comparison
-            new_blocklist_entries = {(record['blocked_did'], record['block_date']) for record in data}
-
-            # Check if there are differences between the existing and new blocklist entries
-            if existing_blocklist_entries != new_blocklist_entries:
-                # Delete existing blocklist entries for the specified ident
-                await connection.execute('DELETE FROM blocklists WHERE user_did = $1', ident)
-
-                # Insert the new blocklist entries
-                await connection.executemany(
-                    'INSERT INTO blocklists (user_did, blocked_did, block_date) VALUES ($1, $2, $3)', data
-                )
-
-
-async def does_did_and_handle_exist_in_database(did, handle):
-    async with connection_pool.acquire() as connection:
-        # Execute the SQL query to check if the given DID exists in the "users" table
-        exists = await connection.fetchval('SELECT EXISTS(SELECT 1 FROM users WHERE did = $1 AND handle = $2)', did, handle)
-        return exists
-
-
-async def update_user_handles(handles_to_update):
-    async with connection_pool.acquire() as connection:
-        async with connection.transaction():
-            # Drop the temporary table if it exists
-            await connection.execute('DROP TABLE IF EXISTS temp_handles')
-
-            # Create a temporary table to hold the handles to update
-            await connection.execute('''
-                CREATE TEMP TABLE temp_handles (
-                    did TEXT PRIMARY KEY,
-                    handle TEXT
-                )
-            ''')
-
-            # Populate the temporary table with the handles to update
-            for did, handle in handles_to_update:
-                await connection.execute('''
-                    INSERT INTO temp_handles (did, handle)
-                    VALUES ($1, $2)
-                ''', did, handle)
-
-            # # Insert the handles into the temporary table
-            # await connection.copy_records_to_table('temp_handles', records=handles_to_update)
-
-            # Update the users table using the temporary table
-            await connection.execute('''
-                INSERT INTO users (did, handle)
-                SELECT t.did, t.handle
-                FROM temp_handles AS t
-                ON CONFLICT (did) DO UPDATE
-                SET handle = EXCLUDED.handle
-            ''')
-
-        logger.info(f"Updated {len(handles_to_update)} handles in the database.")
-
-
-async def process_batch(batch_dids):
-    batch_handles_and_dids = await fetch_handles_batch(batch_dids)
-    logger.info("Batch resolved.")
-
-    # Split the batch of handles into smaller batches
-    batch_size = 1000  # You can adjust this batch size based on your needs
-    handle_batches = [batch_handles_and_dids[i:i + batch_size] for i in range(0, len(batch_handles_and_dids), batch_size)]
-
-    # Update the database with the batch of handles
-    total_handles_updated = 0
-    for handle_batch in handle_batches:
-        # Collect handles that need to be updated in this batch
-        handles_to_update = []
-        logger.debug(str(handle_batch))
-        for did, handle in handle_batch:
-            # Check if the DID and handle combination already exists in the database
-            logger.debug("Did: " + str(did) + " | handle: " + str(handle))
-            if await does_did_and_handle_exist_in_database(did, handle):
-                logger.debug(f"DID {did} with handle {handle} already exists in the database. Skipping...")
-            else:
-                handles_to_update.append((did, handle))
-
-        if handles_to_update:
-            # Update the database with the batch of handles
-            logger.info("committing batch.")
-            async with connection_pool.acquire() as connection:
-                async with connection.transaction():
-                    await update_user_handles(handles_to_update)
-                    total_handles_updated += len(handles_to_update)
-
-            # # Commit changes after each batch update
-            # await connection_pool.acquire().commit()
-
-        logger.info(f"Batch handles updated: {total_handles_updated}")
-
-    return total_handles_updated
-# ======================================================================================================================
 # =============================================== Main Logic ===========================================================
 ip_address = config.get("server", "ip")
 port_address = config.get("server", "port")
@@ -760,12 +294,12 @@ async def main():
     parser.add_argument('--delete-database', action='store_true', help='delete entire database')
     args = parser.parse_args()
 
-    await create_connection_pool()  # Creates connection pool for db
+    # await create_connection_pool()  # Creates connection pool for db
 
     if args.update_users_did_handle_db:
         # Call the function to update the database with all users
         logger.info("Users db update requested.")
-        all_dids = await get_all_users_db(True, False)
+        all_dids = await database_handler.get_all_users_db(True, False)
         logger.info("Users db updated dids.")
         logger.info("Update users handles requested.")
         batch_size = 1000
@@ -773,20 +307,16 @@ async def main():
         batch_tasks = []
         total_handles_updated = 0
 
-        async with connection_pool.acquire() as connection:
+        async with database_handler.connection_pool.acquire() as connection:
             async with connection.transaction():
                 # Concurrently process batches and update the handles
                 for i in range(0, total_dids, batch_size):
                     logger.info("Getting batch to resolve.")
                     batch_dids = all_dids[i:i + batch_size]
-                    # batch_tasks.append(process_batch(batch_dids))
 
                     # Process the batch asynchronously
-                    batch_handles_updated = await process_batch(batch_dids)
+                    batch_handles_updated = await database_handler.process_batch(batch_dids)
                     total_handles_updated += batch_handles_updated
-
-                    # Commit changes after each batch update
-                    # await connection_pool.acquire().commit()
 
                     # Log progress for the current batch
                     logger.info(f"Handles updated: {total_handles_updated}/{total_dids}")
@@ -797,24 +327,25 @@ async def main():
     elif args.update_users_did_only_db:
         # Call the function to update the database with all users dids
         logger.info("Users db update requested.")
-        await get_all_users_db(True, False, init_db_run=True)
+        await database_handler.get_all_users_db(True, False, init_db_run=True)
         logger.info("Users db updated dids finished.")
         sys.exit()
     elif args.fetch_users_count:
         # Call the function to fetch the count of users
-        count = await count_users_table()
+        count = await database_handler.count_users_table()
         logger.info(f"Total users in the database: {count}")
         sys.exit()
     elif args.retrieve_blocklists_db:
         logger.info("Get Blocklists db requested.")
         # truncate_blocklists_table()
         # truncate_users_table()
-        get_single_users_blocks_db(run_update=True, get_dids=False)
+        await database_handler.update_all_blocklists()
+        # get_single_users_blocks_db(run_update=True, get_dids=False)
         logger.info("Blocklist db fetch finished.")
         sys.exit()
     elif args.update_blocklists_db:
         logger.info("Update Blocklists db requested.")
-        get_single_users_blocks_db(run_update=False, get_dids=True)
+        database_handler.get_single_users_blocks_db(run_update=False, get_dids=True)
         logger.info("Update Blocklists db finished.")
         sys.exit()
     else:
