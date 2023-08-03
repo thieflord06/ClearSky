@@ -10,9 +10,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const comingSoonContainer = document.getElementById('comingsoon-container');
     const errorContainer = document.getElementById('error-container');
     const pendingRequestContainer = document.getElementById('pending-request-container');
+    const timeoutContainer = document.getElementById('timeout-container');
+    const TIMEOUT_DURATION = 180000;
 
     let requestInProgress = false;
+    let optionSelected;
     const submitButton = document.getElementById('submit-button');
+
+    function handleTimeout() {
+        // Perform actions when the server doesn't respond within the specified timeout
+        // For example, you can display an error message or take other appropriate actions.
+        console.log('Server request timed out. Please try again later.');
+        hideInProgressContainer(); // Hide the "request in progress" container if it was shown
+        showTimeoutContainer(); // Show the error container with a timeout message
+    }
 
     // Function to show the loading screen
     function showLoadingScreen() {
@@ -207,32 +218,36 @@ document.addEventListener('DOMContentLoaded', function() {
 //        // Mark that a request is in progress
 //        requestInProgress = true;
 
-        if (selection.value === '5') {
-            // If Option 5 is selected, redirect to the "Coming Soon" page
-            fetch('/selection_handle', {
-                method: 'POST',
-                body: new FormData(selectionForm)
-            })
-            .then(response => {
-                // Check if the response status is successful (HTTP 200-299)
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                hideBaseContainer();
-                hideIndexContainer();
-                showComingSoonContainer();
-                return; // Return to prevent further execution
-            })
-            .catch(error => {
-                // Handle any errors here
-                hideBaseContainer();
-                hideIndexContainer();
-                showErrorContainer();
-                console.error('Error submitting form:', error);
-                // You can show an error message to the user if needed
-            });
-            return; // Return to prevent further execution
-        }
+//        if (selection.value === '5') {
+//            // Create a new FormData object and add a flag to indicate "Option 5" should not be processed
+//            const formData = new FormData(selectionForm);
+//            formData.append('skipOption5', 'true');
+//
+//            // If Option 5 is selected, redirect to the "Coming Soon" page
+//            fetch('/selection_handle', {
+//                method: 'POST',
+//                body: FormData
+//            })
+//            .then(response => {
+//                // Check if the response status is successful (HTTP 200-299)
+//                if (!response.ok) {
+//                    throw new Error('Network response was not ok');
+//                }
+//                hideBaseContainer();
+//                hideIndexContainer();
+//                showComingSoonContainer();
+//                return; // Return to prevent further execution
+//            })
+//            .catch(error => {
+//                // Handle any errors here
+//                hideBaseContainer();
+//                hideIndexContainer();
+//                showErrorContainer();
+//                console.error('Error submitting form:', error);
+//                // You can show an error message to the user if needed
+//            });
+//            return; // Return to prevent further execution
+//        }
         if (optionSelected === "3") {
 //            var confirmed = window.confirm("This will take an extremely long time! Do you want to proceed?");
             alert("Getting results may take some time, if the user is blocking a lot of accounts.");
@@ -258,6 +273,12 @@ document.addEventListener('DOMContentLoaded', function() {
         hideBaseContainer();
         hideIndexContainer();
         showLoadingScreen(); // Show the loading screen
+
+        // Set up the timeout
+        const timeoutId = setTimeout(() => {
+            // Function to execute if the timeout occurs before the server responds
+            handleTimeout(); // You need to implement this function (see Step 3)
+        }, TIMEOUT_DURATION);
 
         // Perform your form submission or AJAX request using JavaScript Fetch API or Axios
         fetch('/selection_handle', {
