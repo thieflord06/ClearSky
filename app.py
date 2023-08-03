@@ -153,9 +153,10 @@ async def selection_handle():
     logger.info("skip value: " + skip_option5)
     if skip_option5 == "true":
         skip_option5 = True
-    else:
+    elif skip_option5 == "false":
         skip_option5 = False
 
+    logger.info("after skip: " + str(skip_option5))
     if selection == "4":
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count requested")
         count = await utils.get_user_count()

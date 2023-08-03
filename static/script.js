@@ -211,23 +211,24 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add event listener to the form submit button
     selectionForm.addEventListener('submit', function (event) {
         event.preventDefault(); // Prevent the default form submission
-        console.log('Form submit button clicked');
 
         optionSelected = document.getElementById("selection").value;
 
-        // Mark that a request is in progress
-        requestInProgress = false;
+        skipValue = true;
 
-        if (selection.value === '5') {
-            // Create a new FormData object and add a flag to indicate "Option 5" should not be processed
-            const formData = new FormData(selectionForm);
-            formData.append('skipOption5', 'true');
+        // Update the value of the skipOption5 input field
+        const skipOption5Input = document.getElementById('skipOption5');
+        skipOption5Input.value = skipValue.toString(); // Convert boolean to string
 
+        // Create a new FormData object and add skipValue to it
+        const formData = new FormData(selectionForm);
+        formData.append('skipOption5', skipValue.toString());
+
+        if (selection.value === '5' && skipValue) {
             // If Option 5 is selected, redirect to the "Coming Soon" page
             fetch('/selection_handle', {
                 method: 'POST',
                 body: formData
-//                body: new FormData(selectionForm)
             })
             .then(response => {
                 // Check if the response status is successful (HTTP 200-299)
@@ -252,9 +253,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (optionSelected === "3") {
 //            var confirmed = window.confirm("This will take an extremely long time! Do you want to proceed?");
             alert("Getting results may take some time, if the user is blocking a lot of accounts.");
-//            if (!confirmed) {
-//                return;
-//            }
         }
         if (optionSelected === "5") {
             alert("Getting results may take some time, if the user is blocked by a lot of accounts.");
