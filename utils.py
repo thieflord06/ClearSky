@@ -91,25 +91,31 @@ async def get_user_count():
 async def get_single_user_blocks(ident):
     try:
         # Execute the SQL query to get all the user_dids that have the specified did in their blocklist
-        async with database_handler.connection_pool.acquire() as connection:
-            result = await connection.fetch('SELECT user_did, block_date FROM blocklists WHERE blocked_did = $1', ident)
-            if result:
-                # Extract the user_dids from the query result
-                user_dids = [item[0] for item in result]
-                block_dates = [item[1] for item in result]
-                count = len(user_dids)
+        async with asyncpg.create_pool(
+                user=pg_user,
+                password=pg_password,
+                host=pg_host,
+                database=pg_database
+        ) as new_connection_pool:
+            async with new_connection_pool.acquire() as connection:
+                result = await connection.fetch('SELECT user_did, block_date FROM blocklists WHERE blocked_did = $1', ident)
+                if result:
+                    # Extract the user_dids from the query result
+                    user_dids = [item[0] for item in result]
+                    block_dates = [item[1] for item in result]
+                    count = len(user_dids)
 
-                resolved_handles = []
+                    resolved_handles = []
 
-                # Fetch handles concurrently using asyncio.gather
-                resolved_handles = await asyncio.gather(*[get_user_handle(user_did) for user_did in user_dids])
+                    # Fetch handles concurrently using asyncio.gather
+                    resolved_handles = await asyncio.gather(*[get_user_handle(user_did) for user_did in user_dids])
 
-                return resolved_handles, block_dates, count
-            else:
-                # ident = resolve_handle(ident)
-                no_blocks = ident + ": has not been blocked by anyone."
-                date = datetime.now().date()
-                return no_blocks, date, 0
+                    return resolved_handles, block_dates, count
+                else:
+                    # ident = resolve_handle(ident)
+                    no_blocks = ident + ": has not been blocked by anyone."
+                    date = datetime.now().date()
+                    return no_blocks, date, 0
     except Exception as e:
         logger.error(f"Error fetching blocklists for {ident}: {e}")
         blocks = "there was an error"
