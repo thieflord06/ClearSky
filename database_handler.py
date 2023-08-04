@@ -114,7 +114,7 @@ async def update_blocklists_batch(batch_dids):
 
 
 async def get_all_users_db(run_update=False, get_dids=False, get_count=False, init_db_run=False):
-    batch_size = 10000
+    batch_size = 1000
     async with connection_pool.acquire() as connection:
         if get_count:
             # Fetch the total count of users in the "users" table
