@@ -53,7 +53,7 @@ def get_single_users_blocks_db(run_update=False, get_dids=False):
 
 async def update_all_blocklists():
     all_dids = await get_all_users_db(False, True)
-    logger.info(str(all_dids))
+    logger.debug(str(all_dids))
     total_dids = len(all_dids)
     batch_size = 1000
 
@@ -100,7 +100,9 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
         if not run_update:
             if get_dids:
                 # Return the user_dids from the "users" table
-                return await connection.fetch('SELECT did FROM users')
+                records = await connection.fetch('SELECT did FROM users')
+                dids = [record['did'] for record in records]
+                return dids
         else:
             # Get all DIDs
             records = utils.get_all_users()
@@ -128,26 +130,28 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
         return records
 
 
-async def update_blocklist_table(ident):
-    blocked_by_list, block_date = utils.get_user_block_list(ident)
+async def update_blocklist_table(ident, blocked_by_list, block_date):
+    # blocked_by_list, block_date = utils.get_user_block_list(ident)
 
     if not blocked_by_list:
         return
 
     async with connection_pool.acquire() as connection:
-        logger.info("Connected to db.")
         async with connection.transaction():
             # Retrieve the existing blocklist entries for the specified ident
             existing_records = await connection.fetch(
                 'SELECT blocked_did, block_date FROM blocklists WHERE user_did = $1', ident
             )
             existing_blocklist_entries = {(record['blocked_did'], record['block_date']) for record in existing_records}
+            logger.debug("Existing entires: " + str(existing_blocklist_entries))
 
             # Prepare the data to be inserted into the database
-            data = [(ident, blocked_did, date) for blocked_did, date in zip(blocked_by_list, block_date)]
+            data = [(ident, blocked_did, str(date)) for blocked_did, date in zip(blocked_by_list, block_date)]
+            logger.debug("Data to be inserted: " + str(data))
 
             # Convert the new blocklist entries to a set for comparison
-            new_blocklist_entries = {(record['blocked_did'], record['block_date']) for record in data}
+            new_blocklist_entries = {(record[0], record[2]) for record in data}
+            logger.debug("new blocklist entry: " + str(new_blocklist_entries))
 
             # Check if there are differences between the existing and new blocklist entries
             if existing_blocklist_entries != new_blocklist_entries:
