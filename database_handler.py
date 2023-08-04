@@ -6,10 +6,14 @@ import time
 from tqdm import tqdm
 import utils
 from config_helper import logger
+from aiolimiter import AsyncLimiter
 
 # Connection pool and lock
 connection_pool = None
 db_lock = asyncio.Lock()
+
+# Create a limiter with a rate limit of 10 requests per second
+limiter = AsyncLimiter(3)
 
 
 # ======================================================================================================================
@@ -53,19 +57,37 @@ def get_single_users_blocks_db(run_update=False, get_dids=False):
 
 async def update_all_blocklists():
     all_dids = await get_all_users_db(False, True)
-    logger.debug(str(all_dids))
     total_dids = len(all_dids)
     batch_size = 1000
+    pause_interval = 100  # Pause every 100 DID requests
 
     total_blocks_updated = 0
+    tasks = []
+
     for i in range(0, total_dids, batch_size):
         batch_dids = all_dids[i:i + batch_size]
-        # Process the batch asynchronously
-        batch_blocks_updated = await update_blocklists_batch(batch_dids)
-        total_blocks_updated += batch_blocks_updated
+        # Use the limiter to rate-limit the function calls
+        async with limiter:
+            while True:
+                try:
+                    task = asyncio.create_task(update_blocklists_batch(batch_dids))
+                    tasks.append(task)
+                    break  # Break the loop if the request is successful
+                except Exception as e:
+                    if "429 Too Many Requests" in str(e):
+                        logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
+                        time.sleep(60)  # Retry after 60 seconds
+                    else:
+                        raise e
 
-        logger.info(f"Block lists updated: {total_blocks_updated}/{total_dids}")
-        logger.info(f"First few DIDs in the batch: {batch_dids[:5]}")
+        # Pause every 100 DID requests
+        if (i + 1) % pause_interval == 0:
+            logger.info(f"Pausing after {i + 1} DID requests...")
+            await asyncio.sleep(10)  # Pause for 60 seconds
+
+    await asyncio.gather(*tasks)
+    logger.info(f"Block lists updated: {total_blocks_updated}/{total_dids}")
+    logger.info(f"First few DIDs in the batch: {batch_dids[:5]}")
 
 
 async def update_blocklists_batch(batch_dids):
@@ -81,8 +103,10 @@ async def update_blocklists_batch(batch_dids):
 
             # Increment the counter for updated block lists
             total_blocks_updated += 1
-
-            logger.debug(f"Updated block list for DID: {did}")
+            if blocked_users:
+                logger.debug(f"Updated block list for DID: {did}")
+            else:
+                logger.debug(f"didn't update no blocks: {did}")
         except Exception as e:
             logger.error(f"Error updating block list for DID {did}: {e}")
 
@@ -143,25 +167,29 @@ async def update_blocklist_table(ident, blocked_by_list, block_date):
                 'SELECT blocked_did, block_date FROM blocklists WHERE user_did = $1', ident
             )
             existing_blocklist_entries = {(record['blocked_did'], record['block_date']) for record in existing_records}
-            logger.debug("Existing entires: " + str(existing_blocklist_entries))
+            logger.debug("Existing entires " + ident + ": " + str(existing_blocklist_entries))
 
             # Prepare the data to be inserted into the database
-            data = [(ident, blocked_did, str(date)) for blocked_did, date in zip(blocked_by_list, block_date)]
+            data = [(ident, blocked_did, date.strftime('%Y-%m-%d')) for blocked_did, date in zip(blocked_by_list, block_date)]
             logger.debug("Data to be inserted: " + str(data))
 
             # Convert the new blocklist entries to a set for comparison
-            new_blocklist_entries = {(record[0], record[2]) for record in data}
-            logger.debug("new blocklist entry: " + str(new_blocklist_entries))
+            new_blocklist_entries = {(record[1], record[2]) for record in data}
+            logger.debug("new blocklist entry " + ident + " : " + str(new_blocklist_entries))
 
             # Check if there are differences between the existing and new blocklist entries
             if existing_blocklist_entries != new_blocklist_entries:
                 # Delete existing blocklist entries for the specified ident
                 await connection.execute('DELETE FROM blocklists WHERE user_did = $1', ident)
 
+                # Convert the block_date to string format just before insertion
+                # data_to_insert = [(record[0], record[1], str(record[2])) for record in data]
                 # Insert the new blocklist entries
                 await connection.executemany(
                     'INSERT INTO blocklists (user_did, blocked_did, block_date) VALUES ($1, $2, $3)', data
                 )
+            else:
+                logger.info("Blocklist not updated already exists.")
 
 
 async def does_did_and_handle_exist_in_database(did, handle):
