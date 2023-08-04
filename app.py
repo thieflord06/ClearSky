@@ -139,17 +139,17 @@ async def selection_handle():
 
                 return jsonify({"result": result})
             elif selection == "3":
-                if "did" in identifier:
-                    identifier = handle_identifier
                 logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Block list requested for: " + identifier)
                 blocklist, count = await get_user_block_list_html(identifier)
 
-                return jsonify({"block_list": blocklist, "user": identifier, "count": count})
-            elif selection == "5" and not skip_option5:
                 if "did" in identifier:
                     identifier = handle_identifier
+                return jsonify({"block_list": blocklist, "user": identifier, "count": count})
+            elif selection == "5" and not skip_option5:
                 logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Block list requested for: " + identifier)
                 blocks, dates, count = await utils.get_single_user_blocks(identifier)
+                if "did" in identifier:
+                    identifier = handle_identifier
 
                 if type(blocks) != list:
                     blocks = ["None"]
