@@ -37,8 +37,7 @@ def update_config_based_on_os(config):
 
         with open('config.ini', 'w') as configfile:
             config.write(configfile)
-
-        configfile.close()
+            configfile.close()
         return log_dir, users_db
 
     except (configparser.NoOptionError, configparser.NoSectionError, configparser.MissingSectionHeaderError):
