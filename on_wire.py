@@ -27,7 +27,7 @@ async def resolve_handle(info):  # Take Handle and get DID
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(full_url)
-                response.raise_for_status()
+                # response.raise_for_status()
 
                 response_json = response.json()
                 logger.debug("response: " + str(response_json))
@@ -64,7 +64,7 @@ async def resolve_did(did):  # Take DID and get handle
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(full_url)
-                response.raise_for_status()
+                # response.raise_for_status()
 
                 response_json = response.json()
                 logger.debug("response: " + str(response_json))
@@ -78,7 +78,7 @@ async def resolve_did(did):  # Take DID and get handle
 
                     if "could not find user" in error_message.lower():
                         logger.warning("User not found. Skipping...")
-                        return
+                        return None
                     else:
                         retry_count += 1
                         logger.warning("Error:" + str(response.status_code))
