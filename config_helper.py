@@ -17,7 +17,6 @@ def read_config():
 
 def update_config_based_on_os(config):
     try:
-        log_dir = None
         current_os = platform.platform()
 
         if "Windows" in current_os:
@@ -26,10 +25,10 @@ def update_config_based_on_os(config):
             log_name = config.get("windows", "log_name")
             users_db = config.get("windows", "users_db_path")
         else:
-            users_db = config.get("linux", "users_db_path")
             args = config.get("linux", "args")
             log_dir = config.get("linux", "logdir")
             log_name = config.get("linux", "log_name")
+            users_db = config.get("linux", "users_db_path")
 
         config.set("handler_fileHandler", "args", str(args))
         config.set("handler_fileHandler", "logdir", str(log_dir))
