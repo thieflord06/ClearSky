@@ -72,6 +72,9 @@ async def update_all_blocklists():
                     task = asyncio.create_task(update_blocklists_batch(batch_dids))
                     tasks.append(task)
                     break  # Break the loop if the request is successful
+                except asyncpg.ConnectionDoesNotExistError:
+                    logger.warning("Connection error. Retrying after 30 seconds...")
+                    await asyncio.sleep(30)  # Retry after 30 seconds
                 except Exception as e:
                     if "429 Too Many Requests" in str(e):
                         logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
@@ -257,12 +260,22 @@ async def process_batch(batch_dids):
                 handles_to_update.append((did, handle))
 
         if handles_to_update:
-            # Update the database with the batch of handles
-            logger.info("committing batch.")
-            async with connection_pool.acquire() as connection:
-                async with connection.transaction():
-                    await update_user_handles(handles_to_update)
-                    total_handles_updated += len(handles_to_update)
+            while True:
+                try:
+                    # Update the database with the batch of handles
+                    logger.info("committing batch.")
+                    async with connection_pool.acquire() as connection:
+                        async with connection.transaction():
+                            await update_user_handles(handles_to_update)
+                            total_handles_updated += len(handles_to_update)
+                    break
+                except asyncpg.ConnectionDoesNotExistError as e:
+                    logger.warning("Connection error, retrying in 30 seconds...")
+                    await asyncio.sleep(30)  # Retry after 60 seconds
+                except Exception as e:
+                    # Handle other exceptions as needed
+                    logger.error(f"Error during batch update: {e}")
+                    break  # Break the loop on other exceptions
 
         # Pause after each batch of handles resolved
         logger.info("Pausing...")
