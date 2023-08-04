@@ -34,7 +34,7 @@ def update_config_based_on_os(config):
         config.set("handler_fileHandler", "args", str(args))
         config.set("handler_fileHandler", "logdir", str(log_dir))
         config.set("handler_fileHandler", "log_name", str(log_name))
-        config.set("handler_fileHandler", "users_db_path", str(users_db))
+        # config.set("handler_fileHandler", "users_db_path", str(users_db))
 
         with open('config.ini', 'w') as configfile:
             config.write(configfile)
