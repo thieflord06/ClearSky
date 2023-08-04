@@ -2,7 +2,6 @@
 
 import asyncio
 import asyncpg
-import time
 from tqdm import tqdm
 import utils
 from config_helper import logger
@@ -52,14 +51,14 @@ def get_single_users_blocks_db(run_update=False, get_dids=False):
         # Sleep for 60 seconds every 5 minutes
         if (i + 1) % (300000 // 100) == 0:  # Assuming you have 100 dids in all_dids
             logger.info("Pausing...")
-            time.sleep(60)
+            asyncio.sleep(60)
 
 
 async def update_all_blocklists():
     all_dids = await get_all_users_db(False, True)
     total_dids = len(all_dids)
     batch_size = 1000
-    pause_interval = 100  # Pause every 100 DID requests
+    pause_interval = 1000  # Pause every x DID requests
 
     total_blocks_updated = 0
     tasks = []
@@ -76,14 +75,14 @@ async def update_all_blocklists():
                 except Exception as e:
                     if "429 Too Many Requests" in str(e):
                         logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
-                        time.sleep(60)  # Retry after 60 seconds
+                        await asyncio.sleep(60)  # Retry after 60 seconds
                     else:
                         raise e
 
         # Pause every 100 DID requests
         if (i + 1) % pause_interval == 0:
             logger.info(f"Pausing after {i + 1} DID requests...")
-            await asyncio.sleep(10)  # Pause for 60 seconds
+            await asyncio.sleep(60)  # Pause for 60 seconds
 
     await asyncio.gather(*tasks)
     logger.info(f"Block lists updated: {total_blocks_updated}/{total_dids}")
@@ -264,6 +263,10 @@ async def process_batch(batch_dids):
                 async with connection.transaction():
                     await update_user_handles(handles_to_update)
                     total_handles_updated += len(handles_to_update)
+
+        # Pause after each batch of handles resolved
+        logger.info("Pausing...")
+        await asyncio.sleep(60)  # Pause for 60 seconds
 
             # # Commit changes after each batch update
             # await connection_pool.acquire().commit()

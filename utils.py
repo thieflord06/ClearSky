@@ -105,8 +105,6 @@ async def get_single_user_blocks(ident):
                     block_dates = [item[1] for item in result]
                     count = len(user_dids)
 
-                    resolved_handles = []
-
                     # Fetch handles concurrently using asyncio.gather
                     resolved_handles = await asyncio.gather(*[get_user_handle(user_did) for user_did in user_dids])
 

@@ -172,7 +172,6 @@ async def selection_handle():
 
 async def get_user_block_list_html(ident):
     blocked_users, timestamps = await utils.get_user_block_list(ident)
-    handles = []
     block_list = []
 
     if not blocked_users:
