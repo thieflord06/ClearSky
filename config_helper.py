@@ -11,7 +11,7 @@ def read_config():
     if os.path.exists('config.ini'):
         config.read("config.ini")
     else:
-        raise FileNotFoundError("Config.ini file does not exist")
+        raise FileNotFoundError("Config.ini file does not exist\nPlace config.ini in: " + str(os.getcwd()) + "\nRe-run program")
     return config
 
 
@@ -65,6 +65,10 @@ def configure_logging():
 
     return logger
 
+
+# Set up log files and directories for entire project from config.ini
+log_dir, users_db = update_config_based_on_os(read_config())
+create_log_directory(log_dir, users_db)
 
 # Create and configure the logger instance
 logger = configure_logging()
