@@ -271,8 +271,30 @@ async def main():
         logger.info("Update users handles requested.")
         batch_size = 1000
         total_dids = len(all_dids)
-        batch_tasks = []
         total_handles_updated = 0
+
+        # Check if there is a last processed DID in the temporary table
+        async with database_handler.connection_pool.acquire() as connection:
+            async with connection.transaction():
+                try:
+                    query = "SELECT last_processed_did FROM temporary_table"
+                    last_processed_did = await connection.fetchval(query)
+                except Exception as e:
+                    last_processed_did = None
+                    logger.error(f"Exception getting from db: {str(e)}")
+
+        if not last_processed_did:
+            await database_handler.create_temporary_table()
+
+        if last_processed_did:
+            # Find the index of the last processed DID in the list
+            start_index = next((i for i, (did,) in enumerate(all_dids) if did == last_processed_did), None)
+            if start_index is None:
+                logger.warning(
+                    f"Last processed DID '{last_processed_did}' not found in the list. Starting from the beginning.")
+            else:
+                logger.info(f"Resuming processing from DID: {last_processed_did}")
+                all_dids = all_dids[start_index:]
 
         async with database_handler.connection_pool.acquire() as connection:
             async with connection.transaction():
@@ -290,6 +312,7 @@ async def main():
                     logger.info(f"First few DIDs in the batch: {batch_dids[:5]}")
 
                 logger.info("Users db update finished.")
+                await database_handler.delete_temporary_table()
                 sys.exit()
     elif args.update_users_did_only_db:
         # Call the function to update the database with all users dids

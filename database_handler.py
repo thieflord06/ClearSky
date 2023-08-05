@@ -55,6 +55,8 @@ def get_single_users_blocks_db(run_update=False, get_dids=False):
 
 
 async def update_all_blocklists():
+    last_processed_index = load_last_processed_state()
+
     all_dids = await get_all_users_db(False, True)
     total_dids = len(all_dids)
     batch_size = 1000
@@ -86,6 +88,9 @@ async def update_all_blocklists():
         if (i + 1) % pause_interval == 0:
             logger.info(f"Pausing after {i + 1} DID requests...")
             await asyncio.sleep(60)  # Pause for 60 seconds
+
+            # Update the last processed state after each batch
+            update_last_processed_state(i + batch_size)
 
     await asyncio.gather(*tasks)
     logger.info(f"Block lists updated: {total_blocks_updated}/{total_dids}")
@@ -268,6 +273,12 @@ async def process_batch(batch_dids):
                         async with connection.transaction():
                             await update_user_handles(handles_to_update)
                             total_handles_updated += len(handles_to_update)
+
+                    # Update the temporary table with the last processed DID
+                    last_processed_did = handle_batch[-1][0]  # Assuming DID is the first element in each tuple
+                    logger.debug(str(last_processed_did))
+                    await update_temporary_table(last_processed_did)
+
                     break
                 except asyncpg.ConnectionDoesNotExistError as e:
                     logger.warning("Connection error, retrying in 30 seconds...")
@@ -292,6 +303,46 @@ async def process_batch(batch_dids):
 # Close the connection pool when this module is loaded
 async def close_connection_pool():
     await connection_pool.close()
+
+
+async def create_temporary_table():
+    try:
+        logger.info("Creating temp table.")
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                query = """
+                CREATE TABLE IF NOT EXISTS temporary_table (
+                    last_processed_did text PRIMARY KEY
+                )
+                """
+                await connection.execute(query)
+    except Exception as e:
+        logger.error("Error creating temporary table: %s", e)
+
+
+async def delete_temporary_table():
+    try:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                query = "DROP TABLE IF EXISTS temporary_table"
+                await connection.execute(query)
+    except Exception as e:
+        logger.error("Error deleting temporary table: %s", e)
+
+
+async def update_temporary_table(last_processed_did):
+    try:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                query = """
+                    INSERT INTO temporary_table (last_processed_did)
+                    VALUES ($1)
+                    ON CONFLICT (last_processed_did) DO UPDATE
+                    SET last_processed_did = EXCLUDED.last_processed_did
+                """
+                await connection.execute(query, last_processed_did)
+    except Exception as e:
+        logger.error("Error updating temporary table: %s", e)
 
 
 # Get the database configuration
