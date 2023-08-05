@@ -96,7 +96,7 @@ async def selection_handle():
     handle_identifier = None
 
     data = await request.form
-    session_ip = get_ip()
+    session_ip = await get_ip()
     logger.debug(data)
 
     selection = data.get('selection')
