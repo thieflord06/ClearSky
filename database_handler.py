@@ -71,6 +71,7 @@ async def update_all_blocklists():
             try:
                 query = "SELECT last_processed_did FROM block_temporary_table"
                 last_processed_did = await connection.fetchval(query)
+                logger.debug("last did from db: " + str(last_processed_did))
             except Exception as e:
                 last_processed_did = None
                 logger.error(f"Exception getting from db: {str(e)}")
@@ -98,7 +99,7 @@ async def update_all_blocklists():
                     tasks.append(task)
 
                     # Update the temporary table with the last processed DID
-                    last_processed_did = batch_dids[-1][0]  # Assuming DID is the first element in each tuple
+                    last_processed_did = batch_dids[-1]  # Assuming DID is the first element in each tuple
                     logger.debug("Last processed DID: " + str(last_processed_did))
                     await update_blocklist_temporary_table(last_processed_did)
 
@@ -113,10 +114,10 @@ async def update_all_blocklists():
                     else:
                         raise e
 
-        # Pause every 100 DID requests
-        if (i + 1) % pause_interval == 0:
-            logger.info(f"Pausing after {i + 1} DID requests...")
-            await asyncio.sleep(60)  # Pause for 60 seconds
+                # Pause every 100 DID requests
+                if (i + 1) % pause_interval == 0:
+                    logger.info(f"Pausing after {i + 1} DID requests...")
+                    await asyncio.sleep(30)  # Pause for 30 seconds
 
     await asyncio.gather(*tasks)
     logger.info(f"Block lists updated: {total_blocks_updated}/{total_dids}")
@@ -162,7 +163,7 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
                 return dids
         else:
             # Get all DIDs
-            records = await utils.get_all_users()
+            records = utils.get_all_users()
 
             # Transform the records into a list of tuples with the correct format for insertion
             formatted_records = [(record[0],) for record in records]
