@@ -55,8 +55,6 @@ def get_single_users_blocks_db(run_update=False, get_dids=False):
 
 
 async def update_all_blocklists():
-    last_processed_index = load_last_processed_state()
-
     all_dids = await get_all_users_db(False, True)
     total_dids = len(all_dids)
     batch_size = 1000
@@ -88,9 +86,6 @@ async def update_all_blocklists():
         if (i + 1) % pause_interval == 0:
             logger.info(f"Pausing after {i + 1} DID requests...")
             await asyncio.sleep(60)  # Pause for 60 seconds
-
-            # Update the last processed state after each batch
-            update_last_processed_state(i + batch_size)
 
     await asyncio.gather(*tasks)
     logger.info(f"Block lists updated: {total_blocks_updated}/{total_dids}")
