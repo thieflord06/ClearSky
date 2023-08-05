@@ -334,12 +334,11 @@ async def update_temporary_table(last_processed_did):
     try:
         async with connection_pool.acquire() as connection:
             async with connection.transaction():
-                query = """
-                    INSERT INTO temporary_table (last_processed_did)
-                    VALUES ($1)
-                    ON CONFLICT (last_processed_did) DO UPDATE
-                    SET last_processed_did = EXCLUDED.last_processed_did
-                """
+                # Delete the existing row if it exists
+                await connection.execute("TRUNCATE temporary_table")
+
+                # Insert the new row with the given last_processed_did
+                query = "INSERT INTO temporary_table (last_processed_did) VALUES ($1)"
                 await connection.execute(query, last_processed_did)
     except Exception as e:
         logger.error("Error updating temporary table: %s", e)
