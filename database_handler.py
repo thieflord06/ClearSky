@@ -113,10 +113,10 @@ async def update_all_blocklists():
                     else:
                         raise e
 
-    # Pause every 100 DID requests
-    if (i + 1) % pause_interval == 0:
-        logger.info(f"Pausing after {i + 1} DID requests...")
-        await asyncio.sleep(60)  # Pause for 60 seconds
+        # Pause every 100 DID requests
+        if (i + 1) % pause_interval == 0:
+            logger.info(f"Pausing after {i + 1} DID requests...")
+            await asyncio.sleep(60)  # Pause for 60 seconds
 
     await asyncio.gather(*tasks)
     logger.info(f"Block lists updated: {total_blocks_updated}/{total_dids}")
