@@ -1,4 +1,5 @@
 # app.py
+
 import asyncpg
 from quart import Quart, render_template, request, session, jsonify
 from datetime import datetime
@@ -91,16 +92,18 @@ async def contact():
 # Handles selection for form
 @app.route('/selection_handle', methods=['POST'])
 async def selection_handle():
+    did_identifier = None
+    handle_identifier = None
+
     data = await request.form
-    global session_ip, did_identifier, handle_identifier
     session_ip = get_ip()
     logger.debug(data)
+
     selection = data.get('selection')
     identifier = data.get('identifier')
     identifier = identifier.lower()
     identifier = identifier.strip()
     identifier = identifier.replace('@', '')
-    # selection = request.form['selection']
 
     # Check if the flag to skip "Option 5" is present in the form data
     skip_option5 = data.get('skipOption5', '').lower()
