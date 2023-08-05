@@ -1,9 +1,7 @@
 # app.py
-import aioschedule
 import asyncpg
-from flask import Flask, render_template, request, session, jsonify
+from quart import Quart, render_template, request, session, jsonify
 from datetime import datetime
-from waitress import serve
 import os
 import sys
 import uuid
@@ -38,7 +36,7 @@ logger.debug("Ran by: " + username)
 logger.debug("Ran at: " + str(current_time))
 logger.info("File Log level: " + str(config.get("handler_fileHandler", "level")))
 logger.info("Stdout Log level: " + str(config.get("handler_consoleHandler", "level")))
-app = Flask(__name__)
+app = Quart(__name__)
 
 # Configure session secret key
 app.secret_key = 'your-secret-key'
@@ -59,50 +57,53 @@ pg_database = database_config["database"]
 # ======================================================================================================================
 # ================================================== HTML Pages ========================================================
 @app.route('/')
-def index():
+async def index():
     # Generate a new session number and store it in the session
     if 'session_number' not in session:
         session['session_number'] = generate_session_number()
 
-    return render_template('index.html')
+    return await render_template('index.html')
 
 
 @app.route('/loading')
-def loading():
+async def loading():
 
-    return render_template('loading.html')
+    return await render_template('loading.html')
 
 
 @app.route('/coming_soon')
-def coming_soon():
-    return render_template('coming_soon.html')
+async def coming_soon():
+    return await render_template('coming_soon.html')
 
 
 @app.route('/status')
-def always_200():
+async def always_200():
 
     return "OK", 200
 
 
 @app.route('/contact')
-def contact():
+async def contact():
 
-    return render_template('contact.html')
+    return await render_template('contact.html')
 
 
 # Handles selection for form
 @app.route('/selection_handle', methods=['POST'])
 async def selection_handle():
+    data = await request.form
     global session_ip, did_identifier, handle_identifier
     session_ip = get_ip()
-    logger.debug(request.form)
-    identifier = request.form['identifier'].lower()
+    logger.debug(data)
+    selection = data.get('selection')
+    identifier = data.get('identifier')
+    identifier = identifier.lower()
     identifier = identifier.strip()
     identifier = identifier.replace('@', '')
-    selection = request.form['selection']
+    # selection = request.form['selection']
 
     # Check if the flag to skip "Option 5" is present in the form data
-    skip_option5 = request.form.get('skipOption5', '').lower()
+    skip_option5 = data.get('skipOption5', '').lower()
     if skip_option5 == "true":
         skip_option5 = True
     elif skip_option5 == "false":
@@ -123,10 +124,10 @@ async def selection_handle():
             did_identifier = await on_wire.resolve_handle(identifier)
             handle_identifier = "place_holder"
         if not handle_identifier or not did_identifier:
-            return render_template('no_longer_exists.html', content_type='text/html')
+            return await render_template('no_longer_exists.html', content_type='text/html')
         if selection != "4":
             if not identifier:
-                return render_template('error.html')
+                return await render_template('error.html')
             if selection == "1":
                 logger.info(str(session_ip) + " > " + str(*session.values()) + ": " + "DID resolve request made for: " + identifier)
                 result = did_identifier
@@ -145,6 +146,7 @@ async def selection_handle():
 
                 if "did" in identifier:
                     identifier = handle_identifier
+
                 return jsonify({"block_list": blocklist, "user": identifier, "count": count})
             elif selection == "5" and not skip_option5:
                 logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Block list requested for: " + identifier)
@@ -163,12 +165,13 @@ async def selection_handle():
                     "counts": count
                 }
                 logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Blocklist Request Result: " + identifier + " | " + "Blocked by: " + str(blocks) + " :: " + "Total count: " + str(count))
+
                 return jsonify(response_data)
                 # return jsonify({"user": identifier, "block_list": blocks, "count": count})
             elif skip_option5:
                 return jsonify({"message": "Option 5 skipped"})
     else:
-        return render_template('error.html')
+        return await render_template('error.html')
 
 
 @app.route('/fun_facts')
@@ -178,10 +181,10 @@ async def fun_facts():
 
     # Check if both lists are empty
     if not resolved_blocked and not resolved_blockers:
-        return render_template('coming_soon.html')  # Render the "Coming Soon" page
+        return await render_template('coming_soon.html')  # Render the "Coming Soon" page
 
     # If at least one list is not empty, render the regular page
-    return render_template('fun_facts.html', blocked_results=resolved_blocked, blockers_results=resolved_blockers)
+    return await render_template('fun_facts.html', blocked_results=resolved_blocked, blockers_results=resolved_blockers)
 
 
 async def get_user_block_list_html(ident):
@@ -225,10 +228,10 @@ def generate_session_number():
     return str(uuid.uuid4().hex)
 
 
-def get_ip():  # Get IP address of session request
+async def get_ip():  # Get IP address of session request
     if 'X-Forwarded-For' in request.headers:
         # Get the client's IP address from the X-Forwarded-For header
-        ip = request.headers['X-Forwarded-For']
+        ip = await request.headers['X-Forwarded-For']
         # The client's IP address may contain multiple comma-separated values
         # Extract the first IP address from the list
         ip = ip.split(',')[0].strip()
@@ -356,7 +359,10 @@ async def main():
         # Start the scheduler
         scheduler.start_scheduler()
         logger.info("Web server starting at: " + ip_address + ":" + port_address)
-        await serve(app, host=ip_address, port=port_address)
-
+        # await serve(app, host=ip_address, port=port_address)
+        await app.run_task(host=ip_address, port=port_address)
 if __name__ == '__main__':
-    asyncio.run(main())
+    # asyncio.run(main())
+    # app.run()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
