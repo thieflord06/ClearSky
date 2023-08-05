@@ -175,6 +175,12 @@ async def selection_handle():
 async def fun_facts():
     resolved_blocked = utils.resolved_blocked
     resolved_blockers = utils.resolved_blockers
+
+    # Check if both lists are empty
+    if not resolved_blocked and not resolved_blockers:
+        return render_template('coming_soon.html')  # Render the "Coming Soon" page
+
+    # If at least one list is not empty, render the regular page
     return render_template('fun_facts.html', blocked_results=resolved_blocked, blockers_results=resolved_blockers)
 
 
