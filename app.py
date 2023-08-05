@@ -1,5 +1,5 @@
 # app.py
-
+import aioschedule
 import asyncpg
 from flask import Flask, render_template, request, session, jsonify
 from datetime import datetime
@@ -11,6 +11,7 @@ import argparse
 import re
 import asyncio
 import database_handler
+import scheduler
 import utils
 import on_wire
 import config_helper
@@ -168,6 +169,13 @@ async def selection_handle():
                 return jsonify({"message": "Option 5 skipped"})
     else:
         return render_template('error.html')
+
+
+@app.route('/fun_facts')
+async def fun_facts():
+    resolved_blocked = utils.resolved_blocked
+    resolved_blockers = utils.resolved_blockers
+    return render_template('fun_facts.html', blocked_results=resolved_blocked, blockers_results=resolved_blockers)
 
 
 async def get_user_block_list_html(ident):
@@ -328,6 +336,7 @@ async def main():
     elif args.retrieve_blocklists_db:
         logger.info("Get Blocklists db requested.")
         await database_handler.update_all_blocklists()
+        await database_handler.delete_blocklist_temporary_table()
         logger.info("Blocklist db fetch finished.")
         sys.exit()
     elif args.update_blocklists_db:
@@ -336,6 +345,10 @@ async def main():
         logger.info("Update Blocklists db finished.")
         sys.exit()
     else:
+        await database_handler.get_top_blocks()
+        await utils.resolve_top_block_lists()
+        # Start the scheduler
+        scheduler.start_scheduler()
         logger.info("Web server starting at: " + ip_address + ":" + port_address)
         await serve(app, host=ip_address, port=port_address)
 

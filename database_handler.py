@@ -13,6 +13,8 @@ db_lock = asyncio.Lock()
 
 # Create a limiter with a rate limit of 10 requests per second
 limiter = AsyncLimiter(3)
+blocked_results = []
+blockers_results = []
 
 
 # ======================================================================================================================
@@ -63,6 +65,29 @@ async def update_all_blocklists():
     total_blocks_updated = 0
     tasks = []
 
+    # Check if there is a last processed DID in the temporary table
+    async with connection_pool.acquire() as connection:
+        async with connection.transaction():
+            try:
+                query = "SELECT last_processed_did FROM block_temporary_table"
+                last_processed_did = await connection.fetchval(query)
+            except Exception as e:
+                last_processed_did = None
+                logger.error(f"Exception getting from db: {str(e)}")
+
+    if not last_processed_did:
+        await create_blocklist_temporary_table()
+
+    if last_processed_did:
+        # Find the index of the last processed DID in the list
+        start_index = next((i for i, (did,) in enumerate(all_dids) if did == last_processed_did), None)
+        if start_index is None:
+            logger.warning(
+                f"Last processed DID '{last_processed_did}' not found in the list. Starting from the beginning.")
+        else:
+            logger.info(f"Resuming processing from DID: {last_processed_did}")
+            all_dids = all_dids[start_index:]
+
     for i in range(0, total_dids, batch_size):
         batch_dids = all_dids[i:i + batch_size]
         # Use the limiter to rate-limit the function calls
@@ -71,6 +96,12 @@ async def update_all_blocklists():
                 try:
                     task = asyncio.create_task(update_blocklists_batch(batch_dids))
                     tasks.append(task)
+
+                    # Update the temporary table with the last processed DID
+                    last_processed_did = batch_dids[-1][0]  # Assuming DID is the first element in each tuple
+                    logger.debug("Last processed DID: " + str(last_processed_did))
+                    await update_blocklist_temporary_table(last_processed_did)
+
                     break  # Break the loop if the request is successful
                 except asyncpg.ConnectionDoesNotExistError:
                     logger.warning("Connection error. Retrying after 30 seconds...")
@@ -82,10 +113,10 @@ async def update_all_blocklists():
                     else:
                         raise e
 
-        # Pause every 100 DID requests
-        if (i + 1) % pause_interval == 0:
-            logger.info(f"Pausing after {i + 1} DID requests...")
-            await asyncio.sleep(60)  # Pause for 60 seconds
+    # Pause every 100 DID requests
+    if (i + 1) % pause_interval == 0:
+        logger.info(f"Pausing after {i + 1} DID requests...")
+        await asyncio.sleep(60)  # Pause for 60 seconds
 
     await asyncio.gather(*tasks)
     logger.info(f"Block lists updated: {total_blocks_updated}/{total_dids}")
@@ -131,7 +162,7 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
                 return dids
         else:
             # Get all DIDs
-            records = utils.get_all_users()
+            records = await utils.get_all_users()
 
             # Transform the records into a list of tuples with the correct format for insertion
             formatted_records = [(record[0],) for record in records]
@@ -271,7 +302,7 @@ async def process_batch(batch_dids):
 
                     # Update the temporary table with the last processed DID
                     last_processed_did = handle_batch[-1][0]  # Assuming DID is the first element in each tuple
-                    logger.debug(str(last_processed_did))
+                    logger.debug("Last processed DID: " + str(last_processed_did))
                     await update_temporary_table(last_processed_did)
 
                     break
@@ -315,6 +346,31 @@ async def create_temporary_table():
         logger.error("Error creating temporary table: %s", e)
 
 
+async def create_blocklist_temporary_table():
+    try:
+        logger.info("Creating blocklist temp table.")
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                query = """
+                CREATE TABLE IF NOT EXISTS block_temporary_table (
+                    last_processed_did text PRIMARY KEY
+                )
+                """
+                await connection.execute(query)
+    except Exception as e:
+        logger.error("Error creating temporary table: %s", e)
+
+
+async def delete_blocklist_temporary_table():
+    try:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                query = "DROP TABLE IF EXISTS block_temporary_table"
+                await connection.execute(query)
+    except Exception as e:
+        logger.error("Error deleting temporary table: %s", e)
+
+
 async def delete_temporary_table():
     try:
         async with connection_pool.acquire() as connection:
@@ -323,6 +379,20 @@ async def delete_temporary_table():
                 await connection.execute(query)
     except Exception as e:
         logger.error("Error deleting temporary table: %s", e)
+
+
+async def update_blocklist_temporary_table(last_processed_did):
+    try:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                # Delete the existing row if it exists
+                await connection.execute("TRUNCATE block_temporary_table")
+
+                # Insert the new row with the given last_processed_did
+                query = "INSERT INTO block_temporary_table (last_processed_did) VALUES ($1)"
+                await connection.execute(query, last_processed_did)
+    except Exception as e:
+        logger.error("Error updating temporary table: %s", e)
 
 
 async def update_temporary_table(last_processed_did):
@@ -337,6 +407,34 @@ async def update_temporary_table(last_processed_did):
                 await connection.execute(query, last_processed_did)
     except Exception as e:
         logger.error("Error updating temporary table: %s", e)
+
+
+async def get_top_blocks():
+    logger.info("Getting top blocks from db.")
+    try:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+
+                # Insert the new row with the given last_processed_did
+                blocked_query = '''SELECT blocked_did, COUNT(*) AS block_count
+                                    FROM blocklists
+                                    GROUP BY blocked_did
+                                    ORDER BY block_count DESC
+                                    LIMIT 20'''
+
+                blocked_data = await connection.fetch(blocked_query)
+                blocked_results.extend(blocked_data)
+
+                blockers_query = '''SELECT user_did, COUNT(*) AS block_count
+                                    FROM blocklists
+                                    GROUP BY user_did
+                                    ORDER BY block_count DESC
+                                    LIMIT 20'''
+
+                blockers_data = await connection.fetch(blockers_query)
+                blockers_results.extend(blockers_data)
+    except Exception as e:
+        logger.error("Error retrieving data from db", e)
 
 
 # Get the database configuration

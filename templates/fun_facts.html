@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Top Blocked List</h2>
+<ul>
+    {% for item in blocked_results %}
+        <li>{{ item['Handle'] }} - {{ item['block_count'] }}</li>
+    {% endfor %}
+</ul>
+
+<h2>Top Blockers List</h2>
+<ul>
+    {% for item in blockers_results %}
+        <li>{{ item['Handle'] }} - {{ item['block_count'] }}</li>
+    {% endfor %}
+</ul>
+{% endblock %}
