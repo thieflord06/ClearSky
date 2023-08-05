@@ -54,6 +54,8 @@ pg_password = database_config["password"]
 pg_host = database_config["host"]
 pg_database = database_config["database"]
 
+session_ip = None
+
 
 # ======================================================================================================================
 # ================================================== HTML Pages ========================================================
@@ -94,7 +96,7 @@ async def contact():
 async def selection_handle():
     did_identifier = None
     handle_identifier = None
-
+    global session_ip
     data = await request.form
     session_ip = await get_ip()
     logger.debug(data)
@@ -234,7 +236,7 @@ def generate_session_number():
 async def get_ip():  # Get IP address of session request
     if 'X-Forwarded-For' in request.headers:
         # Get the client's IP address from the X-Forwarded-For header
-        ip = await request.headers['X-Forwarded-For']
+        ip = request.headers.get('X-Forwarded-For')
         # The client's IP address may contain multiple comma-separated values
         # Extract the first IP address from the list
         ip = ip.split(',')[0].strip()
