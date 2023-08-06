@@ -1,6 +1,5 @@
 # app.py
 
-import asyncpg
 from quart import Quart, render_template, request, session, jsonify
 from datetime import datetime
 import os
@@ -44,7 +43,7 @@ users_db_filename = 'users_cache.db'
 users_db_path = users_db_folder_path + users_db_filename
 
 # Get the database configuration
-database_config = utils.get_database_config()
+database_config = database_handler.get_database_config()
 
 # Now you can access the configuration values using dictionary keys
 pg_user = database_config["user"]
@@ -201,17 +200,11 @@ async def get_user_block_list_html(ident):
         block_list.append({"handle": handles, "timestamp": timestamp})
         return block_list, total_blocked
     else:
-        async with asyncpg.create_pool(
-            user=pg_user,
-            password=pg_password,
-            host=pg_host,
-            database=pg_database
-        ) as new_connection_pool:
-            async with new_connection_pool.acquire() as connection:
-                records = await connection.fetch(
-                    'SELECT handle FROM users WHERE did = ANY($1)',
-                    blocked_users
-                )
+        async with database_handler.connection_pool.acquire() as connection:
+            records = await connection.fetch(
+                'SELECT handle FROM users WHERE did = ANY($1)',
+                blocked_users
+            )
 
         handles = [record['handle'] for record in records]
         total_blocked = len(handles)

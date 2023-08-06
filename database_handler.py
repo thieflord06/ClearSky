@@ -3,6 +3,8 @@
 import asyncio
 import asyncpg
 from tqdm import tqdm
+
+import config_helper
 import utils
 from config_helper import logger
 from aiolimiter import AsyncLimiter
@@ -329,11 +331,6 @@ async def process_batch(batch_dids):
     return total_handles_updated
 
 
-# Close the connection pool when this module is loaded
-async def close_connection_pool():
-    await connection_pool.close()
-
-
 async def create_temporary_table():
     try:
         logger.info("Creating temp table.")
@@ -440,8 +437,25 @@ async def get_top_blocks():
         logger.error("Error retrieving data from db", e)
 
 
+def get_database_config():
+    pg_user = config.get("database", "pg_user")
+    pg_password = config.get("database", "pg_password")
+    pg_host = config.get("database", "pg_host")
+    pg_database = config.get("database", "pg_database")
+
+    return {
+        "user": pg_user,
+        "password": pg_password,
+        "host": pg_host,
+        "database": pg_database
+    }
+
+
+# config_helper.configure_logging()
+config = config_helper.read_config()
+
 # Get the database configuration
-database_config = utils.get_database_config()
+database_config = get_database_config()
 
 # Now you can access the configuration values using dictionary keys
 pg_user = database_config["user"]
