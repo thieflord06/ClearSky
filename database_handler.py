@@ -59,8 +59,8 @@ def get_single_users_blocks_db(run_update=False, get_dids=False):
 async def update_all_blocklists():
     all_dids = await get_all_users_db(False, True)
     total_dids = len(all_dids)
-    batch_size = 500
-    pause_interval = 500  # Pause every x DID requests
+    batch_size = 200
+    pause_interval = 200  # Pause every x DID requests
     processed_count = 0
 
     total_blocks_updated = 0
