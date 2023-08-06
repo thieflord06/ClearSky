@@ -24,11 +24,13 @@ async def resolve_top_block_lists():
 
     for result in database_handler.blocked_results:
         resolved_did = await on_wire.resolve_did(result['blocked_did'])  # Replace with your actual resolving function
-        resolved_blocked.append({'Handle': resolved_did, 'block_count': result['block_count']})
+        if resolved_did is not None:
+            resolved_blocked.append({'Handle': resolved_did, 'block_count': result['block_count']})
 
     for result in database_handler.blockers_results:
         resolved_did = await on_wire.resolve_did(result['user_did'])  # Replace with your actual resolving function
-        resolved_blockers.append({'Handle': resolved_did, 'block_count': result['block_count']})
+        if resolved_did is not None:
+            resolved_blockers.append({'Handle': resolved_did, 'block_count': result['block_count']})
 
 
 def get_database_config():
