@@ -169,6 +169,7 @@ table td {
         align-items: initial;
         align-content: center;
         background-color: initial;
+        text-align: center;
     }
 
     .form-control {
@@ -227,6 +228,10 @@ table td {
         margin-right: 0;
     }
 
+    .contact-container p {
+        font-size: 20px;
+    }
+
     .menu {
         display: flex;
         flex-wrap: wrap;
@@ -237,6 +242,16 @@ table td {
 
     .menu li {
         margin: 8px;
+
+    }
+
+    .fun-facts-container {
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        margin-left: 10px;
+        margin-right: 10px;
 
     }
 
