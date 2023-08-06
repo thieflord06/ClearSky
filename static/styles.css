@@ -252,7 +252,11 @@ table td {
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         margin-left: 10px;
         margin-right: 10px;
+        text-align: left;
+    }
 
+    .fun-facts-container h2 {
+        text-align: center;
     }
 
     .result-container .btn {
@@ -264,17 +268,18 @@ table td {
     }
 
     #comingsoon-container {
-    display: block;
-    width: 100%;
-    text-align: center;
-    font-size: 20px;
-    margin-top: 10px;
+        display: block;
+        width: 100%;
+        text-align: center;
+        font-size: 20px;
+        margin-top: 10px;
     }
 
     #block-list-container {
      /*   max-width: 0 auto; /* Optionally set a maximum width for the block list container */
         margin: 0 auto; /* Center the block list container horizontally */
         padding: 20px;
+        text-align: left;
     }
 
     #block-list {
@@ -295,10 +300,16 @@ table td {
         word-break: break-all;
     }
 
-    #block-list h1,
-    #block-list h2,
+    #block-list h1{
+        margin-bottom: 3px;
+    }
+
+    #block-list h2{
+        margin-bottom: 3px;
+    }
+
     #block-list h3 {
-        margin-bottom: 10px; /* Optional spacing between headings and the list */
+        margin-bottom: 15px; /* Optional spacing between headings and the list */
     }
 
     #block-list ul {
