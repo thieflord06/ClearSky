@@ -59,8 +59,9 @@ def get_single_users_blocks_db(run_update=False, get_dids=False):
 async def update_all_blocklists():
     all_dids = await get_all_users_db(False, True)
     total_dids = len(all_dids)
-    batch_size = 1000
-    pause_interval = 1000  # Pause every x DID requests
+    batch_size = 500
+    pause_interval = 500  # Pause every x DID requests
+    processed_count = 0
 
     total_blocks_updated = 0
     tasks = []
@@ -92,32 +93,33 @@ async def update_all_blocklists():
     for i in range(0, total_dids, batch_size):
         batch_dids = all_dids[i:i + batch_size]
         # Use the limiter to rate-limit the function calls
-        async with limiter:
-            while True:
-                try:
-                    task = asyncio.create_task(update_blocklists_batch(batch_dids))
-                    tasks.append(task)
+        while True:
+            try:
+                task = asyncio.create_task(update_blocklists_batch(batch_dids))
+                tasks.append(task)
 
-                    # Update the temporary table with the last processed DID
-                    last_processed_did = batch_dids[-1]  # Assuming DID is the first element in each tuple
-                    logger.debug("Last processed DID: " + str(last_processed_did))
-                    await update_blocklist_temporary_table(last_processed_did)
-
-                    break  # Break the loop if the request is successful
-                except asyncpg.ConnectionDoesNotExistError:
-                    logger.warning("Connection error. Retrying after 30 seconds...")
-                    await asyncio.sleep(30)  # Retry after 30 seconds
-                except Exception as e:
-                    if "429 Too Many Requests" in str(e):
-                        logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
-                        await asyncio.sleep(60)  # Retry after 60 seconds
-                    else:
-                        raise e
+                # Update the temporary table with the last processed DID
+                last_processed_did = batch_dids[-1]  # Assuming DID is the first element in each tuple
+                logger.debug("Last processed DID: " + str(last_processed_did))
+                await update_blocklist_temporary_table(last_processed_did)
 
                 # Pause every 100 DID requests
-                if (i + 1) % pause_interval == 0:
+                if processed_count % pause_interval == 0:
                     logger.info(f"Pausing after {i + 1} DID requests...")
                     await asyncio.sleep(30)  # Pause for 30 seconds
+
+                break  # Break the loop if the request is successful
+            except asyncpg.ConnectionDoesNotExistError:
+                logger.warning("Connection error. Retrying after 30 seconds...")
+                await asyncio.sleep(30)  # Retry after 30 seconds
+            except Exception as e:
+                if "429 Too Many Requests" in str(e):
+                    logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
+                    await asyncio.sleep(60)  # Retry after 60 seconds
+                else:
+                    raise e
+
+        processed_count += batch_size
 
     await asyncio.gather(*tasks)
     logger.info(f"Block lists updated: {total_blocks_updated}/{total_dids}")

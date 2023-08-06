@@ -170,7 +170,7 @@ async def get_user_block_list(ident):
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
-                response.raise_for_status()  # Raise an exception for any HTTP error status codes
+                # response.raise_for_status()  # Raise an exception for any HTTP error status codes
         except httpx.ReadTimeout as e:
             logger.warning("Request timed out. Retrying... Retry count: %d", retry_count)
             retry_count += 1
@@ -181,6 +181,11 @@ async def get_user_block_list(ident):
             retry_count += 1
             await asyncio.sleep(5)
             continue
+        except Exception as e:
+            if "429 Too Many Requests" in str(e):
+                logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
+                retry_count += 1
+                await asyncio.sleep(10)  # Retry after 60 seconds
 
         if response.status_code == 200:
             response_json = response.json()
