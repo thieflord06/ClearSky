@@ -25,6 +25,7 @@ async def resolve_top_block_lists():
             resolved_blocked.append({'Handle': resolved_did, 'block_count': result['block_count'], 'ProfileURL': f'https://bsky.app/profile/{did}'})
 
     for result in database_handler.blockers_results:
+        did = result['user_did']
         resolved_did = await on_wire.resolve_did(result['user_did'])  # Replace with your actual resolving function
         if resolved_did is not None:
             resolved_blockers.append({'Handle': resolved_did, 'block_count': result['block_count'], 'ProfileURL': f'https://bsky.app/profile/{did}'})
