@@ -7,14 +7,14 @@ import argparse
 import asyncio
 import app
 
-# python app.py --update-users-did-handle-db // command to update users db with dids and handles
-# python app.py --update-users-did-only-db // command to update users db with dids only
-# python app.py --fetch-users-count // command to get current count in db
-# python app.py --update-blocklists-db // command to update all users blocklists
-# python app.py --truncate-blocklists_table-db // command to update all users blocklists
-# python app.py --truncate-users_table-db // command to update all users blocklists
-# python app.py --delete-database // command to delete entire database
-# python app.py --retrieve-blocklists-db // initial/re-initialize get for blocklists database
+# python update_manager.py --update-users-did-handle-db // command to update users db with dids and handles
+# python update_manager.py --update-users-did-only-db // command to update users db with dids only
+# python update_manager.py --fetch-users-count // command to get current count in db
+# python update_manager.py --update-blocklists-db // command to update all users blocklists
+# python update_manager.py --truncate-blocklists_table-db // command to update all users blocklists
+# python update_manager.py --truncate-users_table-db // command to update all users blocklists
+# python update_manager.py --delete-database // command to delete entire database
+# python update_manager.py --retrieve-blocklists-db // initial/re-initialize get for blocklists database
 
 
 async def main():
@@ -101,7 +101,8 @@ async def main():
         sys.exit()
     elif args.update_blocklists_db:
         logger.info("Update Blocklists db requested.")
-        database_handler.get_single_users_blocks_db(run_update=False, get_dids=True)
+        await database_handler.update_all_blocklists(True)
+        await database_handler.delete_blocklist_temporary_table()
         logger.info("Update Blocklists db finished.")
         sys.exit()
 

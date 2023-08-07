@@ -58,7 +58,20 @@ def get_single_users_blocks_db(run_update=False, get_dids=False):
             asyncio.sleep(60)
 
 
-async def update_all_blocklists():
+async def get_dids_with_blocks():
+    try:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                query = "SELECT DISTINCT user_did FROM blocklists"
+                rows = await connection.fetch(query)
+                dids_with_blocks = [row['user_did'] for row in rows]
+                return dids_with_blocks
+    except Exception as e:
+        logger.error(f"Error retrieving DIDs with blocks: {e}")
+        return []
+
+
+async def update_all_blocklists(run_diff=False):
     all_dids = await get_all_users_db(False, True)
     total_dids = len(all_dids)
     batch_size = 200
@@ -67,6 +80,12 @@ async def update_all_blocklists():
 
     total_blocks_updated = 0
     tasks = []
+
+    if run_diff:
+        dids_with_blocks = await get_dids_with_blocks()  # Retrieve DIDs with blocks from the database
+        dids_without_blocks = [did for did in all_dids if did not in dids_with_blocks]
+        logger.info("DIDs that will be processed: " + str(len(dids_without_blocks)))
+        all_dids = dids_without_blocks
 
     # Check if there is a last processed DID in the temporary table
     async with connection_pool.acquire() as connection:
