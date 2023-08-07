@@ -85,6 +85,7 @@ async def update_all_blocklists(run_diff=False):
         dids_with_blocks = await get_dids_with_blocks()  # Retrieve DIDs with blocks from the database
         dids_without_blocks = [did for did in all_dids if did not in dids_with_blocks]
         logger.info("DIDs that will be processed: " + str(len(dids_without_blocks)))
+        logger.info("DIDs that have blocks: " + str(len(dids_with_blocks)))
         all_dids = dids_without_blocks
 
     # Check if there is a last processed DID in the temporary table

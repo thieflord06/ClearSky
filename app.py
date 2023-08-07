@@ -116,76 +116,77 @@ async def selection_handle():
         skip_option5 = True
     elif skip_option5 == "false":
         skip_option5 = False
+    if selection in ['1', '2', '3', '4', '5']:
+        if selection == "4":
+            logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count requested")
+            count = await utils.get_user_count()
+            logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count: " + str(count))
 
-    if selection == "4":
-        logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count requested")
-        count = await utils.get_user_count()
-        logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count: " + str(count))
-
-        return jsonify({"count": count})
-    if is_did(identifier) or is_handle(identifier):
+            return jsonify({"count": count})
         # Check if did or handle exists before processing
-        if is_did(identifier):
-            handle_identifier = await on_wire.resolve_did(identifier)
-            did_identifier = "place_holder"
-        if is_handle(identifier):
-            did_identifier = await on_wire.resolve_handle(identifier)
-            handle_identifier = "place_holder"
-        if not handle_identifier or not did_identifier:
-            return await render_template('no_longer_exists.html', content_type='text/html')
-        if selection != "4":
-            if not identifier:
-                return await render_template('error.html')
-            if selection == "1":
-                logger.info(str(session_ip) + " > " + str(*session.values()) + ": " + "DID resolve request made for: " + identifier)
-                if is_did(did_identifier):
-                    result = did_identifier
-                else:
-                    result = identifier
-                logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + result)
+        if is_did(identifier) or is_handle(identifier):
+            if is_did(identifier):
+                handle_identifier = await on_wire.resolve_did(identifier)
+                did_identifier = "place_holder"
+            if is_handle(identifier):
+                did_identifier = await on_wire.resolve_handle(identifier)
+                handle_identifier = "place_holder"
+            if not handle_identifier or not did_identifier:
+                return await render_template('no_longer_exists.html', content_type='text/html')
+            if selection != "4":
+                if not identifier:
+                    return await render_template('error.html')
+                if selection == "1":
+                    logger.info(str(session_ip) + " > " + str(*session.values()) + ": " + "DID resolve request made for: " + identifier)
+                    if is_did(did_identifier):
+                        result = did_identifier
+                    else:
+                        result = identifier
+                    logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + result)
 
-                return jsonify({"result": result})
-            elif selection == "2":
-                logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Handle resolve request made for: " + identifier)
-                if is_handle(handle_identifier):
-                    result = handle_identifier
-                else:
-                    result = identifier
-                logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + str(result))
+                    return jsonify({"result": result})
+                elif selection == "2":
+                    logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Handle resolve request made for: " + identifier)
+                    if is_handle(handle_identifier):
+                        result = handle_identifier
+                    else:
+                        result = identifier
+                    logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + str(result))
 
-                return jsonify({"result": result})
-            elif selection == "3":
-                logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Block list requested for: " + identifier)
-                blocklist, count = await get_user_block_list(identifier)
+                    return jsonify({"result": result})
+                elif selection == "3":
+                    logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Block list requested for: " + identifier)
+                    blocklist, count = await get_user_block_list(identifier)
 
-                if "did" in identifier:
-                    identifier = handle_identifier
+                    if "did" in identifier:
+                        identifier = handle_identifier
 
-                return jsonify({"block_list": blocklist, "user": identifier, "count": count})
-            elif selection == "5" and not skip_option5:
-                logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Block list requested for: " + identifier)
-                blocks, dates, count = await utils.get_single_user_blocks(did_identifier)
-                if "did" in identifier:
-                    identifier = handle_identifier
+                    return jsonify({"block_list": blocklist, "user": identifier, "count": count})
+                elif selection == "5" and not skip_option5:
+                    logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Block list requested for: " + identifier)
+                    blocks, dates, count = await utils.get_single_user_blocks(did_identifier)
+                    if "did" in identifier:
+                        identifier = handle_identifier
 
-                if type(blocks) != list:
-                    blocks = ["None"]
-                    dates = [datetime.now().date()]
-                    count = 0
-                response_data = {
-                    "who_block_list": blocks,
-                    "user": identifier,
-                    "date": dates,
-                    "counts": count
-                }
-                logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Blocklist Request Result: " + identifier + " | " + "Blocked by: " + str(blocks) + " :: " + "Total count: " + str(count))
+                    if type(blocks) != list:
+                        blocks = ["None"]
+                        dates = [datetime.now().date()]
+                        count = 0
+                    response_data = {
+                        "who_block_list": blocks,
+                        "user": identifier,
+                        "date": dates,
+                        "counts": count
+                    }
+                    logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Blocklist Request Result: " + identifier + " | " + "Blocked by: " + str(blocks) + " :: " + "Total count: " + str(count))
 
-                return jsonify(response_data)
-                # return jsonify({"user": identifier, "block_list": blocks, "count": count})
-            elif skip_option5:
-                return jsonify({"message": "Option 5 skipped"})
+                    return jsonify(response_data)
+                    # return jsonify({"user": identifier, "block_list": blocks, "count": count})
+                elif skip_option5:
+
+                    return jsonify({"message": "Option 5 skipped"})
     else:
-        return await render_template('error.html')
+        return await render_template('intentional_error.html')
 
 
 @app.route('/fun_facts')
