@@ -132,13 +132,19 @@ async def selection_handle():
                 return await render_template('error.html')
             if selection == "1":
                 logger.info(str(session_ip) + " > " + str(*session.values()) + ": " + "DID resolve request made for: " + identifier)
-                result = did_identifier
+                if is_did(did_identifier):
+                    result = did_identifier
+                else:
+                    result = identifier
                 logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + result)
 
                 return jsonify({"result": result})
             elif selection == "2":
                 logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Handle resolve request made for: " + identifier)
-                result = handle_identifier
+                if is_handle(handle_identifier):
+                    result = handle_identifier
+                else:
+                    result = identifier
                 logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + str(result))
 
                 return jsonify({"result": result})

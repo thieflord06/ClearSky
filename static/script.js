@@ -323,4 +323,13 @@ document.addEventListener('DOMContentLoaded', function() {
             identifier.readOnly = false;
         }
     });
+
+    // Handle the back button behavior
+    window.addEventListener('popstate', function(event) {
+        console.log("Here");
+        if (event.state && event.state.fromBackButton) {
+            console.log("inside");
+            window.location.href = '/';
+        }
+    });
 });
