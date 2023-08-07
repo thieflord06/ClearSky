@@ -261,7 +261,11 @@ table td {
     }
 
     .contact-container p {
-        font-size: 20px;
+        font-size: 10vw;
+    }
+
+    .contact-container h1 {
+        font-size: 40px;
     }
 
     .menu {

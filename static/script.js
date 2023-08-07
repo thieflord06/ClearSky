@@ -250,13 +250,13 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             return; // Return to prevent further execution
         }
-        if (optionSelected === "3") {
-//            var confirmed = window.confirm("This will take an extremely long time! Do you want to proceed?");
-            alert("Getting results may take some time, if the user is blocking a lot of accounts.");
-        }
-        if (optionSelected === "5") {
-            alert("Getting results may take some time, if the user is blocked by a lot of accounts.");
-        }
+//        if (optionSelected === "3") {
+////            var confirmed = window.confirm("This will take an extremely long time! Do you want to proceed?");
+//            alert("Getting results may take some time, if the user is blocking a lot of accounts.");
+//        }
+//        if (optionSelected === "5") {
+//            alert("Getting results may take some time, if the user is blocked by a lot of accounts.");
+//        }
         if (requestInProgress) {
             // A request is already in progress, do not make another request
             hideIndexContainer();
