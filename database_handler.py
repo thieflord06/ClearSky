@@ -92,8 +92,13 @@ async def update_all_blocklists():
             logger.info(f"Resuming processing from DID: {last_processed_did}")
             all_dids = all_dids[start_index:]
 
+    cumulative_processed_count = 0  # Initialize cumulative count
+
     for i in range(0, total_dids, batch_size):
-        batch_dids = all_dids[i:i + batch_size]
+        remaining_dids = total_dids - i
+        current_batch_size = min(batch_size, remaining_dids)
+
+        batch_dids = all_dids[i:i + current_batch_size]
         # Use the limiter to rate-limit the function calls
         while True:
             try:
@@ -110,6 +115,11 @@ async def update_all_blocklists():
                     logger.info(f"Pausing after {i + 1} DID requests...")
                     await asyncio.sleep(30)  # Pause for 30 seconds
 
+                cumulative_processed_count += len(batch_dids)
+                # Log information for each batch
+                logger.info(f"Processing batch {i // batch_size + 1}/{total_dids // batch_size + 1}...")
+                logger.info(f"Processing {cumulative_processed_count}/{total_dids} DIDs...")
+
                 break  # Break the loop if the request is successful
             except asyncpg.ConnectionDoesNotExistError:
                 logger.warning("Connection error. Retrying after 30 seconds...")
@@ -125,7 +135,6 @@ async def update_all_blocklists():
 
     await asyncio.gather(*tasks)
     logger.info(f"Block lists updated: {total_blocks_updated}/{total_dids}")
-    logger.info(f"First few DIDs in the batch: {batch_dids[:5]}")
 
 
 async def update_blocklists_batch(batch_dids):
