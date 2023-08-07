@@ -2,40 +2,9 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="/images/favicon.png">
     <title>ClearSky Search Tool</title>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
-    <style>
-        /* CSS styles for the powered by ATP label */
-        .atp-label {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            font-size: 12px;
-            color: #888;
-        }
-
-        /* CSS styles for mobile */
-        @media (max-width: 480px) {
-            body {
-                padding: 10px;
-            }
-
-            h1 {
-                font-size: 24px;
-                margin-bottom: 20px;
-            }
-
-            .menu {
-                display: flex;
-                flex-direction: column;
-                margin-bottom: 20px;
-            }
-
-            .menu li {
-                margin-bottom: 10px;
-            }
-        }
-    </style>
 </head>
 <body>
     <div id="base-container">
@@ -44,6 +13,7 @@
             <ul class="menu">
                 <li><a href="/">Home</a></li>
                 <li><a href="/contact">Contact</a></li>
+                <li><a href="/fun_facts">Fun Facts</a> </li>
             </ul>
         </nav>
     </div>

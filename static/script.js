@@ -59,12 +59,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function showInProgressContainer() {
         console.log('showInProgressContainer() called');
-        pendingRequestContainer.sytle.display = 'block'
+        pendingRequestContainer.style.display = 'block'
     }
 
     function hideInProgressContainer() {
         console.log('hideInProgressContainer() called');
-        pendingRequestContainer.sytle.display = 'none'
+        pendingRequestContainer.style.display = 'none'
     }
 
     // Function to show the result container
@@ -211,53 +211,52 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add event listener to the form submit button
     selectionForm.addEventListener('submit', function (event) {
         event.preventDefault(); // Prevent the default form submission
-        console.log('Form submit button clicked');
 
         optionSelected = document.getElementById("selection").value;
 
-//        // Mark that a request is in progress
-//        requestInProgress = true;
+        skipValue = false;
 
-//        if (selection.value === '5') {
-//            // Create a new FormData object and add a flag to indicate "Option 5" should not be processed
-//            const formData = new FormData(selectionForm);
-//            formData.append('skipOption5', 'true');
-//
-//            // If Option 5 is selected, redirect to the "Coming Soon" page
-//            fetch('/selection_handle', {
-//                method: 'POST',
-//                body: FormData
-//            })
-//            .then(response => {
-//                // Check if the response status is successful (HTTP 200-299)
-//                if (!response.ok) {
-//                    throw new Error('Network response was not ok');
-//                }
-//                hideBaseContainer();
-//                hideIndexContainer();
-//                showComingSoonContainer();
-//                return; // Return to prevent further execution
-//            })
-//            .catch(error => {
-//                // Handle any errors here
-//                hideBaseContainer();
-//                hideIndexContainer();
-//                showErrorContainer();
-//                console.error('Error submitting form:', error);
-//                // You can show an error message to the user if needed
-//            });
-//            return; // Return to prevent further execution
+        // Update the value of the skipOption5 input field
+        const skipOption5Input = document.getElementById('skipOption5');
+        skipOption5Input.value = skipValue.toString(); // Convert boolean to string
+
+        // Create a new FormData object and add skipValue to it
+        const formData = new FormData(selectionForm);
+        formData.append('skipOption5', skipValue.toString());
+
+        if (selection.value === '5' && skipValue) {
+            // If Option 5 is selected, redirect to the "Coming Soon" page
+            fetch('/selection_handle', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                // Check if the response status is successful (HTTP 200-299)
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                hideBaseContainer();
+                hideIndexContainer();
+                showComingSoonContainer();
+                return; // Return to prevent further execution
+            })
+            .catch(error => {
+                // Handle any errors here
+                hideBaseContainer();
+                hideIndexContainer();
+                showErrorContainer();
+                console.error('Error submitting form:', error);
+                // You can show an error message to the user if needed
+            });
+            return; // Return to prevent further execution
+        }
+//        if (optionSelected === "3") {
+////            var confirmed = window.confirm("This will take an extremely long time! Do you want to proceed?");
+//            alert("Getting results may take some time, if the user is blocking a lot of accounts.");
 //        }
-        if (optionSelected === "3") {
-//            var confirmed = window.confirm("This will take an extremely long time! Do you want to proceed?");
-            alert("Getting results may take some time, if the user is blocking a lot of accounts.");
-//            if (!confirmed) {
-//                return;
-//            }
-        }
-        if (optionSelected === "5") {
-            alert("Getting results may take some time, if the user is blocked by a lot of accounts.");
-        }
+//        if (optionSelected === "5") {
+//            alert("Getting results may take some time, if the user is blocked by a lot of accounts.");
+//        }
         if (requestInProgress) {
             // A request is already in progress, do not make another request
             hideIndexContainer();
@@ -267,7 +266,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Mark that a request is in progress
-        requestInProgress = true;
+        requestInProgress = false;
 
         submitButton.disabled = true; // Disable the form submission button
         hideBaseContainer();
@@ -322,6 +321,15 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             // Enable the identifier field
             identifier.readOnly = false;
+        }
+    });
+
+    // Handle the back button behavior
+    window.addEventListener('popstate', function(event) {
+        console.log("Here");
+        if (event.state && event.state.fromBackButton) {
+            console.log("inside");
+            window.location.href = '/';
         }
     });
 });
