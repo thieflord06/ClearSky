@@ -1,5 +1,5 @@
 # app.py
-
+import quart
 from quart import Quart, render_template, request, session, jsonify
 from datetime import datetime
 import os
@@ -69,6 +69,12 @@ async def index():
 async def loading():
 
     return await render_template('loading.html')
+
+
+@app.route('/images/favicon.png')
+async def favicon():
+
+    return await quart.send_from_directory('images', 'favicon.png')
 
 
 @app.route('/coming_soon')
