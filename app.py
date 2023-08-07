@@ -156,7 +156,7 @@ async def selection_handle():
                 return jsonify({"result": result})
             elif selection == "3":
                 logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Block list requested for: " + identifier)
-                blocklist, count = await get_user_block_list_html(identifier)
+                blocklist, count = await get_user_block_list(identifier)
 
                 if "did" in identifier:
                     identifier = handle_identifier
@@ -201,7 +201,7 @@ async def fun_facts():
     return await render_template('fun_facts.html', blocked_results=resolved_blocked, blockers_results=resolved_blockers)
 
 
-async def get_user_block_list_html(ident):
+async def get_user_block_list(ident):
     blocked_users, timestamps = await utils.get_user_block_list(ident)
     block_list = []
 
