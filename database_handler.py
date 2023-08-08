@@ -64,6 +64,8 @@ async def get_dids_with_blocks():
             async with connection.transaction():
                 query = "SELECT DISTINCT user_did FROM blocklists"
                 rows = await connection.fetch(query)
+                logger.info("Fetched DIDs with blocks.")
+                logger.info("Processing results...")
                 dids_with_blocks = [row['user_did'] for row in rows]
                 return dids_with_blocks
     except Exception as e:
