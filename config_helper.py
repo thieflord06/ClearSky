@@ -15,11 +15,24 @@ def read_config():
     return config
 
 
-def update_config_based_on_os(config):
+def update_config_based_on_os(config, temp=False):
     try:
         current_os = platform.platform()
 
-        if "Windows" in current_os:
+        if temp:
+            if "Windows" not in current_os:
+                log_dir = config.get('temp', 'logdir')
+                users_db_path = config.get('temp', 'users_db_path')
+                print("Using temp for logging.")
+                if not os.path.exists(log_dir):
+                    os.makedirs(log_dir)
+                if not os.path.exists(users_db_path):
+                    os.makedirs(users_db_path)
+
+                args = config.get("temp", "args")
+                log_dir = config.get("temp", "logdir")
+                log_name = config.get("temp", "log_name")
+        elif "Windows" in current_os:
             args = config.get("windows", "args")
             log_dir = config.get("windows", "logdir")
             log_name = config.get("windows", "log_name")
@@ -52,6 +65,18 @@ def create_log_directory(log_dir, users_db_path):
             os.makedirs(users_db_path)
     except PermissionError:
         raise PermissionError("Cannot create log directory")
+    except OSError:
+        config = read_config()
+        current_os = platform.platform()
+        if "Windows" not in current_os:
+            log_dir = config.get('temp', 'logdir')
+            users_db_path = config.get('temp', 'users_db_path')
+            print("Using temp for logging.")
+            if not os.path.exists(log_dir):
+                os.makedirs(log_dir)
+            if not os.path.exists(users_db_path):
+                os.makedirs(users_db_path)
+        update_config_based_on_os(read_config(), True)
 
 
 def configure_logging():
