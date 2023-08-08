@@ -47,7 +47,7 @@ def update_config_based_on_os(config, temp=False):
         config.set("handler_fileHandler", "args", str(args))
         config.set("handler_fileHandler", "logdir", str(log_dir))
         config.set("handler_fileHandler", "log_name", str(log_name))
-        # config.set("handler_fileHandler", "users_db_path", str(users_db))
+        config.set("handler_fileHandler", "users_db_path", str(users_db))
 
         with open('config.ini', 'w') as configfile:
             config.write(configfile)
@@ -70,6 +70,7 @@ def create_log_directory(log_dir, users_db_path):
         config = read_config()
         current_os = platform.platform()
         if "Windows" not in current_os:
+            update_config_based_on_os(read_config(), True)
             log_dir = config.get('temp', 'logdir')
             users_db_path = config.get('temp', 'users_db_path')
             print("Using temp for logging.")
@@ -77,7 +78,6 @@ def create_log_directory(log_dir, users_db_path):
                 os.makedirs(log_dir)
             if not os.path.exists(users_db_path):
                 os.makedirs(users_db_path)
-        update_config_based_on_os(read_config(), True)
 
 
 def configure_logging():
