@@ -1,6 +1,8 @@
 # database_handler.py
 
 import asyncio
+import os
+
 import asyncpg
 from tqdm import tqdm
 
@@ -483,17 +485,29 @@ async def get_top_blocks():
 
 
 def get_database_config():
-    pg_user = config.get("database", "pg_user")
-    pg_password = config.get("database", "pg_password")
-    pg_host = config.get("database", "pg_host")
-    pg_database = config.get("database", "pg_database")
+    try:
+        logger.info(str(os.environ.get('CLEAR_SKY')))
+        if not os.getenv('CLEAR_SKY'):
+            logger.info("Database connection: Using config.ini.")
+            pg_user = config.get("database", "pg_user")
+            pg_password = config.get("database", "pg_password")
+            pg_host = config.get("database", "pg_host")
+            pg_database = config.get("database", "pg_database")
+        else:
+            logger.info("Database connection: Using environment variables.")
+            pg_user = os.environ.get("PG_USER")
+            pg_password = os.environ.get("PG_PASSWORD")
+            pg_host = os.environ.get("PG_HOST")
+            pg_database = os.environ.get("PG_DATABASE")
 
-    return {
-        "user": pg_user,
-        "password": pg_password,
-        "host": pg_host,
-        "database": pg_database
-    }
+        return {
+            "user": pg_user,
+            "password": pg_password,
+            "host": pg_host,
+            "database": pg_database
+        }
+    except Exception:
+        logger.error("Database connection information not present: Set environment variables or config.ini")
 
 
 # config_helper.configure_logging()
