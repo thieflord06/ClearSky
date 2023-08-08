@@ -234,6 +234,19 @@ table td {
         margin-top: 20px;
     }
 
+    #go-back-button {
+        width: 93%;
+        padding: 15px;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        font-size: 30px;
+        text-align: center;
+        margin-top: 20px;
+    }
+
+
     nav {
         padding: 5px;
     }
@@ -248,7 +261,7 @@ table td {
     }
 
     .result-container p {
-        font-size: 6vw;
+        font-size: 5vw;
         margin-bottom: 20px;
     }
 
