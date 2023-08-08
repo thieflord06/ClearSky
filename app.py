@@ -263,11 +263,11 @@ def is_handle(identifier):
 # ======================================================================================================================
 # =============================================== Main Logic ===========================================================
 if not os.environ.get('CLEAR_SKY'):
-    logger.info("IP connection: Using environment variables.")
+    logger.info("IP connection: Using config.ini")
     ip_address = config.get("server", "ip")
     port_address = config.get("server", "port")
 else:
-    logger.info("IP connection: Using config.ini")
+    logger.info("IP connection: Using environment variables.")
     ip_address = os.environ.get('CLEAR_SKY_IP')
     port_address = config.get('CLEAR_SKY_PORT')
 
