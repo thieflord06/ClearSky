@@ -269,7 +269,7 @@ if not os.environ.get('CLEAR_SKY'):
 else:
     logger.info("IP connection: Using environment variables.")
     ip_address = os.environ.get('CLEAR_SKY_IP')
-    port_address = config.get('CLEAR_SKY_PORT')
+    port_address = os.environ.get('CLEAR_SKY_PORT')
 
 
 async def main():
