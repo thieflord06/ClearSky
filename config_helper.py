@@ -32,6 +32,7 @@ def update_config_based_on_os(config, temp=False):
                 args = config.get("temp", "args")
                 log_dir = config.get("temp", "logdir")
                 log_name = config.get("temp", "log_name")
+                users_db = config.get("temp", "users_db_path")
         elif "Windows" in current_os:
             args = config.get("windows", "args")
             log_dir = config.get("windows", "logdir")
