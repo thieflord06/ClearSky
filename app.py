@@ -1,4 +1,5 @@
 # app.py
+
 import quart
 from quart import Quart, render_template, request, session, jsonify
 from datetime import datetime
@@ -276,10 +277,8 @@ async def main():
     await database_handler.create_connection_pool()  # Creates connection pool for db
     await database_handler.create_top_block_list_table()
     await database_handler.blocklists_updater()
-    # Start the scheduler
-    scheduler.start_scheduler()
+    asyncio.create_task(scheduler.run_scheduler())  # Start the scheduler
     logger.info("Web server starting at: " + ip_address + ":" + port_address)
-    # await serve(app, host=ip_address, port=port_address)
     await app.run_task(host=ip_address, port=port_address)
 
 

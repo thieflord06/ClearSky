@@ -27,8 +27,6 @@ async def resolve_handle(info):  # Take Handle and get DID
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(full_url)
-                # response.raise_for_status()
-
                 response_json = response.json()
                 logger.debug("response: " + str(response_json))
 
@@ -64,8 +62,6 @@ async def resolve_did(did):  # Take DID and get handle
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(full_url)
-                # response.raise_for_status()
-
                 response_json = response.json()
                 logger.debug("response: " + str(response_json))
 

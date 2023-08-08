@@ -1,7 +1,6 @@
 # update_manager.py
 
 import database_handler
-import utils
 from config_helper import logger
 import sys
 import argparse

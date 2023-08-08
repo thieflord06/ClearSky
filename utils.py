@@ -121,7 +121,6 @@ async def get_user_block_list(ident):
             "repo": ident,
             "limit": limit,
             "collection": collection,
-            # "cursor": cursor
         }
 
         if cursor:
@@ -134,7 +133,6 @@ async def get_user_block_list(ident):
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
-                # response.raise_for_status()  # Raise an exception for any HTTP error status codes
         except httpx.ReadTimeout as e:
             logger.warning("Request timed out. Retrying... Retry count: %d", retry_count)
             retry_count += 1

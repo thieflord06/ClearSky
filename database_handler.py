@@ -2,10 +2,8 @@
 
 import asyncio
 import os
-
 import asyncpg
 from tqdm import tqdm
-
 import config_helper
 import utils
 from config_helper import logger
@@ -369,10 +367,6 @@ async def process_batch(batch_dids, ad_hoc):
         # Pause after each batch of handles resolved
         logger.info("Pausing...")
         await asyncio.sleep(60)  # Pause for 60 seconds
-
-            # # Commit changes after each batch update
-            # await connection_pool.acquire().commit()
-
         logger.info(f"Batch handles updated: {total_handles_updated}")
 
     return total_handles_updated
