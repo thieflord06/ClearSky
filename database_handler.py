@@ -71,6 +71,19 @@ async def get_dids_with_blocks():
         return []
 
 
+async def get_dids_without_handles():
+    try:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                query = "SELECT did FROM users WHERE handle IS NULL"
+                rows = await connection.fetch(query)
+                dids_without_handles = [record['did'] for record in rows]
+                return dids_without_handles
+    except Exception as e:
+        logger.error(f"Error retrieving DIDs without handles: {e}")
+        return []
+
+
 async def update_all_blocklists(run_diff=False):
     all_dids = await get_all_users_db(False, True)
     total_dids = len(all_dids)
@@ -82,6 +95,7 @@ async def update_all_blocklists(run_diff=False):
     tasks = []
 
     if run_diff:
+        logger.info("getting diff.")
         dids_with_blocks = await get_dids_with_blocks()  # Retrieve DIDs with blocks from the database
         dids_without_blocks = [did for did in all_dids if did not in dids_with_blocks]
         logger.info("DIDs that will be processed: " + str(len(dids_without_blocks)))
@@ -302,8 +316,8 @@ async def update_user_handles(handles_to_update):
         logger.info(f"Updated {len(handles_to_update)} handles in the database.")
 
 
-async def process_batch(batch_dids):
-    batch_handles_and_dids = await utils.fetch_handles_batch(batch_dids)
+async def process_batch(batch_dids, ad_hoc):
+    batch_handles_and_dids = await utils.fetch_handles_batch(batch_dids, ad_hoc)
     logger.info("Batch resolved.")
 
     # Split the batch of handles into smaller batches

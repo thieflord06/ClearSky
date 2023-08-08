@@ -188,8 +188,15 @@ async def get_user_block_list(ident):
     return blocked_users, created_dates
 
 
-async def fetch_handles_batch(batch_dids):
-    tasks = [on_wire.resolve_did(did[0].strip()) for did in batch_dids]
+async def fetch_handles_batch(batch_dids, ad_hoc=False):
+    if not ad_hoc:
+        tasks = [on_wire.resolve_did(did[0].strip()) for did in batch_dids]
+    else:
+        tasks = [on_wire.resolve_did(did.strip()) for did in batch_dids]
     resolved_handles = await asyncio.gather(*tasks)
-    handles = [(did[0], handle) for did, handle in zip(batch_dids, resolved_handles) if handle is not None]
+
+    if not ad_hoc:
+        handles = [(did[0], handle) for did, handle in zip(batch_dids, resolved_handles) if handle is not None]
+    else:
+        handles = [(did, handle) for did, handle in zip(batch_dids, resolved_handles) if handle is not None]
     return handles
