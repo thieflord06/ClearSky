@@ -262,8 +262,14 @@ def is_handle(identifier):
 
 # ======================================================================================================================
 # =============================================== Main Logic ===========================================================
-ip_address = config.get("server", "ip")
-port_address = config.get("server", "port")
+if not os.environ.get('CLEAR_SKY'):
+    logger.info("IP connection: Using environment variables.")
+    ip_address = config.get("server", "ip")
+    port_address = config.get("server", "port")
+else:
+    logger.info("IP connection: Using config.ini")
+    ip_address = os.environ.get('CLEAR_SKY_IP')
+    port_address = config.get('CLEAR_SKY_PORT')
 
 
 async def main():
