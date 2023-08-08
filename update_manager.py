@@ -1,6 +1,7 @@
 # update_manager.py
 
 import database_handler
+import utils
 from config_helper import logger
 import sys
 import argparse
@@ -28,6 +29,7 @@ async def main():
     parser.add_argument('--truncate-users_table-db', action='store_true', help='delete users table')
     parser.add_argument('--delete-database', action='store_true', help='delete entire database')
     parser.add_argument('--update-handles', action='store_true', help='update with new dids and update those new dids with handles')
+    parser.add_argument('--update-top-blocks', action='store_true', help='updates client side top blocks page with up to date results')
     args = parser.parse_args()
 
     await database_handler.create_connection_pool()  # Creates connection pool for db
@@ -94,6 +96,8 @@ async def main():
         count = await database_handler.count_users_table()
         logger.info(f"Total users in the database: {count}")
         sys.exit()
+    elif args.update_top_blocks:
+        await database_handler.blocklists_updater()
     elif args.update_handles:
         # Call the function to update the database with all users dids
         logger.info("Users db update dids only requested.")

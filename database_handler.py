@@ -408,6 +408,60 @@ async def create_blocklist_temporary_table():
         logger.error("Error creating temporary table: %s", e)
 
 
+async def create_top_block_list_table():
+    try:
+        logger.info("Creating Top block list table.")
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                query = """
+                CREATE TABLE IF NOT EXISTS top_block (
+                    did text,
+                    count int,
+                    list_type text
+                )
+                """
+                await connection.execute(query)
+    except Exception as e:
+        logger.error("Error creating top block table: %s", e)
+
+
+async def truncate_top_blocks_table():
+    try:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                # Delete the existing row if it exists
+                await connection.execute("TRUNCATE top_block")
+    except Exception as e:
+        logger.error("Error updating top block table: %s", e)
+
+
+async def update_top_block_list_table(did, count, list_type):
+    try:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                # Insert the new row with the given last_processed_did
+                query = "INSERT INTO top_block (did, count, list_type) VALUES ($1, $2, $3)"
+                await connection.execute(query, did, count, list_type)
+    except Exception as e:
+        logger.error("Error updating top block table: %s", e)
+
+
+async def get_top_blocks_list():
+    try:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                query1 = "SELECT did, count FROM top_block WHERE list_type = 'blocked'"
+                query2 = "SELECT did, count FROM top_block WHERE list_type = 'blocker'"
+                blocked_rows = await connection.fetch(query1)
+                blocker_rows = await connection.fetch(query2)
+
+                return blocked_rows, blocker_rows
+    except Exception as e:
+        logger.error(f"Error retrieving DIDs without handles: {e}")
+
+        return []
+
+
 async def delete_blocklist_temporary_table():
     try:
         async with connection_pool.acquire() as connection:
@@ -482,6 +536,25 @@ async def get_top_blocks():
                 blockers_results.extend(blockers_data)
     except Exception as e:
         logger.error("Error retrieving data from db", e)
+
+
+async def blocklists_updater():
+    blocked_list = "blocked"
+    blocker_list = "blocker"
+
+    logger.info("Updating top blocks lists requested.")
+    await truncate_top_blocks_table()
+    await get_top_blocks()
+    for blocked_did, blocked_count in blocked_results:
+        blocked_list_type = blocked_list
+        await update_top_block_list_table(blocked_did, blocked_count, blocked_list_type)
+    logger.info("Updated top blocked db.")
+    for blocker_did, blocker_count in blockers_results:
+        blocker_list_type = blocker_list
+        await update_top_block_list_table(blocker_did, blocker_count, blocker_list_type)
+    await utils.resolve_top_block_lists()
+    logger.info("Updated top blockers db.")
+    logger.info("Top blocks lists updated.")
 
 
 def get_database_config():

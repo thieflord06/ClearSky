@@ -15,20 +15,18 @@ resolved_blockers = []
 
 
 async def resolve_top_block_lists():
+    blocked, blockers = await database_handler.get_top_blocks_list()
     logger.info("Resolving top blocks lists.")
     # Resolve each DID and create a list of dictionaries
+    for did, count in blocked:
+        blocked_resolved_did = await on_wire.resolve_did(did)  # Replace with your actual resolving function
+        if blocked_resolved_did is not None:
+            resolved_blocked.append({'Handle': blocked_resolved_did, 'block_count': str(count), 'ProfileURL': f'https://bsky.app/profile/{did}'})
 
-    for result in database_handler.blocked_results:
-        did = result['blocked_did']
-        resolved_did = await on_wire.resolve_did(result['blocked_did'])  # Replace with your actual resolving function
-        if resolved_did is not None:
-            resolved_blocked.append({'Handle': resolved_did, 'block_count': result['block_count'], 'ProfileURL': f'https://bsky.app/profile/{did}'})
-
-    for result in database_handler.blockers_results:
-        did = result['user_did']
-        resolved_did = await on_wire.resolve_did(result['user_did'])  # Replace with your actual resolving function
-        if resolved_did is not None:
-            resolved_blockers.append({'Handle': resolved_did, 'block_count': result['block_count'], 'ProfileURL': f'https://bsky.app/profile/{did}'})
+    for did, count in blockers:
+        blocker_resolved_did = await on_wire.resolve_did(did)  # Replace with your actual resolving function
+        if blocker_resolved_did is not None:
+            resolved_blockers.append({'Handle': blocker_resolved_did, 'block_count': str(count), 'ProfileURL': f'https://bsky.app/profile/{did}'})
 
 
 def get_all_users():

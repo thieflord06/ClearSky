@@ -274,8 +274,8 @@ else:
 
 async def main():
     await database_handler.create_connection_pool()  # Creates connection pool for db
-    await database_handler.get_top_blocks()
-    await utils.resolve_top_block_lists()
+    await database_handler.create_top_block_list_table()
+    await database_handler.blocklists_updater()
     # Start the scheduler
     scheduler.start_scheduler()
     logger.info("Web server starting at: " + ip_address + ":" + port_address)
