@@ -3,20 +3,20 @@
 {% block content %}
 <div class="fun-facts-container">
     <h2>Top Blocked</h2>
-    <ul>
+    <ul style="list-style-type: none;">
         {% for item in blocked_results %}
             <li>
-                <a href="{{ item.ProfileURL }}" target="_blank">{{ item.Handle }}</a>
+               {{ loop.index }}. <a href="{{ item.ProfileURL }}" target="_blank">{{ item.Handle }}</a>
                 - {{ item.block_count }}
             </li>
         {% endfor %}
     </ul>
 
     <h2>Top Blockers</h2>
-    <ul>
+    <ul style="list-style-type: none;">
         {% for item in blockers_results %}
             <li>
-                <a href="{{ item.ProfileURL }}" target="_blank">{{ item.Handle }}</a>
+                {{ loop.index }}. <a href="{{ item.ProfileURL }}" target="_blank">{{ item.Handle }}</a>
                 - {{ item.block_count }}
             </li>
         {% endfor %}
