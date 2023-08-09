@@ -277,7 +277,7 @@ async def main():
     await database_handler.create_connection_pool()  # Creates connection pool for db
     await database_handler.create_top_block_list_table()
     await database_handler.blocklists_updater()
-    asyncio.create_task(scheduler.run_scheduler())  # Start the scheduler
+    # asyncio.create_task(scheduler.run_scheduler())  # Start the scheduler
     logger.info("Web server starting at: " + ip_address + ":" + port_address)
     await app.run_task(host=ip_address, port=port_address)
 
