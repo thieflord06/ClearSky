@@ -29,6 +29,15 @@ async def resolve_top_block_lists():
             resolved_blockers.append({'Handle': blocker_resolved_did, 'block_count': str(count), 'ProfileURL': f'https://bsky.app/profile/{did}'})
 
 
+async def update_resolved_lists():
+    global resolved_blocked, resolved_blockers
+    logger.info("Updating resolved lists...")
+    resolved_blocked = []
+    resolved_blockers = []
+    await database_handler.blocklists_updater()
+    logger.info("Resolved lists updated.")
+
+
 def get_all_users():
     base_url = "https://bsky.social/xrpc/"
     limit = 1000
