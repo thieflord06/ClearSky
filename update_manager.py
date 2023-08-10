@@ -122,6 +122,7 @@ async def main():
                     last_processed_did = await connection.fetchval(query)
                 except asyncpg.UndefinedTableError:
                     logger.warning("Temporary table doesn't exist.")
+                    last_processed_did = None
                 except Exception as e:
                     last_processed_did = None
                     logger.error(f"Exception getting from db: {str(e)}")
