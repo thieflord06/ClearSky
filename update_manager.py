@@ -1,4 +1,5 @@
 # update_manager.py
+import asyncpg
 
 import database_handler
 from config_helper import logger
@@ -49,6 +50,8 @@ async def main():
                 try:
                     query = "SELECT last_processed_did FROM temporary_table"
                     last_processed_did = await connection.fetchval(query)
+                except asyncpg.UndefinedTableError:
+                    logger.warning("Temporary table doesn't exist.")
                 except Exception as e:
                     last_processed_did = None
                     logger.error(f"Exception getting from db: {str(e)}")
@@ -116,6 +119,8 @@ async def main():
                 try:
                     query = "SELECT last_processed_did FROM temporary_table"
                     last_processed_did = await connection.fetchval(query)
+                except asyncpg.UndefinedTableError:
+                    logger.warning("Temporary table doesn't exist.")
                 except Exception as e:
                     last_processed_did = None
                     logger.error(f"Exception getting from db: {str(e)}")

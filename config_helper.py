@@ -23,7 +23,6 @@ def update_config_based_on_os(config, temp=False):
             if "Windows" not in current_os:
                 log_dir = config.get('temp', 'logdir')
                 users_db_path = config.get('temp', 'users_db_path')
-                print("Using temp for logging.")
                 if not os.path.exists(log_dir):
                     os.makedirs(log_dir)
                 if not os.path.exists(users_db_path):
