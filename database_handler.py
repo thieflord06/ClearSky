@@ -3,7 +3,6 @@
 import asyncio
 import os
 import asyncpg
-from tqdm import tqdm
 import config_helper
 import utils
 from config_helper import logger
