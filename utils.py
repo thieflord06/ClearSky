@@ -8,6 +8,7 @@ import database_handler
 import requests
 from config_helper import logger
 import on_wire
+import re
 # ======================================================================================================================
 # ============================================= Features functions =====================================================
 resolved_blocked = []
@@ -205,3 +206,31 @@ async def fetch_handles_batch(batch_dids, ad_hoc=False):
     else:
         handles = [(did, handle) for did, handle in zip(batch_dids, resolved_handles) if handle is not None]
     return handles
+
+
+def is_did(identifier):
+    did_pattern = r'^did:[a-z]+:[a-zA-Z0-9._:%-]*[a-zA-Z0-9._-]$'
+    return re.match(did_pattern, identifier) is not None
+
+
+def is_handle(identifier):
+    handle_pattern = r'^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$'
+    return re.match(handle_pattern, identifier) is not None
+
+
+async def use_handle(identifier):
+    if is_did(identifier):
+        handle_identifier = await on_wire.resolve_did(identifier)
+
+        return handle_identifier
+    else:
+        return identifier
+
+
+async def use_did(identifier):
+    if is_handle(identifier):
+        did_identifier = await on_wire.resolve_handle(identifier)
+
+        return did_identifier
+    else:
+        return identifier

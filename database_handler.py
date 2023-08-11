@@ -35,27 +35,10 @@ async def create_connection_pool():
             )
 
 
-async def close_connection_pool(pool):
-    await pool.close()
-
-
 async def count_users_table():
     async with connection_pool.acquire() as connection:
         # Execute the SQL query to count the rows in the "users" table
         return await connection.fetchval('SELECT COUNT(*) FROM users')
-
-
-def get_single_users_blocks_db(run_update=False, get_dids=False):
-    all_dids = get_all_users_db(run_update=run_update, get_dids=get_dids)
-
-    for i, ident in enumerate(tqdm(all_dids, desc="Updating blocklists", unit="DID", ncols=100)):
-        user_did = ident[0]
-        update_blocklist_table(user_did)
-
-        # Sleep for 60 seconds every 5 minutes
-        if (i + 1) % (300000 // 100) == 0:  # Assuming you have 100 dids in all_dids
-            logger.info("Pausing...")
-            asyncio.sleep(60)
 
 
 async def get_dids_with_blocks():
@@ -556,7 +539,6 @@ async def blocklists_updater():
 
 def get_database_config():
     try:
-        logger.info(str(os.environ.get('CLEAR_SKY')))
         if not os.getenv('CLEAR_SKY'):
             logger.info("Database connection: Using config.ini.")
             pg_user = config.get("database", "pg_user")

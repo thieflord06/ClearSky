@@ -125,12 +125,12 @@ async def selection_handle():
 
             return jsonify({"count": count})
         # Check if did or handle exists before processing
-        if is_did(identifier) or is_handle(identifier):
-            if is_did(identifier):
-                handle_identifier = await on_wire.resolve_did(identifier)
+        if utils.is_did(identifier) or utils.is_handle(identifier):
+            if utils.is_did(identifier):
+                handle_identifier = await utils.use_handle(identifier)
                 did_identifier = "place_holder"
-            if is_handle(identifier):
-                did_identifier = await on_wire.resolve_handle(identifier)
+            if utils.is_handle(identifier):
+                did_identifier = await utils.use_did(identifier)
                 handle_identifier = "place_holder"
             if not handle_identifier or not did_identifier:
                 return await render_template('no_longer_exists.html', content_type='text/html')
@@ -139,7 +139,7 @@ async def selection_handle():
                     return await render_template('error.html')
                 if selection == "1":
                     logger.info(str(session_ip) + " > " + str(*session.values()) + ": " + "DID resolve request made for: " + identifier)
-                    if is_did(did_identifier):
+                    if utils.is_did(did_identifier):
                         result = did_identifier
                     else:
                         result = identifier
@@ -148,7 +148,7 @@ async def selection_handle():
                     return jsonify({"result": result})
                 elif selection == "2":
                     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Handle resolve request made for: " + identifier)
-                    if is_handle(handle_identifier):
+                    if utils.is_handle(handle_identifier):
                         result = handle_identifier
                     else:
                         result = identifier
@@ -159,14 +159,14 @@ async def selection_handle():
                     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Block list requested for: " + identifier)
                     blocklist, count = await get_user_block_list(identifier)
 
-                    if "did" in identifier:
+                    if utils.is_did(identifier):
                         identifier = handle_identifier
 
                     return jsonify({"block_list": blocklist, "user": identifier, "count": count})
                 elif selection == "5" and not skip_option5:
                     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Block list requested for: " + identifier)
                     blocks, dates, count = await utils.get_single_user_blocks(did_identifier)
-                    if "did" in identifier:
+                    if utils.is_did(identifier):
                         identifier = handle_identifier
 
                     if type(blocks) != list:
@@ -209,6 +209,8 @@ async def get_user_block_list(ident):
 
     if not blocked_users:
         total_blocked = 0
+        if utils.is_did(ident):
+            ident = await utils.use_handle(ident)
         handles = [f"{ident} hasn't blocked anyone."]
         timestamp = datetime.now().date()
         block_list.append({"handle": handles, "timestamp": timestamp})
@@ -249,16 +251,6 @@ async def get_ip():  # Get IP address of session request
         # Use the remote address if the X-Forwarded-For header is not available
         ip = request.remote_addr
     return ip
-
-
-def is_did(identifier):
-    did_pattern = r'^did:[a-z]+:[a-zA-Z0-9._:%-]*[a-zA-Z0-9._-]$'
-    return re.match(did_pattern, identifier) is not None
-
-
-def is_handle(identifier):
-    handle_pattern = r'^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$'
-    return re.match(handle_pattern, identifier) is not None
 
 
 # ======================================================================================================================
