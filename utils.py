@@ -77,6 +77,9 @@ def get_all_users():
             cursor = response_json.get("cursor")
             if not cursor:
                 break
+        elif "429 Too Many Requests" in str(e):
+            logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
+            asyncio.sleep(60)  # Retry after 60 seconds
         else:
             logger.warning("Response status code: " + str(response.status_code))
             pass
