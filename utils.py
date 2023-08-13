@@ -100,9 +100,9 @@ async def get_user_count():
 
 async def get_single_user_blocks(ident):
     try:
-        # Execute the SQL query to get all the user_dids that have the specified did in their blocklist
+        # Execute the SQL query to get all the user_dids that have the specified did/ident in their blocklist
         async with database_handler.connection_pool.acquire() as connection:
-            result = await connection.fetch('SELECT user_did, block_date FROM blocklists WHERE blocked_did = $1', ident)
+            result = await connection.fetch('SELECT user_did, block_date FROM blocklists WHERE blocked_did = $1 ORDER BY block_date DESC', ident)
             if result:
                 # Extract the user_dids from the query result
                 user_dids = [item[0] for item in result]
@@ -186,7 +186,7 @@ async def get_user_block_list(ident):
                     logger.info(f"didn't update no blocks: {ident}")
                     continue
                 if created_at_value:
-                    try:
+                    try:  # Have to check for different time formats in blocklists :/
                         if '.' in created_at_value and 'Z' in created_at_value:
                             # If the value contains fractional seconds and 'Z' (UTC time)
                             created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S.%fZ").date()
