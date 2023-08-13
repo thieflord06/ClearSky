@@ -196,9 +196,7 @@ async def get_user_block_list(ident):
         logger.warning("Could not get block list for: " + ident)
         pass
     if not blocked_users and retry_count != max_retries:
-        logger.info(f"didn't update no blocks and not handled correctly: {ident}" + " | " + str(full_url))
-        pass
-        # return [], []
+        return [], []
 
     return blocked_users, created_dates
 
