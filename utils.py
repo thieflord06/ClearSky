@@ -150,14 +150,17 @@ async def get_user_block_list(ident):
             continue
         except httpx.RequestError as e:
             logger.warning("Error during API call: %s", e)
+            if "429 Too Many Requests" in str(e):
+                logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
+                await asyncio.sleep(60)  # Retry after 60 seconds
             retry_count += 1
-            await asyncio.sleep(5)
+            # await asyncio.sleep(5)
             continue
         except Exception as e:
             if "429 Too Many Requests" in str(e):
                 logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
                 retry_count += 1
-                await asyncio.sleep(10)  # Retry after 60 seconds
+                await asyncio.sleep(60)  # Retry after 60 seconds
 
         if response.status_code == 200:
             response_json = response.json()
