@@ -150,7 +150,9 @@ async def update_all_blocklists(run_diff=False):
                     logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
                     await asyncio.sleep(60)  # Retry after 60 seconds
                 else:
-                    raise e
+                    logger.error("None excepted error, sleeping..." + str(e))
+                    await asyncio.sleep(60)
+                    # raise e
 
         processed_count += batch_size
 
