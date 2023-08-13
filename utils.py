@@ -58,7 +58,15 @@ def get_all_users():
         encoded_params = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
         full_url = f"{url}?{encoded_params}"
         logger.debug(full_url)
-        response = requests.get(full_url)
+        try:
+            response = requests.get(full_url)
+        except httpx.RequestError as e:
+            logger.warning("Error during API call: %s", e)
+            if "429 Too Many Requests" in str(e):
+                logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
+                asyncio.sleep(60)  # Retry after 60 seconds
+        except Exception:
+            asyncio.sleep(60)  # Retry after 60 seconds
 
         if response.status_code == 200:
             response_json = response.json()
