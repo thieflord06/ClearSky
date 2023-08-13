@@ -201,6 +201,10 @@ async def fun_facts():
     return await render_template('fun_facts.html', blocked_results=resolved_blocked, blockers_results=resolved_blockers)
 
 
+def get_timestamp(item):
+    return item["timestamp"]
+
+
 async def get_user_block_list(ident):
     blocked_users, timestamps = await utils.get_user_block_list(ident)
     block_list = []
@@ -227,6 +231,9 @@ async def get_user_block_list(ident):
 
         for handle, timestamp in zip(handles, timestamps):
             block_list.append({"handle": handle, "timestamp": timestamp})
+
+        # Sort the block_list by timestamp (newest to oldest)
+        block_list = sorted(block_list, key=get_timestamp, reverse=True)
 
         return block_list, total_blocked
 
