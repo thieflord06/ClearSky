@@ -143,24 +143,23 @@ async def get_user_block_list(ident):
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
-        except httpx.ReadTimeout as e:
+        except httpx.ReadTimeout:
             logger.warning("Request timed out. Retrying... Retry count: %d", retry_count)
             retry_count += 1
-            await asyncio.sleep(5)
+            await asyncio.sleep(10)
             continue
         except httpx.RequestError as e:
             logger.warning("Error during API call: %s", e)
             if "429 Too Many Requests" in str(e):
                 logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
                 await asyncio.sleep(60)  # Retry after 60 seconds
+            elif "400 Bad Request" in str(e):
+                logger.warning("Did doesn't exist: " + str(ident))
+                continue
             retry_count += 1
-            # await asyncio.sleep(5)
+            logger.info("sleeping 5")
+            await asyncio.sleep(5)
             continue
-        except Exception as e:
-            if "429 Too Many Requests" in str(e):
-                logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
-                retry_count += 1
-                await asyncio.sleep(60)  # Retry after 60 seconds
 
         if response.status_code == 200:
             response_json = response.json()
@@ -176,7 +175,9 @@ async def get_user_block_list(ident):
                     try:
                         created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S.%fZ").date()
                     except ValueError:
-                        created_date = None
+                        logger.warning("No date in blocklist for: " + str(ident) + " | " + str(full_url))
+                        continue
+                        # created_date = None
                     created_dates.append(created_date)
 
             cursor = response_json.get("cursor")
@@ -190,9 +191,12 @@ async def get_user_block_list(ident):
 
     if retry_count == max_retries:
         logger.warning("Could not get block list for: " + ident)
-        return ["error"], [str(datetime.now().date())]
+        pass
+        # return ["error"], [str(datetime.now().date())]
     if not blocked_users and retry_count != max_retries:
-        return [], []
+        logger.warning("Blocklist issue not handled correctly for: " + str(ident) + " | " + str(full_url))
+        pass
+        # return [], []
 
     return blocked_users, created_dates
 
