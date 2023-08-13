@@ -174,7 +174,7 @@ async def update_blocklists_batch(batch_dids):
             if blocked_users:
                 logger.debug(f"Updated block list for DID: {did}")
             else:
-                logger.debug(f"didn't update no blocks: {did}")
+                logger.info(f"didn't update no blocks: {did}")
         except Exception as e:
             logger.error(f"Error updating block list for DID {did}: {e}")
 

@@ -171,6 +171,9 @@ async def get_user_block_list(ident):
                 created_at_value = value.get("createdAt")
                 if subject:
                     blocked_users.append(subject)
+                else:
+                    logger.info(f"didn't update no blocks: {ident}")
+                    continue
                 if created_at_value:
                     try:
                         created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S.%fZ").date()
@@ -192,9 +195,8 @@ async def get_user_block_list(ident):
     if retry_count == max_retries:
         logger.warning("Could not get block list for: " + ident)
         pass
-        # return ["error"], [str(datetime.now().date())]
     if not blocked_users and retry_count != max_retries:
-        logger.warning("Blocklist issue not handled correctly for: " + str(ident) + " | " + str(full_url))
+        logger.info(f"didn't update no blocks and not handled correctly: {ident}" + " | " + str(full_url))
         pass
         # return [], []
 
