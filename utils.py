@@ -187,14 +187,21 @@ async def get_user_block_list(ident):
                     continue
                 if created_at_value:
                     try:
-                        if '.' in created_at_value:
-                            # If the value contains fractional seconds
+                        if '.' in created_at_value and 'Z' in created_at_value:
+                            # If the value contains fractional seconds and 'Z' (UTC time)
                             created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S.%fZ").date()
-                        else:
-                            # If the value does not contain fractional seconds
+                        elif '.' in created_at_value:
+                            # If the value contains fractional seconds (but no 'Z' indicating time zone)
+                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S.%f").date()
+                        elif 'Z' in created_at_value:
+                            # If the value has 'Z' indicating UTC time (but no fractional seconds)
                             created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%SZ").date()
-                    except ValueError:
+                        else:
+                            # If the value has no fractional seconds and no 'Z' indicating time zone
+                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S").date()
+                    except ValueError as ve:
                         logger.warning("No date in blocklist for: " + str(ident) + " | " + str(full_url))
+                        logger.error("error: " + str(ve))
                         continue
                         # created_date = None
                     created_dates.append(created_date)
