@@ -194,11 +194,7 @@ async def fun_facts():
 
     # Check if both lists are empty
     if resolved_blocked is None or resolved_blockers is None:
-        # Clear current lists
-        utils.resolved_blocked = []
-        utils.resolved_blockers = []
-
-        await utils.resolve_top_block_lists()
+        await database_handler.blocklists_updater()
 
         resolved_blocked = utils.resolved_blocked_cache.get('resolved_blocked')
         resolved_blockers = utils.resolved_blockers_cache.get('resolved_blockers')

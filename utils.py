@@ -15,13 +15,17 @@ from cachetools import TTLCache
 resolved_blocked = []
 resolved_blockers = []
 
-resolved_blocked_cache = TTLCache(maxsize=100, ttl=3600)
-resolved_blockers_cache = TTLCache(maxsize=100, ttl=3600)
+resolved_blocked_cache = TTLCache(maxsize=100, ttl=60)
+resolved_blockers_cache = TTLCache(maxsize=100, ttl=60)
 
 
 async def resolve_top_block_lists():
     blocked, blockers = await database_handler.get_top_blocks_list()
     logger.info("Resolving top blocks lists.")
+
+    resolved_blocked = []
+    resolved_blockers = []
+
     # Resolve each DID and create a list of dictionaries
     for did, count in blocked:
         blocked_resolved_did = await on_wire.resolve_did(did)  # Replace with your actual resolving function
