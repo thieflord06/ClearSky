@@ -14,8 +14,6 @@ db_lock = asyncio.Lock()
 
 # Create a limiter with a rate limit of 10 requests per second
 limiter = AsyncLimiter(3)
-blocked_results = []
-blockers_results = []
 
 
 # ======================================================================================================================
@@ -490,6 +488,9 @@ async def update_temporary_table(last_processed_did):
 
 
 async def get_top_blocks():
+    blocked_results = []
+    blockers_results = []
+
     logger.info("Getting top blocks from db.")
     try:
         async with connection_pool.acquire() as connection:
@@ -503,7 +504,7 @@ async def get_top_blocks():
                                     LIMIT 20'''
 
                 blocked_data = await connection.fetch(blocked_query)
-                blocked_results.extend(blocked_data)
+                blocked_results.append(blocked_data)
 
                 blockers_query = '''SELECT user_did, COUNT(*) AS block_count
                                     FROM blocklists
@@ -512,7 +513,9 @@ async def get_top_blocks():
                                     LIMIT 20'''
 
                 blockers_data = await connection.fetch(blockers_query)
-                blockers_results.extend(blockers_data)
+                blockers_results.append(blockers_data)
+
+                return blocked_data, blockers_data
     except Exception as e:
         logger.error("Error retrieving data from db", e)
 
@@ -530,14 +533,16 @@ async def blocklists_updater():
 
     logger.info("Updating top blocks lists requested.")
     await truncate_top_blocks_table()
-    await get_top_blocks()
+    blocked_results, blockers_results = await get_top_blocks()  # Get blocks for db
     # Update blocked entries
-    await update_top_block_list_entries(blocked_results, blocked_list)
+    await update_top_block_list_entries(blocked_results, blocked_list)  # add blocked to top blocks table
     logger.info("Updated top blocked db.")
-    await update_top_block_list_entries(blockers_results, blocker_list)
+    await update_top_block_list_entries(blockers_results, blocker_list)  # add blocker to top blocks table
     logger.info("Updated top blockers db.")
-    await utils.resolve_top_block_lists()
+    top_blocked, top_blockers = await utils.resolve_top_block_lists()
+
     logger.info("Top blocks lists page updated.")
+    return top_blocked, top_blockers
 
 
 def get_database_config():

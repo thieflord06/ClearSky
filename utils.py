@@ -12,11 +12,15 @@ import re
 from cachetools import TTLCache
 # ======================================================================================================================
 # ============================================= Features functions =====================================================
-resolved_blocked = []
-resolved_blockers = []
+resolved_blocked_cache = TTLCache(maxsize=100, ttl=3600)
+resolved_blockers_cache = TTLCache(maxsize=100, ttl=3600)
 
-resolved_blocked_cache = TTLCache(maxsize=100, ttl=60)
-resolved_blockers_cache = TTLCache(maxsize=100, ttl=60)
+
+async def resolve_did(did, count, resolver):
+    resolved_did = await on_wire.resolve_did(did)  # Replace with your actual resolving function
+    if resolved_did is not None:
+        return {'Handle': resolved_did, 'block_count': str(count), 'ProfileURL': f'https://bsky.app/profile/{did}'}
+    return None
 
 
 async def resolve_top_block_lists():
@@ -26,20 +30,27 @@ async def resolve_top_block_lists():
     resolved_blocked = []
     resolved_blockers = []
 
-    # Resolve each DID and create a list of dictionaries
-    for did, count in blocked:
-        blocked_resolved_did = await on_wire.resolve_did(did)  # Replace with your actual resolving function
-        if blocked_resolved_did is not None:
-            resolved_blocked.append({'Handle': blocked_resolved_did, 'block_count': str(count), 'ProfileURL': f'https://bsky.app/profile/{did}'})
+    # Prepare tasks to resolve DIDs concurrently
+    blocked_tasks = [resolve_did(did, count, on_wire.resolve_did) for did, count in blocked]
+    blocker_tasks = [resolve_did(did, count, on_wire.resolve_did) for did, count in blockers]
 
-    for did, count in blockers:
-        blocker_resolved_did = await on_wire.resolve_did(did)  # Replace with your actual resolving function
-        if blocker_resolved_did is not None:
-            resolved_blockers.append({'Handle': blocker_resolved_did, 'block_count': str(count), 'ProfileURL': f'https://bsky.app/profile/{did}'})
+    # Run the resolution tasks concurrently
+    resolved_blocked = await asyncio.gather(*blocked_tasks)
+    resolved_blockers = await asyncio.gather(*blocker_tasks)
+
+    # Remove any None entries (failed resolutions)
+    resolved_blocked = [entry for entry in resolved_blocked if entry is not None]
+    resolved_blockers = [entry for entry in resolved_blockers if entry is not None]
+
+    # Sort the lists based on block_count in descending order
+    resolved_blocked = sorted(resolved_blocked, key=lambda x: int(x["block_count"]), reverse=True)
+    resolved_blockers = sorted(resolved_blockers, key=lambda x: int(x["block_count"]), reverse=True)
 
     # Cache the resolved lists
     resolved_blocked_cache["resolved_blocked"] = resolved_blocked
     resolved_blockers_cache["resolved_blockers"] = resolved_blockers
+
+    return resolved_blocked, resolved_blockers
 
 
 def get_all_users():

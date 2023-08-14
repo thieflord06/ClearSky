@@ -194,10 +194,11 @@ async def fun_facts():
 
     # Check if both lists are empty
     if resolved_blocked is None or resolved_blockers is None:
-        await database_handler.blocklists_updater()
+        logger.info("Getting new cache.")
+        top_blocked, top_blockers = await database_handler.blocklists_updater()
 
-        resolved_blocked = utils.resolved_blocked_cache.get('resolved_blocked')
-        resolved_blockers = utils.resolved_blockers_cache.get('resolved_blockers')
+        resolved_blocked = top_blocked
+        resolved_blockers = top_blockers
 
     # If at least one list is not empty, render the regular page
     return await render_template('fun_facts.html', blocked_results=resolved_blocked, blockers_results=resolved_blockers)
