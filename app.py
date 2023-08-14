@@ -225,11 +225,17 @@ async def get_user_block_list(ident):
     else:
         async with database_handler.connection_pool.acquire() as connection:
             records = await connection.fetch(
-                'SELECT handle FROM users WHERE did = ANY($1)',
+                'SELECT did, handle FROM users WHERE did = ANY($1)',
                 blocked_users
             )
 
-        handles = [record['handle'] for record in records]
+            # Create a dictionary that maps did to handle
+            did_to_handle = {record['did']: record['handle'] for record in records}
+
+            # Sort records based on the order of blocked_users
+            sorted_records = sorted(records, key=lambda record: blocked_users.index(record['did']))
+
+        handles = [did_to_handle[record['did']] for record in sorted_records]
         total_blocked = len(handles)
 
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Blocklist Request Result: " + ident + " | " + "Total blocked: " + str(total_blocked) + " :: " + str(list(zip(handles, timestamps))))
