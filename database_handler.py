@@ -517,6 +517,13 @@ async def get_top_blocks():
         logger.error("Error retrieving data from db", e)
 
 
+async def update_top_block_list_entries(entries, list_type):
+    tasks = []
+    for did, count in entries:
+        tasks.append(update_top_block_list_table(did, count, list_type))
+    await asyncio.gather(*tasks)
+
+
 async def blocklists_updater():
     blocked_list = "blocked"
     blocker_list = "blocker"
@@ -524,13 +531,10 @@ async def blocklists_updater():
     logger.info("Updating top blocks lists requested.")
     await truncate_top_blocks_table()
     await get_top_blocks()
-    for blocked_did, blocked_count in blocked_results:
-        blocked_list_type = blocked_list
-        await update_top_block_list_table(blocked_did, blocked_count, blocked_list_type)
+    # Update blocked entries
+    await update_top_block_list_entries(blocked_results, blocked_list)
     logger.info("Updated top blocked db.")
-    for blocker_did, blocker_count in blockers_results:
-        blocker_list_type = blocker_list
-        await update_top_block_list_table(blocker_did, blocker_count, blocker_list_type)
+    await update_top_block_list_entries(blockers_results, blocker_list)
     logger.info("Updated top blockers db.")
     await utils.resolve_top_block_lists()
     logger.info("Top blocks lists page updated.")
