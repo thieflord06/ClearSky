@@ -531,9 +531,9 @@ async def blocklists_updater():
     for blocker_did, blocker_count in blockers_results:
         blocker_list_type = blocker_list
         await update_top_block_list_table(blocker_did, blocker_count, blocker_list_type)
-    await utils.resolve_top_block_lists()
     logger.info("Updated top blockers db.")
-    logger.info("Top blocks lists updated.")
+    await utils.resolve_top_block_lists()
+    logger.info("Top blocks lists page updated.")
 
 
 def get_database_config():

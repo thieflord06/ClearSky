@@ -7,7 +7,6 @@ import os
 import uuid
 import asyncio
 import database_handler
-import scheduler
 import utils
 import config_helper
 from config_helper import logger
@@ -17,7 +16,7 @@ config = config_helper.read_config()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "2.1.1"
+version = "2.2.1"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -190,17 +189,26 @@ async def selection_handle():
 
 @app.route('/fun_facts')
 async def fun_facts():
-    resolved_blocked = utils.resolved_blocked
-    resolved_blockers = utils.resolved_blockers
+    resolved_blocked = utils.resolved_blocked_cache.get('resolved_blocked')
+    resolved_blockers = utils.resolved_blockers_cache.get('resolved_blockers')
 
     # Check if both lists are empty
-    if not resolved_blocked and not resolved_blockers:
-        return await render_template('coming_soon.html')  # Render the "Coming Soon" page
+    if resolved_blocked is None or resolved_blockers is None:
+        # Clear current lists
+        utils.resolved_blocked = []
+        utils.resolved_blockers = []
+
+        await utils.resolve_top_block_lists()
+
+        resolved_blocked = utils.resolved_blocked_cache.get('resolved_blocked')
+        resolved_blockers = utils.resolved_blockers_cache.get('resolved_blockers')
 
     # If at least one list is not empty, render the regular page
     return await render_template('fun_facts.html', blocked_results=resolved_blocked, blockers_results=resolved_blockers)
 
 
+# ======================================================================================================================
+# ============================================= Main functions =========================================================
 def get_timestamp(item):
     return item["timestamp"]
 
@@ -238,8 +246,6 @@ async def get_user_block_list(ident):
         return block_list, total_blocked
 
 
-# ======================================================================================================================
-# ============================================= Main functions =========================================================
 def generate_session_number():
 
     return str(uuid.uuid4().hex)
@@ -274,7 +280,6 @@ async def main():
     await database_handler.create_connection_pool()  # Creates connection pool for db
     await database_handler.create_top_block_list_table()
     await database_handler.blocklists_updater()
-    # asyncio.create_task(scheduler.run_scheduler())  # Start the scheduler
     logger.info("Web server starting at: " + ip_address + ":" + port_address)
     await app.run_task(host=ip_address, port=port_address)
 

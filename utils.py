@@ -9,10 +9,14 @@ import requests
 from config_helper import logger
 import on_wire
 import re
+from cachetools import TTLCache
 # ======================================================================================================================
 # ============================================= Features functions =====================================================
 resolved_blocked = []
 resolved_blockers = []
+
+resolved_blocked_cache = TTLCache(maxsize=100, ttl=3600)
+resolved_blockers_cache = TTLCache(maxsize=100, ttl=3600)
 
 
 async def resolve_top_block_lists():
@@ -29,14 +33,9 @@ async def resolve_top_block_lists():
         if blocker_resolved_did is not None:
             resolved_blockers.append({'Handle': blocker_resolved_did, 'block_count': str(count), 'ProfileURL': f'https://bsky.app/profile/{did}'})
 
-
-async def update_resolved_lists():
-    global resolved_blocked, resolved_blockers
-    logger.info("Updating resolved lists...")
-    resolved_blocked = []
-    resolved_blockers = []
-    await database_handler.blocklists_updater()
-    logger.info("Resolved lists updated.")
+    # Cache the resolved lists
+    resolved_blocked_cache["resolved_blocked"] = resolved_blocked
+    resolved_blockers_cache["resolved_blockers"] = resolved_blockers
 
 
 def get_all_users():
