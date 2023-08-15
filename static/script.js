@@ -17,6 +17,21 @@ document.addEventListener('DOMContentLoaded', function() {
     let optionSelected;
     const submitButton = document.getElementById('submit-button');
 
+    // Example: Push a new state with the state object
+    function pushNewState() {
+        history.pushState({ fromBackButton: true }, 'Home', '/');
+    }
+
+    // Handle the back button behavior
+    window.addEventListener('popstate', function(event) {
+        if (event.state && event.state.fromBackButton) {
+            console.log("inside");
+            window.location.href = '/';
+        }
+    });
+
+    pushNewState();
+
     function handleTimeout() {
         // Perform actions when the server doesn't respond within the specified timeout
         // For example, you can display an error message or take other appropriate actions.
@@ -140,10 +155,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     blockItem.textContent = `Handle: ${item.handle}, Date: ${formattedDate}`;
                     blockListData.appendChild(blockItem);
-
-                    hideLoadingScreen();
-                    showBlockListContainer();
                 });
+                hideLoadingScreen();
+                showBlockListContainer();
             }
             else {
                 const noResultParagraph = document.createElement('p');
@@ -158,6 +172,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //                const countParagraph = document.createElement('p');
             resultText.textContent = `Total User count: ${data.count}`;
 //                resultText.appendChild(countParagraph);
+            console.log("inhere2");
             hideLoadingScreen();
             showResultContainer();
         }
@@ -172,17 +187,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
             blockListData.innerHTML = '';
 
-        data.who_block_list.forEach((item, index) => {
-            const timestamp = new Date(data.date[index]);
-            const formattedDate = timestamp.toLocaleDateString('en-US', { timeZone: 'UTC' });
-            const blockItem = document.createElement('li');
-//            console.log(data.who_block_list);
-//            console.log(item)
+            data.who_block_list.forEach((item, index) => {
+                const timestamp = new Date(data.date[index]);
+                const formattedDate = timestamp.toLocaleDateString('en-US', { timeZone: 'UTC' });
+                const blockItem = document.createElement('li');
 
-            blockItem.innerHTML = `Handle: ${item}, Date: ${formattedDate}`;
-            blockListData.appendChild(blockItem);
-        });
-
+                blockItem.innerHTML = `Handle: ${item}, Date: ${formattedDate}`;
+                blockListData.appendChild(blockItem);
+            });
                 hideLoadingScreen();
                 showBlockListContainer();
         }
@@ -250,13 +262,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             return; // Return to prevent further execution
         }
-//        if (optionSelected === "3") {
-////            var confirmed = window.confirm("This will take an extremely long time! Do you want to proceed?");
-//            alert("Getting results may take some time, if the user is blocking a lot of accounts.");
-//        }
-//        if (optionSelected === "5") {
-//            alert("Getting results may take some time, if the user is blocked by a lot of accounts.");
-//        }
         if (requestInProgress) {
             // A request is already in progress, do not make another request
             hideIndexContainer();
@@ -321,15 +326,6 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             // Enable the identifier field
             identifier.readOnly = false;
-        }
-    });
-
-    // Handle the back button behavior
-    window.addEventListener('popstate', function(event) {
-        console.log("Here");
-        if (event.state && event.state.fromBackButton) {
-            console.log("inside");
-            window.location.href = '/';
         }
     });
 });

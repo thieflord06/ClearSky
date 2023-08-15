@@ -570,7 +570,6 @@ def get_database_config():
         logger.error("Database connection information not present: Set environment variables or config.ini")
 
 
-# config_helper.configure_logging()
 config = config_helper.read_config()
 
 # Get the database configuration
