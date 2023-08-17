@@ -18,20 +18,20 @@ document.addEventListener('DOMContentLoaded', function() {
     let requestInProgress = false;
     let optionSelected;
 
-//    // Example: Push a new state with the state object
-//    function pushNewState() {
-//        history.pushState({ fromBackButton: true }, 'Home', '/');
-//    }
+    // Example: Push a new state with the state object
+    function pushNewState() {
+        history.pushState({ fromBackButton: true }, 'Home', '/');
+    }
 
-    // Handle the back button behavior
-//    window.addEventListener('popstate', function(event) {
-//        if (event.state && event.state.fromBackButton) {
-//            console.log("inside");
-//            window.location.href = '/';
-//        }
-//    });
+     Handle the back button behavior
+    window.addEventListener('popstate', function(event) {
+        if (event.state && event.state.fromBackButton) {
+            console.log("inside");
+            window.location.href = '/';
+        }
+    });
 
-//    pushNewState();
+    pushNewState();
 
     function handleTimeout() {
         // Perform actions when the server doesn't respond within the specified timeout
@@ -220,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Add event listener to the identifier input field
-    identifierInput.addEventListener('input', function () {
+    identifierInput.addEventListener('input', function (event) {
         // Check if the input field is empty and the selected option is not 4
         optionSelected = document.getElementById("selection").value;
         if (this.value.trim() === '' && optionSelected !== '4') {
