@@ -11,11 +11,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const errorContainer = document.getElementById('error-container');
     const pendingRequestContainer = document.getElementById('pending-request-container');
     const timeoutContainer = document.getElementById('timeout-container');
+    const submitButton = document.getElementById('submit-button');
+    const identifierInput = document.getElementById('identifier');
     const TIMEOUT_DURATION = 180000;
 
     let requestInProgress = false;
     let optionSelected;
-    const submitButton = document.getElementById('submit-button');
 
 //    // Example: Push a new state with the state object
 //    function pushNewState() {
@@ -221,7 +222,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Add event listener to the identifier input field
-    const identifierInput = document.getElementById('identifier');
     identifierInput.addEventListener('input', function () {
         // Check if the input field is empty and the selected option is not 4
         const optionSelected = document.getElementById("selection").value;
@@ -233,7 +233,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
 //       // Add event listener to the identifier input field
-//    const identifierInput = document.getElementById('identifier');
 //    identifierInput.addEventListener('input', function () {
 //        // Check if the input field is empty and the selected option is not 4
 //        const optionSelected = document.getElementById("selection").value;
@@ -261,7 +260,6 @@ document.addEventListener('DOMContentLoaded', function() {
         formData.append('skipOption5', skipValue.toString());
 
         // Check if the input field (identifier) is empty and set its value to "blank"
-        const identifierInput = document.getElementById('identifier');
         if (identifierInput.value.trim() === '') {
             identifierInput.value = 'blank';
         }
