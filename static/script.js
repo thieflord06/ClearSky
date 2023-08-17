@@ -11,27 +11,26 @@ document.addEventListener('DOMContentLoaded', function() {
     const errorContainer = document.getElementById('error-container');
     const pendingRequestContainer = document.getElementById('pending-request-container');
     const timeoutContainer = document.getElementById('timeout-container');
-    const submitButton = document.getElementById('submit-button');
-    const identifierInput = document.getElementById('identifier');
     const TIMEOUT_DURATION = 180000;
 
     let requestInProgress = false;
     let optionSelected;
+    const submitButton = document.getElementById('submit-button');
 
-//    // Example: Push a new state with the state object
-//    function pushNewState() {
-//        history.pushState({ fromBackButton: true }, 'Home', '/');
-//    }
+    // Example: Push a new state with the state object
+    function pushNewState() {
+        history.pushState({ fromBackButton: true }, 'Home', '/');
+    }
 
     // Handle the back button behavior
-//    window.addEventListener('popstate', function(event) {
-//        if (event.state && event.state.fromBackButton) {
-//            console.log("inside");
-//            window.location.href = '/';
-//        }
-//    });
+    window.addEventListener('popstate', function(event) {
+        if (event.state && event.state.fromBackButton) {
+            console.log("inside");
+            window.location.href = '/';
+        }
+    });
 
-//    pushNewState();
+    pushNewState();
 
     function handleTimeout() {
         // Perform actions when the server doesn't respond within the specified timeout
@@ -170,7 +169,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         else if (data.count) {
             // Display result container with total count
+//                const countParagraph = document.createElement('p');
             resultText.textContent = `Total User count: ${data.count}`;
+//                resultText.appendChild(countParagraph);
             console.log("inhere2");
             hideLoadingScreen();
             showResultContainer();
@@ -219,31 +220,6 @@ document.addEventListener('DOMContentLoaded', function() {
         hideBlockListContainer();
     }
 
-//    // Add event listener to the identifier input field
-//    identifierInput.addEventListener('input', function () {
-//        // Check if the input field is empty and the selected option is not 4
-//        optionSelected = document.getElementById("selection").value;
-//        if (this.value.trim() === '' && optionSelected !== '4') {
-//            submitButton.disabled = true; // Disable the submit button
-//        } else {
-//            submitButton.disabled = false; // Enable the submit button
-//        }
-//    });
-//
-//    function toggleSubmitButton() {
-//        optionSelected = document.getElementById("selection").value;
-//        if (identifierInput.value.trim() === '' && optionSelected !== '4') {
-//            submitButton.disabled = true; // Disable the submit button
-//        } else {
-//            submitButton.disabled = false; // Enable the submit button
-//        }
-//    }
-//
-//    // Add event listeners for both click and touch events
-//    submitButton.addEventListener('click', toggleSubmitButton);
-//    submitButton.addEventListener('touchstart', toggleSubmitButton);
-
-
     // Add event listener to the form submit button
     selectionForm.addEventListener('submit', function (event) {
         event.preventDefault(); // Prevent the default form submission
@@ -259,11 +235,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Create a new FormData object and add skipValue to it
         const formData = new FormData(selectionForm);
         formData.append('skipOption5', skipValue.toString());
-
-        // Check if the input field (identifier) is empty and set its value to "blank"
-//        if (identifierInput.value.trim() === '') {
-//            identifierInput.value = 'blank';
-//        }
 
         if (selection.value === '5' && skipValue) {
             // If Option 5 is selected, redirect to the "Coming Soon" page
@@ -352,7 +323,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // If "Get Total Users Count" is selected, disable the identifier field
             identifier.value = '';
             identifier.readOnly = true;
-            submitButton.disabled = false;
         } else {
             // Enable the identifier field
             identifier.readOnly = false;
