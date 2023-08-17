@@ -232,10 +232,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-        // Add event listeners for both click and touch events
-    submitButton.addEventListener('click', toggleSubmitButton);
-    submitButton.addEventListener('touchstart', toggleSubmitButton);
-
     function toggleSubmitButton() {
         const optionSelected = document.getElementById("selection").value;
         if (identifierInput.value.trim() === '' && optionSelected !== '4') {
@@ -244,6 +240,11 @@ document.addEventListener('DOMContentLoaded', function() {
             submitButton.disabled = false; // Enable the submit button
         }
     }
+
+        // Add event listeners for both click and touch events
+    submitButton.addEventListener('click', toggleSubmitButton);
+    submitButton.addEventListener('touchstart', toggleSubmitButton);
+
 
     // Add event listener to the form submit button
     selectionForm.addEventListener('submit', function (event) {
