@@ -244,7 +244,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add event listeners for both click and touch events
     submitButton.addEventListener('click', toggleSubmitButton);
     submitButton.addEventListener('touchstart', toggleSubmitButton);
-    submitButton.addEventListener('input', toggleSubmitButton);
 
 
     // Add event listener to the form submit button
