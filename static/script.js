@@ -170,9 +170,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         else if (data.count) {
             // Display result container with total count
-//                const countParagraph = document.createElement('p');
             resultText.textContent = `Total User count: ${data.count}`;
-//                resultText.appendChild(countParagraph);
             console.log("inhere2");
             hideLoadingScreen();
             showResultContainer();
@@ -263,9 +261,9 @@ document.addEventListener('DOMContentLoaded', function() {
         formData.append('skipOption5', skipValue.toString());
 
         // Check if the input field (identifier) is empty and set its value to "blank"
-        if (identifierInput.value.trim() === '') {
-            identifierInput.value = 'blank';
-        }
+//        if (identifierInput.value.trim() === '') {
+//            identifierInput.value = 'blank';
+//        }
 
         if (selection.value === '5' && skipValue) {
             // If Option 5 is selected, redirect to the "Coming Soon" page
