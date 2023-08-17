@@ -112,7 +112,7 @@ async def selection_handle():
     skip_option5 = data.get('skipOption5', '').lower()
     if skip_option5 == "true":
         skip_option5 = True
-    elif skip_option5 == "false":
+    else:
         skip_option5 = False
     if selection in ['1', '2', '3', '4', '5']:
         if selection == "4":
@@ -183,6 +183,8 @@ async def selection_handle():
                 elif skip_option5:
 
                     return jsonify({"message": "Option 5 skipped"})
+        else:
+            return await render_template('error.html')
     else:
         return await render_template('intentional_error.html')
 
