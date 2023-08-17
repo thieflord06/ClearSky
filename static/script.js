@@ -233,7 +233,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function toggleSubmitButton() {
-        const optionSelected = document.getElementById("selection").value;
+        optionSelected = document.getElementById("selection").value;
         if (identifierInput.value.trim() === '' && optionSelected !== '4') {
             submitButton.disabled = true; // Disable the submit button
         } else {
