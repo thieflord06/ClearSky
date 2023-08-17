@@ -207,20 +207,6 @@ table td {
     .form-group label {
         font-size: 24px; /* Adjust the font size as needed */
     }
-    .btn {
-        display: block;
-        width: 70%;
-        padding: 10px; /* Increase padding to make the button taller */
-        background-color: #007bff;
-        color: #fff;
-        border: none;
-        border-radius: 10px;
-        cursor: pointer;
-        margin-top: 20px;
-        font-size: 20px; /* Adjust the font size for better readability */
-        margin-left: auto;
-        margin-right: auto;
-    }
 
     #submit-button {
         width: 98%;
