@@ -221,6 +221,8 @@ document.addEventListener('DOMContentLoaded', function() {
         hideBlockListContainer();
     }
 
+    submitButton.disabled = true;
+
     // Add event listener to the identifier input field
     identifierInput.addEventListener('input', function () {
         // Check if the input field is empty and the selected option is not 4
@@ -232,18 +234,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    function toggleSubmitButton() {
-        const optionSelected = document.getElementById("selection").value;
-        if (identifierInput.value.trim() === '' && optionSelected !== '4') {
-            submitButton.disabled = true; // Disable the submit button
-        } else {
-            submitButton.disabled = false; // Enable the submit button
-        }
-    }
-
-        // Add event listeners for both click and touch events
-    submitButton.addEventListener('click', toggleSubmitButton);
-    submitButton.addEventListener('touchstart', toggleSubmitButton);
+//    function toggleSubmitButton() {
+//        const optionSelected = document.getElementById("selection").value;
+//        if (identifierInput.value.trim() === '' && optionSelected !== '4') {
+//            submitButton.disabled = true; // Disable the submit button
+//        } else {
+//            submitButton.disabled = false; // Enable the submit button
+//        }
+//    }
+//
+//        // Add event listeners for both click and touch events
+//    submitButton.addEventListener('click', toggleSubmitButton);
+//    submitButton.addEventListener('touchstart', toggleSubmitButton);
 
 
     // Add event listener to the form submit button
