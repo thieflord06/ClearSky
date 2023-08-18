@@ -220,10 +220,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Check if the input field is empty and the selected option is not 4
         const optionSelected = document.getElementById("selection").value;
         if (this.value.trim() === '' && optionSelected !== '4') {
-            console.log("here")
             submitButton.disabled = true; // Disable the submit button
         } else {
-            console.log("here 2")
             submitButton.disabled = false; // Enable the submit button
         }
     });
