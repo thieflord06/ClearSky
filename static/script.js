@@ -101,12 +101,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function hideBaseContainer() {
-        console.log('hideBaseContainer() called.');
+        console.log('hideBaseContainer() called');
         baseContainer.style.display = 'none';
     }
 
     function showBaseContainer() {
-        console.log('showBaseContainer() called.');
+        console.log('showBaseContainer() called');
         baseContainer.style.display = 'block';
     }
 
@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showIndexContainer() {
-        console.log('showIndexContainer() called.');
+        console.log('showIndexContainer() called');
         indexContainer.style.display = 'block';
     }
 
@@ -171,7 +171,6 @@ document.addEventListener('DOMContentLoaded', function() {
         else if (data.count) {
             // Display result container with total count
             resultText.textContent = `Total User count: ${data.count}`;
-            console.log("inhere2");
             hideLoadingScreen();
             showResultContainer();
         }
@@ -230,20 +229,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    function toggleSubmitButton() {
-        optionSelected = document.getElementById("selection").value;
-        if (identifierInput.value.trim() === '' && optionSelected !== '4') {
-            submitButton.disabled = true; // Disable the submit button
-        } else {
-            submitButton.disabled = false; // Enable the submit button
-        }
-    }
-
-    // Add event listeners for both click and touch events
-    submitButton.addEventListener('click', toggleSubmitButton);
-    submitButton.addEventListener('touchstart', toggleSubmitButton);
-
-
     // Add event listener to the form submit button
     selectionForm.addEventListener('submit', function (event) {
         event.preventDefault(); // Prevent the default form submission
@@ -261,9 +246,9 @@ document.addEventListener('DOMContentLoaded', function() {
         formData.append('skipOption5', skipValue.toString());
 
         // Check if the input field (identifier) is empty and set its value to "blank"
-//        if (identifierInput.value.trim() === '') {
-//            identifierInput.value = 'blank';
-//        }
+        if (identifierInput.value.trim() === '') {
+            identifierInput.value = 'blank';
+        }
 
         if (selection.value === '5' && skipValue) {
             // If Option 5 is selected, redirect to the "Coming Soon" page
