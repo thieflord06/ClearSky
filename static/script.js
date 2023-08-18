@@ -16,7 +16,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const TIMEOUT_DURATION = 180000;
 
     let requestInProgress = false;
-    let optionSelected;
 
 //    // Example: Push a new state with the state object
 //    function pushNewState() {
@@ -221,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add event listener to the identifier input field
 //    identifierInput.addEventListener('input', function (event) {
 //        // Check if the input field is empty and the selected option is not 4
-//        optionSelected = document.getElementById("selection").value;
+//        const optionSelected = document.getElementById("selection").value;
 //        if (this.value.trim() === '' && optionSelected !== '4') {
 //            submitButton.disabled = true; // Disable the submit button
 //        } else {
