@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
         history.pushState({ fromBackButton: true }, 'Home', '/');
     }
 
-     Handle the back button behavior
+    // Handle the back button behavior
     window.addEventListener('popstate', function(event) {
         if (event.state && event.state.fromBackButton) {
             console.log("inside");
