@@ -542,8 +542,9 @@ async def get_similar_users(user_did):
                 other_user_blocklist = {record['blocked_did'] for record in all_users_blocklists_rows if
                                         record['user_did'] == other_user_did}
 
+                # Calculate the match percentage based on the intersection divided by the smaller blocklist size
                 common_blocked_users = specific_user_blocklist & other_user_blocklist
-                match_percentage = (len(common_blocked_users) / len(specific_user_blocklist)) * 100
+                match_percentage = (len(common_blocked_users) / min(len(specific_user_blocklist), len(other_user_blocklist))) * 100
 
                 if match_percentage >= 85:
                     user_match_percentages[other_user_did] = match_percentage
