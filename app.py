@@ -179,7 +179,6 @@ async def selection_handle():
                     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Blocklist Request Result: " + identifier + " | " + "Blocked by: " + str(blocks) + " :: " + "Total count: " + str(count))
 
                     return jsonify(response_data)
-                    # return jsonify({"user": identifier, "block_list": blocks, "count": count})
                 elif skip_option5:
 
                     return jsonify({"message": "Option 5 skipped"})
