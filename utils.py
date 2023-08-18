@@ -76,10 +76,11 @@ def get_all_users():
             response = requests.get(full_url)
         except httpx.RequestError as e:
             logger.warning("Error during API call: %s", e)
-            if "429 Too Many Requests" in str(e):
+            if response.status_code == 429:
                 logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
                 asyncio.sleep(60)  # Retry after 60 seconds
-        except Exception:
+        except Exception as e:
+            logger.warning("Error during API call: %s", str(e))
             asyncio.sleep(60)  # Retry after 60 seconds
 
         if response.status_code == 200:
@@ -91,7 +92,7 @@ def get_all_users():
             cursor = response_json.get("cursor")
             if not cursor:
                 break
-        elif "429 Too Many Requests" in str(e):
+        elif response.status_code == 429:
             logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
             asyncio.sleep(60)  # Retry after 60 seconds
         else:
