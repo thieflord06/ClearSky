@@ -15,8 +15,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const identifierInput = document.getElementById('identifier');
     const TIMEOUT_DURATION = 180000;
 
-    let requestInProgress = false;
-
 //    // Example: Push a new state with the state object
 //    function pushNewState() {
 //        history.pushState({ fromBackButton: true }, 'Home', '/');
@@ -232,57 +230,12 @@ document.addEventListener('DOMContentLoaded', function() {
     selectionForm.addEventListener('submit', function (event) {
         event.preventDefault(); // Prevent the default form submission
 
-        skipValue = false;
-
-        // Update the value of the skipOption5 input field
-        const skipOption5Input = document.getElementById('skipOption5');
-        skipOption5Input.value = skipValue.toString(); // Convert boolean to string
-
-        // Create a new FormData object and add skipValue to it
         const formData = new FormData(selectionForm);
-        formData.append('skipOption5', skipValue.toString());
 
         // Check if the input field (identifier) is empty and set its value to "blank"
         if (identifierInput.value.trim() === '') {
             identifierInput.value = 'blank';
         }
-
-        if (selection.value === '5' && skipValue) {
-            // If Option 5 is selected, redirect to the "Coming Soon" page
-            fetch('/selection_handle', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                // Check if the response status is successful (HTTP 200-299)
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                hideBaseContainer();
-                hideIndexContainer();
-                showComingSoonContainer();
-                return; // Return to prevent further execution
-            })
-            .catch(error => {
-                // Handle any errors here
-                hideBaseContainer();
-                hideIndexContainer();
-                showErrorContainer();
-                console.error('Error submitting form:', error);
-                // You can show an error message to the user if needed
-            });
-            return; // Return to prevent further execution
-        }
-        if (requestInProgress) {
-            // A request is already in progress, do not make another request
-            hideIndexContainer();
-            hideIndexContainer();
-            showInProgressContainer();
-            return;
-        }
-
-        // Mark that a request is in progress
-        requestInProgress = false;
 
         submitButton.disabled = true; // Disable the form submission button
         hideBaseContainer();
@@ -312,8 +265,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // Update the resultText container with the server response
             showResult(data);
 
-            // Reset the requestInProgress flag to allow future requests
-            requestInProgress = false;
             submitButton.disabled = false; // Re-enable the form submission button
         })
         .catch(error => {
@@ -322,9 +273,7 @@ document.addEventListener('DOMContentLoaded', function() {
             hideBaseContainer();
             hideIndexContainer();
             showErrorContainer();
-        // Reset the requestInProgress flag in case of an error
-        requestInProgress = false;
-        submitButton.disabled = false;
+            submitButton.disabled = false;
         });
     });
 
