@@ -114,7 +114,7 @@ async def selection_handle():
         skip_option5 = True
     else:
         skip_option5 = False
-    if selection in ['1', '2', '3', '4', '5']:
+    if selection in ['1', '2', '3', '4', '5', '6']:
         if selection == "4":
             logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count requested")
             count = await utils.get_user_count()
@@ -177,6 +177,15 @@ async def selection_handle():
                         "counts": count
                     }
                     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Blocklist Request Result: " + identifier + " | " + "Blocked by: " + str(blocks) + " :: " + "Total count: " + str(count))
+
+                    return jsonify(response_data)
+                elif selection == "6":
+                    in_common_list = await database_handler.get_similar_users(did_identifier)
+
+                    response_data = {
+                        "in_common_users": in_common_list,
+                        "user": handle_identifier
+                    }
 
                     return jsonify(response_data)
                 elif skip_option5:

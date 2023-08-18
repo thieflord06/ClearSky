@@ -193,6 +193,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 hideLoadingScreen();
                 showBlockListContainer();
         }
+         else if (data.in_common_users) {
+            const blockListData = document.getElementById('block-list-data');
+            const userHeading = document.getElementById('user-heading');
+            const blockCount = document.getElementById('block-count');
+            const fragment = document.createDocumentFragment();
+
+            userHeading.textContent = 'For User: ' + data.user;
+//            blockCount.textContent = `Total Users that block this account: ${data.counts}`;
+
+            blockListData.innerHTML = '';
+
+            data.in_common_users.forEach((item, index) => {
+                const timestamp = new Date(data.date[index]);
+//                const formattedDate = timestamp.toLocaleDateString('en-US', { timeZone: 'UTC' });
+                const blockItem = document.createElement('li');
+
+                blockItem.innerHTML = `Handle: ${item}`;
+                blockListData.appendChild(blockItem);
+            });
+                hideLoadingScreen();
+                showBlockListContainer();
+        }
         else {
             const noResultParagraph = document.createElement('p');
             noResultParagraph.textContent = 'No result found.';

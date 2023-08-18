@@ -520,6 +520,43 @@ async def get_top_blocks():
         logger.error("Error retrieving data from db", e)
 
 
+async def get_similar_users(user_did):
+    async with connection_pool.acquire() as connection:
+        async with connection.transaction():
+            # Fetch the specific user's blocklist
+            specific_user_blocklist_rows = await connection.fetch(
+                'SELECT blocked_did FROM blocklists WHERE user_did = $1', user_did
+            )
+
+            specific_user_blocklist = {row['blocked_did'] for row in specific_user_blocklist_rows}
+
+            # Fetch all other users' blocklists
+            all_users_blocklists_rows = await connection.fetch(
+                'SELECT user_did, blocked_did FROM blocklists WHERE user_did != $1', user_did
+            )
+
+            # Calculate match percentage for each user
+            user_match_percentages = {}
+            for row in all_users_blocklists_rows:
+                other_user_did = row['user_did']
+                other_user_blocklist = {record['blocked_did'] for record in all_users_blocklists_rows if
+                                        record['user_did'] == other_user_did}
+
+                common_blocked_users = specific_user_blocklist & other_user_blocklist
+                match_percentage = (len(common_blocked_users) / len(specific_user_blocklist)) * 100
+
+                if match_percentage >= 85:
+                    user_match_percentages[other_user_did] = match_percentage
+
+            # Sort users by match percentage
+            sorted_users = sorted(user_match_percentages.items(), key=lambda x: x[1], reverse=True)
+
+            # Select top 5 users
+            top_similar_users = sorted_users[:5]
+
+            return top_similar_users
+
+
 async def update_top_block_list_entries(entries, list_type):
     tasks = []
     for did, count in entries:
