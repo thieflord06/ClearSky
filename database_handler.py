@@ -501,7 +501,7 @@ async def get_top_blocks():
                                     FROM blocklists
                                     GROUP BY blocked_did
                                     ORDER BY block_count DESC
-                                    LIMIT 20'''
+                                    LIMIT 25'''
 
                 blocked_data = await connection.fetch(blocked_query)
                 blocked_results.append(blocked_data)
@@ -510,7 +510,7 @@ async def get_top_blocks():
                                     FROM blocklists
                                     GROUP BY user_did
                                     ORDER BY block_count DESC
-                                    LIMIT 20'''
+                                    LIMIT 25'''
 
                 blockers_data = await connection.fetch(blockers_query)
                 blockers_results.append(blockers_data)
