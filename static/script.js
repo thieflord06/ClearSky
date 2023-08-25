@@ -199,7 +199,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //            const blockCount = document.getElementById('block-count');
             const fragment = document.createDocumentFragment();
 
-            userHeading.textContent = 'Blocks in common with: ' + data.user;
+            userHeading.textContent = 'Users with block lists in common with: ' + data.user;
 //            blockCount.textContent = `Total Users that block this account: ${data.counts}`;
 
             blockListData.innerHTML = '';
