@@ -46,11 +46,15 @@ async def resolve_top_block_lists():
     resolved_blocked = sorted(resolved_blocked, key=lambda x: int(x["block_count"]), reverse=True)
     resolved_blockers = sorted(resolved_blockers, key=lambda x: int(x["block_count"]), reverse=True)
 
-    # Cache the resolved lists
-    resolved_blocked_cache["resolved_blocked"] = resolved_blocked
-    resolved_blockers_cache["resolved_blockers"] = resolved_blockers
+    # Extract and return only the top 20 entries
+    top_resolved_blocked = resolved_blocked[:20]
+    top_resolved_blockers = resolved_blockers[:20]
 
-    return resolved_blocked, resolved_blockers
+    # Cache the resolved lists
+    resolved_blocked_cache["resolved_blocked"] = top_resolved_blocked
+    resolved_blockers_cache["resolved_blockers"] = top_resolved_blockers
+
+    return top_resolved_blocked, top_resolved_blockers
 
 
 def get_all_users():
@@ -76,10 +80,11 @@ def get_all_users():
             response = requests.get(full_url)
         except httpx.RequestError as e:
             logger.warning("Error during API call: %s", e)
-            if "429 Too Many Requests" in str(e):
+            if response.status_code == 429:
                 logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
                 asyncio.sleep(60)  # Retry after 60 seconds
-        except Exception:
+        except Exception as e:
+            logger.warning("Error during API call: %s", str(e))
             asyncio.sleep(60)  # Retry after 60 seconds
 
         if response.status_code == 200:
@@ -91,7 +96,7 @@ def get_all_users():
             cursor = response_json.get("cursor")
             if not cursor:
                 break
-        elif "429 Too Many Requests" in str(e):
+        elif response.status_code == 429:
             logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
             asyncio.sleep(60)  # Retry after 60 seconds
         else:
