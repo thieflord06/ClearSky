@@ -125,10 +125,10 @@ async def selection_handle():
         if utils.is_did(identifier) or utils.is_handle(identifier):
             if utils.is_did(identifier):
                 handle_identifier = await utils.use_handle(identifier)
-                did_identifier = "place_holder"
+                did_identifier = identifier
             if utils.is_handle(identifier):
                 did_identifier = await utils.use_did(identifier)
-                handle_identifier = "place_holder"
+                handle_identifier = identifier
             if not handle_identifier or not did_identifier:
                 return await render_template('no_longer_exists.html', content_type='text/html')
             if selection != "4":
@@ -180,13 +180,30 @@ async def selection_handle():
 
                     return jsonify(response_data)
                 elif selection == "6":
-                    in_common_list = await database_handler.get_similar_users(did_identifier)
-
+                    logger.info("Requesting in-common blocks for: " + identifier)
+                    in_common_list, percentages = await database_handler.get_similar_users(did_identifier)
+                    logger.info(in_common_list + percentages)
+                    if not in_common_list:
+                        in_common_list = ["No blocks to compare"]
+                        percentage = [0]
+                        response_data = {
+                            "in_common_users": in_common_list,
+                            "percentages": percentage,
+                            "user": handle_identifier
+                        }
+                        return jsonify(response_data)
+                    in_common_handles = []
+                    rounded_percentages = [round(percent, 2) for percent in percentages]
+                    for did in in_common_list:
+                        # handle = await utils.use_handle(did)
+                        handle = await utils.get_user_handle(did)
+                        in_common_handles.append(handle)
+                    logger.info(in_common_handles)
                     response_data = {
-                        "in_common_users": in_common_list,
+                        "in_common_users": in_common_handles,
+                        "percentages": rounded_percentages,
                         "user": handle_identifier
                     }
-
                     return jsonify(response_data)
                 elif skip_option5:
 
