@@ -16,7 +16,7 @@ db_lock = asyncio.Lock()
 # Create a limiter with a rate limit of 10 requests per second
 limiter = AsyncLimiter(3)
 
-all_blocks_cache = TTLCache(maxsize=100, ttl=3600)
+all_blocks_cache = TTLCache(maxsize=2000000, ttl=172800)
 
 
 # ======================================================================================================================
