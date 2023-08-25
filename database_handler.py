@@ -550,6 +550,11 @@ async def get_similar_users(user_did):
             # Get the specific user's blocklist
             specific_user_blocklist.add(blocked_id)
 
+    if specific_user_blocklist == 0:
+        users = "no blocks"
+        percentages = 0
+        return users, percentages
+
     # Calculate match percentage for each user
     user_match_percentages = {}
     for other_user_did, other_user_blocklist in blocklists.items():
@@ -565,10 +570,10 @@ async def get_similar_users(user_did):
         match_percentage = (common_count / specific_count) * 100
         # match_percentage = (common_count / min(specific_count, other_count)) * 100
 
-        # if match_percentage >= 85:  # set threshold for results
-        #     user_match_percentages[other_user_did] = match_percentage
+        if match_percentage > 1:  # set threshold for results
+            user_match_percentages[other_user_did] = match_percentage
 
-        user_match_percentages[other_user_did] = match_percentage
+        # user_match_percentages[other_user_did] = match_percentage
     # Sort users by match percentage
     sorted_users = sorted(user_match_percentages.items(), key=lambda x: x[1], reverse=True)
 
