@@ -550,7 +550,7 @@ async def get_similar_users(user_did):
             # Get the specific user's blocklist
             specific_user_blocklist.add(blocked_id)
 
-    if specific_user_blocklist == 0:
+    if not len(specific_user_blocklist):
         users = "no blocks"
         percentages = 0
         return users, percentages

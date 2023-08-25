@@ -184,7 +184,6 @@ async def selection_handle():
                 elif selection == "6":
                     logger.info("Requesting in-common blocks for: " + identifier)
                     in_common_list, percentages = await database_handler.get_similar_users(did_identifier)
-                    logger.info(in_common_list + percentages)
 
                     if "no blocks" in in_common_list:
                         in_common_list = ["No blocks to compare"]
@@ -205,11 +204,10 @@ async def selection_handle():
                             "user": handle_identifier
                         }
                         return jsonify(response_data)
-                    
+
                     in_common_handles = []
                     rounded_percentages = [round(percent, 2) for percent in percentages]
                     for did in in_common_list:
-                        # handle = await utils.use_handle(did)
                         handle = await utils.get_user_handle(did)
                         in_common_handles.append(handle)
                     logger.info(in_common_handles)
