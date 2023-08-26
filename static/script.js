@@ -190,8 +190,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 blockItem.innerHTML = `Handle: ${item}, Date: ${formattedDate}`;
                 blockListData.appendChild(blockItem);
             });
-                hideLoadingScreen();
-                showBlockListContainer();
+            hideLoadingScreen();
+            showBlockListContainer();
+        }
+         else if (data.in_common_users && Array.isArray(data.in_common_users) && Array.isArray(data.percentages)) {
+            const blockListData = document.getElementById('block-list-data');
+            const userHeading = document.getElementById('user-heading');
+//            const blockCount = document.getElementById('block-count');
+            const fragment = document.createDocumentFragment();
+
+            userHeading.textContent = 'Users with block lists in common with: ' + data.user;
+//            blockCount.textContent = `Total Users that block this account: ${data.counts}`;
+
+            blockListData.innerHTML = '';
+
+            for (let index = 0; index < data.in_common_users.length; index++) {
+                const item = data.in_common_users[index];
+                const percent = data.percentages[index];
+
+                const blockItem = document.createElement('li');
+                const percentItem = document.createElement('li');
+                blockItem.textContent = `Handle: ${item}`;
+                percentItem.textContent = `Match Percentage: ${percent}`;
+                fragment.appendChild(blockItem);
+                fragment.appendChild(percentItem);
+            }
+
+            blockListData.appendChild(fragment);
+            hideLoadingScreen();
+            showBlockListContainer();
         }
         else {
             const noResultParagraph = document.createElement('p');

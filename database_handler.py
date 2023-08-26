@@ -7,6 +7,7 @@ import config_helper
 import utils
 from config_helper import logger
 from aiolimiter import AsyncLimiter
+from cachetools import TTLCache
 
 # Connection pool and lock
 connection_pool = None
@@ -14,6 +15,8 @@ db_lock = asyncio.Lock()
 
 # Create a limiter with a rate limit of 10 requests per second
 limiter = AsyncLimiter(3)
+
+all_blocks_cache = TTLCache(maxsize=2000000, ttl=172800)
 
 
 # ======================================================================================================================
@@ -518,6 +521,134 @@ async def get_top_blocks():
                 return blocked_data, blockers_data
     except Exception as e:
         logger.error("Error retrieving data from db", e)
+
+
+async def get_similar_blocked_by(user_did):
+    global all_blocks_cache
+    async with connection_pool.acquire() as connection:
+        blocked_by_users = await connection.fetch(
+            'SELECT user_did FROM blocklists WHERE blocked_did = $1', user_did)
+
+    # Extract the values from the records
+    blocked_by_users_ids = [record['user_did'] for record in blocked_by_users]
+
+    if len(all_blocks_cache) == 0:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                # Fetch all blocklists except for the specified user's blocklist
+                all_blocklists_rows = await connection.fetch(
+                    'SELECT user_did, blocked_did FROM blocklists'
+                )
+                all_blocks_cache = all_blocklists_rows
+    else:
+        all_blocklists_rows = all_blocks_cache
+
+    # Create a dictionary to store blocklists as sets
+    blocklists = {}
+    for row in all_blocklists_rows:
+        user_id = row['user_did']
+        blocked_id = row['blocked_did']
+        if user_id not in blocklists:
+            blocklists[user_id] = set()
+        blocklists[user_id].add(blocked_id)
+
+    # Calculate match percentages for each person's block list
+    user_match_percentages = {}
+    for blocked_by_user_id in blocked_by_users_ids:
+        if blocked_by_user_id != user_did:
+            common_blocked = set(blocklists.get(blocked_by_user_id, set())) & set(blocklists.get(user_did, set()))
+            common_count = len(common_blocked)
+            person_blocked_count = len(blocklists.get(blocked_by_user_id, set()))
+
+            # Check for division by zero
+            if person_blocked_count == 0:
+                continue  # Skip this comparison
+
+            match_percentage = (common_count / person_blocked_count) * 100
+
+            # Only include matches with a match_percentage greater than 1
+            if match_percentage > 1:
+                user_match_percentages[user_id] = match_percentage
+
+    # Sort users by match percentage
+    sorted_users = sorted(user_match_percentages.items(), key=lambda x: x[1], reverse=True)
+
+    # Select top 20 users
+    top_similar_users = sorted_users[:20]
+
+    logger.info(top_similar_users)
+
+    users = [user for user, percentage in top_similar_users]
+    percentages = [percentage for user, percentage in top_similar_users]
+
+    # Return the sorted list of users and their match percentages
+    return users, percentages
+
+
+async def get_similar_users(user_did):
+    global all_blocks_cache
+    if len(all_blocks_cache) == 0:
+        logger.info("Caching all blocklists.")
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                # Fetch all blocklists except for the specified user's blocklist
+                all_blocklists_rows = await connection.fetch(
+                    'SELECT user_did, blocked_did FROM blocklists'
+                )
+                all_blocks_cache = all_blocklists_rows
+    else:
+        all_blocklists_rows = all_blocks_cache
+
+    # Create a dictionary to store blocklists as sets
+    blocklists = {}
+    specific_user_blocklist = set()
+    for row in all_blocklists_rows:
+        user_id = row['user_did']
+        blocked_id = row['blocked_did']
+        if user_id != user_did:
+            if user_id not in blocklists:
+                blocklists[user_id] = set()
+            blocklists[user_id].add(blocked_id)
+        else:
+            # Get the specific user's blocklist
+            specific_user_blocklist.add(blocked_id)
+
+    if not len(specific_user_blocklist):
+        users = "no blocks"
+        percentages = 0
+        return users, percentages
+
+    # Calculate match percentage for each user
+    user_match_percentages = {}
+    for other_user_did, other_user_blocklist in blocklists.items():
+        common_blocked_users = specific_user_blocklist & other_user_blocklist
+        common_count = len(common_blocked_users)
+        specific_count = len(specific_user_blocklist)
+        other_count = len(other_user_blocklist)
+
+        # Check for division by zero
+        if specific_count == 0 or other_count == 0:
+            continue  # Skip this comparison
+
+        match_percentage = (common_count / specific_count) * 100
+        # match_percentage = (common_count / min(specific_count, other_count)) * 100
+
+        if match_percentage > 1:  # set threshold for results
+            user_match_percentages[other_user_did] = match_percentage
+
+        # user_match_percentages[other_user_did] = match_percentage
+    # Sort users by match percentage
+    sorted_users = sorted(user_match_percentages.items(), key=lambda x: x[1], reverse=True)
+
+    # Select top 20 users
+    top_similar_users = sorted_users[:20]
+
+    logger.info(f"Similar blocks: {await utils.get_user_handle(user_id)} | {top_similar_users}")
+
+    users = [user for user, percentage in top_similar_users]
+    percentages = [percentage for user, percentage in top_similar_users]
+
+    return users, percentages
 
 
 async def update_top_block_list_entries(entries, list_type):
