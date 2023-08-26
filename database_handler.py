@@ -523,9 +523,72 @@ async def get_top_blocks():
         logger.error("Error retrieving data from db", e)
 
 
+async def get_similar_blocked_by(user_did):
+    global all_blocks_cache
+    async with connection_pool.acquire() as connection:
+        blocked_by_users = await connection.fetch(
+            'SELECT user_did FROM blocklists WHERE blocked_did = $1', user_did)
+
+    # Extract the values from the records
+    blocked_by_users_ids = [record['user_did'] for record in blocked_by_users]
+
+    if len(all_blocks_cache) == 0:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                # Fetch all blocklists except for the specified user's blocklist
+                all_blocklists_rows = await connection.fetch(
+                    'SELECT user_did, blocked_did FROM blocklists'
+                )
+                all_blocks_cache = all_blocklists_rows
+    else:
+        all_blocklists_rows = all_blocks_cache
+
+    # Create a dictionary to store blocklists as sets
+    blocklists = {}
+    for row in all_blocklists_rows:
+        user_id = row['user_did']
+        blocked_id = row['blocked_did']
+        if user_id not in blocklists:
+            blocklists[user_id] = set()
+        blocklists[user_id].add(blocked_id)
+
+    # Calculate match percentages for each person's block list
+    user_match_percentages = {}
+    for blocked_by_user_id in blocked_by_users_ids:
+        if blocked_by_user_id != user_did:
+            common_blocked = set(blocklists.get(blocked_by_user_id, set())) & set(blocklists.get(user_did, set()))
+            common_count = len(common_blocked)
+            person_blocked_count = len(blocklists.get(blocked_by_user_id, set()))
+
+            # Check for division by zero
+            if person_blocked_count == 0:
+                continue  # Skip this comparison
+
+            match_percentage = (common_count / person_blocked_count) * 100
+
+            # Only include matches with a match_percentage greater than 1
+            if match_percentage > 1:
+                user_match_percentages[user_id] = match_percentage
+
+    # Sort users by match percentage
+    sorted_users = sorted(user_match_percentages.items(), key=lambda x: x[1], reverse=True)
+
+    # Select top 20 users
+    top_similar_users = sorted_users[:20]
+
+    logger.info(top_similar_users)
+
+    users = [user for user, percentage in top_similar_users]
+    percentages = [percentage for user, percentage in top_similar_users]
+
+    # Return the sorted list of users and their match percentages
+    return users, percentages
+
+
 async def get_similar_users(user_did):
     global all_blocks_cache
     if len(all_blocks_cache) == 0:
+        logger.info("Caching all blocklists.")
         async with connection_pool.acquire() as connection:
             async with connection.transaction():
                 # Fetch all blocklists except for the specified user's blocklist
@@ -580,7 +643,7 @@ async def get_similar_users(user_did):
     # Select top 20 users
     top_similar_users = sorted_users[:20]
 
-    logger.info(top_similar_users)
+    logger.info(f"Similar blocks: {await utils.get_user_handle(user_id)} | {top_similar_users}")
 
     users = [user for user, percentage in top_similar_users]
     percentages = [percentage for user, percentage in top_similar_users]
