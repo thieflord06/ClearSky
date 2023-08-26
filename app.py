@@ -275,6 +275,7 @@ async def selection_handle():
 
 @app.route('/fun_facts')
 async def fun_facts():
+    logger.info("Fun facts requested.")
     resolved_blocked = utils.resolved_blocked_cache.get('resolved_blocked')
     resolved_blockers = utils.resolved_blockers_cache.get('resolved_blockers')
 
