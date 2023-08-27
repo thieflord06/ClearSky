@@ -16,7 +16,7 @@ config = config_helper.read_config()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "2.6.2"
+version = "2.6.3"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
