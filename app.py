@@ -166,9 +166,20 @@ async def selection_handle():
 
                     return jsonify({"block_list": blocklist, "user": identifier, "count": count})
                 elif selection == "5" and not skip_option5:
-                    if utils.is_did(identifier):
-                        did_identifier = await utils.use_did(identifier)
                     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Block list requested for: " + identifier)
+                    if "Could not find, there may be a typo" in did_identifier:
+                        blocks = ["Could not find, there may be a typo"]
+                        dates = [datetime.now().date()]
+                        count = 0
+                        response_data = {
+                            "who_block_list": blocks,
+                            "user": identifier,
+                            "date": dates,
+                            "counts": count
+                        }
+                        logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Blocklist Request Result: " + identifier + " | " + "Blocked by: " + str(blocks) + " :: " + "Total count: " + str(count))
+
+                        return jsonify(response_data)
                     blocks, dates, count = await utils.get_single_user_blocks(did_identifier)
                     if utils.is_did(identifier):
                         identifier = handle_identifier
