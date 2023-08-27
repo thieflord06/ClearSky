@@ -141,6 +141,8 @@ async def selection_handle():
                     logger.info(str(session_ip) + " > " + str(*session.values()) + ": " + "DID resolve request made for: " + identifier)
                     if utils.is_did(did_identifier):
                         result = did_identifier
+                    elif "Could not find, there may be a typo." in did_identifier:
+                        result = did_identifier
                     else:
                         result = identifier
                     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + result)

@@ -28,6 +28,16 @@ async def resolve_handle(info):  # Take Handle and get DID
             async with httpx.AsyncClient() as client:
                 response = await client.get(full_url)
                 response_json = response.json()
+
+                if response.status_code == 400:
+                    try:
+                        error_message = response.json()["error"]
+                        message = response.json()["message"]
+                        if error_message == "InvalidRequest" and "Unable to resolve handle" in message:
+                            logger.warning("Could not find repo: " + str(info))
+                            return "Could not find, there may be a typo."
+                    except KeyError:
+                        pass
                 logger.debug("response: " + str(response_json))
 
                 result = list(response_json.values())[0]
