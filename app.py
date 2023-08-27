@@ -308,12 +308,14 @@ async def get_user_block_list(ident):
         handles = [f"{ident} hasn't blocked anyone."]
         timestamp = datetime.now().date()
         block_list.append({"handle": handles, "timestamp": timestamp})
+        logger.info(f"{ident} Hasn't blocked anyone.")
         return block_list, total_blocked
     elif "no repo" in blocked_users:
         total_blocked = 0
         handles = [f"{ident} doesn't exist, it may have changed."]
         timestamp = datetime.now().date()
         block_list.append({"handle": handles, "timestamp": timestamp})
+        logger.info(f"{ident} doesn't exist.")
         return block_list, total_blocked
     else:
         async with database_handler.connection_pool.acquire() as connection:
