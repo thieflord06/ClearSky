@@ -312,7 +312,7 @@ async def get_user_block_list(ident):
         return block_list, total_blocked
     elif "no repo" in blocked_users:
         total_blocked = 0
-        handles = [f"{ident} doesn't exist, it may have changed."]
+        handles = [f"Couldn't find {ident}, there may be a typo."]
         timestamp = datetime.now().date()
         block_list.append({"handle": handles, "timestamp": timestamp})
         logger.info(f"{ident} doesn't exist.")
