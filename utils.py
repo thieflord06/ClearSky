@@ -17,7 +17,7 @@ resolved_blockers_cache = TTLCache(maxsize=100, ttl=3600)
 
 
 async def resolve_did(did, count, resolver):
-    resolved_did = await on_wire.resolve_did(did)  # Replace with your actual resolving function
+    resolved_did = await on_wire.resolve_did(did)
     if resolved_did is not None:
         return {'Handle': resolved_did, 'block_count': str(count), 'ProfileURL': f'https://bsky.app/profile/{did}'}
     return None
@@ -80,9 +80,7 @@ def get_all_users():
             response = requests.get(full_url)
         except httpx.RequestError as e:
             logger.warning("Error during API call: %s", e)
-            if response.status_code == 429:
-                logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
-                asyncio.sleep(60)  # Retry after 60 seconds
+            asyncio.sleep(60)  # Retry after 60 seconds
         except Exception as e:
             logger.warning("Error during API call: %s", str(e))
             asyncio.sleep(60)  # Retry after 60 seconds
