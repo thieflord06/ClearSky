@@ -164,6 +164,9 @@ async def selection_handle():
                     if utils.is_did(identifier):
                         identifier = handle_identifier
 
+                    if count == 0:
+                        return await render_template('blocklist.html', user=identifier, count=count)
+
                     return await render_template('blocklist.html', blocklist=blocklist, user=identifier, count=count)
                 elif selection == "5" and not skip_option5:
                     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Block list requested for: " + identifier)
@@ -176,6 +179,9 @@ async def selection_handle():
                     blocks, dates, count = await utils.get_single_user_blocks(did_identifier)
                     if utils.is_did(identifier):
                         identifier = handle_identifier
+
+                    if count == 0:
+                        return await render_template('single_blocklist.html', user=identifier, count=count)
 
                     blocklist = list(zip(blocks, dates))
 
