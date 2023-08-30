@@ -206,7 +206,9 @@ async def selection_handle():
                         in_common_handles.append(handle)
                     logger.info(in_common_handles)
 
-                    return await render_template('in_common.html', in_common_list=in_common_handles, percentages=rounded_percentages, user=handle_identifier)
+                    in_common_data = zip(in_common_handles, rounded_percentages)
+
+                    return await render_template('in_common.html', data=in_common_data, user=handle_identifier)
                 elif selection == "7":
                     logger.info(f"Requesting in-common blocked for: {await utils.get_user_handle(identifier)}")
                     in_common_list, percentages = await database_handler.get_similar_blocked_by(did_identifier)
@@ -238,7 +240,7 @@ async def selection_handle():
 
             return await render_template('error.html')
     else:
-
+        logger.warning(f"Intentional error: selection = {selection}")
         return await render_template('intentional_error.html')
 
 

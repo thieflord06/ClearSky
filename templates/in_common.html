@@ -3,9 +3,12 @@
 {% block content %}
     <div id="block-list-container">
         <div id="block-list">
-            <h1>Blocks in common</h1>
+            <h1>Blocks in common with</h1>
             <h2 id="user-heading">{{ user }}</h2>
-            <ul id="block-list-data">{{ in_common_list }} {{ percentages }}</ul>
+            <ul id="block-list-data">{% for handle, percent in data %}
+                <li>{{ handle }} {{ percent }}%</li>
+                {% endfor %}
+            </ul>
         </div>
         <a href="/" class="btn btn-primary" id="go-back-button">Go Back</a>
     </div>

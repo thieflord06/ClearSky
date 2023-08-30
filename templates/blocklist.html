@@ -5,10 +5,10 @@
         <div id="block-list">
             <h1>Block List</h1>
             <h2 id="user-heading">{{ user }}</h2>
-            <h3 id="block-count">{{ count }}</h3>
+            <h3 id="block-count">Accounts blocking: {{ count }}</h3>
             <ul id="block-list-data">
                 {% for user, date in blocklist %}
-                <li>Handle: {{ user }} Date: {{ date }}</li>
+                <li>Handle: <a href="https://bsky.app/profile/{{ user }}" target="_blank">{{ user }}</a> Date: {{ date }}</li>
                 {% endfor %}
             </ul>
         </div>
