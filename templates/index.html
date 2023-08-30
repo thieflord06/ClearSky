@@ -28,33 +28,6 @@
             </form>
         </div>
     </div>
-
-    <div id="loading-screen" style="display: none;">
-        {% include "loading.html" %}
-    </div>
-
-    <div id="result-container" style="display: none;">
-        {% include "result.html" %}
-    </div>
-
-    <div id="blocklist-container" style="display: none;">
-        {% include "blocklist.html" %}
-    </div>
-    <div id="comingsoon-container" style="display: none;">
-        {% include "coming_soon.html" %}
-    </div>
-    <div id="error-container" style="display: none;">
-        {% include "error.html" %}
-    </div>
-    <div id="pending-request-container" style="display: none;">
-        {% include "pending_request.html" %}
-    </div>
-    <div id="timeout-container" style="display: none;">
-        {% include "pending_request.html" %}
-    </div>
-    <div id="intentional-error-container" style="display: none;">
-        {% include "intentional_error.html" %}
-    </div>
     {% if request.path == '/' %} {# Check if the current page is the index page #}
         <script src="{{ url_for('static', filename='script.js') }}"></script> {# Include script.js only for the index page #}
     {% endif %}

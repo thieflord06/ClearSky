@@ -121,7 +121,7 @@ async def selection_handle():
             count = await utils.get_user_count()
             logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count: " + str(count))
 
-            return jsonify({"count": count})
+            return await render_template('total_users.html', count=count)
         # Check if did or handle exists before processing
         if utils.is_did(identifier) or utils.is_handle(identifier):
             if utils.is_did(identifier):
@@ -147,7 +147,7 @@ async def selection_handle():
                         result = identifier
                     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + result)
 
-                    return jsonify({"result": result})
+                    return await render_template('result.html', result=result)
                 elif selection == "2":
                     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Handle resolve request made for: " + identifier)
                     if utils.is_handle(handle_identifier):
@@ -156,7 +156,7 @@ async def selection_handle():
                         result = identifier
                     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + str(result))
 
-                    return jsonify({"result": result})
+                    return await render_template('result.html', result=result)
                 elif selection == "3":
                     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Block list requested for: " + identifier)
                     blocklist, count = await get_user_block_list(identifier)
@@ -164,7 +164,7 @@ async def selection_handle():
                     if utils.is_did(identifier):
                         identifier = handle_identifier
 
-                    return jsonify({"block_list": blocklist, "user": identifier, "count": count})
+                    return await render_template('result.html', blocklist=blocklist, user=identifier, count=count)
                 elif selection == "5" and not skip_option5:
                     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Block list requested for: " + identifier)
                     if "Could not find, there may be a typo" in did_identifier:

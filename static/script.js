@@ -255,53 +255,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Add event listener to the form submit button
     selectionForm.addEventListener('submit', function (event) {
-        event.preventDefault(); // Prevent the default form submission
-
-        const formData = new FormData(selectionForm);
-
         // Check if the input field (identifier) is empty and set its value to "blank"
         if (identifierInput.value.trim() === '') {
             identifierInput.value = 'blank';
         }
 
         submitButton.disabled = true; // Disable the form submission button
-        hideBaseContainer();
-        hideIndexContainer();
-        showLoadingScreen(); // Show the loading screen
-
-        // Set up the timeout
-        const timeoutId = setTimeout(() => {
-            // Function to execute if the timeout occurs before the server responds
-            handleTimeout(); // You need to implement this function (see Step 3)
-        }, TIMEOUT_DURATION);
-
-        // Perform your form submission or AJAX request using JavaScript Fetch API or Axios
-        fetch('/selection_handle', {
-            method: 'POST',
-            body: new FormData(selectionForm)
-        })
-        .then(response => {
-            // Check if the response status is successful (HTTP 200-299)
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            // Return the response JSON data
-            return response.json();
-        })
-        .then(data => {
-            // Update the resultText container with the server response
-            showResult(data);
-
-            submitButton.disabled = false; // Re-enable the form submission button
-        })
-        .catch(error => {
-            // Handle any errors here
-            handleErrors(error); // Call the function to handle errors and show the index container
-            hideBaseContainer();
-            hideIndexContainer();
-            showErrorContainer();
-            submitButton.disabled = false;
-        });
     });
 
     // Add event listener to the selection dropdown
