@@ -148,6 +148,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Prevent default form submission behavior
         event.preventDefault();
 
+        hideIndexContainer();
         // Show loading screen
         loadingScreen.style.display = 'block';
 
