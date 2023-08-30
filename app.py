@@ -109,12 +109,6 @@ async def selection_handle():
     identifier = identifier.strip()
     identifier = identifier.replace('@', '')
 
-    # Check if the flag to skip "Option 5" is present in the form data
-    skip_option5 = data.get('skipOption5', '').lower()
-    if skip_option5 == "true":
-        skip_option5 = True
-    else:
-        skip_option5 = False
     if selection in ['1', '2', '3', '4', '5', '6']:
         if selection == "4":
             logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count requested")
@@ -169,7 +163,7 @@ async def selection_handle():
                         return await render_template('not_blocking.html', user=identifier, message=message)
 
                     return await render_template('blocklist.html', blocklist=blocklist, user=identifier, count=count)
-                elif selection == "5" and not skip_option5:
+                elif selection == "5":
                     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Block list requested for: " + identifier)
                     if "Could not find, there may be a typo" in did_identifier:
                         message = "Could not find, there may be a typo"
@@ -237,14 +231,12 @@ async def selection_handle():
                     logger.info(in_common_handles)
 
                     return await render_template('in_common.html', in_common_list=in_common_list, percentages=rounded_percentages, user=handle_identifier)
-                elif skip_option5:
-
-                    return await render_template('coming_soon.html')
         else:
 
             return await render_template('error.html')
     else:
         logger.warning(f"Intentional error: selection = {selection}")
+
         return await render_template('intentional_error.html')
 
 
