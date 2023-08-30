@@ -164,39 +164,24 @@ async def selection_handle():
                     if utils.is_did(identifier):
                         identifier = handle_identifier
 
-                    return await render_template('result.html', blocklist=blocklist, user=identifier, count=count)
+                    return await render_template('blocklist.html', blocklist=blocklist, user=identifier, count=count)
                 elif selection == "5" and not skip_option5:
                     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Block list requested for: " + identifier)
                     if "Could not find, there may be a typo" in did_identifier:
                         blocks = ["Could not find, there may be a typo"]
                         dates = [datetime.now().date()]
                         count = 0
-                        response_data = {
-                            "who_block_list": blocks,
-                            "user": identifier,
-                            "date": dates,
-                            "counts": count
-                        }
+
                         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Blocklist Request Result: " + identifier + " | " + "Blocked by: " + str(blocks) + " :: " + "Total count: " + str(count))
 
-                        return jsonify(response_data)
+                        return await render_template('single_blocklist.html', user=identifier, blocklist=blocks, dates=dates, count=count)
                     blocks, dates, count = await utils.get_single_user_blocks(did_identifier)
                     if utils.is_did(identifier):
                         identifier = handle_identifier
 
-                    if type(blocks) != list:
-                        blocks = ["None"]
-                        dates = [datetime.now().date()]
-                        count = 0
-                    response_data = {
-                        "who_block_list": blocks,
-                        "user": identifier,
-                        "date": dates,
-                        "counts": count
-                    }
                     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Blocklist Request Result: " + identifier + " | " + "Blocked by: " + str(blocks) + " :: " + "Total count: " + str(count))
 
-                    return jsonify(response_data)
+                    return await render_template('single_blocklist.html', user=identifier, blocklist=blocks, dates=dates, count=count)
                 elif selection == "6":
                     logger.info("Requesting in-common blocks for: " + identifier)
                     in_common_list, percentages = await database_handler.get_similar_users(did_identifier)
@@ -204,24 +189,13 @@ async def selection_handle():
                     if "no blocks" in in_common_list:
                         in_common_list = ["No blocks to compare"]
                         percentage = [0]
-                        response_data = {
-                            "in_common_users": in_common_list,
-                            "percentages": percentage,
-                            "user": handle_identifier
-                        }
 
-                        return jsonify(response_data)
-
+                        return await render_template('in_common.html', in_common_list=in_common_list, percentages=percentage, user=handle_identifier)
                     if not in_common_list:
                         in_common_list = ["No blocks in common with other users"]
                         percentage = [0]
-                        response_data = {
-                            "in_common_users": in_common_list,
-                            "percentages": percentage,
-                            "user": handle_identifier
-                        }
 
-                        return jsonify(response_data)
+                        return await render_template('in_common.html', in_common_list=in_common_list, percentages=percentage, user=handle_identifier)
 
                     in_common_handles = []
                     rounded_percentages = [round(percent, 2) for percent in percentages]
@@ -229,13 +203,8 @@ async def selection_handle():
                         handle = await utils.get_user_handle(did)
                         in_common_handles.append(handle)
                     logger.info(in_common_handles)
-                    response_data = {
-                        "in_common_users": in_common_handles,
-                        "percentages": rounded_percentages,
-                        "user": handle_identifier
-                    }
 
-                    return jsonify(response_data)
+                    return await render_template('in_common.html', in_common_list=in_common_handles, percentages=rounded_percentages, user=handle_identifier)
                 elif selection == "7":
                     logger.info(f"Requesting in-common blocked for: {await utils.get_user_handle(identifier)}")
                     in_common_list, percentages = await database_handler.get_similar_blocked_by(did_identifier)
@@ -243,24 +212,14 @@ async def selection_handle():
                     if "no blocks" in in_common_list:
                         in_common_list = ["No blocks to compare"]
                         percentage = [0]
-                        response_data = {
-                            "in_common_users": in_common_list,
-                            "percentages": percentage,
-                            "user": handle_identifier
-                        }
 
-                        return jsonify(response_data)
+                        return await render_template('in_common.html', in_common_list=in_common_list, percentages=percentage, user=handle_identifier)
 
                     if not in_common_list:
                         in_common_list = ["No blocks in common with other users"]
                         percentage = [0]
-                        response_data = {
-                            "in_common_users": in_common_list,
-                            "percentages": percentage,
-                            "user": handle_identifier
-                        }
 
-                        return jsonify(response_data)
+                        return await render_template('in_common.html', in_common_list=in_common_list, percentages=percentage, user=handle_identifier)
 
                     in_common_handles = []
                     rounded_percentages = [round(percent, 2) for percent in percentages]
@@ -268,16 +227,11 @@ async def selection_handle():
                         handle = await utils.get_user_handle(did)
                         in_common_handles.append(handle)
                     logger.info(in_common_handles)
-                    response_data = {
-                        "in_common_users": in_common_handles,
-                        "percentages": rounded_percentages,
-                        "user": handle_identifier
-                    }
 
-                    return jsonify(response_data)
+                    return await render_template('in_common.html', in_common_list=in_common_list, percentages=rounded_percentages, user=handle_identifier)
                 elif skip_option5:
 
-                    return jsonify({"message": "Option 5 skipped"})
+                    return await render_template('coming_soon.html')
         else:
 
             return await render_template('error.html')

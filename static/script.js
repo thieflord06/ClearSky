@@ -257,7 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
     selectionForm.addEventListener('submit', function (event) {
         // Check if the input field (identifier) is empty and set its value to "blank"
         if (identifierInput.value.trim() === '') {
-            identifierInput.value = 'blank';
+            identifierInput.value = '';
         }
 
         submitButton.disabled = true; // Disable the form submission button
