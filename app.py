@@ -16,7 +16,7 @@ config = config_helper.read_config()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "2.6.3"
+version = "3.0.1"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -174,7 +174,7 @@ async def selection_handle():
                     if "Could not find, there may be a typo" in did_identifier:
                         message = "Could not find, there may be a typo"
 
-                        logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Blocklist Request Result: " + identifier + " | " + "Blocked by: " + str(blocks) + " :: " + "Total count: " + str(count))
+                        logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Blocklist Request Result: " + identifier + " | " + "Blocked by: " + str(message))
 
                         return await render_template('no_result.html', user=identifier, message=message)
                     blocks, dates, count = await utils.get_single_user_blocks(did_identifier)
