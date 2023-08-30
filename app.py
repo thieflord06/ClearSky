@@ -165,7 +165,8 @@ async def selection_handle():
                         identifier = handle_identifier
 
                     if count == 0:
-                        return await render_template('blocklist.html', user=identifier, count=count)
+                        message = "Not blocking anyone"
+                        return await render_template('not_blocking.html', user=identifier, message=message)
 
                     return await render_template('blocklist.html', blocklist=blocklist, user=identifier, count=count)
                 elif selection == "5" and not skip_option5:
@@ -181,7 +182,8 @@ async def selection_handle():
                         identifier = handle_identifier
 
                     if count == 0:
-                        return await render_template('single_blocklist.html', user=identifier, count=count)
+                        message = "Not blocked by anyone"
+                        return await render_template('not_blocking.html', user=identifier, message=message)
 
                     blocklist = list(zip(blocks, dates))
 
