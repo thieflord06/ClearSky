@@ -6,7 +6,11 @@
             <h1>Block List</h1>
             <h2 id="user-heading">{{ user }}</h2>
             <h3 id="block-count">{{ count }}</h3>
-            <ul id="block-list-data">{{ blocklist }} {{ dates }}</ul>
+            <ul id="block-list-data">
+                {% for user, date in blocklist%}
+                <li>Handle: {{ user }} Date: {{ date }}</li>
+                {% endfor %}
+            </ul>
         </div>
         <a href="/" class="btn btn-primary" id="go-back-button">Go Back</a>
     </div>

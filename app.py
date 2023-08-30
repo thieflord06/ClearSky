@@ -147,7 +147,7 @@ async def selection_handle():
                         result = identifier
                     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + result)
 
-                    return await render_template('result.html', result=result)
+                    return await render_template('did.html', result=result)
                 elif selection == "2":
                     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Handle resolve request made for: " + identifier)
                     if utils.is_handle(handle_identifier):
@@ -156,7 +156,7 @@ async def selection_handle():
                         result = identifier
                     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + str(result))
 
-                    return await render_template('result.html', result=result)
+                    return await render_template('handle.html', result=result)
                 elif selection == "3":
                     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Block list requested for: " + identifier)
                     blocklist, count = await get_user_block_list(identifier)
@@ -179,9 +179,11 @@ async def selection_handle():
                     if utils.is_did(identifier):
                         identifier = handle_identifier
 
+                    blocklist = list(zip(blocks, dates))
+
                     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Blocklist Request Result: " + identifier + " | " + "Blocked by: " + str(blocks) + " :: " + "Total count: " + str(count))
 
-                    return await render_template('single_blocklist.html', user=identifier, blocklist=blocks, dates=dates, count=count)
+                    return await render_template('single_blocklist.html', user=identifier, blocklist=blocklist, dates=dates, count=count)
                 elif selection == "6":
                     logger.info("Requesting in-common blocks for: " + identifier)
                     in_common_list, percentages = await database_handler.get_similar_users(did_identifier)
@@ -303,10 +305,10 @@ async def get_user_block_list(ident):
         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Blocklist Request Result: " + ident + " | " + "Total blocked: " + str(total_blocked) + " :: " + str(list(zip(handles, timestamps))))
 
         for handle, timestamp in zip(handles, timestamps):
-            block_list.append({"handle": handle, "timestamp": timestamp})
+            block_list.append((handle, timestamp))
 
         # Sort the block_list by timestamp (newest to oldest)
-        block_list = sorted(block_list, key=get_timestamp, reverse=True)
+        block_list = sorted(block_list, key=lambda x: x[1], reverse=True)
 
         return block_list, total_blocked
 
