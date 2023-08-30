@@ -5,8 +5,9 @@
         <div id="block-list">
             <h1>Blocks in common with</h1>
             <h2 id="user-heading">{{ user }}</h2>
-            <ul id="block-list-data">{% for handle, percent in data %}
-                <li><a href="https://bsky.app/profile/{{ user }}" target="_blank">{{ handle }}</a> {{ percent }}%</li>
+            <ul id="block-list-data">
+                {% for handle, percent in data %}
+                <li><a href="https://bsky.app/profile/{{ handle }}" target="_blank">{{ handle }}</a> {{ percent }}%</li>
                 {% endfor %}
             </ul>
         </div>
