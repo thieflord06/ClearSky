@@ -183,7 +183,7 @@ async def selection_handle():
 
                     if count == 0:
                         message = "Not blocked by anyone"
-                        return await render_template('not_blocking.html', user=identifier, message=message)
+                        return await render_template('not_blocked.html', user=identifier, message=message)
 
                     blocklist = list(zip(blocks, dates))
 
