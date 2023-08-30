@@ -168,13 +168,11 @@ async def selection_handle():
                 elif selection == "5" and not skip_option5:
                     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Block list requested for: " + identifier)
                     if "Could not find, there may be a typo" in did_identifier:
-                        blocks = ["Could not find, there may be a typo"]
-                        dates = [datetime.now().date()]
-                        count = 0
+                        message = "Could not find, there may be a typo"
 
                         logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Blocklist Request Result: " + identifier + " | " + "Blocked by: " + str(blocks) + " :: " + "Total count: " + str(count))
 
-                        return await render_template('single_blocklist.html', user=identifier, blocklist=blocks, dates=dates, count=count)
+                        return await render_template('no_result.html', user=identifier, message=message)
                     blocks, dates, count = await utils.get_single_user_blocks(did_identifier)
                     if utils.is_did(identifier):
                         identifier = handle_identifier
@@ -189,15 +187,13 @@ async def selection_handle():
                     in_common_list, percentages = await database_handler.get_similar_users(did_identifier)
 
                     if "no blocks" in in_common_list:
-                        in_common_list = ["No blocks to compare"]
-                        percentage = [0]
+                        message = "No blocks to compare"
 
-                        return await render_template('in_common.html', in_common_list=in_common_list, percentages=percentage, user=handle_identifier)
+                        return await render_template('no_result.html', user=identifier, message=message)
                     if not in_common_list:
-                        in_common_list = ["No blocks in common with other users"]
-                        percentage = [0]
+                        message = "No blocks in common with other users"
 
-                        return await render_template('in_common.html', in_common_list=in_common_list, percentages=percentage, user=handle_identifier)
+                        return await render_template('no_result.html', user=identifier, message=message)
 
                     in_common_handles = []
                     rounded_percentages = [round(percent, 2) for percent in percentages]
