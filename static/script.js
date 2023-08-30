@@ -133,14 +133,48 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+//    // Add event listener to the form submit button
+//    selectionForm.addEventListener('submit', function (event) {
+//        // Check if the input field (identifier) is empty and set its value to "blank"
+//        if (identifierInput.value.trim() === '') {
+//            identifierInput.value = '';
+//        }
+//
+//        submitButton.disabled = true; // Disable the form submission button
+//    });
+
     // Add event listener to the form submit button
     selectionForm.addEventListener('submit', function (event) {
-        // Check if the input field (identifier) is empty and set its value to "blank"
-        if (identifierInput.value.trim() === '') {
-            identifierInput.value = '';
-        }
+        // Prevent default form submission behavior
+        event.preventDefault();
 
-        submitButton.disabled = true; // Disable the form submission button
+        // Show loading screen
+        loadingScreen.style.display = 'block';
+
+        // Extract form data (you might need to modify this based on your form structure)
+        const formData = new FormData(selectionForm);
+
+        // Send form data to the server (use appropriate URL and method)
+        fetch('/selection_handle', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.text())
+        .then(serverRenderedHtml => {
+            // Hide loading screen
+            loadingScreen.style.display = 'none';
+
+            // Replace the entire page with the server-rendered HTML
+            document.open(); // Close the current document
+            document.write(serverRenderedHtml); // Write the new HTML content
+            document.close(); // Close the new document
+
+        })
+        .catch(error => {
+            console.error('An error occurred:', error);
+            // Handle error and hide loading screen
+            loadingScreen.style.display = 'none';
+        });
     });
 
     // Add event listener to the selection dropdown
