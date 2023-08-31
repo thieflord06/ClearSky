@@ -29,7 +29,7 @@
         </div>
     </div>
     <div id="loading-screen" style="display: none;">
-        {% include "loading.html" %}
+        {% include "_loading.html" %}
     </div>
     {% if request.path == '/' %} {# Check if the current page is the index page #}
         <script src="{{ url_for('static', filename='script.js') }}"></script> {# Include script.js only for the index page #}
