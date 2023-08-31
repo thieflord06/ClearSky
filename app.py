@@ -63,12 +63,6 @@ async def index():
     return await render_template('index.html')
 
 
-@app.route('/loading')
-async def loading():
-
-    return await render_template('_loading.html')
-
-
 @app.route('/images/favicon.png')
 async def favicon():
 
