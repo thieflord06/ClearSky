@@ -57,7 +57,7 @@ async def resolve_top_block_lists():
     return top_resolved_blocked, top_resolved_blockers
 
 
-def get_all_users():
+async def get_all_users():
     base_url = "https://bsky.social/xrpc/"
     limit = 1000
     cursor = None
@@ -80,10 +80,10 @@ def get_all_users():
             response = requests.get(full_url)
         except httpx.RequestError as e:
             logger.warning("Error during API call: %s", e)
-            asyncio.sleep(60)  # Retry after 60 seconds
+            await asyncio.sleep(60)  # Retry after 60 seconds
         except Exception as e:
             logger.warning("Error during API call: %s", str(e))
-            asyncio.sleep(60)  # Retry after 60 seconds
+            await asyncio.sleep(60)  # Retry after 60 seconds
 
         if response.status_code == 200:
             response_json = response.json()
@@ -96,7 +96,7 @@ def get_all_users():
                 break
         elif response.status_code == 429:
             logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
-            asyncio.sleep(60)  # Retry after 60 seconds
+            await asyncio.sleep(60)  # Retry after 60 seconds
         else:
             logger.warning("Response status code: " + str(response.status_code))
             pass

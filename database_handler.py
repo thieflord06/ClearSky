@@ -198,7 +198,7 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
                 return dids
         else:
             # Get all DIDs
-            records = utils.get_all_users()
+            records = await utils.get_all_users()
 
             # Transform the records into a list of tuples with the correct format for insertion
             formatted_records = [(record[0],) for record in records]
