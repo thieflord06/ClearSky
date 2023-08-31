@@ -270,6 +270,7 @@ async def get_user_block_list(ident):
         timestamp = datetime.now().date()
         block_list.append({"handle": handles, "timestamp": timestamp})
         logger.info(f"{ident} Hasn't blocked anyone.")
+
         return block_list, total_blocked
     elif "no repo" in blocked_users:
         total_blocked = 0
@@ -277,6 +278,7 @@ async def get_user_block_list(ident):
         timestamp = datetime.now().date()
         block_list.append({"handle": handles, "timestamp": timestamp})
         logger.info(f"{ident} doesn't exist.")
+
         return block_list, total_blocked
     else:
         async with database_handler.connection_pool.acquire() as connection:
@@ -320,6 +322,7 @@ async def get_ip():  # Get IP address of session request
     else:
         # Use the remote address if the X-Forwarded-For header is not available
         ip = request.remote_addr
+
     return ip
 
 
