@@ -21,11 +21,13 @@ current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
 current_time = runtime.strftime("%m%d%Y::%H:%M:%S")
+
 try:
     username = os.getlogin()
 except OSError:
     username = "Cannot get username"
     pass
+
 logger.info(log_version)
 logger.debug("Ran from: " + current_dir)
 logger.debug("Ran by: " + username)
@@ -36,18 +38,6 @@ app = Quart(__name__)
 
 # Configure session secret key
 app.secret_key = 'your-secret-key'
-users_db_folder_path = config.get("database", "users_db_path")
-users_db_filename = 'users_cache.db'
-users_db_path = users_db_folder_path + users_db_filename
-
-# Get the database configuration
-database_config = database_handler.get_database_config()
-
-# Now you can access the configuration values using dictionary keys
-pg_user = database_config["user"]
-pg_password = database_config["password"]
-pg_host = database_config["host"]
-pg_database = database_config["database"]
 
 session_ip = None
 
