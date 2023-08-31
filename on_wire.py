@@ -76,14 +76,16 @@ async def resolve_did(did):  # Take DID and get handle
                 logger.debug("response: " + str(response_json))
 
                 if response.status_code == 200:
-                    records = response_json.get("handle", "")
-                    return records
+                    record = response_json.get("handle", "")
+
+                    return record
                 else:
                     error_message = response_json.get("message", "")
                     logger.debug(error_message)
 
                     if "could not find user" in error_message.lower():
                         logger.warning("User not found. Skipping...")
+
                         return None
                     else:
                         retry_count += 1
@@ -94,21 +96,25 @@ async def resolve_did(did):  # Take DID and get handle
             retry_count += 1
             logger.error(f"Error occurred while parsing JSON response: {e}")
             await asyncio.sleep(30)
+
             continue
         except httpx.RequestError as e:
             retry_count += 1
             logger.error(f"Error occurred while making the API call: {e}")
             await asyncio.sleep(30)
+
             continue
         except httpx.HTTPStatusError as e:
             retry_count += 1
             logger.error(f"Error occurred while parsing JSON response: {e}")
             await asyncio.sleep(30)
+
             continue
         except Exception as e:
             retry_count += 1
             logger.error(f"An unexpected error occurred: {e}")
             await asyncio.sleep(30)
+
             continue
 
     logger.warning("Failed to resolve: " + str(did) + " after multiple retries.")
