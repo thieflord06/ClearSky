@@ -11,24 +11,18 @@ import app
 # python update_manager.py --update-users-did-only-db // command to update users db with dids only
 # python update_manager.py --fetch-users-count // command to get current count in db
 # python update_manager.py --update-blocklists-db // command to update all users blocklists
-# python update_manager.py --truncate-blocklists_table-db // command to update all users blocklists
-# python update_manager.py --truncate-users_table-db // command to update all users blocklists
-# python update_manager.py --delete-database // command to delete entire database
 # python update_manager.py --retrieve-blocklists-db // initial/re-initialize get for blocklists database
+# python update_manager.py --update-handles // update new dids and handles to existing users table
 
 
 async def main():
-    parser = argparse.ArgumentParser(description='ClearSky Web Server: ' + app.version)
+    parser = argparse.ArgumentParser(description='ClearSky Server: ' + app.version)
     parser.add_argument('--update-users-did-handle-db', action='store_true', help='Update the database with all users')
     parser.add_argument('--update-users-did-only-db', action='store_true', help='Update the database with all users')
     parser.add_argument('--fetch-users-count', action='store_true', help='Fetch the count of users')
     parser.add_argument('--update-blocklists-db', action='store_true', help='Update the blocklists table')
     parser.add_argument('--retrieve-blocklists-db', action='store_true', help='Initial/re-initialize get for blocklists database')
-    parser.add_argument('--truncate-blocklists_table-db', action='store_true', help='delete blocklists table')
-    parser.add_argument('--truncate-users_table-db', action='store_true', help='delete users table')
-    parser.add_argument('--delete-database', action='store_true', help='delete entire database')
     parser.add_argument('--update-handles', action='store_true', help='update with new dids and update those new dids with handles')
-    parser.add_argument('--update-top-blocks', action='store_true', help='updates client side top blocks page with up to date results')
     args = parser.parse_args()
 
     await database_handler.create_connection_pool()  # Creates connection pool for db
@@ -98,8 +92,6 @@ async def main():
         count = await database_handler.count_users_table()
         logger.info(f"Total users in the database: {count}")
         sys.exit()
-    elif args.update_top_blocks:
-        await database_handler.blocklists_updater()
     elif args.update_handles:
         # Call the function to update the database with all users dids
         logger.info("Users db update dids only requested.")
