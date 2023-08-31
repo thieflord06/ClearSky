@@ -26,7 +26,6 @@ try:
     username = os.getlogin()
 except OSError:
     username = "Unknown"
-    pass
 
 logger.info(log_version)
 logger.debug("Ran from: " + current_dir)
