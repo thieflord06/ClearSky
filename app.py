@@ -25,7 +25,7 @@ current_time = runtime.strftime("%m%d%Y::%H:%M:%S")
 try:
     username = os.getlogin()
 except OSError:
-    username = "Cannot get username"
+    username = "Unknown"
     pass
 
 logger.info(log_version)
