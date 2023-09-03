@@ -15,6 +15,9 @@ from cachetools import TTLCache
 resolved_blocked_cache = TTLCache(maxsize=100, ttl=3600)
 resolved_blockers_cache = TTLCache(maxsize=100, ttl=3600)
 
+resolved_24_blocked_cache = TTLCache(maxsize=100, ttl=86400)
+resolved_24blockers_cache = TTLCache(maxsize=100, ttl=86400)
+
 
 async def resolve_did(did, count, resolver):
     resolved_did = await on_wire.resolve_did(did)
@@ -53,6 +56,40 @@ async def resolve_top_block_lists():
     # Cache the resolved lists
     resolved_blocked_cache["resolved_blocked"] = top_resolved_blocked
     resolved_blockers_cache["resolved_blockers"] = top_resolved_blockers
+
+    return top_resolved_blocked, top_resolved_blockers
+
+
+async def resolve_top24_block_lists():
+    blocked, blockers = await database_handler.get_24_hour_block_list()
+    logger.info("Resolving top blocks lists.")
+
+    resolved_blocked = []
+    resolved_blockers = []
+
+    # Prepare tasks to resolve DIDs concurrently
+    blocked_tasks = [resolve_did(did, count, on_wire.resolve_did) for did, count in blocked]
+    blocker_tasks = [resolve_did(did, count, on_wire.resolve_did) for did, count in blockers]
+
+    # Run the resolution tasks concurrently
+    resolved_blocked = await asyncio.gather(*blocked_tasks)
+    resolved_blockers = await asyncio.gather(*blocker_tasks)
+
+    # Remove any None entries (failed resolutions)
+    resolved_blocked = [entry for entry in resolved_blocked if entry is not None]
+    resolved_blockers = [entry for entry in resolved_blockers if entry is not None]
+
+    # Sort the lists based on block_count in descending order
+    resolved_blocked = sorted(resolved_blocked, key=lambda x: int(x["block_count"]), reverse=True)
+    resolved_blockers = sorted(resolved_blockers, key=lambda x: int(x["block_count"]), reverse=True)
+
+    # Extract and return only the top 20 entries
+    top_resolved_blocked = resolved_blocked[:20]
+    top_resolved_blockers = resolved_blockers[:20]
+
+    # Cache the resolved lists
+    resolved_24_blocked_cache["resolved_blocked"] = top_resolved_blocked
+    resolved_24blockers_cache["resolved_blockers"] = top_resolved_blockers
 
     return top_resolved_blocked, top_resolved_blockers
 

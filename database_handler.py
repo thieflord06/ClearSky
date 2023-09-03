@@ -405,12 +405,50 @@ async def create_top_block_list_table():
         logger.error("Error creating top block table: %s", e)
 
 
+async def create_24_hour_block_table():
+    try:
+        logger.info("Creating Top 24 hour block list table.")
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                query = """
+                CREATE TABLE IF NOT EXISTS top_twentyfour_hour_block (
+                    did text,
+                    count int,
+                    list_type text
+                )
+                """
+                await connection.execute(query)
+    except Exception as e:
+        logger.error("Error creating Top 24 hour block list table: %s", e)
+
+
+async def update_24_hour_block_list_table(did, count, list_type):
+    try:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                # Insert the new row with the given last_processed_did
+                query = "INSERT INTO top_twentyfour_hour_block (did, count, list_type) VALUES ($1, $2, $3)"
+                await connection.execute(query, did, count, list_type)
+    except Exception as e:
+        logger.error("Error updating top block table: %s", e)
+
+
 async def truncate_top_blocks_table():
     try:
         async with connection_pool.acquire() as connection:
             async with connection.transaction():
                 # Delete the existing row if it exists
                 await connection.execute("TRUNCATE top_block")
+    except Exception as e:
+        logger.error("Error updating top block table: %s", e)
+
+
+async def truncate_top24_blocks_table():
+    try:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                # Delete the existing row if it exists
+                await connection.execute("TRUNCATE top_twentyfour_hour_block")
     except Exception as e:
         logger.error("Error updating top block table: %s", e)
 
@@ -432,6 +470,22 @@ async def get_top_blocks_list():
             async with connection.transaction():
                 query1 = "SELECT did, count FROM top_block WHERE list_type = 'blocked'"
                 query2 = "SELECT did, count FROM top_block WHERE list_type = 'blocker'"
+                blocked_rows = await connection.fetch(query1)
+                blocker_rows = await connection.fetch(query2)
+
+                return blocked_rows, blocker_rows
+    except Exception as e:
+        logger.error(f"Error retrieving DIDs without handles: {e}")
+
+        return []
+
+
+async def get_24_hour_block_list():
+    try:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                query1 = "SELECT did, count FROM top_twentyfour_hour_block WHERE list_type = 'blocked'"
+                query2 = "SELECT did, count FROM top_twentyfour_hour_block WHERE list_type = 'blocker'"
                 blocked_rows = await connection.fetch(query1)
                 blocker_rows = await connection.fetch(query2)
 
@@ -511,6 +565,41 @@ async def get_top_blocks():
 
                 blockers_query = '''SELECT user_did, COUNT(*) AS block_count
                                     FROM blocklists
+                                    GROUP BY user_did
+                                    ORDER BY block_count DESC
+                                    LIMIT 25'''
+
+                blockers_data = await connection.fetch(blockers_query)
+                blockers_results.append(blockers_data)
+
+                return blocked_data, blockers_data
+    except Exception as e:
+        logger.error("Error retrieving data from db", e)
+
+
+async def get_top24_blocks():
+    blocked_results = []
+    blockers_results = []
+
+    logger.info("Getting top 24 blocks from db.")
+    try:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+
+                # Insert the new row with the given last_processed_did
+                blocked_query = '''SELECT blocked_did, COUNT(*) AS block_count
+                                    FROM blocklists
+                                    WHERE TO_DATE(block_date, 'YYYY-MM-DD') >= CURRENT_DATE - INTERVAL '1 day'
+                                    GROUP BY blocked_did
+                                    ORDER BY block_count DESC
+                                    LIMIT 25'''
+
+                blocked_data = await connection.fetch(blocked_query)
+                blocked_results.append(blocked_data)
+
+                blockers_query = '''SELECT user_did, COUNT(*) AS block_count
+                                    FROM blocklists
+                                    WHERE TO_DATE(block_date, 'YYYY-MM-DD') >= CURRENT_DATE - INTERVAL '1 day'
                                     GROUP BY user_did
                                     ORDER BY block_count DESC
                                     LIMIT 25'''
@@ -658,6 +747,13 @@ async def update_top_block_list_entries(entries, list_type):
     await asyncio.gather(*tasks)
 
 
+async def update_top24_block_list_entries(entries, list_type):
+    tasks = []
+    for did, count in entries:
+        tasks.append(update_24_hour_block_list_table(did, count, list_type))
+    await asyncio.gather(*tasks)
+
+
 async def blocklists_updater():
     blocked_list = "blocked"
     blocker_list = "blocker"
@@ -671,6 +767,24 @@ async def blocklists_updater():
     await update_top_block_list_entries(blockers_results, blocker_list)  # add blocker to top blocks table
     logger.info("Updated top blockers db.")
     top_blocked, top_blockers = await utils.resolve_top_block_lists()
+
+    logger.info("Top blocks lists page updated.")
+    return top_blocked, top_blockers
+
+
+async def top_24blocklists_updater():
+    blocked_list = "blocked"
+    blocker_list = "blocker"
+
+    logger.info("Updating top blocks lists requested.")
+    await truncate_top24_blocks_table()
+    blocked_results, blockers_results = await get_top24_blocks()  # Get blocks for db
+    # Update blocked entries
+    await update_top24_block_list_entries(blocked_results, blocked_list)  # add blocked to top blocks table
+    logger.info("Updated top blocked db.")
+    await update_top24_block_list_entries(blockers_results, blocker_list)  # add blocker to top blocks table
+    logger.info("Updated top blockers db.")
+    top_blocked, top_blockers = await utils.resolve_top24_block_lists()
 
     logger.info("Top blocks lists page updated.")
     return top_blocked, top_blockers

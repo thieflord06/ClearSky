@@ -16,7 +16,7 @@ config = config_helper.read_config()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "3.0.2"
+version = "3.1.0"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -241,6 +241,24 @@ async def fun_facts():
     return await render_template('fun_facts.html', blocked_results=resolved_blocked, blockers_results=resolved_blockers)
 
 
+@app.route('/funer_facts')
+async def funer_facts():
+    logger.info("Funer facts requested.")
+    resolved_blocked = utils.resolved_24_blocked_cache.get('resolved_blocked')
+    resolved_blockers = utils.resolved_24blockers_cache.get('resolved_blockers')
+
+    # Check if both lists are empty
+    if resolved_blocked is None or resolved_blockers is None:
+        logger.info("Getting new cache.")
+        top_blocked, top_blockers = await database_handler.top_24blocklists_updater()
+
+        resolved_blocked = top_blocked
+        resolved_blockers = top_blockers
+
+    # If at least one list is not empty, render the regular page
+    return await render_template('funer_facts.html', blocked_results=resolved_blocked, blockers_results=resolved_blockers)
+
+
 # ======================================================================================================================
 # ============================================= Main functions =========================================================
 def get_timestamp(item):
@@ -330,7 +348,9 @@ else:
 async def main():
     await database_handler.create_connection_pool()  # Creates connection pool for db
     await database_handler.create_top_block_list_table()
+    await database_handler.create_24_hour_block_table()
     await database_handler.blocklists_updater()
+    await database_handler.top_24blocklists_updater()
     logger.info("Web server starting at: " + ip_address + ":" + port_address)
     await app.run_task(host=ip_address, port=port_address)
 
