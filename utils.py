@@ -15,8 +15,8 @@ from cachetools import TTLCache
 resolved_blocked_cache = TTLCache(maxsize=100, ttl=3600)
 resolved_blockers_cache = TTLCache(maxsize=100, ttl=3600)
 
-resolved_24_blocked_cache = TTLCache(maxsize=100, ttl=86400)
-resolved_24blockers_cache = TTLCache(maxsize=100, ttl=86400)
+resolved_24_blocked_cache = TTLCache(maxsize=100, ttl=14400)
+resolved_24blockers_cache = TTLCache(maxsize=100, ttl=14400)
 
 
 async def resolve_did(did, count, resolver):
