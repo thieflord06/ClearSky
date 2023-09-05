@@ -25,7 +25,9 @@ resolved_24blockers_cache = TTLCache(maxsize=100, ttl=3600)
 async def resolve_did(did, count):
     resolved_did = await on_wire.resolve_did(did)
     if resolved_did is not None:
+
         return {'Handle': resolved_did, 'block_count': str(count), 'ProfileURL': f'https://bsky.app/profile/{did}'}
+
     return None
 
 
@@ -134,18 +136,21 @@ async def get_all_users():
         else:
             logger.warning("Response status code: " + str(response.status_code))
             pass
+
     return records
 
 
 async def get_user_handle(did):
     async with database_handler.connection_pool.acquire() as connection:
         handle = await connection.fetchval('SELECT handle FROM users WHERE did = $1', did)
+
     return handle
 
 
 async def get_user_count():
     async with database_handler.connection_pool.acquire() as connection:
         count = await connection.fetchval('SELECT COUNT(*) FROM users')
+
         return count
 
 
@@ -168,12 +173,14 @@ async def get_single_user_blocks(ident):
                 # ident = resolve_handle(ident)
                 no_blocks = ident + ": has not been blocked by anyone."
                 date = datetime.now().date()
+
                 return no_blocks, date, 0
     except Exception as e:
         logger.error(f"Error fetching blocklists for {ident}: {e}")
         blocks = "there was an error"
         date = datetime.now().date()
         count = 0
+
         return blocks, date, count
 
 
@@ -248,7 +255,6 @@ async def get_user_block_list(ident):
                         logger.warning("No date in blocklist for: " + str(ident) + " | " + str(full_url))
                         logger.error("error: " + str(ve))
                         continue
-                        # created_date = None
                     created_dates.append(created_date)
 
             cursor = response_json.get("cursor")
@@ -276,6 +282,7 @@ async def get_user_block_list(ident):
         logger.warning("Could not get block list for: " + ident)
         pass
     if not blocked_users and retry_count != max_retries:
+
         return [], []
 
     return blocked_users, created_dates
@@ -339,16 +346,19 @@ async def fetch_handles_batch(batch_dids, ad_hoc=False):
         handles = [(did[0], handle) for did, handle in zip(batch_dids, resolved_handles) if handle is not None]
     else:
         handles = [(did, handle) for did, handle in zip(batch_dids, resolved_handles) if handle is not None]
+
     return handles
 
 
 def is_did(identifier):
     did_pattern = r'^did:[a-z]+:[a-zA-Z0-9._:%-]*[a-zA-Z0-9._-]$'
+
     return re.match(did_pattern, identifier) is not None
 
 
 def is_handle(identifier):
     handle_pattern = r'^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$'
+
     return re.match(handle_pattern, identifier) is not None
 
 
@@ -358,6 +368,7 @@ async def use_handle(identifier):
 
         return handle_identifier
     else:
+
         return identifier
 
 
@@ -367,4 +378,5 @@ async def use_did(identifier):
 
         return did_identifier
     else:
+
         return identifier
