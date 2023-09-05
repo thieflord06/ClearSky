@@ -79,7 +79,7 @@ async def contact():
 # Handles selection for form
 @app.route('/selection_handle', methods=['POST', 'GET'])
 async def selection_handle():
-    # Check if the request method is GET
+    # Check if the request method is GET direct to selection_handle
     if request.method == 'GET':
         # Redirect to the root URL '/'
         return redirect('/', code=302)
