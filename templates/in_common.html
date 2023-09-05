@@ -5,11 +5,18 @@
         <div id="block-list">
             <h1>Blocks in common with</h1>
             <h2 id="user-heading">{{ user }}</h2>
-            <ul id="block-list-data">
+            <table>
+                <tr>
+                    <th class="handle">Handle</th>
+                    <th class="date">Percent matched</th>
+                </tr>
                 {% for handle, percent in data %}
-                <li><a href="https://bsky.app/profile/{{ handle }}" target="_blank">{{ handle }}</a> {{ percent }}%</li>
+                <tr>
+                    <td class="handle"><a href="https://bsky.app/profile/{{ handle }}" target="_blank">{{ handle }}</a></td>
+                    <td class="date">{{ percent }}%</td>
+                </tr>
                 {% endfor %}
-            </ul>
+            </table>
         </div>
         <a href="/" class="btn btn-primary" id="go-back-button">Go Back</a>
     </div>
