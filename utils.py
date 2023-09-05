@@ -25,7 +25,7 @@ async def resolve_did(did, count):
     resolved_did = await on_wire.resolve_did(did)
     if resolved_did is not None:
 
-        return {'Handle': resolved_did, 'block_count': str(count), 'ProfileURL': f'https://bsky.app/profile/{did}'}
+        return {'Handle': resolved_did, 'block_count': count, 'ProfileURL': f'https://bsky.app/profile/{did}'}
 
     return None
 
@@ -47,8 +47,8 @@ async def resolve_top_block_lists():
     resolved_blockers = [entry for entry in resolved_blockers if entry is not None]
 
     # Sort the lists based on block_count in descending order
-    resolved_blocked = sorted(resolved_blocked, key=lambda x: int(x["block_count"]), reverse=True)
-    resolved_blockers = sorted(resolved_blockers, key=lambda x: int(x["block_count"]), reverse=True)
+    resolved_blocked = sorted(resolved_blocked, key=lambda x: x["block_count"], reverse=True)
+    resolved_blockers = sorted(resolved_blockers, key=lambda x: x["block_count"], reverse=True)
 
     # Extract and return only the top 20 entries
     top_resolved_blocked = resolved_blocked[:20]

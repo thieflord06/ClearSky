@@ -7,7 +7,7 @@
         {% for item in blocked_results %}
             <li>
                {{ loop.index }}. <a href="{{ item.ProfileURL }}" target="_blank">{{ item.Handle }}</a>
-                - {{ item.block_count }}
+                - {{ '{:,.0f}'.format(item.block_count) }}
             </li>
         {% endfor %}
     </ul>
@@ -17,7 +17,7 @@
         {% for item in blockers_results %}
             <li>
                 {{ loop.index }}. <a href="{{ item.ProfileURL }}" target="_blank">{{ item.Handle }}</a>
-                - {{ item.block_count }}
+                - {{ '{:,.0f}'.format(item.block_count) }}
             </li>
         {% endfor %}
     </ul>
