@@ -53,6 +53,7 @@ async def get_dids_with_blocks():
                 return dids_with_blocks
     except Exception as e:
         logger.error(f"Error retrieving DIDs with blocks: {e}")
+
         return []
 
 
@@ -66,6 +67,7 @@ async def get_dids_without_handles():
                 return dids_without_handles
     except Exception as e:
         logger.error(f"Error retrieving DIDs without handles: {e}")
+
         return []
 
 
@@ -195,6 +197,7 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
                 # Return the user_dids from the "users" table
                 records = await connection.fetch('SELECT did FROM users')
                 dids = [record['did'] for record in records]
+
                 return dids
         else:
             # Get all DIDs
@@ -261,6 +264,7 @@ async def does_did_and_handle_exist_in_database(did, handle):
     async with connection_pool.acquire() as connection:
         # Execute the SQL query to check if the given DID exists in the "users" table
         exists = await connection.fetchval('SELECT EXISTS(SELECT 1 FROM users WHERE did = $1 AND handle = $2)', did, handle)
+
         return exists
 
 
@@ -698,6 +702,7 @@ async def get_similar_users(user_did):
     if not len(specific_user_blocklist):
         users = "no blocks"
         percentages = 0
+
         return users, percentages
 
     # Calculate match percentage for each user
@@ -760,6 +765,7 @@ async def blocklists_updater():
     top_blocked, top_blockers = await utils.resolve_top_block_lists()
 
     logger.info("Top blocks lists page updated.")
+
     return top_blocked, top_blockers
 
 
@@ -778,9 +784,12 @@ async def top_24blocklists_updater():
     top_blocked, top_blockers = await utils.resolve_top24_block_lists()
 
     logger.info("Top blocks lists page updated.")
+
     return top_blocked, top_blockers
 
 
+# ======================================================================================================================
+# ============================================ get database credentials ================================================
 def get_database_config():
     try:
         if not os.getenv('CLEAR_SKY'):
