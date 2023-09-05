@@ -141,10 +141,13 @@ async def selection_handle():
                     return await render_template('handle.html', result=result)
                 elif selection == "3":
                     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Block list requested for: " + identifier)
-                    blocklist, count = await get_user_block_list(identifier)
+                    blocklist, count = await utils.process_user_block_list(identifier)
 
                     if utils.is_did(identifier):
                         identifier = handle_identifier
+
+                    logger.info(str(session_ip) + " > " + str(
+                        *session.values()) + " | " + "Blocklist Request Result: " + identifier + " | " + "Total blocked: " + str(count) + " :: " + str(blocklist))
 
                     if count == 0:
                         message = "Not blocking anyone"
@@ -268,55 +271,6 @@ async def funer_facts():
 # ============================================= Main functions =========================================================
 def get_timestamp(item):
     return item["timestamp"]
-
-
-async def get_user_block_list(ident):
-    blocked_users, timestamps = await utils.get_user_block_list(ident)
-    block_list = []
-
-    if not blocked_users:
-        total_blocked = 0
-        if utils.is_did(ident):
-            ident = await utils.use_handle(ident)
-        handles = [f"{ident} hasn't blocked anyone."]
-        timestamp = datetime.now().date()
-        block_list.append({"handle": handles, "timestamp": timestamp})
-        logger.info(f"{ident} Hasn't blocked anyone.")
-
-        return block_list, total_blocked
-    elif "no repo" in blocked_users:
-        total_blocked = 0
-        handles = [f"Couldn't find {ident}, there may be a typo."]
-        timestamp = datetime.now().date()
-        block_list.append({"handle": handles, "timestamp": timestamp})
-        logger.info(f"{ident} doesn't exist.")
-
-        return block_list, total_blocked
-    else:
-        async with database_handler.connection_pool.acquire() as connection:
-            records = await connection.fetch(
-                'SELECT did, handle FROM users WHERE did = ANY($1)',
-                blocked_users
-            )
-
-            # Create a dictionary that maps did to handle
-            did_to_handle = {record['did']: record['handle'] for record in records}
-
-            # Sort records based on the order of blocked_users
-            sorted_records = sorted(records, key=lambda record: blocked_users.index(record['did']))
-
-        handles = [did_to_handle[record['did']] for record in sorted_records]
-        total_blocked = len(handles)
-
-        logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Blocklist Request Result: " + ident + " | " + "Total blocked: " + str(total_blocked) + " :: " + str(list(zip(handles, timestamps))))
-
-        for handle, timestamp in zip(handles, timestamps):
-            block_list.append((handle, timestamp))
-
-        # Sort the block_list by timestamp (newest to oldest)
-        block_list = sorted(block_list, key=lambda x: x[1], reverse=True)
-
-        return block_list, total_blocked
 
 
 def generate_session_number():
