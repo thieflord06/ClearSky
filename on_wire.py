@@ -50,6 +50,7 @@ async def resolve_handle(info):  # Take Handle and get DID
             continue
 
     logger.warning("Resolve error for: " + info + " after multiple retries.")
+
     return "error"
 
 
@@ -118,4 +119,5 @@ async def resolve_did(did):  # Take DID and get handle
             continue
 
     logger.warning("Failed to resolve: " + str(did) + " after multiple retries.")
+
     return "Error"
