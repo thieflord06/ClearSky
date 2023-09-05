@@ -6,11 +6,18 @@
             <h1>Block List</h1>
             <h2 id="user-heading">{{ user }}</h2>
             <h3 id="block-count">Users blocking this account: {{ count }}</h3>
-            <ul id="block-list-data">
+            <table>
+                <tr>
+                    <th class="handle">Handle</th>
+                    <th class="date">Date</th>
+                </tr>
                 {% for user, date in blocklist %}
-                <li>Handle: <a href="https://bsky.app/profile/{{ user }}" target="_blank">{{ user }}</a> Date: {{ date }}</li>
+                <tr>
+                    <td class="handle"><a href="https://bsky.app/profile/{{ user }}" target="_blank">{{ user }}</a></td>
+                    <td class="date">{{ date }}</td>
+                </tr>
                 {% endfor %}
-            </ul>
+            </table>
         </div>
         <a href="/" class="btn btn-primary" id="go-back-button">Go Back</a>
     </div>

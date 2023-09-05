@@ -9,6 +9,28 @@ body {
     background-color: #f9f9f9;
 }
 
+table th,
+table td {
+    padding: 8px;
+    border-bottom: 1px solid #ddd;
+}
+
+/* Add styles to align the "Handle" column to the left */
+table td.handle {
+    text-align: left;
+}
+
+/* Add styles to align the "Date" column to the right */
+table td.date {
+    text-align: right;
+}
+
+/* Right-align the "Date" header */
+table th.date {
+    text-align: right;
+}
+
+
 .atp-label {
     position: fixed;
     bottom: 10px;
@@ -159,26 +181,41 @@ table td {
   margin-bottom: 10px;
 }
 
-#block-list-data {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-#block-list-data li {
-  font-size: 14px;
-  margin-bottom: 5px;
-  /* Additional styles for better readability */
-  border-bottom: 1px solid #ccc;
-  padding-bottom: 5px;
-}
-
 /* styles for mobile */
 @media (max-width: 480px) {
     .result-container {
         align-content: center;
         a
         margin: 2px;
+    }
+
+    /* Reset the alignment styles for both "Handle" and "Date" columns */
+    table td.handle {
+        text-align: left; /* Adjust alignment as needed for mobile */
+    }
+    table td.date {
+        text-align: right; /* Adjust alignment as needed for mobile */
+    }
+
+
+    /* Reduce padding for better mobile spacing */
+    table th,
+    table td {
+        padding: 4px;
+        width: 100%;
+    }
+
+    /* Make the table responsive by allowing horizontal scrolling */
+    table {
+        max-width: 100%; /* Ensure the table doesn't exceed the viewport width */
+        table-layout: fixed; /* Fixed layout to prevent cells from expanding */
+        width: 100%; /* Set the table width to 100% */
+        white-space: nowrap; /* Prevent line breaks in table cells */
+    }
+
+    /* Right-align the "Date" header */
+    table th.date {
+        text-align: right;
     }
 
     body {
@@ -310,10 +347,7 @@ table td {
     }
 
     #block-list-container {
-     /*   max-width: 0 auto; /* Optionally set a maximum width for the block list container */
         margin: 0 auto; /* Center the block list container horizontally */
-        padding: 20px;
-        text-align: left;
     }
 
     #block-list {
@@ -324,35 +358,15 @@ table td {
         padding: 0px; /* Optional padding for the block list container */
     }
 
-    #block-list-data {
-        /* Set a specific width for the block list content */
-        width: 100%; /* You can adjust this value as needed */
-        /* Enable horizontal scrolling for long lines of text */
-        overflow-x: auto;
-        padding: 0; /* Remove padding to reduce extra space */
-        margin: 0; /* Remove margins to reduce extra space */
-        word-break: break-all;
-    }
-
     #block-list h1{
-        margin-bottom: 3px;
+        margin-bottom: 2px;
     }
 
     #block-list h2{
-        margin-bottom: 3px;
+        margin-bottom: 2px;
     }
 
     #block-list h3 {
         margin-bottom: 15px; /* Optional spacing between headings and the list */
-    }
-
-    #block-list ul {
-        list-style-type: none;
-        padding: 0;
-        margin: 0; /* Remove margins to reduce extra space */
-    }
-
-    #block-list li {
-        margin-bottom: 5px; /* Optional spacing between list items */
     }
 }
