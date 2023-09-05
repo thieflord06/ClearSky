@@ -212,10 +212,8 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
                     for i in range(0, len(formatted_records), batch_size):
                         batch_data = records[i: i + batch_size]
                         try:
-                            await connection.executemany('INSERT INTO users (did) VALUES ($1) ON CONFLICT DO NOTHING',
-                                                         batch_data)
-                            logger.info(
-                                f"Inserted batch {i // batch_size + 1} of {len(formatted_records) // batch_size + 1} batches.")
+                            await connection.executemany('INSERT INTO users (did) VALUES ($1) ON CONFLICT DO NOTHING', batch_data)
+                            logger.info(f"Inserted batch {i // batch_size + 1} of {len(formatted_records) // batch_size + 1} batches.")
                         except Exception as e:
                             logger.error(f"Error inserting batch {i // batch_size + 1}: {str(e)}")
 
@@ -251,8 +249,6 @@ async def update_blocklist_table(ident, blocked_by_list, block_date):
                 # Delete existing blocklist entries for the specified ident
                 await connection.execute('DELETE FROM blocklists WHERE user_did = $1', ident)
 
-                # Convert the block_date to string format just before insertion
-                # data_to_insert = [(record[0], record[1], str(record[2])) for record in data]
                 # Insert the new blocklist entries
                 await connection.executemany(
                     'INSERT INTO blocklists (user_did, blocked_did, block_date) VALUES ($1, $2, $3)', data
@@ -288,9 +284,6 @@ async def update_user_handles(handles_to_update):
                     INSERT INTO temp_handles (did, handle)
                     VALUES ($1, $2)
                 ''', did, handle)
-
-            # # Insert the handles into the temporary table
-            # await connection.copy_records_to_table('temp_handles', records=handles_to_update)
 
             # Update the users table using the temporary table
             await connection.execute('''
@@ -477,7 +470,7 @@ async def get_top_blocks_list():
     except Exception as e:
         logger.error(f"Error retrieving DIDs without handles: {e}")
 
-        return []
+        return [], []
 
 
 async def get_24_hour_block_list():
@@ -493,7 +486,7 @@ async def get_24_hour_block_list():
     except Exception as e:
         logger.error(f"Error retrieving DIDs without handles: {e}")
 
-        return []
+        return [], []
 
 
 async def delete_blocklist_temporary_table():
@@ -720,12 +713,10 @@ async def get_similar_users(user_did):
             continue  # Skip this comparison
 
         match_percentage = (common_count / specific_count) * 100
-        # match_percentage = (common_count / min(specific_count, other_count)) * 100
 
         if match_percentage > 1:  # set threshold for results
             user_match_percentages[other_user_did] = match_percentage
 
-        # user_match_percentages[other_user_did] = match_percentage
     # Sort users by match percentage
     sorted_users = sorted(user_match_percentages.items(), key=lambda x: x[1], reverse=True)
 
