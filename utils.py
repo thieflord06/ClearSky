@@ -11,13 +11,16 @@ import on_wire
 import re
 from cachetools import TTLCache
 # ======================================================================================================================
-# ============================================= Features functions =====================================================
+# ================================================ cache variables =====================================================
 resolved_blocked_cache = TTLCache(maxsize=100, ttl=3600)
 resolved_blockers_cache = TTLCache(maxsize=100, ttl=3600)
 
 resolved_24_blocked_cache = TTLCache(maxsize=100, ttl=3600)
 resolved_24blockers_cache = TTLCache(maxsize=100, ttl=3600)
 
+
+# ======================================================================================================================
+# ============================================= Features functions =====================================================
 
 async def resolve_did(did, count):
     resolved_did = await on_wire.resolve_did(did)
