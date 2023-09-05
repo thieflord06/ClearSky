@@ -19,7 +19,7 @@ resolved_24_blocked_cache = TTLCache(maxsize=100, ttl=3600)
 resolved_24blockers_cache = TTLCache(maxsize=100, ttl=3600)
 
 
-async def resolve_did(did, count, resolver):
+async def resolve_did(did, count):
     resolved_did = await on_wire.resolve_did(did)
     if resolved_did is not None:
         return {'Handle': resolved_did, 'block_count': str(count), 'ProfileURL': f'https://bsky.app/profile/{did}'}
@@ -30,12 +30,9 @@ async def resolve_top_block_lists():
     blocked, blockers = await database_handler.get_top_blocks_list()
     logger.info("Resolving top blocks lists.")
 
-    resolved_blocked = []
-    resolved_blockers = []
-
     # Prepare tasks to resolve DIDs concurrently
-    blocked_tasks = [resolve_did(did, count, on_wire.resolve_did) for did, count in blocked]
-    blocker_tasks = [resolve_did(did, count, on_wire.resolve_did) for did, count in blockers]
+    blocked_tasks = [resolve_did(did, count) for did, count in blocked]
+    blocker_tasks = [resolve_did(did, count) for did, count in blockers]
 
     # Run the resolution tasks concurrently
     resolved_blocked = await asyncio.gather(*blocked_tasks)
@@ -64,12 +61,9 @@ async def resolve_top24_block_lists():
     blocked, blockers = await database_handler.get_24_hour_block_list()
     logger.info("Resolving top blocks lists.")
 
-    resolved_blocked = []
-    resolved_blockers = []
-
     # Prepare tasks to resolve DIDs concurrently
-    blocked_tasks = [resolve_did(did, count, on_wire.resolve_did) for did, count in blocked]
-    blocker_tasks = [resolve_did(did, count, on_wire.resolve_did) for did, count in blockers]
+    blocked_tasks = [resolve_did(did, count) for did, count in blocked]
+    blocker_tasks = [resolve_did(did, count) for did, count in blockers]
 
     # Run the resolution tasks concurrently
     resolved_blocked = await asyncio.gather(*blocked_tasks)
