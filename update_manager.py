@@ -1,4 +1,5 @@
 # update_manager.py
+
 import asyncpg
 import database_handler
 from config_helper import logger
