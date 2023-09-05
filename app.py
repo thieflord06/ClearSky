@@ -1,7 +1,7 @@
 # app.py
 
 import quart
-from quart import Quart, render_template, request, session
+from quart import Quart, render_template, request, session, redirect
 from datetime import datetime
 import os
 import uuid
@@ -16,7 +16,7 @@ config = config_helper.read_config()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "3.1.0"
+version = "3.1.1"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -77,8 +77,13 @@ async def contact():
 
 
 # Handles selection for form
-@app.route('/selection_handle', methods=['POST'])
+@app.route('/selection_handle', methods=['POST', 'GET'])
 async def selection_handle():
+    # Check if the request method is GET
+    if request.method == 'GET':
+        # Redirect to the root URL '/'
+        return redirect('/', code=302)
+
     did_identifier = None
     handle_identifier = None
     global session_ip
