@@ -27,12 +27,15 @@ async def create_connection_pool():
     # Acquire the lock before creating the connection pool
     async with db_lock:
         if connection_pool is None:
-            connection_pool = await asyncpg.create_pool(
-                user=pg_user,
-                password=pg_password,
-                host=pg_host,
-                database=pg_database
-            )
+            try:
+                connection_pool = await asyncpg.create_pool(
+                    user=pg_user,
+                    password=pg_password,
+                    host=pg_host,
+                    database=pg_database
+                )
+            except OSError:
+                logger.error("Network connection issue.")
 
 
 async def count_users_table():

@@ -101,9 +101,10 @@ async def selection_handle():
         if selection == "4":
             logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count requested")
             count = await utils.get_user_count()
+            formatted_count = '{:,}'.format(count)
             logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count: " + str(count))
 
-            return await render_template('total_users.html', count=count)
+            return await render_template('total_users.html', count=formatted_count)
         # Check if did or handle exists before processing
         if utils.is_did(identifier) or utils.is_handle(identifier):
             if utils.is_did(identifier):
@@ -142,18 +143,18 @@ async def selection_handle():
                 elif selection == "3":
                     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Block list requested for: " + identifier)
                     blocklist, count = await utils.process_user_block_list(identifier)
-
+                    formatted_count = '{:,}'.format(count)
                     if utils.is_did(identifier):
                         identifier = handle_identifier
 
                     logger.info(str(session_ip) + " > " + str(
-                        *session.values()) + " | " + "Blocklist Request Result: " + identifier + " | " + "Total blocked: " + str(count) + " :: " + str(blocklist))
+                        *session.values()) + " | " + "Blocklist Request Result: " + identifier + " | " + "Total blocked: " + str(formatted_count) + " :: " + str(blocklist))
 
                     if count == 0:
                         message = "Not blocking anyone"
                         return await render_template('not_blocking.html', user=identifier, message=message)
 
-                    return await render_template('blocklist.html', blocklist=blocklist, user=identifier, count=count)
+                    return await render_template('blocklist.html', blocklist=blocklist, user=identifier, count=formatted_count)
                 elif selection == "5":
                     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Block list requested for: " + identifier)
                     if "Could not find, there may be a typo" in did_identifier:
@@ -163,6 +164,7 @@ async def selection_handle():
 
                         return await render_template('no_result.html', user=identifier, message=message)
                     blocks, dates, count = await utils.get_single_user_blocks(did_identifier)
+                    formatted_count = '{:,}'.format(count)
                     if utils.is_did(identifier):
                         identifier = handle_identifier
 
@@ -172,9 +174,9 @@ async def selection_handle():
 
                     blocklist = list(zip(blocks, dates))
 
-                    logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Blocklist Request Result: " + identifier + " | " + "Blocked by: " + str(blocks) + " :: " + "Total count: " + str(count))
+                    logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Single Blocklist Request Result: " + identifier + " | " + "Blocked by: " + str(blocks) + " :: " + "Total count: " + str(formatted_count))
 
-                    return await render_template('single_blocklist.html', user=identifier, blocklist=blocklist, dates=dates, count=count)
+                    return await render_template('single_blocklist.html', user=identifier, blocklist=blocklist, dates=dates, count=formatted_count)
                 elif selection == "6":
                     logger.info("Requesting in-common blocks for: " + identifier)
                     in_common_list, percentages = await database_handler.get_similar_users(did_identifier)
