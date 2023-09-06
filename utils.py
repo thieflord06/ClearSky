@@ -18,6 +18,12 @@ resolved_blockers_cache = TTLCache(maxsize=100, ttl=3600)
 resolved_24_blocked_cache = TTLCache(maxsize=100, ttl=3600)
 resolved_24blockers_cache = TTLCache(maxsize=100, ttl=3600)
 
+blocked_avatar_ids_cache = TTLCache(maxsize=100, ttl=3600)
+blocker_avatar_ids_cache = TTLCache(maxsize=100, ttl=3600)
+
+blocked_24_avatar_ids_cache = TTLCache(maxsize=100, ttl=3600)
+blocker_24_avatar_ids_cache = TTLCache(maxsize=100, ttl=3600)
+
 
 # ======================================================================================================================
 # ============================================= Features functions =====================================================
@@ -25,7 +31,7 @@ async def resolve_did(did, count):
     resolved_did = await on_wire.resolve_did(did)
     if resolved_did is not None:
 
-        return {'Handle': resolved_did, 'block_count': count, 'ProfileURL': f'https://bsky.app/profile/{did}'}
+        return {'did': did, 'Handle': resolved_did, 'block_count': count, 'ProfileURL': f'https://bsky.app/profile/{did}'}
 
     return None
 
@@ -34,6 +40,14 @@ async def resolve_top_block_lists():
     blocked, blockers = await database_handler.get_top_blocks_list()
     logger.info("Resolving top blocks lists.")
 
+    # Extract DID values from blocked and blockers
+    blocked_dids = [record['did'] for record in blocked]
+    blocker_dids = [record['did'] for record in blockers]
+
+    # Create a dictionary to store the DID and avatar_id pairs
+    blocked_avatar_dict = {did: await on_wire.get_avatar_id(did) for did in blocked_dids}
+    blocker_avatar_dict = {did: await on_wire.get_avatar_id(did) for did in blocker_dids}
+
     # Prepare tasks to resolve DIDs concurrently
     blocked_tasks = [resolve_did(did, count) for did, count in blocked]
     blocker_tasks = [resolve_did(did, count) for did, count in blockers]
@@ -46,25 +60,57 @@ async def resolve_top_block_lists():
     resolved_blocked = [entry for entry in resolved_blocked if entry is not None]
     resolved_blockers = [entry for entry in resolved_blockers if entry is not None]
 
+    # Remove any none entries from avatar_id lists
+    resolved_blocked_avatar_dict = {did: blocked_avatar_dict[did] for did in blocked_avatar_dict if did in [entry['did'] for entry in resolved_blocked]}
+    resolved_blocker_avatar_dict = {did: blocker_avatar_dict[did] for did in blocker_avatar_dict if did in [entry['did'] for entry in resolved_blockers]}
+
     # Sort the lists based on block_count in descending order
-    resolved_blocked = sorted(resolved_blocked, key=lambda x: x["block_count"], reverse=True)
-    resolved_blockers = sorted(resolved_blockers, key=lambda x: x["block_count"], reverse=True)
+    sorted_resolved_blocked = sorted(resolved_blocked, key=lambda x: x["block_count"], reverse=True)
+    sorted_resolved_blockers = sorted(resolved_blockers, key=lambda x: x["block_count"], reverse=True)
+
+    sorted_resolved_blocked_avatar_dict = {}
+    sorted_resolved_blockers_avatar_dict = {}
+
+    for entry in sorted_resolved_blocked:
+        did = entry['did']
+        if did in resolved_blocked_avatar_dict:
+            sorted_resolved_blocked_avatar_dict[did] = resolved_blocked_avatar_dict[did]
+
+    for entry in sorted_resolved_blockers:
+        did = entry['did']
+        if did in resolved_blocker_avatar_dict:
+            sorted_resolved_blockers_avatar_dict[did] = resolved_blocker_avatar_dict[did]
 
     # Extract and return only the top 20 entries
-    top_resolved_blocked = resolved_blocked[:20]
-    top_resolved_blockers = resolved_blockers[:20]
+    top_resolved_blocked = sorted_resolved_blocked[:20]
+    top_resolved_blockers = sorted_resolved_blockers[:20]
+
+    # Get the first 20 items from blocked_avatar_dict and blocker_avatar_dict
+    blocked_avatar_ids = dict(list(sorted_resolved_blocked_avatar_dict.items())[:20])
+    blocker_avatar_ids = dict(list(sorted_resolved_blockers_avatar_dict.items())[:20])
 
     # Cache the resolved lists
     resolved_blocked_cache["resolved_blocked"] = top_resolved_blocked
     resolved_blockers_cache["resolved_blockers"] = top_resolved_blockers
 
-    return top_resolved_blocked, top_resolved_blockers
+    blocked_avatar_ids_cache["blocked_aid"] = blocked_avatar_ids
+    blocker_avatar_ids_cache["blocker_aid"] = blocker_avatar_ids
+
+    return top_resolved_blocked, top_resolved_blockers, blocked_avatar_ids, blocker_avatar_ids
 
 
 async def resolve_top24_block_lists():
     blocked, blockers = await database_handler.get_24_hour_block_list()
     logger.info("Resolving top blocks lists.")
 
+    # Extract DID values from blocked and blockers
+    blocked_dids = [record['did'] for record in blocked]
+    blocker_dids = [record['did'] for record in blockers]
+
+    # Create a dictionary to store the DID and avatar_id pairs
+    blocked_avatar_dict = {did: await on_wire.get_avatar_id(did) for did in blocked_dids}
+    blocker_avatar_dict = {did: await on_wire.get_avatar_id(did) for did in blocker_dids}
+
     # Prepare tasks to resolve DIDs concurrently
     blocked_tasks = [resolve_did(did, count) for did, count in blocked]
     blocker_tasks = [resolve_did(did, count) for did, count in blockers]
@@ -77,19 +123,43 @@ async def resolve_top24_block_lists():
     resolved_blocked = [entry for entry in resolved_blocked if entry is not None]
     resolved_blockers = [entry for entry in resolved_blockers if entry is not None]
 
+    # Remove any none entries from avatar_id lists
+    resolved_blocked_avatar_dict = {did: blocked_avatar_dict[did] for did in blocked_avatar_dict if did in [entry['did'] for entry in resolved_blocked]}
+    resolved_blocker_avatar_dict = {did: blocker_avatar_dict[did] for did in blocker_avatar_dict if did in [entry['did'] for entry in resolved_blockers]}
+
     # Sort the lists based on block_count in descending order
-    resolved_blocked = sorted(resolved_blocked, key=lambda x: int(x["block_count"]), reverse=True)
-    resolved_blockers = sorted(resolved_blockers, key=lambda x: int(x["block_count"]), reverse=True)
+    sorted_resolved_blocked = sorted(resolved_blocked, key=lambda x: x["block_count"], reverse=True)
+    sorted_resolved_blockers = sorted(resolved_blockers, key=lambda x: x["block_count"], reverse=True)
+
+    sorted_resolved_blocked_avatar_dict = {}
+    sorted_resolved_blockers_avatar_dict = {}
+
+    for entry in sorted_resolved_blocked:
+        did = entry['did']
+        if did in resolved_blocked_avatar_dict:
+            sorted_resolved_blocked_avatar_dict[did] = resolved_blocked_avatar_dict[did]
+
+    for entry in sorted_resolved_blockers:
+        did = entry['did']
+        if did in resolved_blocker_avatar_dict:
+            sorted_resolved_blockers_avatar_dict[did] = resolved_blocker_avatar_dict[did]
 
     # Extract and return only the top 20 entries
-    top_resolved_blocked = resolved_blocked[:20]
-    top_resolved_blockers = resolved_blockers[:20]
+    top_resolved_blocked = sorted_resolved_blocked[:20]
+    top_resolved_blockers = sorted_resolved_blockers[:20]
+
+    # Get the first 20 items from blocked_avatar_dict and blocker_avatar_dict
+    blocked_avatar_ids = dict(list(sorted_resolved_blocked_avatar_dict.items())[:20])
+    blocker_avatar_ids = dict(list(sorted_resolved_blockers_avatar_dict.items())[:20])
 
     # Cache the resolved lists
     resolved_24_blocked_cache["resolved_blocked"] = top_resolved_blocked
     resolved_24blockers_cache["resolved_blockers"] = top_resolved_blockers
 
-    return top_resolved_blocked, top_resolved_blockers
+    blocked_24_avatar_ids_cache["blocked_aid"] = blocked_avatar_ids
+    blocker_24_avatar_ids_cache["blocker_aid"] = blocker_avatar_ids
+
+    return top_resolved_blocked, top_resolved_blockers, blocked_avatar_ids, blocker_avatar_ids
 
 
 async def get_all_users():

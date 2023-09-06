@@ -765,11 +765,11 @@ async def blocklists_updater():
     logger.info("Updated top blocked db.")
     await update_top_block_list_entries(blockers_results, blocker_list)  # add blocker to top blocks table
     logger.info("Updated top blockers db.")
-    top_blocked, top_blockers = await utils.resolve_top_block_lists()
+    top_blocked, top_blockers, blocked_aid, blocker_aid = await utils.resolve_top_block_lists()
 
     logger.info("Top blocks lists page updated.")
 
-    return top_blocked, top_blockers
+    return top_blocked, top_blockers, blocked_aid, blocker_aid
 
 
 async def top_24blocklists_updater():
@@ -784,11 +784,11 @@ async def top_24blocklists_updater():
     logger.info("Updated top blocked db.")
     await update_top24_block_list_entries(blockers_results, blocker_list)  # add blocker to top blocks table
     logger.info("Updated top blockers db.")
-    top_blocked, top_blockers = await utils.resolve_top24_block_lists()
+    top_blocked, top_blockers, blocked_aid, blocker_aid = await utils.resolve_top24_block_lists()
 
     logger.info("Top blocks lists page updated.")
 
-    return top_blocked, top_blockers
+    return top_blocked, top_blockers, blocked_aid, blocker_aid
 
 
 # ======================================================================================================================

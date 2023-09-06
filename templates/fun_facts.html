@@ -6,7 +6,8 @@
     <ul style="list-style-type: none;">
         {% for item in blocked_results %}
             <li>
-               {{ loop.index }}. <a href="{{ item.ProfileURL }}" target="_blank">{{ item.Handle }}</a>
+               {{ loop.index }}. <img src="https://av-cdn.bsky.app/img/avatar/plain/{{ item.did }}/{{ blocked_aid[item.did] }}@jpeg" alt="{{ item.Handle }}'s Profile Picture" width="30" height="30">
+                <a href="{{ item.ProfileURL }}" target="_blank">{{ item.Handle }}</a>
                 - {{ '{:,.0f}'.format(item.block_count) }}
             </li>
         {% endfor %}
@@ -16,7 +17,8 @@
     <ul style="list-style-type: none;">
         {% for item in blockers_results %}
             <li>
-                {{ loop.index }}. <a href="{{ item.ProfileURL }}" target="_blank">{{ item.Handle }}</a>
+                {{ loop.index }}. <img src="https://av-cdn.bsky.app/img/avatar/plain/{{ item.did }}/{{ blocker_aid[item.did] }}@jpeg" alt="{{ item.Handle }}'s Profile Picture" width="30" height="30">
+                <a href="{{ item.ProfileURL }}" target="_blank">{{ item.Handle }}</a>
                 - {{ '{:,.0f}'.format(item.block_count) }}
             </li>
         {% endfor %}
