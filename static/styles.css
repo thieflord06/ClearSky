@@ -191,6 +191,7 @@ table td {
     /* Reset the alignment styles for both "Handle" and "Date" columns */
     table td.handle {
         text-align: left; /* Adjust alignment as needed for mobile */
+        word-wrap: break-word;
     }
     table td.date {
         text-align: right; /* Adjust alignment as needed for mobile */
@@ -209,7 +210,6 @@ table td {
         max-width: 100%; /* Ensure the table doesn't exceed the viewport width */
         table-layout: fixed; /* Fixed layout to prevent cells from expanding */
         width: 100%; /* Set the table width to 100% */
-        white-space: nowrap; /* Prevent line breaks in table cells */
     }
 
     /* Right-align the "Date" header */
