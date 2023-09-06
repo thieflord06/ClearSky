@@ -9,6 +9,15 @@ body {
     background-color: #f9f9f9;
 }
 
+.fun-facts-container {
+    display: flex;
+    justify-content: space-between; /* To create space between the columns */
+}
+
+.fun-facts-column {
+    margin: 32px;
+}
+
 table th,
 table td {
     padding: 8px;
@@ -197,6 +206,13 @@ table td {
         text-align: right; /* Adjust alignment as needed for mobile */
     }
 
+    .fun-facts-container {
+        flex-direction: column; /* Stack columns on top of each other */
+    }
+
+    .fun-facts-column {
+        margin: 0; /* Remove margin to center-align columns */
+    }
 
     /* Reduce padding for better mobile spacing */
     table th,
