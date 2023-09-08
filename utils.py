@@ -65,8 +65,8 @@ async def resolve_top_block_lists():
     resolved_blocker_avatar_dict = {did: blocker_avatar_dict[did] for did in blocker_avatar_dict if did in [entry['did'] for entry in resolved_blockers]}
 
     # Sort the lists based on block_count in descending order
-    sorted_resolved_blocked = sorted(resolved_blocked, key=lambda x: x["block_count"], reverse=True)
-    sorted_resolved_blockers = sorted(resolved_blockers, key=lambda x: x["block_count"], reverse=True)
+    sorted_resolved_blocked = sorted(resolved_blocked, key=lambda x: (x["block_count"], x["did"]), reverse=True)
+    sorted_resolved_blockers = sorted(resolved_blockers, key=lambda x: (x["block_count"], x["did"]), reverse=True)
 
     sorted_resolved_blocked_avatar_dict = {}
     sorted_resolved_blockers_avatar_dict = {}
@@ -128,8 +128,8 @@ async def resolve_top24_block_lists():
     resolved_blocker_avatar_dict = {did: blocker_avatar_dict[did] for did in blocker_avatar_dict if did in [entry['did'] for entry in resolved_blockers]}
 
     # Sort the lists based on block_count in descending order
-    sorted_resolved_blocked = sorted(resolved_blocked, key=lambda x: x["block_count"], reverse=True)
-    sorted_resolved_blockers = sorted(resolved_blockers, key=lambda x: x["block_count"], reverse=True)
+    sorted_resolved_blocked = sorted(resolved_blocked, key=lambda x: (x["block_count"], x["did"]), reverse=True)
+    sorted_resolved_blockers = sorted(resolved_blockers, key=lambda x: (x["block_count"], x["did"]), reverse=True)
 
     sorted_resolved_blocked_avatar_dict = {}
     sorted_resolved_blockers_avatar_dict = {}
