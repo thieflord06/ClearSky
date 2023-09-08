@@ -116,6 +116,7 @@ async def selection_handle():
                 did_identifier = await utils.use_did(identifier)
                 handle_identifier = identifier
             if not handle_identifier or "Could not find" in did_identifier:
+                logger.info(f"Error page loaded for resolution failure using: {identifier}")
 
                 return await render_template('error.html', content_type='text/html')
             if selection != "4":
@@ -243,6 +244,7 @@ async def selection_handle():
 
                     return await render_template('handle_history.html', handle_history=handle_history, identity=identifier)
         else:
+            logger.info(f"Error page loaded because {identifier} isn't a did or handle")
 
             return await render_template('error.html')
     else:
