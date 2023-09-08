@@ -430,6 +430,7 @@ async def update_24_hour_block_list_table(entries, list_type):
                 # Insert the new row with the given last_processed_did
                 query = "INSERT INTO top_twentyfour_hour_block (did, count, list_type) VALUES ($1, $2, $3)"
                 await connection.executemany(query, data)
+                logger.info("Updated top 24 block table.")
     except Exception as e:
         logger.error("Error updating top block table: %s", e)
 
@@ -464,6 +465,7 @@ async def update_top_block_list_table(entries, list_type):
                 # Insert the new row with the given last_processed_did
                 query = "INSERT INTO top_block (did, count, list_type) VALUES ($1, $2, $3)"
                 await connection.executemany(query, data)
+                logger.info("Updated top block table")
     except Exception as e:
         logger.error("Error updating top block table: %s", e)
 
@@ -472,8 +474,8 @@ async def get_top_blocks_list():
     try:
         async with connection_pool.acquire() as connection:
             async with connection.transaction():
-                query1 = "SELECT did, count FROM top_block WHERE list_type = 'blocked'"
-                query2 = "SELECT did, count FROM top_block WHERE list_type = 'blocker'"
+                query1 = "SELECT distinct did, count FROM top_block WHERE list_type = 'blocked'"
+                query2 = "SELECT distinct did, count FROM top_block WHERE list_type = 'blocker'"
                 blocked_rows = await connection.fetch(query1)
                 blocker_rows = await connection.fetch(query2)
 
@@ -488,8 +490,8 @@ async def get_24_hour_block_list():
     try:
         async with connection_pool.acquire() as connection:
             async with connection.transaction():
-                query1 = "SELECT did, count FROM top_twentyfour_hour_block WHERE list_type = 'blocked'"
-                query2 = "SELECT did, count FROM top_twentyfour_hour_block WHERE list_type = 'blocker'"
+                query1 = "SELECT distinct did, count FROM top_twentyfour_hour_block WHERE list_type = 'blocked'"
+                query2 = "SELECT distinct did, count FROM top_twentyfour_hour_block WHERE list_type = 'blocker'"
                 blocked_rows = await connection.fetch(query1)
                 blocker_rows = await connection.fetch(query2)
 
