@@ -422,13 +422,14 @@ async def create_24_hour_block_table():
         logger.error("Error creating Top 24 hour block list table: %s", e)
 
 
-async def update_24_hour_block_list_table(did, count, list_type):
+async def update_24_hour_block_list_table(entries, list_type):
     try:
         async with connection_pool.acquire() as connection:
             async with connection.transaction():
+                data = [(did, count, list_type) for did, count in entries]
                 # Insert the new row with the given last_processed_did
                 query = "INSERT INTO top_twentyfour_hour_block (did, count, list_type) VALUES ($1, $2, $3)"
-                await connection.execute(query, did, count, list_type)
+                await connection.executemany(query, data)
     except Exception as e:
         logger.error("Error updating top block table: %s", e)
 
@@ -455,13 +456,14 @@ async def truncate_top24_blocks_table():
         logger.error("Error updating top block table: %s", e)
 
 
-async def update_top_block_list_table(did, count, list_type):
+async def update_top_block_list_table(entries, list_type):
     try:
         async with connection_pool.acquire() as connection:
             async with connection.transaction():
+                data = [(did, count, list_type) for did, count in entries]
                 # Insert the new row with the given last_processed_did
                 query = "INSERT INTO top_block (did, count, list_type) VALUES ($1, $2, $3)"
-                await connection.execute(query, did, count, list_type)
+                await connection.executemany(query, data)
     except Exception as e:
         logger.error("Error updating top block table: %s", e)
 
@@ -743,18 +745,18 @@ async def get_similar_users(user_did):
 
 async def update_top_block_list_entries(entries, list_type):
     logger.info("Updating top blocks table.")
-    tasks = []
-    for did, count in entries:
-        tasks.append(update_top_block_list_table(did, count, list_type))
-    await asyncio.gather(*tasks)
+    # tasks = []
+    # for did, count in entries:
+    await update_top_block_list_table(entries, list_type)
+    # await asyncio.gather(*tasks)
 
 
 async def update_top24_block_list_entries(entries, list_type):
     logger.info("Updating top 24 blocks table.")
-    tasks = []
-    for did, count in entries:
-        tasks.append(update_24_hour_block_list_table(did, count, list_type))
-    await asyncio.gather(*tasks)
+    # tasks = []
+    # for did, count in entries:
+    await update_24_hour_block_list_table(entries, list_type)
+    # await asyncio.gather(*tasks)
 
 
 async def blocklists_updater():
@@ -765,9 +767,9 @@ async def blocklists_updater():
     await truncate_top_blocks_table()
     blocked_results, blockers_results = await get_top_blocks()  # Get blocks for db
     # Update blocked entries
-    await update_top_block_list_entries(blocked_results, blocked_list)  # add blocked to top blocks table
+    await update_top_block_list_table(blocked_results, blocked_list)  # add blocked to top blocks table
     logger.info("Updated top blocked db.")
-    await update_top_block_list_entries(blockers_results, blocker_list)  # add blocker to top blocks table
+    await update_top_block_list_table(blockers_results, blocker_list)  # add blocker to top blocks table
     logger.info("Updated top blockers db.")
     top_blocked, top_blockers, blocked_aid, blocker_aid = await utils.resolve_top_block_lists()
 
@@ -784,9 +786,9 @@ async def top_24blocklists_updater():
     await truncate_top24_blocks_table()
     blocked_results, blockers_results = await get_top24_blocks()  # Get blocks for db
     # Update blocked entries
-    await update_top24_block_list_entries(blocked_results, blocked_list)  # add blocked to top blocks table
+    await update_24_hour_block_list_table(blocked_results, blocked_list)  # add blocked to top blocks table
     logger.info("Updated top blocked db.")
-    await update_top24_block_list_entries(blockers_results, blocker_list)  # add blocker to top blocks table
+    await update_24_hour_block_list_table(blockers_results, blocker_list)  # add blocker to top blocks table
     logger.info("Updated top blockers db.")
     top_blocked, top_blockers, blocked_aid, blocker_aid = await utils.resolve_top24_block_lists()
 
