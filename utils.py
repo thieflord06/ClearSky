@@ -449,3 +449,62 @@ async def use_did(identifier):
     else:
 
         return identifier
+
+
+async def get_handle_history(identifier):
+    base_url = "https://plc.directory/"
+    collection = "log"
+    retry_count = 0
+    max_retries = 5
+    also_known_as_list = []
+
+    while retry_count < max_retries:
+        full_url = f"{base_url}{identifier}/{collection}"
+        logger.debug(f"full url: {full_url}")
+
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
+        except httpx.ReadTimeout:
+            logger.warning("Request timed out. Retrying... Retry count: %d", retry_count)
+            retry_count += 1
+            await asyncio.sleep(10)
+            continue
+        except httpx.RequestError as e:
+            logger.warning("Error during API call: %s", e)
+            retry_count += 1
+            await asyncio.sleep(5)
+            continue
+
+        if response.status_code == 200:
+            response_json = response.json()
+
+            for record in response_json:
+                if "alsoKnownAs" in record:
+                    also_known_as = record["alsoKnownAs"]
+                    cleaned_also_known_as = [item.replace("at://", "") for item in also_known_as]
+                    also_known_as_list.extend(cleaned_also_known_as)
+            also_known_as_list.reverse()
+            return also_known_as_list
+        elif response.status_code == 429:
+            logger.warning("Received 429 Too Many Requests. Retrying after 30 seconds...")
+            await asyncio.sleep(30)  # Retry after 60 seconds
+        elif response.status_code == 400:
+            try:
+                error_message = response.json()["error"]
+                message = response.json()["message"]
+                if error_message == "InvalidRequest" and "Could not find repo" in message:
+                    logger.warning("Could not find repo: " + str(identifier))
+                    return ["no repo"]
+            except KeyError:
+                pass
+        else:
+            retry_count += 1
+            logger.warning("Error during API call. Status code: %s", response.status_code)
+            await asyncio.sleep(5)
+
+            continue
+    if retry_count == max_retries:
+        logger.warning("Could not get handle history for: " + identifier)
+
+        return None

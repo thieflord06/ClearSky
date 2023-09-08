@@ -162,7 +162,7 @@ async def get_avatar_id(did):
                         return avatar_cid
                     else:
                         retry_count += 1
-                        logger.warning("Error:" + + "status code: " + str(response.status_code))
+                        logger.warning("Error:" + "status code: " + str(response.status_code))
                         logger.error("Could not find avatar ID or picture format")
                         logger.warning("Retrying: " + str(full_url))
                         await asyncio.sleep(10)

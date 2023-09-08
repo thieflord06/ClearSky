@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Result{% endblock %}
+
+{% block content %}
+    <div class="handle_history-container">
+        <h1>Previous Handles</h1>
+        <h2>{{ identity }}</h2>
+        <ul class="handle_history_list">
+            {% for handle in handle_history %}
+                <li>{{ handle }}</li>
+            {% endfor %}
+        </ul>
+        <!-- <a href="/" class="btn btn-primary">Go Back</a> -->
+    </div>
+{% endblock %}

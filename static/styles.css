@@ -193,7 +193,6 @@ table td {
 @media (max-width: 480px) {
     .result-container {
         align-content: center;
-        a
         margin: 2px;
     }
 
@@ -308,6 +307,10 @@ table td {
         margin-right: 0;
         align-content: center;
         display: grid;
+    }
+
+    .handle_history_list {
+        text-align: left; /* Center-align the text within list items */
     }
 
     .contact-container p {

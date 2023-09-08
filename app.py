@@ -97,7 +97,7 @@ async def selection_handle():
     identifier = identifier.strip()
     identifier = identifier.replace('@', '')
 
-    if selection in ['1', '2', '3', '4', '5', '6']:
+    if selection in ['1', '2', '3', '4', '5', '6', '8']:
         if selection == "4":
             logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count requested")
             count = await utils.get_user_count()
@@ -113,9 +113,9 @@ async def selection_handle():
             if utils.is_handle(identifier):
                 did_identifier = await utils.use_did(identifier)
                 handle_identifier = identifier
-            if not handle_identifier or not did_identifier:
+            if not handle_identifier or "Could not find" in did_identifier:
 
-                return await render_template('no_longer_exists.html', content_type='text/html')
+                return await render_template('error.html', content_type='text/html')
             if selection != "4":
                 if not identifier:
 
@@ -224,6 +224,12 @@ async def selection_handle():
                     logger.info(in_common_handles)
 
                     return await render_template('in_common.html', in_common_list=in_common_list, percentages=rounded_percentages, user=handle_identifier)
+                elif selection == "8":
+                    logger.info(f"Requesting handle history for {identifier}")
+                    handle_history = await utils.get_handle_history(did_identifier)
+                    logger.info(f"history for {identifier}: {str(handle_history)}")
+
+                    return await render_template('handle_history.html', handle_history=handle_history, identity=identifier)
         else:
 
             return await render_template('error.html')
