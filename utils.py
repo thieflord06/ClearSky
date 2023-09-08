@@ -12,17 +12,17 @@ import re
 from cachetools import TTLCache
 # ======================================================================================================================
 # ================================================ cache variables =====================================================
-resolved_blocked_cache = TTLCache(maxsize=100, ttl=3600)
-resolved_blockers_cache = TTLCache(maxsize=100, ttl=3600)
+resolved_blocked_cache = TTLCache(maxsize=200, ttl=3600)
+resolved_blockers_cache = TTLCache(maxsize=200, ttl=3600)
 
-resolved_24_blocked_cache = TTLCache(maxsize=100, ttl=3600)
-resolved_24blockers_cache = TTLCache(maxsize=100, ttl=3600)
+resolved_24_blocked_cache = TTLCache(maxsize=200, ttl=3600)
+resolved_24blockers_cache = TTLCache(maxsize=200, ttl=3600)
 
-blocked_avatar_ids_cache = TTLCache(maxsize=100, ttl=3600)
-blocker_avatar_ids_cache = TTLCache(maxsize=100, ttl=3600)
+blocked_avatar_ids_cache = TTLCache(maxsize=200, ttl=3600)
+blocker_avatar_ids_cache = TTLCache(maxsize=200, ttl=3600)
 
-blocked_24_avatar_ids_cache = TTLCache(maxsize=100, ttl=3600)
-blocker_24_avatar_ids_cache = TTLCache(maxsize=100, ttl=3600)
+blocked_24_avatar_ids_cache = TTLCache(maxsize=200, ttl=3600)
+blocker_24_avatar_ids_cache = TTLCache(maxsize=200, ttl=3600)
 
 
 # ======================================================================================================================

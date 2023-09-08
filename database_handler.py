@@ -437,8 +437,9 @@ async def truncate_top_blocks_table():
     try:
         async with connection_pool.acquire() as connection:
             async with connection.transaction():
-                # Delete the existing row if it exists
+                # Delete the existing rows if it exists
                 await connection.execute("TRUNCATE top_block")
+                logger.info("Truncated block table.")
     except Exception as e:
         logger.error("Error updating top block table: %s", e)
 
@@ -449,6 +450,7 @@ async def truncate_top24_blocks_table():
             async with connection.transaction():
                 # Delete the existing row if it exists
                 await connection.execute("TRUNCATE top_twentyfour_hour_block")
+                logger.info("Truncated top 24 block table.")
     except Exception as e:
         logger.error("Error updating top block table: %s", e)
 
