@@ -5,7 +5,7 @@
 {% block content %}
     <div class="result-container">
         <h1>DID</h1>
-        <p id="result-text"><img src="https://av-cdn.bsky.app/img/avatar/plain/{{ did }}/{{ avatar_id }}@jpeg" alt="{{ result }}'s Profile Picture" width="30" height="30"><a href="https://bsky.app/profile/{{ result }}" target="_blank">{{ result }}</a></p>
+        <p id="result-text"><img src="https://av-cdn.bsky.app/img/avatar/plain/{{ did }}/{{ avatar_id }}@jpeg" alt="{{ result }}'s Profile Picture" width="30" height="30" onerror="this.style.display='none';"><a href="https://bsky.app/profile/{{ result }}" target="_blank">{{ result }}</a></p>
 <!--        <a href="/" class="btn btn-primary">Go Back</a>-->
     </div>
 {% endblock %}
