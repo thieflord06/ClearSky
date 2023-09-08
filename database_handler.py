@@ -742,6 +742,7 @@ async def get_similar_users(user_did):
 
 
 async def update_top_block_list_entries(entries, list_type):
+    logger.info("Updating top blocks table.")
     tasks = []
     for did, count in entries:
         tasks.append(update_top_block_list_table(did, count, list_type))
@@ -749,6 +750,7 @@ async def update_top_block_list_entries(entries, list_type):
 
 
 async def update_top24_block_list_entries(entries, list_type):
+    logger.info("Updating top 24 blocks table.")
     tasks = []
     for did, count in entries:
         tasks.append(update_24_hour_block_list_table(did, count, list_type))
