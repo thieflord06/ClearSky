@@ -222,13 +222,19 @@ async def selection_handle():
                         return await render_template('in_common.html', in_common_list=in_common_list, percentages=percentage, user=handle_identifier)
 
                     in_common_handles = []
+                    avatar_id_list = []
+                    did_list = []
                     rounded_percentages = [round(percent, 2) for percent in percentages]
                     for did in in_common_list:
                         handle = await utils.get_user_handle(did)
                         in_common_handles.append(handle)
+                        avatar_id = on_wire.get_avatar_id(did)
+                        avatar_id_list.append(avatar_id)
+                        did_list.append(did)
+
                     logger.info(in_common_handles)
 
-                    return await render_template('in_common.html', in_common_list=in_common_list, percentages=rounded_percentages, user=handle_identifier)
+                    return await render_template('in_common.html', in_common_list=in_common_list, percentages=rounded_percentages, user=handle_identifier, did_list=did_list, avatar_id=avatar_id_list)
                 elif selection == "8":
                     logger.info(f"Requesting handle history for {identifier}")
                     handle_history = await utils.get_handle_history(did_identifier)
