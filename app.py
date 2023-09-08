@@ -41,7 +41,8 @@ app.secret_key = 'your-secret-key'
 
 session_ip = None
 
-
+# Create a global lock
+update_lock = asyncio.Lock()
 # ======================================================================================================================
 # ================================================== HTML Pages ========================================================
 @app.route('/')
@@ -260,10 +261,12 @@ async def fun_facts():
     blocked_aid = utils.blocked_avatar_ids_cache.get('blocked_aid')
     blocker_aid = utils.blocker_avatar_ids_cache.get('blocker_aid')
 
-    # Check if both lists are empty
-    if resolved_blocked is None or resolved_blockers is None or blocker_aid is None or blocker_aid is None:
-        logger.info("Getting new cache.")
-        resolved_blocked, resolved_blockers, blocked_aid, blocker_aid = await database_handler.blocklists_updater()
+    # Acquire the lock to ensure only one request can proceed with the update
+    async with update_lock:
+        # Check if both lists are empty
+        if resolved_blocked is None or resolved_blockers is None or blocker_aid is None or blocker_aid is None:
+            logger.info("Getting new cache.")
+            resolved_blocked, resolved_blockers, blocked_aid, blocker_aid = await database_handler.blocklists_updater()
 
     # If at least one list is not empty, render the regular page
     return await render_template('fun_facts.html', blocked_results=resolved_blocked, blockers_results=resolved_blockers, blocked_aid=blocked_aid, blocker_aid=blocker_aid)
@@ -279,10 +282,12 @@ async def funer_facts():
     blocked_aid = utils.blocked_24_avatar_ids_cache.get('blocked_aid')
     blocker_aid = utils.blocker_24_avatar_ids_cache.get('blocker_aid')
 
-    # Check if both lists are empty
-    if resolved_blocked is None or resolved_blockers is None or blocker_aid is None or blocker_aid is None:
-        logger.info("Getting new cache.")
-        resolved_blocked, resolved_blockers, blocked_aid, blocker_aid = await database_handler.top_24blocklists_updater()
+    # Acquire the lock to ensure only one request can proceed with the update
+    async with update_lock:
+        # Check if both lists are empty
+        if resolved_blocked is None or resolved_blockers is None or blocker_aid is None or blocker_aid is None:
+            logger.info("Getting new cache.")
+            resolved_blocked, resolved_blockers, blocked_aid, blocker_aid = await database_handler.top_24blocklists_updater()
 
     # If at least one list is not empty, render the regular page
     return await render_template('funer_facts.html', blocked_results=resolved_blocked, blockers_results=resolved_blockers, blocked_aid=blocked_aid, blocker_aid=blocker_aid)
