@@ -259,6 +259,7 @@ async def fun_facts():
 
     resolved_blocked = utils.resolved_blocked_cache.get('resolved_blocked')
     resolved_blockers = utils.resolved_blockers_cache.get('resolved_blockers')
+    logger.info(f"cache block count: {resolved_blocked} cache blockers count: {resolved_blockers}")
 
     blocked_aid = utils.blocked_avatar_ids_cache.get('blocked_aid')
     blocker_aid = utils.blocker_avatar_ids_cache.get('blocker_aid')
