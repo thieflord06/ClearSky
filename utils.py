@@ -484,8 +484,18 @@ async def get_handle_history(identifier):
                     also_known_as = record["alsoKnownAs"]
                     cleaned_also_known_as = [item.replace("at://", "") for item in also_known_as]
                     also_known_as_list.extend(cleaned_also_known_as)
-            also_known_as_list.reverse()
-            return also_known_as_list
+
+            # Remove adjacent duplicates while preserving non-adjacent duplicates
+            cleaned_also_known_as_list = []
+            prev_item = None
+            for item in also_known_as_list:
+                if item != prev_item:
+                    cleaned_also_known_as_list.append(item)
+                prev_item = item
+
+            cleaned_also_known_as_list.reverse()
+
+            return cleaned_also_known_as_list
         elif response.status_code == 429:
             logger.warning("Received 429 Too Many Requests. Retrying after 30 seconds...")
             await asyncio.sleep(30)  # Retry after 60 seconds
