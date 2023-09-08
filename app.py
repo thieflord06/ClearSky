@@ -7,6 +7,7 @@ import os
 import uuid
 import asyncio
 import database_handler
+import on_wire
 import utils
 import config_helper
 from config_helper import logger
@@ -16,7 +17,7 @@ config = config_helper.read_config()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "3.4.1"
+version = "3.5.0"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -130,7 +131,9 @@ async def selection_handle():
                         result = identifier
                     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + result)
 
-                    return await render_template('did.html', result=result)
+                    avatar_id = await on_wire.get_avatar_id(did_identifier)
+
+                    return await render_template('did.html', result=result, did=did_identifier, avatar_id=avatar_id)
                 elif selection == "2":
                     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Handle resolve request made for: " + identifier)
                     if utils.is_handle(handle_identifier):
@@ -139,7 +142,9 @@ async def selection_handle():
                         result = identifier
                     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Request Result: " + identifier + " | " + str(result))
 
-                    return await render_template('handle.html', result=result)
+                    avatar_id = await on_wire.get_avatar_id(did_identifier)
+
+                    return await render_template('handle.html', result=result, did=did_identifier, avatar_id=avatar_id)
                 elif selection == "3":
                     logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Block list requested for: " + identifier)
                     blocklist, count = await utils.process_user_block_list(identifier)
