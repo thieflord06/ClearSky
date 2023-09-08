@@ -37,8 +37,8 @@ async def resolve_did(did, count):
 
 
 async def resolve_top_block_lists():
-    blocked, blockers = await database_handler.get_top_blocks_list()
     logger.info("Resolving top blocks lists.")
+    blocked, blockers = await database_handler.get_top_blocks_list()
 
     # Extract DID values from blocked and blockers
     blocked_dids = [record['did'] for record in blocked]
@@ -100,8 +100,8 @@ async def resolve_top_block_lists():
 
 
 async def resolve_top24_block_lists():
-    blocked, blockers = await database_handler.get_24_hour_block_list()
     logger.info("Resolving top blocks lists.")
+    blocked, blockers = await database_handler.get_24_hour_block_list()
 
     # Extract DID values from blocked and blockers
     blocked_dids = [record['did'] for record in blocked]

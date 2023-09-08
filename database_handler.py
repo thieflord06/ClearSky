@@ -745,22 +745,6 @@ async def get_similar_users(user_did):
     return users, percentages
 
 
-# async def update_top_block_list_entries(entries, list_type):
-#     logger.info("Updating top blocks table.")
-#     # tasks = []
-#     # for did, count in entries:
-#     await update_top_block_list_table(entries, list_type)
-#     # await asyncio.gather(*tasks)
-
-
-# async def update_top24_block_list_entries(entries, list_type):
-#     logger.info("Updating top 24 blocks table.")
-#     # tasks = []
-#     # for did, count in entries:
-#     await update_24_hour_block_list_table(entries, list_type)
-#     # await asyncio.gather(*tasks)
-
-
 async def blocklists_updater():
     blocked_list = "blocked"
     blocker_list = "blocker"
@@ -768,7 +752,7 @@ async def blocklists_updater():
     logger.info("Updating top blocks lists requested.")
     await truncate_top_blocks_table()
     blocked_results, blockers_results = await get_top_blocks()  # Get blocks for db
-    logger.info(f"blocked count: {len(blocked_results)} blockers count: {len(blockers_results)}")
+    logger.debug(f"blocked count: {len(blocked_results)} blockers count: {len(blockers_results)}")
     # Update blocked entries
     await update_top_block_list_table(blocked_results, blocked_list)  # add blocked to top blocks table
     logger.info("Updated top blocked db.")
@@ -788,7 +772,7 @@ async def top_24blocklists_updater():
     logger.info("Updating top blocks lists requested.")
     await truncate_top24_blocks_table()
     blocked_results, blockers_results = await get_top24_blocks()  # Get blocks for db
-    logger.info(f"blocked count: {len(blocked_results)} blockers count: {len(blockers_results)}")
+    logger.debug(f"blocked count: {len(blocked_results)} blockers count: {len(blockers_results)}")
     # Update blocked entries
     await update_24_hour_block_list_table(blocked_results, blocked_list)  # add blocked to top blocks table
     logger.info("Updated top blocked db.")
