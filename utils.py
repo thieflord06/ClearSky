@@ -24,6 +24,10 @@ blocker_avatar_ids_cache = TTLCache(maxsize=200, ttl=3600)
 blocked_24_avatar_ids_cache = TTLCache(maxsize=200, ttl=3600)
 blocker_24_avatar_ids_cache = TTLCache(maxsize=200, ttl=3600)
 
+number_of_total_blocks_cache = TTLCache(maxsize=200, ttl=3600)
+number_of_unique_users_blocked_cache = TTLCache(maxsize=200, ttl=3600)
+number_of_unique_users_blocking_cache = TTLCache(maxsize=200, ttl=3600)
+
 
 # ======================================================================================================================
 # ============================================= Features functions =====================================================
@@ -160,6 +164,21 @@ async def resolve_top24_block_lists():
     blocker_24_avatar_ids_cache["blocker_aid"] = blocker_avatar_ids
 
     return top_resolved_blocked, top_resolved_blockers, blocked_avatar_ids, blocker_avatar_ids
+
+
+async def update_block_statistics():
+    global number_of_total_blocks_cache
+    global number_of_unique_users_blocked_cache
+    global number_of_unique_users_blocking_cache
+
+    logger.info("Updating block statsitics.")
+    number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking = await database_handler.get_block_stats()
+
+    number_of_total_blocks_cache = number_of_total_blocks
+    number_of_unique_users_blocked_cache = number_of_unique_users_blocked
+    number_of_unique_users_blocking_cache = number_of_unique_users_blocking
+
+    return number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking
 
 
 async def get_all_users():

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Total Users{% endblock %}
+
+{% block content %}
+    <div class="statistics-container">
+        <h1>Block Statistics</h1>
+        <p>Total individual blocks: {{ number_of_total_blocks }}</p>
+        <p>Total users: {{ total_users }}</p>
+        <p>Number of blocked users blocked by someone: {{ number_of_unique_users_blocked }}</p>
+        <p>Number of users blocking someone: {{ number_of_unique_users_blocking }}</p>
+        <p>Percent of users blocked by someone: {{ percent_users_blocked }}%</p>
+        <p>Percent of users blocking someone: {{ percent_users_blocking }}%</p>
+<!--        <a href="/" class="btn btn-primary">Go Back</a>-->
+    </div>
+{% endblock %}

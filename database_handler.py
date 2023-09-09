@@ -583,6 +583,25 @@ async def get_top_blocks():
         logger.error("Error retrieving data from db", e)
 
 
+async def get_block_stats():
+    try:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                logger.info("Getting block statistics.")
+
+                query_1 = '''SELECT COUNT(blocked_did) from blocklists'''
+                query_2 = '''select count(distinct blocked_did) from blocklists'''
+                query_3 = '''select count(distinct user_did) from blocklists'''
+
+                number_of_total_blocks = await connection.fetchval(query_1)
+                number_of_unique_users_blocked = await connection.fetchval(query_2)
+                number_of_unique_users_blocking = await connection.fetchval(query_3)
+
+                return number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking
+    except Exception as e:
+        logger.error(f"Error retrieving data from db: {e}")
+
+
 async def get_top24_blocks():
     blocked_results = []
     blockers_results = []
