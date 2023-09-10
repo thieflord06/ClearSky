@@ -318,9 +318,9 @@ async def funer_facts():
 async def block_stats():
     logger.info(f"Requesting block statistics.")
 
-    number_of_total_blocks = utils.number_of_total_blocks_cache
-    number_of_unique_users_blocked = utils.number_of_unique_users_blocked_cache
-    number_of_unique_users_blocking = utils.number_of_unique_users_blocking_cache
+    number_of_total_blocks = utils.number_of_total_blocks_cache.get()
+    number_of_unique_users_blocked = utils.number_of_unique_users_blocked_cache.get()
+    number_of_unique_users_blocking = utils.number_of_unique_users_blocking_cache.get()
 
     async with update_lock:
         # Check if both lists are empty
