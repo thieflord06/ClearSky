@@ -51,8 +51,8 @@ async def get_blocklist(ident, limit=100, offset=0):
                 query = "SELECT blocked_did, block_date FROM blocklists WHERE user_did = $1 LIMIT $2 OFFSET $3"
                 blocklist_rows = await connection.fetch(query, ident, limit, offset)
 
-                query = "SELECT COUNT(blocked_did) FROM blocklists WHERE user_did = $1"
-                total_blocked_count = await connection.fetchval(query, ident)
+                query2 = "SELECT COUNT(blocked_did) FROM blocklists WHERE user_did = $1"
+                total_blocked_count = await connection.fetchval(query2, ident)
 
                 # Extract the blocked_did and block_date values into separate lists
                 blocked_did_list = [row['blocked_did'] for row in blocklist_rows]

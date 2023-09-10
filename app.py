@@ -177,6 +177,11 @@ async def selection_handle():
                 elif selection == "5":
                     logger.info(str(session_ip) + " > " + str(
                         *session.values()) + " | " + "Single Block list requested for: " + identifier)
+
+                    page = request.args.get('page', default=1, type=int)
+                    items_per_page = 100
+                    offset = (page - 1) * items_per_page
+
                     if "Could not find, there may be a typo" in did_identifier:
                         message = "Could not find, there may be a typo"
 
@@ -185,7 +190,7 @@ async def selection_handle():
                             message))
 
                         return await render_template('no_result.html', user=identifier, message=message)
-                    blocks, dates, count = await utils.get_single_user_blocks(did_identifier)
+                    blocks, dates, count = await utils.get_single_user_blocks(did_identifier, limit=items_per_page, offset=offset)
                     formatted_count = '{:,}'.format(count)
                     if utils.is_did(identifier):
                         identifier = handle_identifier
@@ -200,8 +205,10 @@ async def selection_handle():
                         *session.values()) + " | " + "Single Blocklist Request Result: " + identifier + " | " + "Blocked by: " + str(
                         blocks) + " :: " + "Total count: " + str(formatted_count))
 
+                    more_data_available = len(blocklist) == items_per_page
+
                     return await render_template('single_blocklist.html', user=identifier, blocklist=blocklist,
-                                                 dates=dates, count=formatted_count)
+                                                 dates=dates, count=formatted_count, identifier=did_identifier, page=page, more_data_available=more_data_available)
                 elif selection == "6":
                     logger.info("Requesting in-common blocks for: " + identifier)
                     in_common_list, percentages = await database_handler.get_similar_users(did_identifier)
@@ -296,6 +303,30 @@ async def blocklist(identifier):
 
     # Pass the paginated data to your template
     return await render_template('blocklist.html', blocklist=blocklist, count=formatted_count, more_data_available=more_data_available, page=page, identifier=identifier, user=handle_identifier)
+
+
+@app.route('/single_blocklist/<identifier>')
+async def single_blocklist(identifier):
+    # Get pagination parameters from the request (e.g., page number)
+    page = request.args.get('page', default=1, type=int)
+    items_per_page = 100
+    offset = (page - 1) * items_per_page
+
+    blocks, dates, count = await utils.get_single_user_blocks(identifier, limit=items_per_page, offset=offset)
+
+    blocklist = list(zip(blocks, dates))
+
+    formatted_count = '{:,}'.format(count)
+    if utils.is_did(identifier):
+        handle_identifier = await utils.use_handle(identifier)
+
+    more_data_available = (offset + len(blocks)) < count
+
+    if offset + items_per_page > count:
+        more_data_available = False
+
+    # Pass the paginated data to your template
+    return await render_template('single_blocklist.html', blocklist=blocklist, dates=dates, count=formatted_count, more_data_available=more_data_available, page=page, identifier=identifier, user=handle_identifier)
 
 
 @app.route('/fun_facts')

@@ -242,16 +242,18 @@ async def get_user_count():
         return count
 
 
-async def get_single_user_blocks(ident):
+async def get_single_user_blocks(ident, limit=100, offset=0):
     try:
         # Execute the SQL query to get all the user_dids that have the specified did/ident in their blocklist
         async with database_handler.connection_pool.acquire() as connection:
-            result = await connection.fetch('SELECT user_did, block_date FROM blocklists WHERE blocked_did = $1 ORDER BY block_date DESC', ident)
+            result = await connection.fetch('SELECT user_did, block_date FROM blocklists WHERE blocked_did = $1 ORDER BY block_date DESC LIMIT $2 OFFSET $3', ident, limit, offset)
+            count = await connection.fetchval('SELECT COUNT(user_did) FROM blocklists WHERE blocked_did = $1', ident)
+
             if result:
                 # Extract the user_dids from the query result
                 user_dids = [item[0] for item in result]
                 block_dates = [item[1] for item in result]
-                count = len(user_dids)
+                # count = len(user_dids)
 
                 # Fetch handles concurrently using asyncio.gather
                 resolved_handles = await asyncio.gather(*[get_user_handle(user_did) for user_did in user_dids])
