@@ -174,9 +174,9 @@ async def update_block_statistics():
     logger.info("Updating block statsitics.")
     number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking = await database_handler.get_block_stats()
 
-    number_of_total_blocks_cache = number_of_total_blocks
-    number_of_unique_users_blocked_cache = number_of_unique_users_blocked
-    number_of_unique_users_blocking_cache = number_of_unique_users_blocking
+    number_of_total_blocks_cache["total_blocks"] = number_of_total_blocks
+    number_of_unique_users_blocked_cache["unique_blocked"] = number_of_unique_users_blocked
+    number_of_unique_users_blocking_cache["unique_blocker"] = number_of_unique_users_blocking
 
     return number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking
 

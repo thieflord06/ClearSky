@@ -18,7 +18,7 @@ config = config_helper.read_config()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "3.6.1"
+version = "3.6.2"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -318,9 +318,9 @@ async def funer_facts():
 async def block_stats():
     logger.info(f"Requesting block statistics.")
 
-    number_of_total_blocks = utils.number_of_total_blocks_cache.get()
-    number_of_unique_users_blocked = utils.number_of_unique_users_blocked_cache.get()
-    number_of_unique_users_blocking = utils.number_of_unique_users_blocking_cache.get()
+    number_of_total_blocks = utils.number_of_total_blocks_cache.get("total_blocks")
+    number_of_unique_users_blocked = utils.number_of_unique_users_blocked_cache.get("unique_blocked")
+    number_of_unique_users_blocking = utils.number_of_unique_users_blocking_cache.get("unique_blocker")
 
     async with update_lock:
         # Check if both lists are empty
