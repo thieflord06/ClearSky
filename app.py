@@ -152,7 +152,12 @@ async def selection_handle():
                 elif selection == "3":
                     logger.info(str(session_ip) + " > " + str(
                         *session.values()) + " | " + "Block list requested for: " + identifier)
-                    blocklist, count = await utils.process_user_block_list(did_identifier)
+
+                    page = request.args.get('page', default=1, type=int)
+                    items_per_page = 100
+                    offset = (page - 1) * items_per_page
+
+                    blocklist, count = await utils.process_user_block_list(did_identifier, limit=items_per_page, offset=offset)
                     formatted_count = '{:,}'.format(count)
                     if utils.is_did(identifier):
                         identifier = handle_identifier
@@ -165,8 +170,10 @@ async def selection_handle():
                         message = "Not blocking anyone"
                         return await render_template('not_blocking.html', user=identifier, message=message)
 
+                    more_data_available = len(blocklist) == items_per_page
+
                     return await render_template('blocklist.html', blocklist=blocklist, user=identifier,
-                                                 count=formatted_count)
+                                                 count=formatted_count, identifier=did_identifier, page=page, more_data_available=more_data_available)
                 elif selection == "5":
                     logger.info(str(session_ip) + " > " + str(
                         *session.values()) + " | " + "Single Block list requested for: " + identifier)
@@ -267,6 +274,28 @@ async def selection_handle():
         logger.warning(f"Intentional error: selection = {selection}")
 
         return await render_template('intentional_error.html')
+
+
+@app.route('/blocklist/<identifier>')
+async def blocklist(identifier):
+    # Get pagination parameters from the request (e.g., page number)
+    page = request.args.get('page', default=1, type=int)
+    items_per_page = 100
+    offset = (page - 1) * items_per_page
+
+    blocklist, count = await utils.process_user_block_list(identifier, limit=items_per_page, offset=offset)
+
+    formatted_count = '{:,}'.format(count)
+    if utils.is_did(identifier):
+        handle_identifier = await utils.use_handle(identifier)
+
+    more_data_available = (offset + len(blocklist)) < count
+
+    if offset + items_per_page > count:
+        more_data_available = False
+
+    # Pass the paginated data to your template
+    return await render_template('blocklist.html', blocklist=blocklist, count=formatted_count, more_data_available=more_data_available, page=page, identifier=identifier, user=handle_identifier)
 
 
 @app.route('/fun_facts')

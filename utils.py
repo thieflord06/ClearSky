@@ -376,8 +376,8 @@ async def get_user_block_list(ident):
     return blocked_users, created_dates
 
 
-async def process_user_block_list(ident):
-    blocked_users, timestamps = await database_handler.get_blocklist(ident)
+async def process_user_block_list(ident, limit, offset):
+    blocked_users, timestamps, count = await database_handler.get_blocklist(ident, limit=limit, offset=offset)
 
     if blocked_users is None:
         blocked_users, timestamps = await get_user_block_list(ident)
@@ -416,7 +416,7 @@ async def process_user_block_list(ident):
             sorted_records = sorted(records, key=lambda record: blocked_users.index(record['did']))
 
         handles = [did_to_handle[record['did']] for record in sorted_records]
-        total_blocked = len(handles)
+        # total_blocked = len(handles)
 
         for handle, timestamp in zip(handles, timestamps):
             block_list.append((handle, timestamp))
@@ -424,7 +424,7 @@ async def process_user_block_list(ident):
         # Sort the block_list by timestamp (newest to oldest)
         block_list = sorted(block_list, key=lambda x: x[1], reverse=True)
 
-        return block_list, total_blocked
+        return block_list, count
 
 
 async def fetch_handles_batch(batch_dids, ad_hoc=False):

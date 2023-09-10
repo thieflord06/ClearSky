@@ -18,6 +18,16 @@
                 </tr>
                 {% endfor %}
             </table>
+
+            <!-- Pagination controls -->
+            <div class="pagination">
+                {% if page > 1 %}
+                    <a href="{{ url_for('blocklist', identifier=identifier, page=page-1) }}" class="prev">Previous</a>
+                {% endif %}
+                {% if more_data_available %}
+                    <a href="{{ url_for('blocklist', identifier=identifier, page=page+1) }}" class="next">Next</a>
+                {% endif %}
+            </div>
         </div>
         <a href="/" class="btn btn-primary" id="go-back-button">Go Back</a>
     </div>
