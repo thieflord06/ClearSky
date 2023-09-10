@@ -44,6 +44,24 @@ async def count_users_table():
         return await connection.fetchval('SELECT COUNT(*) FROM users')
 
 
+async def get_blocklist(ident):
+    try:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                query = "SELECT blocked_did, block_date FROM blocklists WHERE user_did = $1"
+                blocklist_rows = await connection.fetch(query, ident)
+
+                # Extract the blocked_did and block_date values into separate lists
+                blocked_did_list = [row['blocked_did'] for row in blocklist_rows]
+                block_date_list = [row['block_date'] for row in blocklist_rows]
+
+                return blocked_did_list, block_date_list
+    except Exception as e:
+        logger.error(f"Error retrieving blocklist for {ident}: {e}")
+
+        return None, None
+
+
 async def get_dids_with_blocks():
     try:
         async with connection_pool.acquire() as connection:

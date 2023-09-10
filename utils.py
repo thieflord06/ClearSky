@@ -377,7 +377,11 @@ async def get_user_block_list(ident):
 
 
 async def process_user_block_list(ident):
-    blocked_users, timestamps = await get_user_block_list(ident)
+    blocked_users, timestamps = await database_handler.get_blocklist(ident)
+
+    if blocked_users is None:
+        blocked_users, timestamps = await get_user_block_list(ident)
+
     block_list = []
 
     if not blocked_users:
