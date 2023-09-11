@@ -18,7 +18,7 @@ config = config_helper.read_config()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "3.7.1"
+version = "3.7.2"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -283,50 +283,84 @@ async def selection_handle():
         return await render_template('intentional_error.html')
 
 
+@app.route('/blocklist')
+async def blocklist_redirect():
+    if request.method == 'GET':
+        # Redirect to the root URL '/'
+        return redirect('/', code=302)
+
+
 @app.route('/blocklist/<identifier>')
 async def blocklist(identifier):
-    # Get pagination parameters from the request (e.g., page number)
-    page = request.args.get('page', default=1, type=int)
-    items_per_page = 100
-    offset = (page - 1) * items_per_page
+    if not identifier:
 
-    blocklist, count = await utils.process_user_block_list(identifier, limit=items_per_page, offset=offset)
+        return redirect('/', code=302)
 
-    formatted_count = '{:,}'.format(count)
-    if utils.is_did(identifier):
-        handle_identifier = await utils.use_handle(identifier)
+    # Check if the 'from' parameter is present in the query string
+    request_from = request.args.get('from')
 
-    more_data_available = (offset + len(blocklist)) < count
+    if request_from == 'next' or request_from == 'previous':
+        # Get pagination parameters from the request (e.g., page number)
+        page = request.args.get('page', default=1, type=int)
+        items_per_page = 100
+        offset = (page - 1) * items_per_page
 
-    if offset + items_per_page > count:
-        more_data_available = False
+        blocklist, count = await utils.process_user_block_list(identifier, limit=items_per_page, offset=offset)
 
-    # Pass the paginated data to your template
-    return await render_template('blocklist.html', blocklist=blocklist, count=formatted_count, more_data_available=more_data_available, page=page, identifier=identifier, user=handle_identifier)
+        formatted_count = '{:,}'.format(count)
+        if utils.is_did(identifier):
+            handle_identifier = await utils.use_handle(identifier)
+
+        more_data_available = (offset + len(blocklist)) < count
+
+        if offset + items_per_page > count:
+            more_data_available = False
+
+        # Pass the paginated data to your template
+        return await render_template('blocklist.html', blocklist=blocklist, count=formatted_count, more_data_available=more_data_available, page=page, identifier=identifier, user=handle_identifier)
+    else:
+        return redirect('/')
+
+
+@app.route('/single_blocklist')
+async def blocklist_redirect():
+    if request.method == 'GET':
+        # Redirect to the root URL '/'
+        return redirect('/', code=302)
 
 
 @app.route('/single_blocklist/<identifier>')
 async def single_blocklist(identifier):
-    # Get pagination parameters from the request (e.g., page number)
-    page = request.args.get('page', default=1, type=int)
-    items_per_page = 100
-    offset = (page - 1) * items_per_page
+    if not identifier:
 
-    blocks, dates, count = await utils.get_single_user_blocks(identifier, limit=items_per_page, offset=offset)
+        return redirect('/', code=302)
 
-    blocklist = list(zip(blocks, dates))
+    # Check if the 'from' parameter is present in the query string
+    request_from = request.args.get('from')
 
-    formatted_count = '{:,}'.format(count)
-    if utils.is_did(identifier):
-        handle_identifier = await utils.use_handle(identifier)
+    if request_from == 'next' or request_from == 'previous':
+        # Get pagination parameters from the request (e.g., page number)
+        page = request.args.get('page', default=1, type=int)
+        items_per_page = 100
+        offset = (page - 1) * items_per_page
 
-    more_data_available = (offset + len(blocks)) < count
+        blocks, dates, count = await utils.get_single_user_blocks(identifier, limit=items_per_page, offset=offset)
 
-    if offset + items_per_page > count:
-        more_data_available = False
+        blocklist = list(zip(blocks, dates))
 
-    # Pass the paginated data to your template
-    return await render_template('single_blocklist.html', blocklist=blocklist, dates=dates, count=formatted_count, more_data_available=more_data_available, page=page, identifier=identifier, user=handle_identifier)
+        formatted_count = '{:,}'.format(count)
+        if utils.is_did(identifier):
+            handle_identifier = await utils.use_handle(identifier)
+
+        more_data_available = (offset + len(blocks)) < count
+
+        if offset + items_per_page > count:
+            more_data_available = False
+
+        # Pass the paginated data to your template
+        return await render_template('single_blocklist.html', blocklist=blocklist, dates=dates, count=formatted_count, more_data_available=more_data_available, page=page, identifier=identifier, user=handle_identifier)
+    else:
+        return redirect('/')
 
 
 @app.route('/fun_facts')

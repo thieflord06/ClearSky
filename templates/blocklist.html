@@ -22,10 +22,10 @@
             <!-- Pagination controls -->
             <div class="pagination">
                 {% if page > 1 %}
-                    <a href="{{ url_for('blocklist', identifier=identifier, page=page-1) }}" class="prev">Previous</a>
+                    <a href="{{ url_for('blocklist', identifier=identifier, page=page-1, from='previous') }}" class="prev">Previous</a>
                 {% endif %}
                 {% if more_data_available %}
-                    <a href="{{ url_for('blocklist', identifier=identifier, page=page+1) }}" class="next">Next</a>
+                    <a href="{{ url_for('blocklist', identifier=identifier, page=page+1, from='next') }}" class="next">Next</a>
                 {% endif %}
             </div>
         </div>
