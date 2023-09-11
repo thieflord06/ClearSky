@@ -156,6 +156,9 @@ async def get_avatar_id(did):
                     if avatar_link and "jpeg" in avatar_mimetype:
 
                         return avatar_link
+                    elif avatar_link:
+                        logger.warning(f"No picture format or incorrect format: {avatar_mimetype}")
+                        return avatar_link
                     elif not avatar_link:
                         avatar_cid = avatar_info.get("cid", "")
 
