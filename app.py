@@ -59,21 +59,25 @@ async def index():
 
 @app.route('/images/favicon.png')
 async def favicon():
+
     return await quart.send_from_directory('images', 'favicon.png')
 
 
 @app.route('/coming_soon')
 async def coming_soon():
+
     return await render_template('coming_soon.html')
 
 
 @app.route('/status')
 async def always_200():
+
     return "OK", 200
 
 
 @app.route('/contact')
 async def contact():
+
     return await render_template('contact.html')
 
 
