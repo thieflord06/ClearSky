@@ -110,6 +110,9 @@ async def selection_handle():
             logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count: " + str(count))
 
             return await render_template('total_users.html', count=formatted_count)
+        if not identifier:  # If form is submitted without anything in the identifier return intentional error
+
+            return await render_template('intentional_error.html')
         # Check if did or handle exists before processing
         if utils.is_did(identifier) or utils.is_handle(identifier):
             if utils.is_did(identifier):
@@ -291,14 +294,14 @@ async def selection_handle():
 async def blocklist_redirect():
     if request.method == 'GET':
         # Redirect to the root URL '/'
-        return redirect('/', code=302)
+        return await redirect('/', code=302)
 
 
 @app.route('/blocklist/<identifier>')
 async def blocklist(identifier):
     if not identifier:
 
-        return redirect('/', code=302)
+        return await redirect('/', code=302)
 
     # Check if the 'from' parameter is present in the query string
     request_from = request.args.get('from')
@@ -323,21 +326,21 @@ async def blocklist(identifier):
         # Pass the paginated data to your template
         return await render_template('blocklist.html', blocklist=blocklist, count=formatted_count, more_data_available=more_data_available, page=page, identifier=identifier, user=handle_identifier)
     else:
-        return redirect('/')
+        return await redirect('/')
 
 
 @app.route('/single_blocklist')
 async def single_blocklist_redirect():
     if request.method == 'GET':
         # Redirect to the root URL '/'
-        return redirect('/', code=302)
+        return await redirect('/', code=302)
 
 
 @app.route('/single_blocklist/<identifier>')
 async def single_blocklist(identifier):
     if not identifier:
 
-        return redirect('/', code=302)
+        return await redirect('/', code=302)
 
     # Check if the 'from' parameter is present in the query string
     request_from = request.args.get('from')
@@ -364,7 +367,7 @@ async def single_blocklist(identifier):
         # Pass the paginated data to your template
         return await render_template('single_blocklist.html', blocklist=blocklist, dates=dates, count=formatted_count, more_data_available=more_data_available, page=page, identifier=identifier, user=handle_identifier)
     else:
-        return redirect('/')
+        return await redirect('/')
 
 
 @app.route('/fun_facts')
