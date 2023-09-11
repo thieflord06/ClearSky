@@ -323,7 +323,7 @@ async def blocklist(identifier):
 
 
 @app.route('/single_blocklist')
-async def blocklist_redirect():
+async def single_blocklist_redirect():
     if request.method == 'GET':
         # Redirect to the root URL '/'
         return redirect('/', code=302)
