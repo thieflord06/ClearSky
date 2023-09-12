@@ -42,9 +42,9 @@ async def find_handles(value):
     try:
         async with connection_pool.acquire() as connection:
             async with connection.transaction():
-                query_text = "SELECT handle FROM users WHERE lower(handle) LIKE $1 || '%' LIMIT 10"
-                search_term = f"%{value}%"
-                result = await connection.fetch(query_text, search_term)
+                query_text = "SELECT handle FROM users WHERE lower(handle) LIKE $1 || '%' LIMIT 5"
+
+                result = await connection.fetch(query_text, value)
 
                 # Extract matching handles from the database query result
                 matching_handles = [row['handle'] for row in result]

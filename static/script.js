@@ -1,5 +1,3 @@
-import debounce from 'lodash/debounce';
-
 document.addEventListener('DOMContentLoaded', function() {
     const selectionForm = document.getElementById('search-form');
     const loadingScreen = document.getElementById('loading-screen');
@@ -126,18 +124,6 @@ document.addEventListener('DOMContentLoaded', function() {
         indexContainer.style.display = 'block';
     }
 
-    // Create a debounced function that wraps your AJAX request
-    const debouncedFetch = debounce((inputText) => {
-        fetch(`/autocomplete?query=${inputText}`)
-            .then((response) => response.json())
-            .then((data) => {
-                // Handle the response as before
-            })
-            .catch((error) => {
-                console.error('Error fetching autocomplete suggestions:', error);
-            });
-    }, 300); // 300ms debounce delay (adjust as needed)
-
     // Add event listener to the identifier input field
     identifierInput.addEventListener('input', function (event) {
         // Check if the input field is empty and the selected option is not 4
@@ -149,41 +135,39 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Attach the debounced function to the input event
     handleInput.addEventListener('input', function () {
-        console.log("here");
         const inputText = handleInput.value;
-        debouncedFetch(inputText); // Call the debounced function
-    });
 
-//    handleInput.addEventListener('input', function () {
-//        const inputText = handleInput.value;
-//        console.log("here");
-//        // Make an AJAX request to the server to fetch autocomplete suggestions
-//        // Replace 'your_server_endpoint' with the actual endpoint on your server.
-//        fetch(`/autocomplete?query=${inputText}`)
-//            .then((response) => response.json())
-//            .then((data) => {
-//                // Clear previous suggestions
-//                autocompleteSuggestions.innerHTML = '';
-//
-//                // Display new suggestions
-//                data.suggestions.forEach((suggestion) => {
-//                    const suggestionItem = document.createElement('div');
-//                    suggestionItem.textContent = suggestion;
-//                    autocompleteSuggestions.appendChild(suggestionItem);
-//
-//                    // Attach a click event to each suggestion to fill the input field
-//                    suggestionItem.addEventListener('click', () => {
-//                        handleInput.value = suggestion;
-//                        autocompleteSuggestions.innerHTML = ''; // Clear suggestions
-//                    });
-//                });
-//            })
-//            .catch((error) => {
-//                console.error('Error fetching autocomplete suggestions:', error);
-//            });
-//    });
+        if (inputText === '') {
+        // If the input is empty, clear the suggestions and return
+        autocompleteSuggestions.innerHTML = '';
+        return;
+        }
+        // Make an AJAX request to the server to fetch autocomplete suggestions
+        // Replace 'your_server_endpoint' with the actual endpoint on your server.
+        fetch(`/autocomplete?query=${inputText}`)
+            .then((response) => response.json())
+            .then((data) => {
+                // Clear previous suggestions
+                autocompleteSuggestions.innerHTML = '';
+
+                // Display new suggestions
+                data.suggestions.forEach((suggestion) => {
+                    const suggestionItem = document.createElement('div');
+                    suggestionItem.textContent = suggestion;
+                    autocompleteSuggestions.appendChild(suggestionItem);
+
+                    // Attach a click event to each suggestion to fill the input field
+                    suggestionItem.addEventListener('click', () => {
+                        handleInput.value = suggestion;
+                        autocompleteSuggestions.innerHTML = ''; // Clear suggestions
+                    });
+                });
+            })
+            .catch((error) => {
+                console.error('Error fetching autocomplete suggestions:', error);
+            });
+    });
 
     // Add event listener to the form submit button
     selectionForm.addEventListener('submit', function (event) {

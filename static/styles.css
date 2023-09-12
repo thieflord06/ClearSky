@@ -12,11 +12,25 @@ body {
 #autocomplete-suggestions {
     position: absolute;
     background-color: white;
+    top: 100%
+    left: 0; /* Align it with the left edge of the input */
+    right: 0;
     border: 1px solid #ccc;
-    max-height: 150px; /* Set a maximum height to limit the suggestions' size */
+    max-height: 200px; /* Set a maximum height to limit the suggestions' size */
     overflow-y: auto; /* Enable vertical scrolling if needed */
     width: 100%; /* Match the width of the input field */
     z-index: 1; /* Ensure the suggestions appear above other elements */
+}
+
+/* Style for each suggestion item */
+#autocomplete-suggestions div {
+    padding: 5px;
+    cursor: pointer;
+}
+
+/* Style for the selected suggestion */
+#autocomplete-suggestions div:hover {
+    background-color: #f0f0f0; /* Highlight on hover */
 }
 
 .fun-facts-container {
@@ -106,6 +120,7 @@ nav {
 }
 
 .form-group {
+    position: relative;
     margin-bottom: 5px; /* Add margin at the bottom of each form group */
 }
 

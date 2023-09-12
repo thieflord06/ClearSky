@@ -292,9 +292,11 @@ async def selection_handle():
 
 @app.route('/autocomplete')
 async def autocomplete():
-    logger.info("API")
     query = request.args.get('query')
     query = query.lower()
+
+    logger.debug(f"query: {query}")
+
     if "did:" in query:
         matching_handles = None
 
