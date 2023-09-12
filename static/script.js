@@ -141,7 +141,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (inputText === '') {
         // If the input is empty, clear the suggestions and return
         autocompleteSuggestions.innerHTML = '';
-        return;
+//        return;
         }
         // Make an AJAX request to the server to fetch autocomplete suggestions
         // Replace 'your_server_endpoint' with the actual endpoint on your server.
@@ -150,7 +150,8 @@ document.addEventListener('DOMContentLoaded', function() {
             .then((data) => {
                 // Clear previous suggestions
                 autocompleteSuggestions.innerHTML = '';
-
+                                // Show the suggestions div
+                autocompleteSuggestions.style.display = 'none';
                 // Display new suggestions
                 data.suggestions.forEach((suggestion) => {
                     const suggestionItem = document.createElement('div');
@@ -163,6 +164,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         autocompleteSuggestions.innerHTML = ''; // Clear suggestions
                     });
                 });
+                // Show the suggestions div
+                autocompleteSuggestions.style.display = 'block';
             })
             .catch((error) => {
                 console.error('Error fetching autocomplete suggestions:', error);

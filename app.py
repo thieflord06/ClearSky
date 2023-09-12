@@ -297,7 +297,11 @@ async def autocomplete():
 
     logger.debug(f"query: {query}")
 
-    if "did:" in query:
+    if not query:
+        matching_handles = None
+
+        return jsonify({"suggestions": matching_handles})
+    elif "did:" in query:
         matching_handles = None
 
         return jsonify({"suggestions": matching_handles})

@@ -19,7 +19,9 @@ body {
     max-height: 200px; /* Set a maximum height to limit the suggestions' size */
     overflow-y: auto; /* Enable vertical scrolling if needed */
     width: 100%; /* Match the width of the input field */
+    max-width: 291px;
     z-index: 1; /* Ensure the suggestions appear above other elements */
+    display: none;
 }
 
 /* Style for each suggestion item */
@@ -122,6 +124,12 @@ nav {
 .form-group {
     position: relative;
     margin-bottom: 5px; /* Add margin at the bottom of each form group */
+}
+
+/* Style the note */
+.note {
+    font-size: 14px; /* Adjust the font size as needed */
+    font-weight: bold;
 }
 
 .menu li {
