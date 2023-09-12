@@ -246,6 +246,20 @@ table td {
         margin: 0; /* Remove margin to center-align columns */
     }
 
+    #autocomplete-suggestions {
+        position: absolute;
+        background-color: white;
+        top: 100%
+        left: 0; /* Align it with the left edge of the input */
+        right: 0;
+        border: 1px solid #ccc;
+        max-height: 200px; /* Set a maximum height to limit the suggestions' size */
+        overflow-y: auto; /* Enable vertical scrolling if needed */
+        width: 100%; /* Match the width of the input field */
+        max-width: none;
+        z-index: 1; /* Ensure the suggestions appear above other elements */
+        display: none;
+    }
     /* Reduce padding for better mobile spacing */
     table th,
     table td {
