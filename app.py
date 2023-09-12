@@ -18,7 +18,7 @@ config = config_helper.read_config()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "3.8.1"
+version = "3.8.2"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -65,6 +65,7 @@ async def favicon():
 
 @app.route('/frequently_asked')
 async def faq():
+    logger.info("FAQ requested.")
 
     return await render_template('coming_soon.html')
 
