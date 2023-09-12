@@ -141,8 +141,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (inputText === '') {
         // If the input is empty, clear the suggestions and return
         autocompleteSuggestions.innerHTML = '';
-//        return;
-        }
+        autocompleteSuggestions.style.display = 'none';
+
+        } else {
         // Make an AJAX request to the server to fetch autocomplete suggestions
         // Replace 'your_server_endpoint' with the actual endpoint on your server.
         fetch(`/autocomplete?query=${inputText}`)
@@ -170,6 +171,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch((error) => {
                 console.error('Error fetching autocomplete suggestions:', error);
             });
+        }
     });
 
     // Add event listener to the form submit button
