@@ -294,12 +294,15 @@ async def selection_handle():
 async def autocomplete():
     logger.info("API")
     query = request.args.get('query')
+    query = query.lower()
+    if "did:" in query:
+        matching_handles = None
 
-    # Query your data source (e.g., a list of handles)
-    # Replace 'your_handles_data' with your actual data source.
-    matching_handles = await database_handler.find_handles(query)
+        return jsonify({"suggestions": matching_handles})
+    else:
+        matching_handles = await database_handler.find_handles(query)
 
-    return jsonify({'suggestions': matching_handles})
+        return jsonify({'suggestions': matching_handles})
 
 
 @app.route('/blocklist')

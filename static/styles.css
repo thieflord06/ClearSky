@@ -9,6 +9,16 @@ body {
     background-color: #f9f9f9;
 }
 
+#autocomplete-suggestions {
+    position: absolute;
+    background-color: white;
+    border: 1px solid #ccc;
+    max-height: 150px; /* Set a maximum height to limit the suggestions' size */
+    overflow-y: auto; /* Enable vertical scrolling if needed */
+    width: 100%; /* Match the width of the input field */
+    z-index: 1; /* Ensure the suggestions appear above other elements */
+}
+
 .fun-facts-container {
     display: flex;
     justify-content: space-between; /* To create space between the columns */

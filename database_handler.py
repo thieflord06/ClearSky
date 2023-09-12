@@ -42,10 +42,8 @@ async def find_handles(value):
     try:
         async with connection_pool.acquire() as connection:
             async with connection.transaction():
-                # Use SQLAlchemy to query the database for matching handles
-                # Replace 'handles' with your actual table name and 'handle_name' with your column name.
-                query_text = "SELECT handle FROM users WHERE lower(handle) LIKE $1"
-                search_term = f"%{value.lower()}%"
+                query_text = "SELECT handle FROM users WHERE lower(handle) LIKE $1 || '%' LIMIT 10"
+                search_term = f"%{value}%"
                 result = await connection.fetch(query_text, search_term)
 
                 # Extract matching handles from the database query result
