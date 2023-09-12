@@ -16,6 +16,49 @@ document.addEventListener('DOMContentLoaded', function() {
     const TIMEOUT_DURATION = 180000;
     const handleInput = document.getElementById('identifier');
     const autocompleteSuggestions = document.getElementById('autocomplete-suggestions');
+    const fetchAutocompleteSuggestions = async (query) => {
+        const inputText = handleInput.value;
+
+        if (inputText === '') {
+        // If the input is empty, clear the suggestions and return
+        autocompleteSuggestions.innerHTML = '';
+        autocompleteSuggestions.style.display = 'none';
+
+        } else {
+        // Make an AJAX request to the server to fetch autocomplete suggestions
+        // Replace 'your_server_endpoint' with the actual endpoint on your server.
+        fetch(`/autocomplete?query=${inputText}`)
+            .then((response) => response.json())
+            .then((data) => {
+                // Clear previous suggestions
+                autocompleteSuggestions.innerHTML = '';
+                                // Show the suggestions div
+                autocompleteSuggestions.style.display = 'none';
+                // Display new suggestions
+                data.suggestions.forEach((suggestion) => {
+                    const suggestionItem = document.createElement('div');
+                    suggestionItem.textContent = suggestion;
+                    autocompleteSuggestions.appendChild(suggestionItem);
+
+                    // Attach a click event to each suggestion to fill the input field
+                    suggestionItem.addEventListener('click', () => {
+                        handleInput.value = suggestion;
+                        autocompleteSuggestions.innerHTML = ''; // Clear suggestions
+                    });
+                });
+                // Show the suggestions div
+                autocompleteSuggestions.style.display = 'block';
+            })
+            .catch((error) => {
+                console.error('Error fetching autocomplete suggestions:', error);
+            });
+        }
+    };
+    // Set the debounce delay (e.g., 300 milliseconds)
+    const debounceDelay = 300;
+
+    // Create a debounced version of your fetchAutocompleteSuggestions function
+    const debouncedFetch = debounce(fetchAutocompleteSuggestions, debounceDelay);
 
 //    // Example: Push a new state with the state object
 //    function pushNewState() {
@@ -124,6 +167,21 @@ document.addEventListener('DOMContentLoaded', function() {
         indexContainer.style.display = 'block';
     }
 
+    function debounce(func, delay) {
+        let timerId;
+
+        return function(...args) {
+            if (timerId) {
+                clearTimeout(timerId); // Clear the previous timer
+            }
+
+        timerId = setTimeout(() => {
+            func(...args); // Call the function after the delay
+            timerId = null; // Reset the timer ID
+        }, delay);
+       };
+    }
+
     // Add event listener to the identifier input field
     identifierInput.addEventListener('input', function (event) {
         // Check if the input field is empty and the selected option is not 4
@@ -133,6 +191,19 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             submitButton.disabled = false; // Enable the submit button
         }
+    });
+
+    // Attach the debounced function to the input's input event
+    handleInput.addEventListener('input', function () {
+        const inputText = handleInput.value;
+
+        if (inputText === '') {
+            // If the input is empty, you might want to clear any existing suggestions here
+            return;
+        }
+
+        // Use the debounced function to fetch autocomplete suggestions
+        debouncedFetch(inputText);
     });
 
 //    handleInput.addEventListener('input', function () {
