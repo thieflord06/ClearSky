@@ -1,7 +1,7 @@
 # app.py
 
 import quart
-from quart import Quart, render_template, request, session, redirect
+from quart import Quart, render_template, request, session, redirect, jsonify
 from datetime import datetime
 import os
 import uuid
@@ -288,6 +288,18 @@ async def selection_handle():
         logger.warning(f"Intentional error: selection = {selection}")
 
         return await render_template('intentional_error.html')
+
+
+@app.route('/autocomplete')
+async def autocomplete():
+    logger.info("API")
+    query = request.args.get('query')
+
+    # Query your data source (e.g., a list of handles)
+    # Replace 'your_handles_data' with your actual data source.
+    matching_handles = await database_handler.find_handles(query)
+
+    return jsonify({'suggestions': matching_handles})
 
 
 @app.route('/blocklist')

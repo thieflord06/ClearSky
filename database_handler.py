@@ -38,6 +38,24 @@ async def create_connection_pool():
                 logger.error("Network connection issue.")
 
 
+async def find_handles(value):
+    try:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                # Use SQLAlchemy to query the database for matching handles
+                # Replace 'handles' with your actual table name and 'handle_name' with your column name.
+                query_text = "SELECT handle FROM users WHERE lower(handle) LIKE $1"
+                search_term = f"%{value.lower()}%"
+                result = await connection.fetch(query_text, search_term)
+
+                # Extract matching handles from the database query result
+                matching_handles = [row['handle'] for row in result]
+
+                return matching_handles
+    except Exception as e:
+        logger.error(f"Error retrieving handles: {e}")
+
+
 async def count_users_table():
     async with connection_pool.acquire() as connection:
         # Execute the SQL query to count the rows in the "users" table

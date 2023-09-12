@@ -14,6 +14,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const submitButton = document.getElementById('submit-button');
     const identifierInput = document.getElementById('identifier');
     const TIMEOUT_DURATION = 180000;
+    const handleInput = document.getElementById('identifier');
+    const autocompleteSuggestions = document.getElementById('autocomplete-suggestions');
 
 //    // Example: Push a new state with the state object
 //    function pushNewState() {
@@ -131,6 +133,35 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             submitButton.disabled = false; // Enable the submit button
         }
+    });
+
+    handleInput.addEventListener('input', function () {
+        const inputText = handleInput.value;
+        console.log("here");
+        // Make an AJAX request to the server to fetch autocomplete suggestions
+        // Replace 'your_server_endpoint' with the actual endpoint on your server.
+        fetch(`/autocomplete?query=${inputText}`)
+            .then((response) => response.json())
+            .then((data) => {
+                // Clear previous suggestions
+                autocompleteSuggestions.innerHTML = '';
+
+                // Display new suggestions
+                data.suggestions.forEach((suggestion) => {
+                    const suggestionItem = document.createElement('div');
+                    suggestionItem.textContent = suggestion;
+                    autocompleteSuggestions.appendChild(suggestionItem);
+
+                    // Attach a click event to each suggestion to fill the input field
+                    suggestionItem.addEventListener('click', () => {
+                        handleInput.value = suggestion;
+                        autocompleteSuggestions.innerHTML = ''; // Clear suggestions
+                    });
+                });
+            })
+            .catch((error) => {
+                console.error('Error fetching autocomplete suggestions:', error);
+            });
     });
 
     // Add event listener to the form submit button
