@@ -18,7 +18,7 @@ config = config_helper.read_config()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "3.8.0"
+version = "3.8.1"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -290,107 +290,6 @@ async def selection_handle():
         return await render_template('intentional_error.html')
 
 
-@app.route('/autocomplete')
-async def autocomplete():
-    query = request.args.get('query')
-    query = query.lower()
-
-    logger.debug(f"query: {query}")
-
-    if not query:
-        matching_handles = None
-
-        return jsonify({"suggestions": matching_handles})
-    elif "did:" in query:
-        matching_handles = None
-
-        return jsonify({"suggestions": matching_handles})
-    else:
-        matching_handles = await database_handler.find_handles(query)
-
-        return jsonify({'suggestions': matching_handles})
-
-
-@app.route('/blocklist')
-async def blocklist_redirect():
-    if request.method == 'GET':
-        # Redirect to the root URL '/'
-        return await redirect('/', code=302)
-
-
-@app.route('/blocklist/<identifier>')
-async def blocklist(identifier):
-    if not identifier:
-
-        return await redirect('/', code=302)
-
-    # Check if the 'from' parameter is present in the query string
-    request_from = request.args.get('from')
-
-    if request_from == 'next' or request_from == 'previous':
-        # Get pagination parameters from the request (e.g., page number)
-        page = request.args.get('page', default=1, type=int)
-        items_per_page = 100
-        offset = (page - 1) * items_per_page
-
-        blocklist, count = await utils.process_user_block_list(identifier, limit=items_per_page, offset=offset)
-
-        formatted_count = '{:,}'.format(count)
-        if utils.is_did(identifier):
-            handle_identifier = await utils.use_handle(identifier)
-
-        more_data_available = (offset + len(blocklist)) < count
-
-        if offset + items_per_page > count:
-            more_data_available = False
-
-        # Pass the paginated data to your template
-        return await render_template('blocklist.html', blocklist=blocklist, count=formatted_count, more_data_available=more_data_available, page=page, identifier=identifier, user=handle_identifier)
-    else:
-        return await redirect('/')
-
-
-@app.route('/single_blocklist')
-async def single_blocklist_redirect():
-    if request.method == 'GET':
-        # Redirect to the root URL '/'
-        return await redirect('/', code=302)
-
-
-@app.route('/single_blocklist/<identifier>')
-async def single_blocklist(identifier):
-    if not identifier:
-
-        return await redirect('/', code=302)
-
-    # Check if the 'from' parameter is present in the query string
-    request_from = request.args.get('from')
-
-    if request_from == 'next' or request_from == 'previous':
-        # Get pagination parameters from the request (e.g., page number)
-        page = request.args.get('page', default=1, type=int)
-        items_per_page = 100
-        offset = (page - 1) * items_per_page
-
-        blocks, dates, count = await utils.get_single_user_blocks(identifier, limit=items_per_page, offset=offset)
-
-        blocklist = list(zip(blocks, dates))
-
-        formatted_count = '{:,}'.format(count)
-        if utils.is_did(identifier):
-            handle_identifier = await utils.use_handle(identifier)
-
-        more_data_available = (offset + len(blocks)) < count
-
-        if offset + items_per_page > count:
-            more_data_available = False
-
-        # Pass the paginated data to your template
-        return await render_template('single_blocklist.html', blocklist=blocklist, dates=dates, count=formatted_count, more_data_available=more_data_available, page=page, identifier=identifier, user=handle_identifier)
-    else:
-        return await redirect('/')
-
-
 @app.route('/fun_facts')
 async def fun_facts():
     logger.info("Fun facts requested.")
@@ -463,6 +362,109 @@ async def block_stats():
                                  total_users='{:,}'.format(total_users),
                                  percent_users_blocked=percent_users_blocked,
                                  percent_users_blocking=percent_users_blocking)
+
+
+# ======================================================================================================================
+# ============================================= API Endpoints +=========================================================
+@app.route('/autocomplete')
+async def autocomplete():
+    query = request.args.get('query')
+    query = query.lower()
+
+    logger.debug(f"query: {query}")
+
+    if not query:
+        matching_handles = None
+
+        return jsonify({"suggestions": matching_handles})
+    elif "did:" in query:
+        matching_handles = None
+
+        return jsonify({"suggestions": matching_handles})
+    else:
+        matching_handles = await database_handler.find_handles(query)
+
+        return jsonify({'suggestions': matching_handles})
+
+
+@app.route('/blocklist')
+async def blocklist_redirect():
+    if request.method == 'GET':
+        # Redirect to the root URL '/'
+        return redirect('/', code=302)
+
+
+@app.route('/blocklist/<identifier>')
+async def blocklist(identifier):
+    if not identifier:
+
+        return redirect('/', code=302)
+
+    # Check if the 'from' parameter is present in the query string
+    request_from = request.args.get('from')
+
+    if request_from == 'next' or request_from == 'previous':
+        # Get pagination parameters from the request (e.g., page number)
+        page = request.args.get('page', default=1, type=int)
+        items_per_page = 100
+        offset = (page - 1) * items_per_page
+
+        blocklist, count = await utils.process_user_block_list(identifier, limit=items_per_page, offset=offset)
+
+        formatted_count = '{:,}'.format(count)
+        if utils.is_did(identifier):
+            handle_identifier = await utils.use_handle(identifier)
+
+        more_data_available = (offset + len(blocklist)) < count
+
+        if offset + items_per_page > count:
+            more_data_available = False
+
+        # Pass the paginated data to your template
+        return await render_template('blocklist.html', blocklist=blocklist, count=formatted_count, more_data_available=more_data_available, page=page, identifier=identifier, user=handle_identifier)
+    else:
+        return redirect('/')
+
+
+@app.route('/single_blocklist')
+async def single_blocklist_redirect():
+    if request.method == 'GET':
+        # Redirect to the root URL '/'
+        return redirect('/', code=302)
+
+
+@app.route('/single_blocklist/<identifier>')
+async def single_blocklist(identifier):
+    if not identifier:
+
+        return redirect('/', code=302)
+
+    # Check if the 'from' parameter is present in the query string
+    request_from = request.args.get('from')
+
+    if request_from == 'next' or request_from == 'previous':
+        # Get pagination parameters from the request (e.g., page number)
+        page = request.args.get('page', default=1, type=int)
+        items_per_page = 100
+        offset = (page - 1) * items_per_page
+
+        blocks, dates, count = await utils.get_single_user_blocks(identifier, limit=items_per_page, offset=offset)
+
+        blocklist = list(zip(blocks, dates))
+
+        formatted_count = '{:,}'.format(count)
+        if utils.is_did(identifier):
+            handle_identifier = await utils.use_handle(identifier)
+
+        more_data_available = (offset + len(blocks)) < count
+
+        if offset + items_per_page > count:
+            more_data_available = False
+
+        # Pass the paginated data to your template
+        return await render_template('single_blocklist.html', blocklist=blocklist, dates=dates, count=formatted_count, more_data_available=more_data_available, page=page, identifier=identifier, user=handle_identifier)
+    else:
+        return redirect('/')
 
 
 # ======================================================================================================================
