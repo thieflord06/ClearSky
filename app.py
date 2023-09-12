@@ -63,6 +63,12 @@ async def favicon():
     return await quart.send_from_directory('images', 'favicon.png')
 
 
+@app.route('/frequently_asked')
+async def faq():
+
+    return await render_template('coming_soon.html')
+
+
 @app.route('/coming_soon')
 async def coming_soon():
 
