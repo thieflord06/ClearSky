@@ -8,6 +8,7 @@ import utils
 from config_helper import logger
 from aiolimiter import AsyncLimiter
 from cachetools import TTLCache
+import redis
 
 # Connection pool and lock
 connection_pool = None
@@ -36,6 +37,61 @@ async def create_connection_pool():
                 )
             except OSError:
                 logger.error("Network connection issue.")
+
+
+async def populate_redis_with_handles():
+    try:
+        # Query handles in batches
+        batch_size = 1000  # Adjust the batch size as needed
+        offset = 0
+        batch_count = 0
+        while True:
+            async with connection_pool.acquire() as connection:
+                async with connection.transaction():
+                    logger.info("Transferring handles to cache.")
+                    # Query all handles from the database
+                    query_text = "SELECT handle FROM users LIMIT $1 OFFSET $2"
+                    result = await connection.fetch(query_text, batch_size, offset)
+
+                    if not result:
+                        break  # No more handles to fetch
+                    # logger.debug(str(result))
+                    # Store handles in Redis set
+                    with redis_client.pipeline() as pipe:
+                        for row in result:
+                            handle = row['handle']
+                            logger.debug(str(handle))
+                            if handle:  # Check if handle is not empty
+                                pipe.sadd('handles', handle)
+                        pipe.execute()
+
+                    offset += batch_size
+                    batch_count += 1
+
+                    logger.info(f"Batch {batch_count} processed. Total handles added: {offset}")
+
+        logger.info("Handles added to cache successfully.")
+
+        return None
+    except Exception as e:
+        logger.error(f"Error adding handles to Redis: {e}")
+
+        return "Error"
+    finally:
+        # Close the Redis connection
+        redis_client.close()
+
+
+async def retrieve_autocomplete_handles(query):
+    # Check if results are in the cache
+    cached_results = redis_client.smembers(query)
+    if cached_results:
+        return cached_results
+    else:
+        # Query the database for autocomplete results
+        results = await find_handles(query)
+
+        return results
 
 
 async def find_handles(value):
@@ -851,18 +907,27 @@ def get_database_config():
             pg_password = config.get("database", "pg_password")
             pg_host = config.get("database", "pg_host")
             pg_database = config.get("database", "pg_database")
+            redis_host = config.get("redis", "host")
+            redis_port = config.get("redis", "port")
+            redis_db = config.get("redis", "db")
         else:
             logger.info("Database connection: Using environment variables.")
             pg_user = os.environ.get("PG_USER")
             pg_password = os.environ.get("PG_PASSWORD")
             pg_host = os.environ.get("PG_HOST")
             pg_database = os.environ.get("PG_DATABASE")
+            redis_host = os.environ.get("REDIS_HOST")
+            redis_port = os.environ.get("REDIS_PORT")
+            redis_db = os.environ.get("REDIS_DB")
 
         return {
             "user": pg_user,
             "password": pg_password,
             "host": pg_host,
-            "database": pg_database
+            "database": pg_database,
+            "redis_host": redis_host,
+            "redis_port": redis_port,
+            "redis_db": redis_db
         }
     except Exception:
         logger.error("Database connection information not present: Set environment variables or config.ini")
@@ -878,3 +943,8 @@ pg_user = database_config["user"]
 pg_password = database_config["password"]
 pg_host = database_config["host"]
 pg_database = database_config["database"]
+redis_host = database_config["redis_host"]
+redis_port = database_config["redis_port"]
+redis_db = database_config["redis_db"]
+
+redis_client = redis.Redis(host=redis_host, port=redis_port, db=redis_db)

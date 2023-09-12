@@ -382,7 +382,7 @@ async def autocomplete():
 
         return jsonify({"suggestions": matching_handles})
     else:
-        matching_handles = await database_handler.find_handles(query)
+        matching_handles = await database_handler.retrieve_autocomplete_handles(query)
 
         return jsonify({'suggestions': matching_handles})
 

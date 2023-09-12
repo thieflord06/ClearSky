@@ -14,6 +14,7 @@ import app
 # python update_manager.py --update-blocklists-db // command to update all users blocklists
 # python update_manager.py --retrieve-blocklists-db // initial/re-initialize get for blocklists database
 # python update_manager.py --update-handles // update new dids and handles to existing users table
+# python update_manager.py --update-redis-cache // update handles in redis
 
 
 async def main():
@@ -24,6 +25,7 @@ async def main():
     parser.add_argument('--update-blocklists-db', action='store_true', help='Update the blocklists table')
     parser.add_argument('--retrieve-blocklists-db', action='store_true', help='Initial/re-initialize get for blocklists database')
     parser.add_argument('--update-handles', action='store_true', help='update with new dids and update those new dids with handles')
+    parser.add_argument('--update-redis-cache', action='store_true', help='Update the redis cache')
     args = parser.parse_args()
 
     await database_handler.create_connection_pool()  # Creates connection pool for db
@@ -162,6 +164,11 @@ async def main():
         await database_handler.delete_blocklist_temporary_table()
         logger.info("Update Blocklists db finished.")
         sys.exit()
+    elif args.update_redis_cache:
+        logger.info("Cache update requested.")
+        status = await database_handler.populate_redis_with_handles()
+        if not status:
+            logger.info("Cache update complete.")
 
 
 if __name__ == '__main__':
