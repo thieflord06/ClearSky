@@ -51,7 +51,7 @@ async def find_handles(value):
 
                 return matching_handles
     except Exception as e:
-        logger.error(f"Error retrieving handles: {e}")
+        logger.error(f"Error retrieving autocomplete handles: {e}")
 
 
 async def count_users_table():
