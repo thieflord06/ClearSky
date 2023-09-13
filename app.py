@@ -369,10 +369,10 @@ async def block_stats():
     percent_users_blocked = round(percent_users_blocked, 2)
     percent_users_blocking = round(percent_users_blocking, 2)
 
-    percent_number_blocking_1 = round((int(number_blocking_1) / int(total_users) * 100), 2)
-    percent_number_blocking_2_and_100 = round((int(number_blocking_2_and_100) / int(total_users) * 100), 2)
-    percent_number_blocking_101_and_1000 = round((int(number_blocking_101_and_1000) / int(total_users) * 100), 2)
-    percent_number_blocking_greater_than_1000 = round((int(number_blocking_greater_than_1000) / int(total_users) * 100), 2)
+    percent_number_blocking_1 = round((int(number_blocking_1) / int(number_of_unique_users_blocking) * 100), 2)
+    percent_number_blocking_2_and_100 = round((int(number_blocking_2_and_100) / int(number_of_unique_users_blocking) * 100), 2)
+    percent_number_blocking_101_and_1000 = round((int(number_blocking_101_and_1000) / int(number_of_unique_users_blocking) * 100), 2)
+    percent_number_blocking_greater_than_1000 = round((int(number_blocking_greater_than_1000) / int(number_of_unique_users_blocking) * 100), 2)
 
     return await render_template('blocklist_stats.html', number_of_total_blocks='{:,}'.format(number_of_total_blocks),
                                  number_of_unique_users_blocked='{:,}'.format(number_of_unique_users_blocked),
