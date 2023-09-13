@@ -352,19 +352,19 @@ async def block_stats():
     number_blocking_2_and_100 = utils.number_blocking_2_and_100_cache.get("block2to100")
     number_blocking_101_and_1000 = utils.number_blocking_101_and_1000_cache.get("block101to1000")
     number_blocking_greater_than_1000 = utils.number_blocking_greater_than_1000_cache.get("blockmore1000")
-    mean_number_of_blocks = utils.mean_number_of_blocks_cache.get("meanblocks")
+    average_number_of_blocks = utils.average_number_of_blocks_cache.get("meanblocks")
     number_blocked_1 = utils.number_blocked_1_cache.get("blocked1")
     number_blocked_2_and_100 = utils.number_blocked_2_and_100_cache.get("blocked2to100")
     number_blocked_101_and_1000 = utils.number_blocked_101_and_1000_cache.get("blocked101to1000")
     number_blocked_greater_than_1000 = utils.number_blocked_greater_than_1000_cache.get("blockedmore1000")
-    mean_number_of_blocked = utils.mean_number_of_blocked_cache.get("meanblocked")
+    average_number_of_blocked = utils.average_number_of_blocked_cache.get("meanblocked")
 
     async with update_lock:
         # Check if both lists are empty
         if (number_of_total_blocks is None or number_of_unique_users_blocked is None or number_of_unique_users_blocking is None or
                 number_blocking_1 is None or number_blocking_2_and_100 is None or number_blocking_101_and_1000 is None or number_blocking_greater_than_1000 is None
-                or mean_number_of_blocks is None or number_blocked_1 is None or number_blocked_2_and_100 is None or
-                number_blocked_101_and_1000 is None or number_blocked_greater_than_1000 or mean_number_of_blocked is None):
+                or average_number_of_blocks is None or number_blocked_1 is None or number_blocked_2_and_100 is None or
+                number_blocked_101_and_1000 is None or number_blocked_greater_than_1000 or average_number_of_blocked is None):
             logger.info("Getting new cache.")
             (number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking,
              number_blocking_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000,
@@ -403,7 +403,7 @@ async def block_stats():
                                  percent_number_blocking_2_and_100=percent_number_blocking_2_and_100,
                                  percent_number_blocking_101_and_1000=percent_number_blocking_101_and_1000,
                                  percent_number_blocking_greater_than_1000=percent_number_blocking_greater_than_1000,
-                                 mean_number_of_blocks='{:,}'.format(mean_number_of_blocks),
+                                 average_number_of_blocks='{:,}'.format(average_number_of_blocks),
                                  number_blocked_1='{:,}'.format(number_blocked_1),
                                  number_blocked_2_and_100='{:,}'.format(number_blocked_2_and_100),
                                  number_blocked_101_and_1000='{:,}'.format(number_blocked_101_and_1000),
@@ -412,7 +412,7 @@ async def block_stats():
                                  percent_number_blocked_2_and_100=percent_number_blocked_2_and_100,
                                  percent_number_blocked_101_and_1000=percent_number_blocked_101_and_1000,
                                  percent_number_blocked_greater_than_1000=percent_number_blocked_greater_than_1000,
-                                 mean_number_of_blocked=mean_number_of_blocked
+                                 average_number_of_blocked=average_number_of_blocked
                                  )
 
 
