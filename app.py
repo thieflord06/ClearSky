@@ -348,7 +348,7 @@ async def block_stats():
     number_of_total_blocks = utils.number_of_total_blocks_cache.get("total_blocks")
     number_of_unique_users_blocked = utils.number_of_unique_users_blocked_cache.get("unique_blocked")
     number_of_unique_users_blocking = utils.number_of_unique_users_blocking_cache.get("unique_blocker")
-    number_block_1 = utils.number_block_1_cache.get("block1")
+    number_blocking_1 = utils.number_block_1_cache.get("block1")
     number_blocking_2_and_100 = utils.number_blocking_2_and_100_cache.get("block2to100")
     number_blocking_101_and_1000 = utils.number_blocking_101_and_1000_cache.get("block101to1000")
     number_blocking_greater_than_1000 = utils.number_blocking_greater_than_1000_cache.get("blockmore1000")
@@ -356,10 +356,10 @@ async def block_stats():
     async with update_lock:
         # Check if both lists are empty
         if (number_of_total_blocks is None or number_of_unique_users_blocked is None or number_of_unique_users_blocking is None or
-                number_block_1 is None or number_blocking_2_and_100 is None or number_blocking_101_and_1000 is None or number_blocking_greater_than_1000 is None):
+                number_blocking_1 is None or number_blocking_2_and_100 is None or number_blocking_101_and_1000 is None or number_blocking_greater_than_1000 is None):
             logger.info("Getting new cache.")
             (number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking,
-             number_block_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000) = await utils.update_block_statistics()
+             number_blocking_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000) = await utils.update_block_statistics()
 
     total_users = await utils.get_user_count()
 
@@ -369,16 +369,25 @@ async def block_stats():
     percent_users_blocked = round(percent_users_blocked, 2)
     percent_users_blocking = round(percent_users_blocking, 2)
 
+    percent_number_blocking_1 = round((int(number_blocking_1) / int(total_users) * 100), 2)
+    percent_number_blocking_2_and_100 = round((int(number_blocking_2_and_100) / int(total_users) * 100), 2)
+    percent_number_blocking_101_and_1000 = round((int(number_blocking_101_and_1000) / int(total_users) * 100), 2)
+    percent_number_blocking_greater_than_1000 = round((int(number_blocking_greater_than_1000) / int(total_users) * 100), 2)
+
     return await render_template('blocklist_stats.html', number_of_total_blocks='{:,}'.format(number_of_total_blocks),
                                  number_of_unique_users_blocked='{:,}'.format(number_of_unique_users_blocked),
                                  number_of_unique_users_blocking='{:,}'.format(number_of_unique_users_blocking),
                                  total_users='{:,}'.format(total_users),
                                  percent_users_blocked=percent_users_blocked,
                                  percent_users_blocking=percent_users_blocking,
-                                 number_block_1='{:,}'.format(number_block_1),
+                                 number_block_1='{:,}'.format(number_blocking_1),
                                  number_blocking_2_and_100='{:,}'.format(number_blocking_2_and_100),
                                  number_blocking_101_and_1000='{:,}'.format(number_blocking_101_and_1000),
-                                 number_blocking_greater_than_1000='{:,}'.format(number_blocking_greater_than_1000))
+                                 number_blocking_greater_than_1000='{:,}'.format(number_blocking_greater_than_1000),
+                                 percent_number_blocking_1=percent_number_blocking_1,
+                                 percent_number_blocking_2_and_100=percent_number_blocking_2_and_100,
+                                 percent_number_blocking_101_and_1000=percent_number_blocking_101_and_1000,
+                                 percent_number_blocking_greater_than_1000=percent_number_blocking_greater_than_1000)
 
 
 # ======================================================================================================================
