@@ -18,7 +18,7 @@ config = config_helper.read_config()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "3.9.1"
+version = "3.9.2"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -352,14 +352,24 @@ async def block_stats():
     number_blocking_2_and_100 = utils.number_blocking_2_and_100_cache.get("block2to100")
     number_blocking_101_and_1000 = utils.number_blocking_101_and_1000_cache.get("block101to1000")
     number_blocking_greater_than_1000 = utils.number_blocking_greater_than_1000_cache.get("blockmore1000")
+    mean_number_of_blocks = utils.mean_number_of_blocks_cache.get("meanblocks")
+    number_blocked_1 = utils.number_blocked_1_cache.get("blocked1")
+    number_blocked_2_and_100 = utils.number_blocked_2_and_100_cache.get("blocked2to100")
+    number_blocked_101_and_1000 = utils.number_blocked_101_and_1000_cache.get("blocked101to1000")
+    number_blocked_greater_than_1000 = utils.number_blocked_greater_than_1000_cache.get("blockedmore1000")
+    mean_number_of_blocked = utils.mean_number_of_blocked_cache.get("meanblocked")
 
     async with update_lock:
         # Check if both lists are empty
         if (number_of_total_blocks is None or number_of_unique_users_blocked is None or number_of_unique_users_blocking is None or
-                number_blocking_1 is None or number_blocking_2_and_100 is None or number_blocking_101_and_1000 is None or number_blocking_greater_than_1000 is None):
+                number_blocking_1 is None or number_blocking_2_and_100 is None or number_blocking_101_and_1000 is None or number_blocking_greater_than_1000 is None
+                or mean_number_of_blocks is None or number_blocked_1 is None or number_blocked_2_and_100 is None or
+                number_blocked_101_and_1000 is None or number_blocked_greater_than_1000 or mean_number_of_blocked is None):
             logger.info("Getting new cache.")
             (number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking,
-             number_blocking_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000) = await utils.update_block_statistics()
+             number_blocking_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000,
+             mean_number_of_blocks, number_blocked_1, number_blocked_2_and_100, number_blocked_101_and_1000,
+                number_blocked_greater_than_1000, mean_number_of_blocked) = await utils.update_block_statistics()
 
     total_users = await utils.get_user_count()
 
@@ -374,6 +384,11 @@ async def block_stats():
     percent_number_blocking_101_and_1000 = round((int(number_blocking_101_and_1000) / int(number_of_unique_users_blocking) * 100), 2)
     percent_number_blocking_greater_than_1000 = round((int(number_blocking_greater_than_1000) / int(number_of_unique_users_blocking) * 100), 2)
 
+    percent_number_blocked_1 = round((int(number_blocked_1) / int(number_of_unique_users_blocked) * 100), 2)
+    percent_number_blocked_2_and_100 = round((int(number_blocked_2_and_100) / int(number_of_unique_users_blocked) * 100), 2)
+    percent_number_blocked_101_and_1000 = round((int(number_blocked_101_and_1000) / int(number_of_unique_users_blocked) * 100), 2)
+    percent_number_blocked_greater_than_1000 = round((int(number_blocked_greater_than_1000) / int(number_of_unique_users_blocked) * 100), 2)
+
     return await render_template('blocklist_stats.html', number_of_total_blocks='{:,}'.format(number_of_total_blocks),
                                  number_of_unique_users_blocked='{:,}'.format(number_of_unique_users_blocked),
                                  number_of_unique_users_blocking='{:,}'.format(number_of_unique_users_blocking),
@@ -387,7 +402,18 @@ async def block_stats():
                                  percent_number_blocking_1=percent_number_blocking_1,
                                  percent_number_blocking_2_and_100=percent_number_blocking_2_and_100,
                                  percent_number_blocking_101_and_1000=percent_number_blocking_101_and_1000,
-                                 percent_number_blocking_greater_than_1000=percent_number_blocking_greater_than_1000)
+                                 percent_number_blocking_greater_than_1000=percent_number_blocking_greater_than_1000,
+                                 mean_number_of_blocks='{:,}'.format(mean_number_of_blocks),
+                                 number_blocked_1='{:,}'.format(number_blocked_1),
+                                 number_blocked_2_and_100='{:,}'.format(number_blocked_2_and_100),
+                                 number_blocked_101_and_1000='{:,}'.format(number_blocked_101_and_1000),
+                                 number_blocked_greater_than_1000='{:,}'.format(number_blocked_greater_than_1000),
+                                 percent_number_blocked_1=percent_number_blocked_1,
+                                 percent_number_blocked_2_and_100=percent_number_blocked_2_and_100,
+                                 percent_number_blocked_101_and_1000=percent_number_blocked_101_and_1000,
+                                 percent_number_blocked_greater_than_1000=percent_number_blocked_greater_than_1000,
+                                 mean_number_of_blocked=mean_number_of_blocked
+                                 )
 
 
 # ======================================================================================================================

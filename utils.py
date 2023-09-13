@@ -31,6 +31,12 @@ number_block_1_cache = TTLCache(maxsize=200, ttl=3600)
 number_blocking_2_and_100_cache = TTLCache(maxsize=200, ttl=3600)
 number_blocking_101_and_1000_cache = TTLCache(maxsize=200, ttl=3600)
 number_blocking_greater_than_1000_cache = TTLCache(maxsize=200, ttl=3600)
+mean_number_of_blocks_cache = TTLCache(maxsize=200, ttl=3600)
+number_blocked_1_cache = TTLCache(maxsize=200, ttl=3600)
+number_blocked_2_and_100_cache = TTLCache(maxsize=200, ttl=3600)
+number_blocked_101_and_1000_cache = TTLCache(maxsize=200, ttl=3600)
+number_blocked_greater_than_1000_cache = TTLCache(maxsize=200, ttl=3600)
+mean_number_of_blocked_cache = TTLCache(maxsize=200, ttl=3600)
 
 
 # ======================================================================================================================
@@ -173,7 +179,9 @@ async def resolve_top24_block_lists():
 async def update_block_statistics():
     logger.info("Updating block statsitics.")
     (number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking,
-     number_block_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000) = await database_handler.get_block_stats()
+     number_block_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000, mean_number_of_blocks,
+     number_blocked_1, number_blocked_2_and_100, number_blocked_101_and_1000, number_blocked_greater_than_1000, mean_number_of_blocked
+     ) = await database_handler.get_block_stats()
 
     number_of_total_blocks_cache["total_blocks"] = number_of_total_blocks
     number_of_unique_users_blocked_cache["unique_blocked"] = number_of_unique_users_blocked
@@ -182,9 +190,17 @@ async def update_block_statistics():
     number_blocking_2_and_100_cache["block2to100"] = number_blocking_2_and_100
     number_blocking_101_and_1000_cache["block101to1000"] = number_blocking_101_and_1000
     number_blocking_greater_than_1000_cache["blockmore1000"] = number_blocking_greater_than_1000
+    mean_number_of_blocks_cache["meanblocks"] = mean_number_of_blocks
+    number_blocked_1_cache["blocked1"] = number_blocked_1
+    number_blocking_2_and_100_cache["blocked2to100"] = number_blocked_2_and_100
+    number_blocking_101_and_1000_cache["blocked101to1000"] = number_blocking_101_and_1000
+    number_blocked_greater_than_1000_cache["blockedmore1000"] = number_blocked_greater_than_1000
+    mean_number_of_blocked_cache["meanblocked"] = mean_number_of_blocked
 
     return (number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking,
-            number_block_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000)
+            number_block_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000,
+            mean_number_of_blocks, number_blocked_1, number_blocked_2_and_100, number_blocked_101_and_1000,
+            number_blocked_greater_than_1000, mean_number_of_blocked)
 
 
 async def get_all_users():

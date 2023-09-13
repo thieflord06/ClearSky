@@ -657,7 +657,46 @@ async def get_block_stats():
                                     GROUP BY user_did
                                     HAVING COUNT(DISTINCT blocked_did) > 1000
                                 ) AS subquery'''
-
+                query_8 = '''SELECT AVG(block_count) AS mean_blocks
+                                FROM (
+                                    SELECT user_did, COUNT(DISTINCT blocked_did) AS block_count
+                                    FROM blocklists
+                                    GROUP BY user_did
+                                ) AS subquery'''
+                query_9 = '''SELECT COUNT(*) AS user_count
+                                FROM (
+                                    SELECT blocked_did
+                                    FROM blocklists
+                                    GROUP BY blocked_did
+                                    HAVING COUNT(DISTINCT user_did) = 1
+                                ) AS subquery'''
+                query_10 = '''SELECT COUNT(*) AS user_count
+                                FROM (
+                                    SELECT blocked_did
+                                    FROM blocklists
+                                    GROUP BY blocked_did
+                                    HAVING COUNT(DISTINCT user_did) BETWEEN 2 AND 100
+                                ) AS subquery'''
+                query_11 = '''SELECT COUNT(*) AS user_count
+                                FROM (
+                                    SELECT blocked_did
+                                    FROM blocklists
+                                    GROUP BY blocked_did
+                                    HAVING COUNT(DISTINCT user_did) BETWEEN 101 AND 1000
+                                ) AS subquery'''
+                query_12 = '''SELECT COUNT(*) AS user_count
+                                FROM (
+                                    SELECT blocked_did
+                                    FROM blocklists
+                                    GROUP BY blocked_did
+                                    HAVING COUNT(DISTINCT user_did) > 1000
+                                ) AS subquery'''
+                query_13 = '''SELECT AVG(block_count) AS mean_blocks
+                                FROM (
+                                    SELECT blocked_did, COUNT(DISTINCT user_did) AS block_count
+                                    FROM blocklists
+                                    GROUP BY blocked_did
+                                ) AS subquery'''
                 number_of_total_blocks = await connection.fetchval(query_1)
                 logger.info("Completed query 1")
                 number_of_unique_users_blocked = await connection.fetchval(query_2)
@@ -672,10 +711,24 @@ async def get_block_stats():
                 logger.info("Completed query 6")
                 number_blocking_greater_than_1000 = await connection.fetchval(query_7)
                 logger.info("Completed query 7")
+                mean_number_of_blocks = await connection.fetchval(query_8)
+                logger.info("Completed query 8")
+                number_blocked_1 = await connection.fetchval(query_9)
+                logger.info("Completed query 9")
+                number_blocked_2_and_100 = await connection.fetchval(query_10)
+                logger.info("Completed query 10")
+                number_blocked_101_and_1000 = await connection.fetchval(query_11)
+                logger.info("Completed query 11")
+                number_blocked_greater_than_1000 = await connection.fetchval(query_12)
+                logger.info("Completed query 12")
+                mean_number_blocked = await connection.fetchval(query_13)
+                logger.info("Completed query 13")
 
                 logger.info("All blocklist queries complete.")
                 return (number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking,
-                        number_block_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000)
+                        number_block_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000,
+                        mean_number_of_blocks, number_blocked_1, number_blocked_2_and_100, number_blocked_101_and_1000,
+                        number_blocked_greater_than_1000, mean_number_blocked)
     except Exception as e:
         logger.error(f"Error retrieving data from db: {e}")
 
