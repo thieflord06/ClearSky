@@ -659,13 +659,21 @@ async def get_block_stats():
                                 ) AS subquery'''
 
                 number_of_total_blocks = await connection.fetchval(query_1)
+                logger.info("Completed query 1")
                 number_of_unique_users_blocked = await connection.fetchval(query_2)
+                logger.info("Completed query 2")
                 number_of_unique_users_blocking = await connection.fetchval(query_3)
+                logger.info("Completed query 3")
                 number_block_1 = await connection.fetchval(query_4)
+                logger.info("Completed query 4")
                 number_blocking_2_and_100 = await connection.fetchval(query_5)
+                logger.info("Completed query 5")
                 number_blocking_101_and_1000 = await connection.fetchval(query_6)
+                logger.info("Completed query 6")
                 number_blocking_greater_than_1000 = await connection.fetchval(query_7)
+                logger.info("Completed query 7")
 
+                logger.info("All blocklist queries complete.")
                 return (number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking,
                         number_block_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000)
     except Exception as e:
