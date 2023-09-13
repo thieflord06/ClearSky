@@ -11,6 +11,10 @@
         <p>Number of users blocking someone: {{ number_of_unique_users_blocking }}</p>
         <p>Percent of users blocked by someone: {{ percent_users_blocked }}%</p>
         <p>Percent of users blocking someone: {{ percent_users_blocking }}%</p>
+        <p>Number of users blocking 1 user: {{ number_block_1 }}</p>
+        <p>Number of users blocking 2-100 users: {{ number_blocking_2_and_100 }}</p>
+        <p>Number of users blocking 101-1000 users: {{ number_blocking_101_and_1000 }}</p>
+        <p>Number of users blocking more than 1000 users: {{ number_blocking_greater_than_1000 }}</p>
 <!--        <a href="/" class="btn btn-primary">Go Back</a>-->
     </div>
 {% endblock %}

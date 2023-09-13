@@ -629,12 +629,45 @@ async def get_block_stats():
                 query_1 = '''SELECT COUNT(blocked_did) from blocklists'''
                 query_2 = '''select count(distinct blocked_did) from blocklists'''
                 query_3 = '''select count(distinct user_did) from blocklists'''
+                query_4 = '''SELECT COUNT(*) AS user_count 
+                                FROM (
+                                SELECT user_did
+                                FROM blocklists
+                                GROUP BY user_did
+                                HAVING COUNT(DISTINCT blocked_did) = 1
+                            ) AS subquery'''
+                query_5 = '''SELECT COUNT(DISTINCT user_did) AS user_count
+                                FROM (
+                                    SELECT user_did
+                                    FROM blocklists
+                                    GROUP BY user_did
+                                    HAVING COUNT(DISTINCT blocked_did) BETWEEN 2 AND 100
+                                ) AS subquery'''
+                query_6 = '''SELECT COUNT(DISTINCT user_did) AS user_count
+                                FROM (
+                                    SELECT user_did
+                                    FROM blocklists
+                                    GROUP BY user_did
+                                    HAVING COUNT(DISTINCT blocked_did) BETWEEN 101 AND 1000
+                                ) AS subquery'''
+                query_7 = '''SELECT COUNT(DISTINCT user_did) AS user_count
+                                FROM (
+                                    SELECT user_did
+                                    FROM blocklists
+                                    GROUP BY user_did
+                                    HAVING COUNT(DISTINCT blocked_did) > 1000
+                                ) AS subquery'''
 
                 number_of_total_blocks = await connection.fetchval(query_1)
                 number_of_unique_users_blocked = await connection.fetchval(query_2)
                 number_of_unique_users_blocking = await connection.fetchval(query_3)
+                number_block_1 = await connection.fetchval(query_4)
+                number_blocking_2_and_100 = await connection.fetchval(query_5)
+                number_blocking_101_and_1000 = await connection.fetchval(query_6)
+                number_blocking_greater_than_1000 = await connection.fetchval(query_7)
 
-                return number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking
+                return (number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking,
+                        number_block_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000)
     except Exception as e:
         logger.error(f"Error retrieving data from db: {e}")
 
