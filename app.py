@@ -378,20 +378,30 @@ async def autocomplete():
     query = request.args.get('query')
     query = query.lower()
 
+    # Remove the '@' symbol if it exists
+    query_without_at = query.lstrip('@')
+
     logger.debug(f"query: {query}")
 
-    if not query:
+    if not query_without_at:
         matching_handles = None
 
         return jsonify({"suggestions": matching_handles})
-    elif "did:" in query:
+    elif "did:" in query_without_at:
         matching_handles = None
 
         return jsonify({"suggestions": matching_handles})
     else:
-        matching_handles = await database_handler.find_handles(query)
+        matching_handles = await database_handler.find_handles(query_without_at)
 
-        return jsonify({'suggestions': matching_handles})
+        # Add '@' symbol back to the suggestions
+        if '@' in query:
+            matching_handles_with_at = ['@' + handle for handle in matching_handles]
+
+            return jsonify({'suggestions': matching_handles_with_at})
+        else:
+
+            return jsonify({'suggestions': matching_handles})
 
 
 @app.route('/blocklist')
