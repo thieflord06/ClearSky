@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const handleInput = document.getElementById('identifier');
     const autocompleteSuggestions = document.getElementById('autocomplete-suggestions');
     const fetchAutocompleteSuggestions = async (query) => {
-        const inputText = handleInput.value;
+    const inputText = handleInput.value;
 
         if (inputText === '') {
         // If the input is empty, clear the suggestions and return
