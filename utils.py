@@ -31,7 +31,7 @@ number_block_1_cache = TTLCache(maxsize=200, ttl=3600)
 number_blocking_2_and_100_cache = TTLCache(maxsize=200, ttl=3600)
 number_blocking_101_and_1000_cache = TTLCache(maxsize=200, ttl=3600)
 number_blocking_greater_than_1000_cache = TTLCache(maxsize=200, ttl=3600)
-average_number_of_blocks_cache = TTLCache(maxsize=200, ttl=3600)
+average_number_of_blocking_cache = TTLCache(maxsize=200, ttl=3600)
 number_blocked_1_cache = TTLCache(maxsize=200, ttl=3600)
 number_blocked_2_and_100_cache = TTLCache(maxsize=200, ttl=3600)
 number_blocked_101_and_1000_cache = TTLCache(maxsize=200, ttl=3600)
@@ -190,10 +190,10 @@ async def update_block_statistics():
     number_blocking_2_and_100_cache["block2to100"] = number_blocking_2_and_100
     number_blocking_101_and_1000_cache["block101to1000"] = number_blocking_101_and_1000
     number_blocking_greater_than_1000_cache["blockmore1000"] = number_blocking_greater_than_1000
-    average_number_of_blocks_cache["averageblocks"] = average_number_of_blocks
+    average_number_of_blocking_cache["averageblocks"] = average_number_of_blocks
     number_blocked_1_cache["blocked1"] = number_blocked_1
-    number_blocking_2_and_100_cache["blocked2to100"] = number_blocked_2_and_100
-    number_blocking_101_and_1000_cache["blocked101to1000"] = number_blocking_101_and_1000
+    number_blocked_2_and_100_cache["blocked2to100"] = number_blocked_2_and_100
+    number_blocked_101_and_1000_cache["blocked101to1000"] = number_blocked_101_and_1000
     number_blocked_greater_than_1000_cache["blockedmore1000"] = number_blocked_greater_than_1000
     average_number_of_blocked_cache["averageblocked"] = average_number_of_blocked
 
