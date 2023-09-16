@@ -341,7 +341,7 @@ async def update_user_handles(handles_to_update):
         logger.info(f"Updated {len(handles_to_update)} handles in the database.")
 
 
-async def process_batch(batch_dids, ad_hoc):
+async def process_batch(batch_dids, ad_hoc, table):
     batch_handles_and_dids = await utils.fetch_handles_batch(batch_dids, ad_hoc)
     logger.info("Batch resolved.")
 
@@ -376,7 +376,7 @@ async def process_batch(batch_dids, ad_hoc):
                     # Update the temporary table with the last processed DID
                     last_processed_did = handle_batch[-1][0]  # Assuming DID is the first element in each tuple
                     logger.debug("Last processed DID: " + str(last_processed_did))
-                    await update_temporary_table(last_processed_did)
+                    await update_temporary_table(last_processed_did, table)
 
                     break
                 except asyncpg.ConnectionDoesNotExistError as e:
@@ -402,6 +402,21 @@ async def create_temporary_table():
             async with connection.transaction():
                 query = """
                 CREATE TABLE IF NOT EXISTS temporary_table (
+                    last_processed_did text PRIMARY KEY
+                )
+                """
+                await connection.execute(query)
+    except Exception as e:
+        logger.error("Error creating temporary table: %s", e)
+
+
+async def create_new_users_temporary_table():
+    try:
+        logger.info("Creating temp table.")
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                query = """
+                CREATE TABLE IF NOT EXISTS new_users_temporary_table (
                     last_processed_did text PRIMARY KEY
                 )
                 """
@@ -559,6 +574,16 @@ async def delete_temporary_table():
         logger.error("Error deleting temporary table: %s", e)
 
 
+async def delete_new_users_temporary_table():
+    try:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                query = "DROP TABLE IF EXISTS new_users_temporary_table"
+                await connection.execute(query)
+    except Exception as e:
+        logger.error("Error deleting temporary table: %s", e)
+
+
 async def update_blocklist_temporary_table(last_processed_did):
     try:
         async with connection_pool.acquire() as connection:
@@ -573,15 +598,29 @@ async def update_blocklist_temporary_table(last_processed_did):
         logger.error("Error updating temporary table: %s", e)
 
 
-async def update_temporary_table(last_processed_did):
+async def update_temporary_table(last_processed_did, table):
     try:
         async with connection_pool.acquire() as connection:
             async with connection.transaction():
                 # Delete the existing row if it exists
-                await connection.execute("TRUNCATE temporary_table")
+                await connection.execute("TRUNCATE $1", table)
 
                 # Insert the new row with the given last_processed_did
-                query = "INSERT INTO temporary_table (last_processed_did) VALUES ($1)"
+                query = "INSERT INTO $2 (last_processed_did) VALUES ($1)"
+                await connection.execute(query, last_processed_did, table)
+    except Exception as e:
+        logger.error("Error updating temporary table: %s", e)
+
+
+async def update_new_users_temporary_table(last_processed_did):
+    try:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                # Delete the existing row if it exists
+                await connection.execute("TRUNCATE new_users_temporary_table")
+
+                # Insert the new row with the given last_processed_did
+                query = "INSERT INTO new_users_temporary_table (last_processed_did) VALUES ($1)"
                 await connection.execute(query, last_processed_did)
     except Exception as e:
         logger.error("Error updating temporary table: %s", e)

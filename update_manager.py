@@ -37,6 +37,7 @@ async def main():
         batch_size = 500
         total_dids = len(all_dids)
         total_handles_updated = 0
+        table = "temporary_table"
 
         # Check if there is a last processed DID in the temporary table
         async with database_handler.connection_pool.acquire() as connection:
@@ -72,7 +73,7 @@ async def main():
                     batch_dids = all_dids[i:i + batch_size]
 
                     # Process the batch asynchronously
-                    batch_handles_updated = await database_handler.process_batch(batch_dids, False)
+                    batch_handles_updated = await database_handler.process_batch(batch_dids, False, table)
                     total_handles_updated += batch_handles_updated
 
                     # Log progress for the current batch
@@ -105,12 +106,13 @@ async def main():
         total_dids = len(all_dids)
         batch_size = 1000
         total_handles_updated = 0
+        table = "new_users_temporary_table"
 
         # Check if there is a last processed DID in the temporary table
         async with database_handler.connection_pool.acquire() as connection:
             async with connection.transaction():
                 try:
-                    query = "SELECT last_processed_did FROM temporary_table"
+                    query = "SELECT last_processed_did FROM new_users_temporary_table"
                     last_processed_did = await connection.fetchval(query)
                 except asyncpg.UndefinedTableError:
                     logger.warning("Temporary table doesn't exist.")
@@ -120,7 +122,7 @@ async def main():
                     logger.error(f"Exception getting from db: {str(e)}")
 
         if not last_processed_did:
-            await database_handler.create_temporary_table()
+            await database_handler.create_new_users_temporary_table()
 
         if last_processed_did:
             # Find the index of the last processed DID in the list
@@ -140,7 +142,7 @@ async def main():
                     batch_dids = all_dids[i:i + batch_size]
 
                     # Process the batch asynchronously
-                    batch_handles_updated = await database_handler.process_batch(batch_dids, True)
+                    batch_handles_updated = await database_handler.process_batch(batch_dids, True, table)
                     total_handles_updated += batch_handles_updated
 
                     # Log progress for the current batch
@@ -148,7 +150,7 @@ async def main():
                     logger.info(f"First few DIDs in the batch: {batch_dids[:5]}")
 
                 logger.info("Users db update finished.")
-                await database_handler.delete_temporary_table()
+                await database_handler.delete_new_users_temporary_table()
                 sys.exit()
     elif args.retrieve_blocklists_db:
         logger.info("Get Blocklists db requested.")

@@ -13,6 +13,8 @@
         <p>{{ number_of_unique_users_blocking }} | {{ percent_users_blocking }}%</p>
         <p>Average number users are blocking</p>
         <p>{{ average_number_of_blocks }}</p>
+        <p>Average number of users someone is blocked by</p>
+        <p>{{ average_number_of_blocked }}</p>
         <p>Users blocking 1 user</p>
         <p>{{ number_block_1 }} | {{ percent_number_blocking_1 }}%</p>
         <p>Users blocking 2-100 users</p>
@@ -29,8 +31,6 @@
         <p>{{ number_blocked_101_and_1000 }} | {{ percent_number_blocked_101_and_1000 }}%</p>
         <p>Users blocked by more than 1000 users</p>
         <p>{{ number_blocked_greater_than_1000 }} | {{ percent_number_blocked_greater_than_1000 }}%</p>
-        <p>Average number of users someone is blocked by</p>
-        <p>{{ average_number_of_blocked }}</p>
-        <!--        <a href="/" class="btn btn-primary">Go Back</a>-->
+        <a href="/" class="btn btn-primary">Go Back</a>
     </div>
 {% endblock %}
