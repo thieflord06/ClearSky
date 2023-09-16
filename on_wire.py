@@ -92,7 +92,7 @@ async def resolve_did(did):  # Take DID and get handle
                         retry_count += 1
                         logger.warning("Error:" + str(response.status_code))
                         logger.warning("Retrying: " + str(full_url))
-                        await asyncio.sleep(10)
+                        await asyncio.sleep(25)
         except httpx.DecodingError as e:
             retry_count += 1
             logger.error(f"Error occurred while parsing JSON response: {e}")
