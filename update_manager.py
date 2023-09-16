@@ -8,7 +8,7 @@ import argparse
 import asyncio
 import app
 
-# python update_manager.py --update-users-did-handle-db // command to update users db with dids and handles
+# python update_manager.py --update-users-did-handle-db // command to update users db with dids and handles (initial or re-initialize)
 # python update_manager.py --update-users-did-only-db // command to update users db with dids only
 # python update_manager.py --fetch-users-count // command to get current count in db
 # python update_manager.py --update-blocklists-db // command to update all users blocklists
