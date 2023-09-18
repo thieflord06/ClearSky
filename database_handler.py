@@ -911,7 +911,7 @@ def get_database_config():
             redis_port = config.get("redis", "port")
             redis_db = config.get("redis", "db")
             redis_username = config.get("redis", "username")
-            redis_password = config.get("redis", "username")
+            redis_password = config.get("redis", "password")
         else:
             logger.info("Database connection: Using environment variables.")
             pg_user = os.environ.get("PG_USER")
