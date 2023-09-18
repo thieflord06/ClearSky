@@ -345,6 +345,11 @@ async def funer_facts():
 async def block_stats():
     logger.info(f"Requesting block statistics.")
 
+    # Check if the update_lock is locked
+    if update_lock.locked():
+
+        return render_template('please_wait.html')
+
     number_of_total_blocks = utils.number_of_total_blocks_cache.get("total_blocks")
     number_of_unique_users_blocked = utils.number_of_unique_users_blocked_cache.get("unique_blocked")
     number_of_unique_users_blocking = utils.number_of_unique_users_blocking_cache.get("unique_blocker")
