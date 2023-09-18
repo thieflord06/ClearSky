@@ -18,7 +18,7 @@ config = config_helper.read_config()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "3.9.2"
+version = "3.9.3"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -347,8 +347,9 @@ async def block_stats():
 
     # Check if the update_lock is locked
     if update_lock.locked():
+        logger.info("Block stats waiting page requested.")
 
-        return render_template('please_wait.html')
+        return await render_template('please_wait.html')
 
     number_of_total_blocks = utils.number_of_total_blocks_cache.get("total_blocks")
     number_of_unique_users_blocked = utils.number_of_unique_users_blocked_cache.get("unique_blocked")
