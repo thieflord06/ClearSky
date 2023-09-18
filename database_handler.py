@@ -910,6 +910,8 @@ def get_database_config():
             redis_host = config.get("redis", "host")
             redis_port = config.get("redis", "port")
             redis_db = config.get("redis", "db")
+            redis_username = config.get("redis", "username")
+            redis_password = config.get("redis", "username")
         else:
             logger.info("Database connection: Using environment variables.")
             pg_user = os.environ.get("PG_USER")
@@ -919,6 +921,8 @@ def get_database_config():
             redis_host = os.environ.get("REDIS_HOST")
             redis_port = os.environ.get("REDIS_PORT")
             redis_db = os.environ.get("REDIS_DB")
+            redis_username = os.environ.get("REDIS_USERNAME")
+            redis_password = os.environ.get("REDIS_PASSWORD")
 
         return {
             "user": pg_user,
@@ -927,7 +931,9 @@ def get_database_config():
             "database": pg_database,
             "redis_host": redis_host,
             "redis_port": redis_port,
-            "redis_db": redis_db
+            "redis_db": redis_db,
+            "redis_username": redis_username,
+            "redis_password": redis_password
         }
     except Exception:
         logger.error("Database connection information not present: Set environment variables or config.ini")
@@ -946,5 +952,23 @@ pg_database = database_config["database"]
 redis_host = database_config["redis_host"]
 redis_port = database_config["redis_port"]
 redis_db = database_config["redis_db"]
+redis_username = database_config["redis_username"]
+redis_password = database_config["redis_password"]
 
-redis_client = redis.Redis(host=redis_host, port=redis_port, db=redis_db)
+# redis_client = redis.Redis(host=redis_host, port=redis_port, username=redis_username, password=redis_password, decode_responses=True)
+redis_client = redis.from_url(f"rediss://{redis_username}:{redis_password}@{redis_host}:{redis_port}")
+
+
+def redis_connected():
+    try:
+        response = redis_client.ping()
+        if response == b'PONG':
+            return True
+        else:
+            return False
+    except redis.exceptions.ConnectionError as e:
+        logger.error(f"Could not connect to Redis.")
+    except Exception as e:
+        logger.error(f"An error occured connecting to Redis: {e}")
+    finally:
+        redis_client.close()
