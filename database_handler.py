@@ -341,12 +341,12 @@ async def update_user_handles(handles_to_update):
         logger.info(f"Updated {len(handles_to_update)} handles in the database.")
 
 
-async def process_batch(batch_dids, ad_hoc, table):
+async def process_batch(batch_dids, ad_hoc, table, batch_size):
     batch_handles_and_dids = await utils.fetch_handles_batch(batch_dids, ad_hoc)
     logger.info("Batch resolved.")
 
     # Split the batch of handles into smaller batches
-    batch_size = 1000  # You can adjust this batch size based on your needs
+    batch_size = batch_size  # You can adjust this batch size based on your needs
     handle_batches = [batch_handles_and_dids[i:i + batch_size] for i in range(0, len(batch_handles_and_dids), batch_size)]
 
     # Update the database with the batch of handles
