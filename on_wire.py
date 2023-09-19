@@ -74,6 +74,7 @@ async def resolve_did(did):  # Take DID and get handle
                     record = response_json.get("alsoKnownAs", "")
                     record = str(record)
                     stripped_record = record.replace("at://", "")
+                    stripped_record = stripped_record.strip("[]").replace("'", "")
 
                     return stripped_record
                 elif response.status_code == 429:
