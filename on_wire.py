@@ -92,29 +92,29 @@ async def resolve_did(did):  # Take DID and get handle
                         retry_count += 1
                         logger.warning("Error:" + str(response.status_code))
                         logger.warning("Retrying: " + str(url))
-                        await asyncio.sleep(25)
+                        await asyncio.sleep(60)
         except httpx.DecodingError as e:
             retry_count += 1
             logger.error(f"Error occurred while parsing JSON response: {e}")
-            await asyncio.sleep(30)
+            await asyncio.sleep(60)
 
             continue
         except httpx.RequestError as e:
             retry_count += 1
             logger.error(f"Error occurred while making the API call: {str(e)} {url}")
-            await asyncio.sleep(30)
+            await asyncio.sleep(60)
 
             continue
         except httpx.HTTPStatusError as e:
             retry_count += 1
             logger.error(f"Error occurred while parsing JSON response: {str(e)} {url}")
-            await asyncio.sleep(30)
+            await asyncio.sleep(60)
 
             continue
         except Exception as e:
             retry_count += 1
             logger.error(f"An unexpected error occurred: {str(e)} {url}")
-            await asyncio.sleep(30)
+            await asyncio.sleep(60)
 
             continue
 
