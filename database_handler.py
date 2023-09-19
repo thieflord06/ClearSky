@@ -62,7 +62,7 @@ async def populate_redis_with_handles():
                             handle = row['handle']
                             logger.debug(str(handle))
                             if handle:  # Check if handle is not empty
-                                pipe.sadd('handles', handle)
+                                pipe.sadd(redis_key_name, handle)
                         pipe.execute()
 
                     offset += batch_size
@@ -83,10 +83,36 @@ async def populate_redis_with_handles():
 
 
 async def retrieve_autocomplete_handles(query):
-    # Check if results are in the cache
-    cached_results = redis_client.smembers(query)
-    if cached_results:
-        return cached_results
+    # Use the SCAN command with the pattern
+    cursor = 100000
+    key = redis_key_name
+    limit = redis_client.scard(key)
+
+    if limit > 0:
+        while True:
+            value, matching_handles = redis_client.sscan(key, cursor, match=query + '*', count=cursor)
+            if len(matching_handles) >= 5 or cursor >= limit:
+                logger.debug(str(matching_handles))
+
+                break
+            cursor += 100000
+
+        if matching_handles:
+            decoded = [bs.decode('utf-8') for bs in matching_handles]
+
+            logger.debug("From redis")
+            logger.debug(str(decoded))
+
+            return decoded[:5]
+        else:
+            # Query the database for autocomplete results
+            results = await find_handles(query)
+
+            logger.debug("from db no match in redis")
+            logger.debug(str(results))
+
+            return results
+
     else:
         # Query the database for autocomplete results
         results = await find_handles(query)
@@ -912,6 +938,7 @@ def get_database_config():
             redis_db = config.get("redis", "db")
             redis_username = config.get("redis", "username")
             redis_password = config.get("redis", "password")
+            redis_key_name = config.get("redis", "autocomplete")
         else:
             logger.info("Database connection: Using environment variables.")
             pg_user = os.environ.get("PG_USER")
@@ -923,6 +950,7 @@ def get_database_config():
             redis_db = os.environ.get("REDIS_DB")
             redis_username = os.environ.get("REDIS_USERNAME")
             redis_password = os.environ.get("REDIS_PASSWORD")
+            redis_key_name = os.environ.get("REDIS_AUTOCOMPLETE")
 
         return {
             "user": pg_user,
@@ -933,7 +961,8 @@ def get_database_config():
             "redis_port": redis_port,
             "redis_db": redis_db,
             "redis_username": redis_username,
-            "redis_password": redis_password
+            "redis_password": redis_password,
+            "redis_autocomplete": redis_key_name
         }
     except Exception:
         logger.error("Database connection information not present: Set environment variables or config.ini")
@@ -954,6 +983,7 @@ redis_port = database_config["redis_port"]
 redis_db = database_config["redis_db"]
 redis_username = database_config["redis_username"]
 redis_password = database_config["redis_password"]
+redis_key_name = database_config["redis_autocomplete"]
 
 # redis_client = redis.Redis(host=redis_host, port=redis_port, username=redis_username, password=redis_password, decode_responses=True)
 redis_client = redis.from_url(f"rediss://{redis_username}:{redis_password}@{redis_host}:{redis_port}")
