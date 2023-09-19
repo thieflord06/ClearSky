@@ -80,6 +80,10 @@ async def main():
                     logger.info(f"Handles updated: {total_handles_updated}/{total_dids}")
                     logger.info(f"First few DIDs in the batch: {batch_dids[:5]}")
 
+                    # Pause after each batch of handles resolved
+                    logger.info("Pausing...")
+                    await asyncio.sleep(60)  # Pause for 60 seconds
+
                 logger.info("Users db update finished.")
                 await database_handler.delete_temporary_table()
                 sys.exit()
@@ -148,6 +152,10 @@ async def main():
                     # Log progress for the current batch
                     logger.info(f"Handles updated: {total_handles_updated}/{total_dids}")
                     logger.info(f"First few DIDs in the batch: {batch_dids[:5]}")
+
+                    # Pause after each batch of handles resolved
+                    logger.info("Pausing...")
+                    await asyncio.sleep(60)  # Pause for 60 seconds
 
                 logger.info("Users db update finished.")
                 await database_handler.delete_new_users_temporary_table()
