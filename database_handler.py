@@ -1076,7 +1076,6 @@ def get_database_config():
             pg_database = os.environ.get("PG_DATABASE")
             redis_host = os.environ.get("REDIS_HOST")
             redis_port = os.environ.get("REDIS_PORT")
-            redis_db = os.environ.get("REDIS_DB")
             redis_username = os.environ.get("REDIS_USERNAME")
             redis_password = os.environ.get("REDIS_PASSWORD")
             redis_key_name = os.environ.get("REDIS_AUTOCOMPLETE")
@@ -1088,7 +1087,6 @@ def get_database_config():
             "database": pg_database,
             "redis_host": redis_host,
             "redis_port": redis_port,
-            "redis_db": redis_db,
             "redis_username": redis_username,
             "redis_password": redis_password,
             "redis_autocomplete": redis_key_name
@@ -1109,7 +1107,6 @@ pg_host = database_config["host"]
 pg_database = database_config["database"]
 redis_host = database_config["redis_host"]
 redis_port = database_config["redis_port"]
-redis_db = database_config["redis_db"]
 redis_username = database_config["redis_username"]
 redis_password = database_config["redis_password"]
 redis_key_name = database_config["redis_autocomplete"]
