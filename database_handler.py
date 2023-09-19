@@ -1064,7 +1064,6 @@ def get_database_config():
             pg_database = config.get("database", "pg_database")
             redis_host = config.get("redis", "host")
             redis_port = config.get("redis", "port")
-            redis_db = config.get("redis", "db")
             redis_username = config.get("redis", "username")
             redis_password = config.get("redis", "password")
             redis_key_name = config.get("redis", "autocomplete")
