@@ -388,9 +388,9 @@ async def process_batch(batch_dids, ad_hoc, table):
                     break  # Break the loop on other exceptions
 
         # Pause after each batch of handles resolved
+        logger.info(f"Batch handles updated: {total_handles_updated}")
         logger.info("Pausing...")
         await asyncio.sleep(60)  # Pause for 60 seconds
-        logger.info(f"Batch handles updated: {total_handles_updated}")
 
     return total_handles_updated
 
