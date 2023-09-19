@@ -41,6 +41,7 @@ app = Quart(__name__)
 app.secret_key = 'your-secret-key'
 
 session_ip = None
+refresh_requested = False
 
 # Create a global lock
 update_lock = asyncio.Lock()
@@ -344,9 +345,10 @@ async def funer_facts():
 @app.route('/block_stats')
 async def block_stats():
     logger.info(f"Requesting block statistics.")
+    global refresh_requested
 
     # Check if the update_lock is locked
-    if update_lock.locked():
+    if update_lock.locked() or refresh_requested:
         logger.info("Block stats waiting page requested.")
 
         return await render_template('please_wait.html')
@@ -385,11 +387,14 @@ async def block_stats():
         # Check if both lists are empty
         if any(value is None for value in values_to_check):
             logger.info("Getting new cache.")
+            refresh_requested = True
 
             (number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking, number_blocking_1,
              number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000,
              mean_number_of_blocks, number_blocked_1, number_blocked_2_and_100, number_blocked_101_and_1000,
              number_blocked_greater_than_1000, mean_number_of_blocked) = await utils.update_block_statistics()
+
+    refresh_requested = False
 
     total_users = await utils.get_user_count()
 
