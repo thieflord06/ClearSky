@@ -423,12 +423,12 @@ async def update_user_handles(handles_to_update):
         logger.info(f"Updated {len(handles_to_update)} handles in the database.")
 
 
-async def process_batch(batch_dids, ad_hoc):
+async def process_batch(batch_dids, ad_hoc, table, batch_size):
     batch_handles_and_dids = await utils.fetch_handles_batch(batch_dids, ad_hoc)
     logger.info("Batch resolved.")
 
     # Split the batch of handles into smaller batches
-    batch_size = 1000  # You can adjust this batch size based on your needs
+    batch_size = batch_size  # You can adjust this batch size based on your needs
     handle_batches = [batch_handles_and_dids[i:i + batch_size] for i in range(0, len(batch_handles_and_dids), batch_size)]
 
     # Update the database with the batch of handles
@@ -458,7 +458,7 @@ async def process_batch(batch_dids, ad_hoc):
                     # Update the temporary table with the last processed DID
                     last_processed_did = handle_batch[-1][0]  # Assuming DID is the first element in each tuple
                     logger.debug("Last processed DID: " + str(last_processed_did))
-                    await update_temporary_table(last_processed_did)
+                    await update_temporary_table(last_processed_did, table)
 
                     break
                 except asyncpg.ConnectionDoesNotExistError as e:
@@ -468,11 +468,6 @@ async def process_batch(batch_dids, ad_hoc):
                     # Handle other exceptions as needed
                     logger.error(f"Error during batch update: {e}")
                     break  # Break the loop on other exceptions
-
-        # Pause after each batch of handles resolved
-        logger.info("Pausing...")
-        await asyncio.sleep(60)  # Pause for 60 seconds
-        logger.info(f"Batch handles updated: {total_handles_updated}")
 
     return total_handles_updated
 
@@ -484,6 +479,21 @@ async def create_temporary_table():
             async with connection.transaction():
                 query = """
                 CREATE TABLE IF NOT EXISTS temporary_table (
+                    last_processed_did text PRIMARY KEY
+                )
+                """
+                await connection.execute(query)
+    except Exception as e:
+        logger.error("Error creating temporary table: %s", e)
+
+
+async def create_new_users_temporary_table():
+    try:
+        logger.info("Creating temp table.")
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                query = """
+                CREATE TABLE IF NOT EXISTS new_users_temporary_table (
                     last_processed_did text PRIMARY KEY
                 )
                 """
@@ -641,6 +651,16 @@ async def delete_temporary_table():
         logger.error("Error deleting temporary table: %s", e)
 
 
+async def delete_new_users_temporary_table():
+    try:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                query = "DROP TABLE IF EXISTS new_users_temporary_table"
+                await connection.execute(query)
+    except Exception as e:
+        logger.error("Error deleting temporary table: %s", e)
+
+
 async def update_blocklist_temporary_table(last_processed_did):
     try:
         async with connection_pool.acquire() as connection:
@@ -655,15 +675,30 @@ async def update_blocklist_temporary_table(last_processed_did):
         logger.error("Error updating temporary table: %s", e)
 
 
-async def update_temporary_table(last_processed_did):
+async def update_temporary_table(last_processed_did, table):
     try:
         async with connection_pool.acquire() as connection:
             async with connection.transaction():
                 # Delete the existing row if it exists
-                await connection.execute("TRUNCATE temporary_table")
+                delete_query = f"TRUNCATE {table}"
+                await connection.execute(delete_query)
 
                 # Insert the new row with the given last_processed_did
-                query = "INSERT INTO temporary_table (last_processed_did) VALUES ($1)"
+                insert_query = f"INSERT INTO {table} (last_processed_did) VALUES ($1)"
+                await connection.execute(insert_query, last_processed_did)
+    except Exception as e:
+        logger.error("Error updating temporary table: %s", e)
+
+
+async def update_new_users_temporary_table(last_processed_did):
+    try:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                # Delete the existing row if it exists
+                await connection.execute("TRUNCATE new_users_temporary_table")
+
+                # Insert the new row with the given last_processed_did
+                query = "INSERT INTO new_users_temporary_table (last_processed_did) VALUES ($1)"
                 await connection.execute(query, last_processed_did)
     except Exception as e:
         logger.error("Error updating temporary table: %s", e)
@@ -711,12 +746,106 @@ async def get_block_stats():
                 query_1 = '''SELECT COUNT(blocked_did) from blocklists'''
                 query_2 = '''select count(distinct blocked_did) from blocklists'''
                 query_3 = '''select count(distinct user_did) from blocklists'''
-
+                query_4 = '''SELECT COUNT(*) AS user_count 
+                                FROM (
+                                SELECT user_did
+                                FROM blocklists
+                                GROUP BY user_did
+                                HAVING COUNT(DISTINCT blocked_did) = 1
+                            ) AS subquery'''
+                query_5 = '''SELECT COUNT(DISTINCT user_did) AS user_count
+                                FROM (
+                                    SELECT user_did
+                                    FROM blocklists
+                                    GROUP BY user_did
+                                    HAVING COUNT(DISTINCT blocked_did) BETWEEN 2 AND 100
+                                ) AS subquery'''
+                query_6 = '''SELECT COUNT(DISTINCT user_did) AS user_count
+                                FROM (
+                                    SELECT user_did
+                                    FROM blocklists
+                                    GROUP BY user_did
+                                    HAVING COUNT(DISTINCT blocked_did) BETWEEN 101 AND 1000
+                                ) AS subquery'''
+                query_7 = '''SELECT COUNT(DISTINCT user_did) AS user_count
+                                FROM (
+                                    SELECT user_did
+                                    FROM blocklists
+                                    GROUP BY user_did
+                                    HAVING COUNT(DISTINCT blocked_did) > 1000
+                                ) AS subquery'''
+                query_8 = '''SELECT AVG(block_count) AS mean_blocks
+                                FROM (
+                                    SELECT user_did, COUNT(DISTINCT blocked_did) AS block_count
+                                    FROM blocklists
+                                    GROUP BY user_did
+                                ) AS subquery'''
+                query_9 = '''SELECT COUNT(*) AS user_count
+                                FROM (
+                                    SELECT blocked_did
+                                    FROM blocklists
+                                    GROUP BY blocked_did
+                                    HAVING COUNT(DISTINCT user_did) = 1
+                                ) AS subquery'''
+                query_10 = '''SELECT COUNT(*) AS user_count
+                                FROM (
+                                    SELECT blocked_did
+                                    FROM blocklists
+                                    GROUP BY blocked_did
+                                    HAVING COUNT(DISTINCT user_did) BETWEEN 2 AND 100
+                                ) AS subquery'''
+                query_11 = '''SELECT COUNT(*) AS user_count
+                                FROM (
+                                    SELECT blocked_did
+                                    FROM blocklists
+                                    GROUP BY blocked_did
+                                    HAVING COUNT(DISTINCT user_did) BETWEEN 101 AND 1000
+                                ) AS subquery'''
+                query_12 = '''SELECT COUNT(*) AS user_count
+                                FROM (
+                                    SELECT blocked_did
+                                    FROM blocklists
+                                    GROUP BY blocked_did
+                                    HAVING COUNT(DISTINCT user_did) > 1000
+                                ) AS subquery'''
+                query_13 = '''SELECT AVG(block_count) AS mean_blocks
+                                FROM (
+                                    SELECT blocked_did, COUNT(DISTINCT user_did) AS block_count
+                                    FROM blocklists
+                                    GROUP BY blocked_did
+                                ) AS subquery'''
                 number_of_total_blocks = await connection.fetchval(query_1)
+                logger.info("Completed query 1")
                 number_of_unique_users_blocked = await connection.fetchval(query_2)
+                logger.info("Completed query 2")
                 number_of_unique_users_blocking = await connection.fetchval(query_3)
+                logger.info("Completed query 3")
+                number_block_1 = await connection.fetchval(query_4)
+                logger.info("Completed query 4")
+                number_blocking_2_and_100 = await connection.fetchval(query_5)
+                logger.info("Completed query 5")
+                number_blocking_101_and_1000 = await connection.fetchval(query_6)
+                logger.info("Completed query 6")
+                number_blocking_greater_than_1000 = await connection.fetchval(query_7)
+                logger.info("Completed query 7")
+                average_number_of_blocks = await connection.fetchval(query_8)
+                logger.info("Completed query 8")
+                number_blocked_1 = await connection.fetchval(query_9)
+                logger.info("Completed query 9")
+                number_blocked_2_and_100 = await connection.fetchval(query_10)
+                logger.info("Completed query 10")
+                number_blocked_101_and_1000 = await connection.fetchval(query_11)
+                logger.info("Completed query 11")
+                number_blocked_greater_than_1000 = await connection.fetchval(query_12)
+                logger.info("Completed query 12")
+                average_number_blocked = await connection.fetchval(query_13)
+                logger.info("Completed query 13")
 
-                return number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking
+                logger.info("All blocklist queries complete.")
+                return (number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking,
+                        number_block_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000,
+                        average_number_of_blocks, number_blocked_1, number_blocked_2_and_100, number_blocked_101_and_1000,
+                        number_blocked_greater_than_1000, average_number_blocked)
     except Exception as e:
         logger.error(f"Error retrieving data from db: {e}")
 

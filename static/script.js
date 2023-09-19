@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const handleInput = document.getElementById('identifier');
     const autocompleteSuggestions = document.getElementById('autocomplete-suggestions');
     const fetchAutocompleteSuggestions = async (query) => {
-        const inputText = handleInput.value;
+    const inputText = handleInput.value;
 
         if (inputText === '') {
         // If the input is empty, clear the suggestions and return
@@ -206,45 +206,6 @@ document.addEventListener('DOMContentLoaded', function() {
         debouncedFetch(inputText);
     });
 
-//    handleInput.addEventListener('input', function () {
-//        const inputText = handleInput.value;
-//
-//        if (inputText === '') {
-//        // If the input is empty, clear the suggestions and return
-//        autocompleteSuggestions.innerHTML = '';
-//        autocompleteSuggestions.style.display = 'none';
-//
-//        } else {
-//        // Make an AJAX request to the server to fetch autocomplete suggestions
-//        // Replace 'your_server_endpoint' with the actual endpoint on your server.
-//        fetch(`/autocomplete?query=${inputText}`)
-//            .then((response) => response.json())
-//            .then((data) => {
-//                // Clear previous suggestions
-//                autocompleteSuggestions.innerHTML = '';
-//                                // Show the suggestions div
-//                autocompleteSuggestions.style.display = 'none';
-//                // Display new suggestions
-//                data.suggestions.forEach((suggestion) => {
-//                    const suggestionItem = document.createElement('div');
-//                    suggestionItem.textContent = suggestion;
-//                    autocompleteSuggestions.appendChild(suggestionItem);
-//
-//                    // Attach a click event to each suggestion to fill the input field
-//                    suggestionItem.addEventListener('click', () => {
-//                        handleInput.value = suggestion;
-//                        autocompleteSuggestions.innerHTML = ''; // Clear suggestions
-//                    });
-//                });
-//                // Show the suggestions div
-//                autocompleteSuggestions.style.display = 'block';
-//            })
-//            .catch((error) => {
-//                console.error('Error fetching autocomplete suggestions:', error);
-//            });
-//        }
-//    });
-
     // Add event listener to the form submit button
     selectionForm.addEventListener('submit', function (event) {
         // Check if the input field (identifier) is empty and set its value to "blank"
@@ -264,6 +225,7 @@ document.addEventListener('DOMContentLoaded', function() {
             identifier.value = '';
             identifier.readOnly = true;
             submitButton.disabled = false;
+            autocompleteSuggestions.style.display = 'none';
         } else {
             // Enable the identifier field
             identifier.readOnly = false;

@@ -55,16 +55,10 @@ async def resolve_handle(info):  # Take Handle and get DID
 
 
 async def resolve_did(did):  # Take DID and get handle
-    handle = did
-    base_url = "https://bsky.social/xrpc/"
-    url = urllib.parse.urljoin(base_url, "com.atproto.repo.describeRepo")
-    params = {
-        "repo": handle
-    }
+    base_url = "https://plc.directory/"
+    url = f"{base_url}{did}"
 
-    encoded_params = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
-    full_url = f"{url}?{encoded_params}"
-    logger.debug(full_url)
+    logger.debug(url)
 
     max_retries = 5
     retry_count = 0
@@ -72,49 +66,55 @@ async def resolve_did(did):  # Take DID and get handle
     while retry_count < max_retries:
         try:
             async with httpx.AsyncClient() as client:
-                response = await client.get(full_url)
+                response = await client.get(url)
                 response_json = response.json()
                 logger.debug("response: " + str(response_json))
 
                 if response.status_code == 200:
-                    record = response_json.get("handle", "")
+                    record = response_json.get("alsoKnownAs", "")
+                    record = str(record)
+                    stripped_record = record.replace("at://", "")
+                    stripped_record = stripped_record.strip("[]").replace("'", "")
 
-                    return record
+                    return stripped_record
+                elif response.status_code == 429:
+                    logger.warning("Too many requests, pausing.")
+                    await asyncio.sleep(60)
                 else:
                     error_message = response_json.get("message", "")
                     logger.debug(error_message)
 
-                    if "could not find user" in error_message.lower():
+                    if "DID not registered" in error_message.lower():
                         logger.warning("User not found. Skipping...")
 
                         return None
                     else:
                         retry_count += 1
                         logger.warning("Error:" + str(response.status_code))
-                        logger.warning("Retrying: " + str(full_url))
-                        await asyncio.sleep(10)
+                        logger.warning("Retrying: " + str(url))
+                        await asyncio.sleep(60)
         except httpx.DecodingError as e:
             retry_count += 1
             logger.error(f"Error occurred while parsing JSON response: {e}")
-            await asyncio.sleep(30)
+            await asyncio.sleep(60)
 
             continue
         except httpx.RequestError as e:
             retry_count += 1
-            logger.error(f"Error occurred while making the API call: {str(e)} {full_url}")
-            await asyncio.sleep(30)
+            logger.error(f"Error occurred while making the API call: {str(e)} {url}")
+            await asyncio.sleep(60)
 
             continue
         except httpx.HTTPStatusError as e:
             retry_count += 1
-            logger.error(f"Error occurred while parsing JSON response: {str(e)} {full_url}")
-            await asyncio.sleep(30)
+            logger.error(f"Error occurred while parsing JSON response: {str(e)} {url}")
+            await asyncio.sleep(60)
 
             continue
         except Exception as e:
             retry_count += 1
-            logger.error(f"An unexpected error occurred: {str(e)} {full_url}")
-            await asyncio.sleep(30)
+            logger.error(f"An unexpected error occurred: {str(e)} {url}")
+            await asyncio.sleep(60)
 
             continue
 

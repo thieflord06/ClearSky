@@ -18,7 +18,7 @@ config = config_helper.read_config()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "3.8.1"
+version = "3.9.3"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -61,6 +61,13 @@ async def index():
 async def favicon():
 
     return await quart.send_from_directory('images', 'favicon.png')
+
+
+@app.route('/frequently_asked')
+async def faq():
+    logger.info("FAQ requested.")
+
+    return await render_template('coming_soon.html')
 
 
 @app.route('/coming_soon')
@@ -340,18 +347,49 @@ async def block_stats():
 
     # Check if the update_lock is locked
     if update_lock.locked():
+        logger.info("Block stats waiting page requested.")
 
-        return render_template('please_wait.html')
+        return await render_template('please_wait.html')
 
     number_of_total_blocks = utils.number_of_total_blocks_cache.get("total_blocks")
     number_of_unique_users_blocked = utils.number_of_unique_users_blocked_cache.get("unique_blocked")
     number_of_unique_users_blocking = utils.number_of_unique_users_blocking_cache.get("unique_blocker")
+    number_blocking_1 = utils.number_block_1_cache.get("block1")
+    number_blocking_2_and_100 = utils.number_blocking_2_and_100_cache.get("block2to100")
+    number_blocking_101_and_1000 = utils.number_blocking_101_and_1000_cache.get("block101to1000")
+    number_blocking_greater_than_1000 = utils.number_blocking_greater_than_1000_cache.get("blockmore1000")
+    average_number_of_blocks = utils.average_number_of_blocking_cache.get("averageblocks")
+    number_blocked_1 = utils.number_blocked_1_cache.get("blocked1")
+    number_blocked_2_and_100 = utils.number_blocked_2_and_100_cache.get("blocked2to100")
+    number_blocked_101_and_1000 = utils.number_blocked_101_and_1000_cache.get("blocked101to1000")
+    number_blocked_greater_than_1000 = utils.number_blocked_greater_than_1000_cache.get("blockedmore1000")
+    average_number_of_blocked = utils.average_number_of_blocked_cache.get("averageblocked")
+
+    values_to_check = (
+        number_of_total_blocks,
+        number_of_unique_users_blocked,
+        number_of_unique_users_blocking,
+        number_blocking_1,
+        number_blocking_2_and_100,
+        number_blocking_101_and_1000,
+        number_blocking_greater_than_1000,
+        average_number_of_blocks,
+        number_blocked_1,
+        number_blocked_2_and_100,
+        number_blocked_101_and_1000,
+        number_blocked_greater_than_1000,
+        average_number_of_blocked
+    )
 
     async with update_lock:
         # Check if both lists are empty
-        if number_of_total_blocks is None or number_of_unique_users_blocked is None or number_of_unique_users_blocking is None:
+        if any(value is None for value in values_to_check):
             logger.info("Getting new cache.")
-            number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking = await utils.update_block_statistics()
+
+            (number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking, number_blocking_1,
+             number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000,
+             mean_number_of_blocks, number_blocked_1, number_blocked_2_and_100, number_blocked_101_and_1000,
+             number_blocked_greater_than_1000, mean_number_of_blocked) = await utils.update_block_statistics()
 
     total_users = await utils.get_user_count()
 
@@ -361,35 +399,77 @@ async def block_stats():
     percent_users_blocked = round(percent_users_blocked, 2)
     percent_users_blocking = round(percent_users_blocking, 2)
 
+    percent_number_blocking_1 = round((int(number_blocking_1) / int(number_of_unique_users_blocking) * 100), 2)
+    percent_number_blocking_2_and_100 = round((int(number_blocking_2_and_100) / int(number_of_unique_users_blocking) * 100), 2)
+    percent_number_blocking_101_and_1000 = round((int(number_blocking_101_and_1000) / int(number_of_unique_users_blocking) * 100), 2)
+    percent_number_blocking_greater_than_1000 = round((int(number_blocking_greater_than_1000) / int(number_of_unique_users_blocking) * 100), 2)
+
+    percent_number_blocked_1 = round((int(number_blocked_1) / int(number_of_unique_users_blocked) * 100), 2)
+    percent_number_blocked_2_and_100 = round((int(number_blocked_2_and_100) / int(number_of_unique_users_blocked) * 100), 2)
+    percent_number_blocked_101_and_1000 = round((int(number_blocked_101_and_1000) / int(number_of_unique_users_blocked) * 100), 2)
+    percent_number_blocked_greater_than_1000 = round((int(number_blocked_greater_than_1000) / int(number_of_unique_users_blocked) * 100), 2)
+
+    average_number_of_blocks_round = round(average_number_of_blocks, 2)
+    average_number_of_blocked_round = round(average_number_of_blocked, 2)
+
     return await render_template('blocklist_stats.html', number_of_total_blocks='{:,}'.format(number_of_total_blocks),
                                  number_of_unique_users_blocked='{:,}'.format(number_of_unique_users_blocked),
                                  number_of_unique_users_blocking='{:,}'.format(number_of_unique_users_blocking),
                                  total_users='{:,}'.format(total_users),
                                  percent_users_blocked=percent_users_blocked,
-                                 percent_users_blocking=percent_users_blocking)
+                                 percent_users_blocking=percent_users_blocking,
+                                 number_block_1='{:,}'.format(number_blocking_1),
+                                 number_blocking_2_and_100='{:,}'.format(number_blocking_2_and_100),
+                                 number_blocking_101_and_1000='{:,}'.format(number_blocking_101_and_1000),
+                                 number_blocking_greater_than_1000='{:,}'.format(number_blocking_greater_than_1000),
+                                 percent_number_blocking_1=percent_number_blocking_1,
+                                 percent_number_blocking_2_and_100=percent_number_blocking_2_and_100,
+                                 percent_number_blocking_101_and_1000=percent_number_blocking_101_and_1000,
+                                 percent_number_blocking_greater_than_1000=percent_number_blocking_greater_than_1000,
+                                 average_number_of_blocks='{:,}'.format(average_number_of_blocks_round),
+                                 number_blocked_1='{:,}'.format(number_blocked_1),
+                                 number_blocked_2_and_100='{:,}'.format(number_blocked_2_and_100),
+                                 number_blocked_101_and_1000='{:,}'.format(number_blocked_101_and_1000),
+                                 number_blocked_greater_than_1000='{:,}'.format(number_blocked_greater_than_1000),
+                                 percent_number_blocked_1=percent_number_blocked_1,
+                                 percent_number_blocked_2_and_100=percent_number_blocked_2_and_100,
+                                 percent_number_blocked_101_and_1000=percent_number_blocked_101_and_1000,
+                                 percent_number_blocked_greater_than_1000=percent_number_blocked_greater_than_1000,
+                                 average_number_of_blocked=average_number_of_blocked_round
+                                 )
 
 
 # ======================================================================================================================
-# ============================================= API Endpoints =========================================================
+# ============================================= API Endpoints +=========================================================
 @app.route('/autocomplete')
 async def autocomplete():
     query = request.args.get('query')
     query = query.lower()
 
+    # Remove the '@' symbol if it exists
+    query_without_at = query.lstrip('@')
+
     logger.debug(f"query: {query}")
 
-    if not query:
+    if not query_without_at:
         matching_handles = None
 
         return jsonify({"suggestions": matching_handles})
-    elif "did:" in query:
+    elif "did:" in query_without_at:
         matching_handles = None
 
         return jsonify({"suggestions": matching_handles})
     else:
-        matching_handles = await database_handler.retrieve_autocomplete_handles(query)
+        matching_handles = await database_handler.find_handles(query_without_at)
 
-        return jsonify({'suggestions': matching_handles})
+        # Add '@' symbol back to the suggestions
+        if '@' in query:
+            matching_handles_with_at = ['@' + handle for handle in matching_handles]
+
+            return jsonify({'suggestions': matching_handles_with_at})
+        else:
+
+            return jsonify({'suggestions': matching_handles})
 
 
 @app.route('/blocklist')

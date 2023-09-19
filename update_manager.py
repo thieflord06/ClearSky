@@ -8,7 +8,7 @@ import argparse
 import asyncio
 import app
 
-# python update_manager.py --update-users-did-handle-db // command to update users db with dids and handles
+# python update_manager.py --update-users-did-handle-db // command to update users db with dids and handles (initial or re-initialize)
 # python update_manager.py --update-users-did-only-db // command to update users db with dids only
 # python update_manager.py --fetch-users-count // command to get current count in db
 # python update_manager.py --update-blocklists-db // command to update all users blocklists
@@ -36,9 +36,10 @@ async def main():
         all_dids = await database_handler.get_all_users_db(True, False)
         logger.info("Users db updated dids.")
         logger.info("Update users handles requested.")
-        batch_size = 1000
+        batch_size = 500
         total_dids = len(all_dids)
         total_handles_updated = 0
+        table = "temporary_table"
 
         # Check if there is a last processed DID in the temporary table
         async with database_handler.connection_pool.acquire() as connection:
@@ -74,12 +75,16 @@ async def main():
                     batch_dids = all_dids[i:i + batch_size]
 
                     # Process the batch asynchronously
-                    batch_handles_updated = await database_handler.process_batch(batch_dids, False)
+                    batch_handles_updated = await database_handler.process_batch(batch_dids, False, table, batch_size)
                     total_handles_updated += batch_handles_updated
 
                     # Log progress for the current batch
                     logger.info(f"Handles updated: {total_handles_updated}/{total_dids}")
                     logger.info(f"First few DIDs in the batch: {batch_dids[:5]}")
+
+                    # Pause after each batch of handles resolved
+                    logger.info("Pausing...")
+                    await asyncio.sleep(60)  # Pause for 60 seconds
 
                 logger.info("Users db update finished.")
                 await database_handler.delete_temporary_table()
@@ -107,12 +112,13 @@ async def main():
         total_dids = len(all_dids)
         batch_size = 1000
         total_handles_updated = 0
+        table = "new_users_temporary_table"
 
         # Check if there is a last processed DID in the temporary table
         async with database_handler.connection_pool.acquire() as connection:
             async with connection.transaction():
                 try:
-                    query = "SELECT last_processed_did FROM temporary_table"
+                    query = "SELECT last_processed_did FROM new_users_temporary_table"
                     last_processed_did = await connection.fetchval(query)
                 except asyncpg.UndefinedTableError:
                     logger.warning("Temporary table doesn't exist.")
@@ -122,7 +128,7 @@ async def main():
                     logger.error(f"Exception getting from db: {str(e)}")
 
         if not last_processed_did:
-            await database_handler.create_temporary_table()
+            await database_handler.create_new_users_temporary_table()
 
         if last_processed_did:
             # Find the index of the last processed DID in the list
@@ -142,15 +148,19 @@ async def main():
                     batch_dids = all_dids[i:i + batch_size]
 
                     # Process the batch asynchronously
-                    batch_handles_updated = await database_handler.process_batch(batch_dids, True)
+                    batch_handles_updated = await database_handler.process_batch(batch_dids, True, table, batch_size)
                     total_handles_updated += batch_handles_updated
 
                     # Log progress for the current batch
                     logger.info(f"Handles updated: {total_handles_updated}/{total_dids}")
                     logger.info(f"First few DIDs in the batch: {batch_dids[:5]}")
 
+                    # Pause after each batch of handles resolved
+                    logger.info("Pausing...")
+                    await asyncio.sleep(60)  # Pause for 60 seconds
+
                 logger.info("Users db update finished.")
-                await database_handler.delete_temporary_table()
+                await database_handler.delete_new_users_temporary_table()
                 sys.exit()
     elif args.retrieve_blocklists_db:
         logger.info("Get Blocklists db requested.")
