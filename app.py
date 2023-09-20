@@ -11,6 +11,7 @@ import on_wire
 import utils
 import config_helper
 from config_helper import logger
+import multiprocessing
 
 # ======================================================================================================================
 # ============================= Pre-checks // Set up logging and debugging information =================================
@@ -584,13 +585,30 @@ else:
     port_address = os.environ.get('CLEAR_SKY_PORT')
 
 
+def update_block_statistics():
+    import asyncio
+    import utils
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(utils.update_block_statistics())
+
+
 async def main():
+    # Create a new process to run the update_block_statistics function
+    process = multiprocessing.Process(target=update_block_statistics)
+
+    # Start the process
+    process.start()
+
+    # Wait for the process to finish (optional)
+    process.join()
+
     await database_handler.create_connection_pool()  # Creates connection pool for db
     await database_handler.create_top_block_list_table()
     await database_handler.create_24_hour_block_table()
     await database_handler.blocklists_updater()
     await database_handler.top_24blocklists_updater()
-    await utils.update_block_statistics()
+    # await utils.update_block_statistics()
     logger.info("Web server starting at: " + ip_address + ":" + port_address)
     await app.run_task(host=ip_address, port=port_address)
 
