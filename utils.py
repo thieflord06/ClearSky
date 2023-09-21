@@ -178,10 +178,19 @@ async def resolve_top24_block_lists():
 
 async def update_block_statistics():
     logger.info("Updating block statsitics.")
+
     (number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking,
      number_block_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000, average_number_of_blocks,
      number_blocked_1, number_blocked_2_and_100, number_blocked_101_and_1000, number_blocked_greater_than_1000, average_number_of_blocked
      ) = await database_handler.get_block_stats()
+
+    values = (number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking, number_block_1,
+              number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000, average_number_of_blocks,
+              number_blocked_1, number_blocked_2_and_100, number_blocked_101_and_1000, number_blocked_greater_than_1000, average_number_of_blocked)
+
+    for value in values:
+        if value is None:
+            logger.warning(f"{value=}")
 
     number_of_total_blocks_cache["total_blocks"] = number_of_total_blocks
     number_of_unique_users_blocked_cache["unique_blocked"] = number_of_unique_users_blocked

@@ -93,11 +93,13 @@ async def retrieve_autocomplete_handles(query):
             value, matching_handles = redis_client.sscan(key, cursor, match=query + '*', count=cursor)
             if len(matching_handles) >= 5 or cursor >= limit:
                 logger.debug(str(matching_handles))
+                logger.debug(f"cursor: {cursor}")
 
                 break
             cursor += 100000
 
         if matching_handles:
+            matching_handles = matching_handles[:5]
             decoded = [bs.decode('utf-8') for bs in matching_handles]
 
             logger.debug("From redis")

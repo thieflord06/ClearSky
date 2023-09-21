@@ -410,8 +410,8 @@ async def block_stats():
     percent_number_blocked_101_and_1000 = round((int(number_blocked_101_and_1000) / int(number_of_unique_users_blocked) * 100), 2)
     percent_number_blocked_greater_than_1000 = round((int(number_blocked_greater_than_1000) / int(number_of_unique_users_blocked) * 100), 2)
 
-    average_number_of_blocks_round = round(average_number_of_blocks, 2)
-    average_number_of_blocked_round = round(average_number_of_blocked, 2)
+    average_number_of_blocks_round = round(float(average_number_of_blocks), 2)
+    average_number_of_blocked_round = round(float(average_number_of_blocked), 2)
 
     return await render_template('blocklist_stats.html', number_of_total_blocks='{:,}'.format(number_of_total_blocks),
                                  number_of_unique_users_blocked='{:,}'.format(number_of_unique_users_blocked),
