@@ -301,7 +301,7 @@ async def selection_handle():
 async def fun_facts():
     logger.info("Fun facts requested.")
 
-    if database_handler.blocklist_updater_status:
+    if database_handler.blocklist_updater_status.is_set():
         logger.info("Updating top blocks.")
 
         return await render_template('please_wait.html')
