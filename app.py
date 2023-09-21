@@ -585,6 +585,7 @@ def update_block_stats():
         top_24_blocked_status = "complete"
 
     status = {
+        "Version": version,
         "block stats status": stats_status,
         "top blocked status": top_blocked_status,
         "top 24 blocked status": top_24_blocked_status
