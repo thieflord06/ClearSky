@@ -90,10 +90,7 @@ async def retrieve_autocomplete_handles(query):
     # Use the SCAN command with the pattern
     cursor = 100000
     key = redis_key_name
-    if redis_connected():
-        limit = await redis_client.scard(key)
-    else:
-        limit = 0
+    limit = await redis_client.scard(key)
 
     if limit > 0:
         while True:
