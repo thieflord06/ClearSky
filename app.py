@@ -608,7 +608,7 @@ async def main():
     await database_handler.create_24_hour_block_table()
     await database_handler.blocklists_updater()
     await database_handler.top_24blocklists_updater()
-    # await utils.update_block_statistics()
+    await utils.update_block_statistics()
     logger.info("Web server starting at: " + ip_address + ":" + port_address)
     await app.run_task(host=ip_address, port=port_address)
 
