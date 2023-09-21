@@ -98,6 +98,7 @@ async def retrieve_autocomplete_handles(query):
             cursor += 100000
 
         if matching_handles:
+            matching_handles = matching_handles[:5]
             decoded = [bs.decode('utf-8') for bs in matching_handles]
 
             logger.debug("From redis")
