@@ -476,7 +476,7 @@ async def autocomplete():
         return jsonify({"suggestions": matching_handles})
     else:
         # matching_handles = await database_handler.retrieve_autocomplete_handles(query_without_at)
-        matching_handles = await database_handler.find_handles(query_without_at)
+        matching_handles = await database_handler.retrieve_autocomplete_handles(query_without_at)
 
         # Add '@' symbol back to the suggestions
         if '@' in query:
@@ -585,11 +585,17 @@ def update_block_stats():
     else:
         top_24_blocked_status = "complete"
 
+    if database_handler.redis_connected():
+        redis_status = "connected"
+    else:
+        redis_status = "disconnected"
+
     status = {
         "clearsky version": version,
         "block stats status": stats_status,
         "top blocked status": top_blocked_status,
-        "top 24 blocked status": top_24_blocked_status
+        "top 24 blocked status": top_24_blocked_status,
+        "redis status": redis_status
     }
     return jsonify(status)
 

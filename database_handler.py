@@ -8,7 +8,7 @@ import utils
 from config_helper import logger
 from aiolimiter import AsyncLimiter
 from cachetools import TTLCache
-import redis
+from redis import asyncio as aioredis
 
 # Connection pool and lock
 connection_pool = None
@@ -43,57 +43,61 @@ async def create_connection_pool():
 
 
 async def populate_redis_with_handles():
-    try:
-        # Query handles in batches
-        batch_size = 1000  # Adjust the batch size as needed
-        offset = 0
-        batch_count = 0
-        while True:
-            async with connection_pool.acquire() as connection:
-                async with connection.transaction():
-                    logger.info("Transferring handles to cache.")
-                    # Query all handles from the database
-                    query_text = "SELECT handle FROM users LIMIT $1 OFFSET $2"
-                    result = await connection.fetch(query_text, batch_size, offset)
+    if redis_connected():
+        try:
+            # Query handles in batches
+            batch_size = 1000  # Adjust the batch size as needed
+            offset = 0
+            batch_count = 0
+            while True:
+                async with connection_pool.acquire() as connection:
+                    async with connection.transaction():
+                        logger.info("Transferring handles to cache.")
+                        # Query all handles from the database
+                        query_text = "SELECT handle FROM users LIMIT $1 OFFSET $2"
+                        result = await connection.fetch(query_text, batch_size, offset)
 
-                    if not result:
-                        break  # No more handles to fetch
-                    # logger.debug(str(result))
-                    # Store handles in Redis set
-                    with redis_client.pipeline() as pipe:
-                        for row in result:
-                            handle = row['handle']
-                            logger.debug(str(handle))
-                            if handle:  # Check if handle is not empty
-                                pipe.sadd(redis_key_name, handle)
-                        pipe.execute()
+                        if not result:
+                            break  # No more handles to fetch
+                        # logger.debug(str(result))
+                        # Store handles in Redis set
+                        with redis_client.pipeline() as pipe:
+                            for row in result:
+                                handle = row['handle']
+                                logger.debug(str(handle))
+                                if handle:  # Check if handle is not empty
+                                    pipe.sadd(redis_key_name, handle)
+                            pipe.execute()
 
-                    offset += batch_size
-                    batch_count += 1
+                        offset += batch_size
+                        batch_count += 1
 
-                    logger.info(f"Batch {batch_count} processed. Total handles added: {offset}")
+                        logger.info(f"Batch {batch_count} processed. Total handles added: {offset}")
 
-        logger.info("Handles added to cache successfully.")
+            logger.info("Handles added to cache successfully.")
 
-        return None
-    except Exception as e:
-        logger.error(f"Error adding handles to Redis: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Error adding handles to Redis: {e}")
 
-        return "Error"
-    finally:
-        # Close the Redis connection
-        redis_client.close()
+            return "Error"
+        finally:
+            # Close the Redis connection
+            redis_client.close()
 
 
 async def retrieve_autocomplete_handles(query):
     # Use the SCAN command with the pattern
     cursor = 100000
     key = redis_key_name
-    limit = redis_client.scard(key)
+    if redis_connected():
+        limit = await redis_client.scard(key)
+    else:
+        limit = 0
 
     if limit > 0:
         while True:
-            value, matching_handles = redis_client.sscan(key, cursor, match=query + '*', count=cursor)
+            value, matching_handles = await redis_client.sscan(key, cursor, match=query + '*', count=cursor)
             if len(matching_handles) >= 5 or cursor >= limit:
                 logger.debug(str(matching_handles))
                 logger.debug(f"cursor: {cursor}")
@@ -1128,17 +1132,20 @@ redis_password = database_config["redis_password"]
 redis_key_name = database_config["redis_autocomplete"]
 
 # redis_client = redis.Redis(host=redis_host, port=redis_port, username=redis_username, password=redis_password, decode_responses=True)
-redis_client = redis.from_url(f"rediss://{redis_username}:{redis_password}@{redis_host}:{redis_port}")
+redis_client = aioredis.from_url(f"rediss://{redis_username}:{redis_password}@{redis_host}:{redis_port}")
 
 
-def redis_connected():
+async def redis_connected():
     try:
-        response = redis_client.ping()
+        response = await redis_client.ping()
+
         if response == b'PONG':
+
             return True
         else:
+
             return False
-    except redis.exceptions.ConnectionError as e:
+    except aioredis.exceptions.ConnectionError:
         logger.error(f"Could not connect to Redis.")
     except Exception as e:
         logger.error(f"An error occured connecting to Redis: {e}")
