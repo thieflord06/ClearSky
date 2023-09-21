@@ -1062,7 +1062,7 @@ async def top_24blocklists_updater():
     logger.info("Updated top blockers db.")
     top_blocked, top_blockers, blocked_aid, blocker_aid = await utils.resolve_top24_block_lists()
 
-    logger.info("Top blocks lists page updated.")
+    logger.info("Top 24 hour blocks lists page updated.")
 
     blocklist_24_updater_status.clear()
 
