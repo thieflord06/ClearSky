@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
     // Set the debounce delay (e.g., 300 milliseconds)
-    const debounceDelay = 300;
+    const debounceDelay = 400;
 
     // Create a debounced version of your fetchAutocompleteSuggestions function
     const debouncedFetch = debounce(fetchAutocompleteSuggestions, debounceDelay);

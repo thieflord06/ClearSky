@@ -93,11 +93,11 @@ async def retrieve_autocomplete_handles(query):
     limit = await redis_client.scard(key)
 
     if limit > 0:
-        while True:
+        while cursor < limit:
             value, matching_handles = await redis_client.sscan(key, cursor, match=query + '*', count=cursor)
-            if len(matching_handles) >= 5 or cursor >= limit:
-                logger.debug(str(matching_handles))
-                logger.debug(f"cursor: {cursor}")
+            if 1 <= len(matching_handles) <= 5 or cursor >= limit:
+                logger.debug(str(f"handles found: {len(matching_handles)}"))
+                logger.debug(f"cursor: {str(cursor)}")
 
                 break
             cursor += 100000
@@ -107,7 +107,6 @@ async def retrieve_autocomplete_handles(query):
             decoded = [bs.decode('utf-8') for bs in matching_handles]
 
             logger.debug("From redis")
-            logger.debug(str(decoded))
 
             return decoded[:5]
         else:
@@ -122,7 +121,7 @@ async def retrieve_autocomplete_handles(query):
     else:
         # Query the database for autocomplete results
         results = await find_handles(query)
-
+        logger.debug("from db")
         return results
 
 
