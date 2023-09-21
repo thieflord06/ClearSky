@@ -19,6 +19,9 @@ limiter = AsyncLimiter(3)
 
 all_blocks_cache = TTLCache(maxsize=2000000, ttl=172800)  # every 48 hours
 
+blocklist_updater_status = None
+blocklist_24_updater_status = None
+
 
 # ======================================================================================================================
 # ========================================= database handling functions ================================================
@@ -1015,8 +1018,10 @@ async def get_similar_users(user_did):
 
 
 async def blocklists_updater():
+    global blocklist_updater_status
     blocked_list = "blocked"
     blocker_list = "blocker"
+    blocklist_updater_status = True
 
     logger.info("Updating top blocks lists requested.")
     await truncate_top_blocks_table()
@@ -1031,12 +1036,17 @@ async def blocklists_updater():
 
     logger.info("Top blocks lists page updated.")
 
+    blocklist_updater_status = False
+
     return top_blocked, top_blockers, blocked_aid, blocker_aid
 
 
 async def top_24blocklists_updater():
+    global blocklist_24_updater_status
     blocked_list = "blocked"
     blocker_list = "blocker"
+
+    blocklist_24_updater_status = True
 
     logger.info("Updating top blocks lists requested.")
     await truncate_top24_blocks_table()
@@ -1050,6 +1060,8 @@ async def top_24blocklists_updater():
     top_blocked, top_blockers, blocked_aid, blocker_aid = await utils.resolve_top24_block_lists()
 
     logger.info("Top blocks lists page updated.")
+
+    blocklist_24_updater_status = False
 
     return top_blocked, top_blockers, blocked_aid, blocker_aid
 

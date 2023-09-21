@@ -11,7 +11,6 @@ import on_wire
 import utils
 import config_helper
 from config_helper import logger
-import multiprocessing
 
 # ======================================================================================================================
 # ============================= Pre-checks // Set up logging and debugging information =================================
@@ -302,6 +301,11 @@ async def selection_handle():
 async def fun_facts():
     logger.info("Fun facts requested.")
 
+    if database_handler.blocklist_updater_status:
+        logger.info("Updating top blocks.")
+
+        return await render_template('please_wait.html')
+
     resolved_blocked = utils.resolved_blocked_cache.get('resolved_blocked')
     resolved_blockers = utils.resolved_blockers_cache.get('resolved_blockers')
 
@@ -324,6 +328,11 @@ async def fun_facts():
 async def funer_facts():
     logger.info("Funer facts requested.")
 
+    if database_handler.blocklist_24_updater_status:
+        logger.info("Updating top 24 blocks.")
+
+        return await render_template('please_wait.html')
+
     resolved_blocked = utils.resolved_24_blocked_cache.get('resolved_blocked')
     resolved_blockers = utils.resolved_24blockers_cache.get('resolved_blockers')
 
@@ -345,6 +354,11 @@ async def funer_facts():
 @app.route('/block_stats')
 async def block_stats():
     logger.info(f"Requesting block statistics.")
+
+    if utils.block_stats_status:
+        logger.info("Updating block stats.")
+
+        return await render_template('please_wait.html')
 
     # Check if the update_lock is locked
     if update_lock.locked():
@@ -553,6 +567,31 @@ async def single_blocklist(identifier):
         return redirect('/')
 
 
+@app.route('/process_status', methods=['GET'])
+def update_block_stats():
+    if utils.block_stats_status:
+        stats_status = "processing"
+    else:
+        stats_status = "complete"
+
+    if database_handler.blocklist_updater_status:
+        top_blocked_status = "processing"
+    else:
+        top_blocked_status = "complete"
+
+    if database_handler.blocklist_24_updater_status:
+        top_24_blocked_status = "processing"
+    else:
+        top_24_blocked_status = "complete"
+
+    status = {
+        "block stats status": stats_status,
+        "top blocked status": top_blocked_status,
+        "top 24 blocked status": top_24_blocked_status
+    }
+    return jsonify(status)
+
+
 # ======================================================================================================================
 # ============================================= Main functions =========================================================
 def generate_session_number():
@@ -585,30 +624,13 @@ else:
     port_address = os.environ.get('CLEAR_SKY_PORT')
 
 
-def update_block_statistics():
-    import asyncio
-    import utils
-
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(utils.update_block_statistics())
-
-
 async def main():
-    # Create a new process to run the update_block_statistics function
-    process = multiprocessing.Process(target=update_block_statistics)
-
-    # Start the process
-    process.start()
-
-    # Wait for the process to finish (optional)
-    process.join()
-
     await database_handler.create_connection_pool()  # Creates connection pool for db
     await database_handler.create_top_block_list_table()
     await database_handler.create_24_hour_block_table()
-    await database_handler.blocklists_updater()
-    await database_handler.top_24blocklists_updater()
-    await utils.update_block_statistics()
+    asyncio.create_task(database_handler.blocklists_updater())
+    asyncio.create_task(database_handler.top_24blocklists_updater())
+    asyncio.create_task(utils.update_block_statistics())
     logger.info("Web server starting at: " + ip_address + ":" + port_address)
     await app.run_task(host=ip_address, port=port_address)
 
