@@ -598,9 +598,12 @@ async def update_block_stats():
             block_cache_status = "not initialized"
         else:
             block_cache_status = "complete"
+    now = datetime.now()
+    uptime = now - runtime
 
     status = {
         "clearsky version": version,
+        "uptime": str(uptime),
         "block stats status": stats_status,
         "top blocked status": top_blocked_status,
         "top 24 blocked status": top_24_blocked_status,
