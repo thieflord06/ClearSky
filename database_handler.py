@@ -62,13 +62,13 @@ async def populate_redis_with_handles():
                             break  # No more handles to fetch
                         # logger.debug(str(result))
                         # Store handles in Redis set
-                        with redis_client.pipeline() as pipe:
+                        async with redis_conn as pipe:
                             for row in result:
                                 handle = row['handle']
                                 logger.debug(str(handle))
                                 if handle:  # Check if handle is not empty
-                                    pipe.sadd(redis_key_name, handle)
-                            pipe.execute()
+                                    await pipe.sadd(redis_key_name, handle)
+                            await pipe.execute()
 
                         offset += batch_size
                         batch_count += 1
@@ -84,18 +84,18 @@ async def populate_redis_with_handles():
             return "Error"
         finally:
             # Close the Redis connection
-            redis_client.close()
+            await redis_conn.close()
 
 
 async def retrieve_autocomplete_handles(query):
     # Use the SCAN command with the pattern
     cursor = 100000
     key = redis_key_name
-    limit = await redis_client.scard(key)
+    limit = await redis_conn.scard(key)
 
     if limit > 0:
         while cursor < limit:
-            value, matching_handles = await redis_client.sscan(key, cursor, match=query + '*', count=cursor)
+            value, matching_handles = await redis_conn.sscan(key, cursor, match=query + '*', count=cursor)
             if 1 <= len(matching_handles) <= 5 or cursor >= limit:
                 logger.debug(f"handles found: {str(len(matching_handles))}")
                 logger.debug(f"cursor: {str(cursor)}")
@@ -1137,15 +1137,14 @@ redis_username = database_config["redis_username"]
 redis_password = database_config["redis_password"]
 redis_key_name = database_config["redis_autocomplete"]
 
-# redis_client = redis.Redis(host=redis_host, port=redis_port, username=redis_username, password=redis_password, decode_responses=True)
-redis_client = aioredis.from_url(f"rediss://{redis_username}:{redis_password}@{redis_host}:{redis_port}")
+redis_conn = aioredis.from_url(f"rediss://{redis_username}:{redis_password}@{redis_host}:{redis_port}")
 
 
-def redis_connected():
+async def redis_connected():
     try:
-        response = redis_client.ping()
-
-        if response == b'PONG':
+        async with redis_conn:
+            response = await redis_conn.ping()
+        if response:
 
             return True
         else:
@@ -1156,4 +1155,4 @@ def redis_connected():
     except Exception as e:
         logger.error(f"An error occured connecting to Redis: {e}")
     finally:
-        redis_client.close()
+        await redis_conn.close()

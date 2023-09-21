@@ -585,7 +585,8 @@ async def update_block_stats():
     else:
         top_24_blocked_status = "complete"
 
-    redis_connection = database_handler.redis_connected()
+    redis_connection = await database_handler.redis_connected()
+
     if redis_connection:
         redis_status = "connected"
     else:
