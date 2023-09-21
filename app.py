@@ -569,7 +569,7 @@ async def single_blocklist(identifier):
 
 
 @app.route('/process_status', methods=['GET'])
-def update_block_stats():
+async def update_block_stats():
     if utils.block_stats_status.is_set():
         stats_status = "processing"
     else:
@@ -585,17 +585,27 @@ def update_block_stats():
     else:
         top_24_blocked_status = "complete"
 
-    if database_handler.redis_connected():
+    redis_connection = database_handler.redis_connected()
+    if redis_connection:
         redis_status = "connected"
     else:
         redis_status = "disconnected"
+
+    if database_handler.block_cache_status.is_set():
+        block_cache_status = "processing"
+    else:
+        if len(database_handler.all_blocks_cache) == 0:
+            block_cache_status = "not initialized"
+        else:
+            block_cache_status = "complete"
 
     status = {
         "clearsky version": version,
         "block stats status": stats_status,
         "top blocked status": top_blocked_status,
         "top 24 blocked status": top_24_blocked_status,
-        "redis status": redis_status
+        "redis status": redis_status,
+        "block cache status": block_cache_status
     }
     return jsonify(status)
 

@@ -21,6 +21,7 @@ all_blocks_cache = TTLCache(maxsize=2000000, ttl=172800)  # every 48 hours
 
 blocklist_updater_status = asyncio.Event()
 blocklist_24_updater_status = asyncio.Event()
+block_cache_status = asyncio.Event()
 
 
 # ======================================================================================================================
@@ -892,6 +893,7 @@ async def get_top24_blocks():
 
 async def get_similar_blocked_by(user_did):
     global all_blocks_cache
+
     async with connection_pool.acquire() as connection:
         blocked_by_users = await connection.fetch(
             'SELECT user_did FROM blocklists WHERE blocked_did = $1', user_did)
@@ -900,6 +902,10 @@ async def get_similar_blocked_by(user_did):
     blocked_by_users_ids = [record['user_did'] for record in blocked_by_users]
 
     if len(all_blocks_cache) == 0:
+        logger.info("Caching all blocklists.")
+
+        block_cache_status.set()
+
         async with connection_pool.acquire() as connection:
             async with connection.transaction():
                 # Fetch all blocklists except for the specified user's blocklist
@@ -907,6 +913,8 @@ async def get_similar_blocked_by(user_did):
                     'SELECT user_did, blocked_did FROM blocklists'
                 )
                 all_blocks_cache = all_blocklists_rows
+
+                block_cache_status.clear()
     else:
         all_blocklists_rows = all_blocks_cache
 
@@ -954,8 +962,12 @@ async def get_similar_blocked_by(user_did):
 
 async def get_similar_users(user_did):
     global all_blocks_cache
+
     if len(all_blocks_cache) == 0:
         logger.info("Caching all blocklists.")
+
+        block_cache_status.set()
+
         async with connection_pool.acquire() as connection:
             async with connection.transaction():
                 # Fetch all blocklists except for the specified user's blocklist
@@ -963,6 +975,8 @@ async def get_similar_users(user_did):
                     'SELECT user_did, blocked_did FROM blocklists'
                 )
                 all_blocks_cache = all_blocklists_rows
+
+                block_cache_status.clear()
     else:
         all_blocklists_rows = all_blocks_cache
 
@@ -1127,9 +1141,9 @@ redis_key_name = database_config["redis_autocomplete"]
 redis_client = aioredis.from_url(f"rediss://{redis_username}:{redis_password}@{redis_host}:{redis_port}")
 
 
-async def redis_connected():
+def redis_connected():
     try:
-        response = await redis_client.ping()
+        response = redis_client.ping()
 
         if response == b'PONG':
 
@@ -1137,7 +1151,7 @@ async def redis_connected():
         else:
 
             return False
-    except aioredis.exceptions.ConnectionError:
+    except aioredis.ConnectionError:
         logger.error(f"Could not connect to Redis.")
     except Exception as e:
         logger.error(f"An error occured connecting to Redis: {e}")
