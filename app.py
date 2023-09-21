@@ -328,7 +328,7 @@ async def fun_facts():
 async def funer_facts():
     logger.info("Funer facts requested.")
 
-    if database_handler.blocklist_24_updater_status:
+    if database_handler.blocklist_24_updater_status.is_set():
         logger.info("Updating top 24 blocks.")
 
         return await render_template('please_wait.html')
@@ -355,7 +355,7 @@ async def funer_facts():
 async def block_stats():
     logger.info(f"Requesting block statistics.")
 
-    if utils.block_stats_status:
+    if utils.block_stats_status.is_set():
         logger.info("Updating block stats.")
 
         return await render_template('please_wait.html')
@@ -570,17 +570,17 @@ async def single_blocklist(identifier):
 
 @app.route('/process_status', methods=['GET'])
 def update_block_stats():
-    if utils.block_stats_status:
+    if utils.block_stats_status.is_set():
         stats_status = "processing"
     else:
         stats_status = "complete"
 
-    if database_handler.blocklist_updater_status:
+    if database_handler.blocklist_updater_status.is_set():
         top_blocked_status = "processing"
     else:
         top_blocked_status = "complete"
 
-    if database_handler.blocklist_24_updater_status:
+    if database_handler.blocklist_24_updater_status.is_set():
         top_24_blocked_status = "processing"
     else:
         top_24_blocked_status = "complete"
