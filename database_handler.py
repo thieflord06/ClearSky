@@ -96,7 +96,7 @@ async def retrieve_autocomplete_handles(query):
         while cursor < limit:
             value, matching_handles = await redis_client.sscan(key, cursor, match=query + '*', count=cursor)
             if 1 <= len(matching_handles) <= 5 or cursor >= limit:
-                logger.debug(str(f"handles found: {len(matching_handles)}"))
+                logger.debug(f"handles found: {str(len(matching_handles))}")
                 logger.debug(f"cursor: {str(cursor)}")
 
                 break
@@ -1051,7 +1051,7 @@ async def top_24blocklists_updater():
 
     blocklist_24_updater_status.set()
 
-    logger.info("Updating top blocks lists requested.")
+    logger.info("Updating top 24 blocks lists requested.")
     await truncate_top24_blocks_table()
     blocked_results, blockers_results = await get_top24_blocks()  # Get blocks for db
     logger.debug(f"blocked count: {len(blocked_results)} blockers count: {len(blockers_results)}")
