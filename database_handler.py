@@ -1018,8 +1018,6 @@ async def get_similar_users(user_did):
 
 
 async def blocklists_updater():
-    global blocklist_updater_status
-
     blocked_list = "blocked"
     blocker_list = "blocker"
 
@@ -1044,8 +1042,6 @@ async def blocklists_updater():
 
 
 async def top_24blocklists_updater():
-    global blocklist_24_updater_status
-
     blocked_list = "blocked"
     blocker_list = "blocker"
 

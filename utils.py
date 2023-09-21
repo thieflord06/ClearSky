@@ -179,7 +179,6 @@ async def resolve_top24_block_lists():
 
 
 async def update_block_statistics():
-    global block_stats_status
     logger.info("Updating block statsitics.")
 
     block_stats_status.set()
