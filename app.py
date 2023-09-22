@@ -401,10 +401,10 @@ async def block_stats():
         if any(value is None for value in values_to_check):
             logger.info("Getting new cache.")
 
-            (number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking, number_blocking_1,
-             number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000,
-             mean_number_of_blocks, number_blocked_1, number_blocked_2_and_100, number_blocked_101_and_1000,
-             number_blocked_greater_than_1000, mean_number_of_blocked) = await utils.update_block_statistics()
+            (number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking,
+             number_block_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000,
+             average_number_of_blocks, number_blocked_1, number_blocked_2_and_100, number_blocked_101_and_1000,
+             number_blocked_greater_than_1000, average_number_of_blocked) = await utils.update_block_statistics()
 
             utils.block_stats_status.clear()
 
