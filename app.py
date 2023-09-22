@@ -524,6 +524,7 @@ async def blocklist(identifier):
         # Pass the paginated data to your template
         return await render_template('blocklist.html', blocklist=blocklist, count=formatted_count, more_data_available=more_data_available, page=page, identifier=identifier, user=handle_identifier)
     else:
+
         return redirect('/')
 
 
@@ -565,6 +566,7 @@ async def single_blocklist(identifier):
         # Pass the paginated data to your template
         return await render_template('single_blocklist.html', blocklist=blocklist, dates=dates, count=formatted_count, more_data_available=more_data_available, page=page, identifier=identifier, user=handle_identifier)
     else:
+
         return redirect('/')
 
 
@@ -625,6 +627,7 @@ async def update_block_stats():
 # ======================================================================================================================
 # ============================================= Main functions =========================================================
 def generate_session_number():
+
     return str(uuid.uuid4().hex)
 
 
