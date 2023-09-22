@@ -664,11 +664,20 @@ async def get_time_since(time):
     remaining_minutes = minutes % 60
 
     if hours > 0 and remaining_minutes > 0:
-        elapsed_time = f"{int(hours)} hours and {int(minutes)} mins ago"
+        if hours == 1:
+            elapsed_time = f"{int(hours)} hour {int(remaining_minutes)} minutes ago"
+        else:
+            elapsed_time = f"{int(hours)} hours {int(remaining_minutes)} minutes ago"
     elif hours > 0:
-        elapsed_time = f"{int(hours)} hours ago"
+        if hours == 1:
+            elapsed_time = f"{int(hours)} hour ago"
+        else:
+            elapsed_time = f"{int(hours)} hours ago"
     elif minutes > 0:
-        elapsed_time = f"{int(minutes)} minutes ago"
+        if minutes == 1:
+            elapsed_time = f"{int(minutes)} minute ago"
+        else:
+            elapsed_time = f"{int(minutes)} minutes ago"
     else:
         elapsed_time = "less than a minute ago"
 
