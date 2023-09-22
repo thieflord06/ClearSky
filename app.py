@@ -615,7 +615,8 @@ async def update_block_stats():
         "last update top 24 block": str(database_handler.last_update_top_24_block),
         "redis status": redis_status,
         "block cache status": block_cache_status,
-        "block cache last process time": str(database_handler.all_blocks_process_time)
+        "block cache last process time": str(database_handler.all_blocks_process_time),
+        "block cache last update": str(database_handler.all_blocks_last_update)
     }
 
     return jsonify(status)

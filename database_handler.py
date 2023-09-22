@@ -27,6 +27,7 @@ block_cache_status = asyncio.Event()
 last_update_top_block = None
 last_update_top_24_block = None
 all_blocks_process_time = None
+all_blocks_last_update = None
 
 
 # ======================================================================================================================
@@ -968,6 +969,7 @@ async def get_similar_blocked_by(user_did):
 async def get_similar_users(user_did):
     global all_blocks_cache
     global all_blocks_process_time
+    global all_blocks_last_update
 
     if len(all_blocks_cache) == 0:
         logger.info("Caching all blocklists.")
@@ -987,6 +989,7 @@ async def get_similar_users(user_did):
                 end_time = datetime.now()
 
                 all_blocks_process_time = end_time - start_time
+                all_blocks_last_update = end_time
     else:
         all_blocklists_rows = all_blocks_cache
 
