@@ -608,6 +608,7 @@ async def update_block_stats():
         "uptime": str(uptime),
         "block stats status": stats_status,
         "block stats last process time": str(utils.block_stats_process_time),
+        "block stats last update": str(utils.block_stats_last_update),
         "top blocked status": top_blocked_status,
         "last update top block": str(database_handler.last_update_top_block),
         "top 24 blocked status": top_24_blocked_status,
