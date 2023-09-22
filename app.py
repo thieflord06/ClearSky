@@ -406,6 +406,8 @@ async def block_stats():
              mean_number_of_blocks, number_blocked_1, number_blocked_2_and_100, number_blocked_101_and_1000,
              number_blocked_greater_than_1000, mean_number_of_blocked) = await utils.update_block_statistics()
 
+            utils.block_stats_status.clear()
+
     total_users = await utils.get_user_count()
 
     percent_users_blocked = (int(number_of_unique_users_blocked) / int(total_users)) * 100
