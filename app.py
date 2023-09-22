@@ -319,6 +319,8 @@ async def fun_facts():
             logger.info("Getting new cache.")
             resolved_blocked, resolved_blockers, blocked_aid, blocker_aid = await database_handler.blocklists_updater()
 
+            database_handler.blocklist_updater_status.clear()
+
     # If at least one list is not empty, render the regular page
     return await render_template('fun_facts.html', blocked_results=resolved_blocked, blockers_results=resolved_blockers,
                                  blocked_aid=blocked_aid, blocker_aid=blocker_aid)
@@ -345,6 +347,8 @@ async def funer_facts():
         if resolved_blocked is None or resolved_blockers is None or blocker_aid is None or blocker_aid is None:
             logger.info("Getting new cache.")
             resolved_blocked, resolved_blockers, blocked_aid, blocker_aid = await database_handler.top_24blocklists_updater()
+
+            database_handler.blocklist_24_updater_status.clear()
 
     # If at least one list is not empty, render the regular page
     return await render_template('funer_facts.html', blocked_results=resolved_blocked,
