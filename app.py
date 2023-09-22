@@ -2,7 +2,7 @@
 
 import quart
 from quart import Quart, render_template, request, session, redirect, jsonify
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import uuid
 import asyncio
@@ -607,20 +607,25 @@ async def update_block_stats():
     now = datetime.now()
     uptime = now - runtime
 
+    block_stats_last_update = await get_time_since(utils.block_stats_last_update)
+    top_block_last_update = await get_time_since(database_handler.last_update_top_block)
+    top_24_block_last_update = await get_time_since(database_handler.last_update_top_24_block)
+    all_blocks_last_update = await get_time_since(database_handler.all_blocks_last_update)
+
     status = {
         "clearsky version": version,
         "uptime": str(uptime),
         "block stats status": stats_status,
         "block stats last process time": str(utils.block_stats_process_time),
-        "block stats last update": str(utils.block_stats_last_update),
+        "block stats last update": str(block_stats_last_update),
         "top blocked status": top_blocked_status,
-        "last update top block": str(database_handler.last_update_top_block),
+        "last update top block": str(top_block_last_update),
         "top 24 blocked status": top_24_blocked_status,
-        "last update top 24 block": str(database_handler.last_update_top_24_block),
+        "last update top 24 block": str(top_24_block_last_update),
         "redis status": redis_status,
         "block cache status": block_cache_status,
         "block cache last process time": str(database_handler.all_blocks_process_time),
-        "block cache last update": str(database_handler.all_blocks_last_update),
+        "block cache last update": str(all_blocks_last_update),
         "current time": str(datetime.now())
     }
 
@@ -647,6 +652,27 @@ async def get_ip():  # Get IP address of session request
 
     return ip
 
+
+async def get_time_since(time):
+    if time is None:
+
+        return "Not initialized"
+    time_difference = datetime.now() - time
+
+    minutes = int((time_difference.total_seconds() / 60))
+    hours = minutes // 60
+    remaining_minutes = minutes % 60
+
+    if hours > 0 and remaining_minutes > 0:
+        elapsed_time = f"{int(hours)} hours and {int(minutes)} mins ago"
+    elif hours > 0:
+        elapsed_time = f"{int(hours)} hours ago"
+    elif minutes > 0:
+        elapsed_time = f"{int(minutes)} minutes ago"
+    else:
+        elapsed_time = "less than a minute ago"
+
+    return elapsed_time
 
 # ======================================================================================================================
 # =============================================== Main Logic ===========================================================
