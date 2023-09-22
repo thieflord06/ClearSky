@@ -40,6 +40,8 @@ average_number_of_blocked_cache = TTLCache(maxsize=200, ttl=14400)
 
 block_stats_status = asyncio.Event()
 
+block_stats_process_time = None
+
 
 # ======================================================================================================================
 # ============================================= Features functions =====================================================
@@ -179,7 +181,11 @@ async def resolve_top24_block_lists():
 
 
 async def update_block_statistics():
+    global block_stats_process_time
+
     logger.info("Updating block statsitics.")
+
+    start_time = datetime.now()
 
     block_stats_status.set()
 
@@ -211,6 +217,9 @@ async def update_block_statistics():
     average_number_of_blocked_cache["averageblocked"] = average_number_of_blocked
 
     block_stats_status.clear()
+    end_time = datetime.now()
+
+    block_stats_process_time = end_time - start_time
 
     return (number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking,
             number_block_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000,

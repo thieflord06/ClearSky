@@ -9,6 +9,7 @@ from config_helper import logger
 from aiolimiter import AsyncLimiter
 from cachetools import TTLCache
 from redis import asyncio as aioredis
+from datetime import datetime
 
 # Connection pool and lock
 connection_pool = None
@@ -22,6 +23,10 @@ all_blocks_cache = TTLCache(maxsize=2000000, ttl=172800)  # every 48 hours
 blocklist_updater_status = asyncio.Event()
 blocklist_24_updater_status = asyncio.Event()
 block_cache_status = asyncio.Event()
+
+last_update_top_block = None
+last_update_top_24_block = None
+all_blocks_process_time = None
 
 
 # ======================================================================================================================
@@ -962,9 +967,11 @@ async def get_similar_blocked_by(user_did):
 
 async def get_similar_users(user_did):
     global all_blocks_cache
+    global all_blocks_process_time
 
     if len(all_blocks_cache) == 0:
         logger.info("Caching all blocklists.")
+        start_time = datetime.now()
 
         block_cache_status.set()
 
@@ -977,6 +984,9 @@ async def get_similar_users(user_did):
                 all_blocks_cache = all_blocklists_rows
 
                 block_cache_status.clear()
+                end_time = datetime.now()
+
+                all_blocks_process_time = end_time - start_time
     else:
         all_blocklists_rows = all_blocks_cache
 
@@ -1032,6 +1042,8 @@ async def get_similar_users(user_did):
 
 
 async def blocklists_updater():
+    global last_update_top_block
+
     blocked_list = "blocked"
     blocker_list = "blocker"
 
@@ -1051,11 +1063,14 @@ async def blocklists_updater():
     logger.info("Top blocks lists page updated.")
 
     blocklist_updater_status.clear()
+    last_update_top_block = datetime.now()
 
     return top_blocked, top_blockers, blocked_aid, blocker_aid
 
 
 async def top_24blocklists_updater():
+    global last_update_top_24_block
+
     blocked_list = "blocked"
     blocker_list = "blocker"
 
@@ -1075,6 +1090,7 @@ async def top_24blocklists_updater():
     logger.info("Top 24 hour blocks lists page updated.")
 
     blocklist_24_updater_status.clear()
+    last_update_top_24_block = datetime.now()
 
     return top_blocked, top_blockers, blocked_aid, blocker_aid
 

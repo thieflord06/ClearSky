@@ -599,6 +599,7 @@ async def update_block_stats():
             block_cache_status = "not initialized"
         else:
             block_cache_status = "complete"
+
     now = datetime.now()
     uptime = now - runtime
 
@@ -606,11 +607,16 @@ async def update_block_stats():
         "clearsky version": version,
         "uptime": str(uptime),
         "block stats status": stats_status,
+        "block stats last process time": str(utils.block_stats_process_time),
         "top blocked status": top_blocked_status,
+        "last update top block": str(database_handler.last_update_top_block),
         "top 24 blocked status": top_24_blocked_status,
+        "last update top 24 block": str(database_handler.last_update_top_24_block),
         "redis status": redis_status,
-        "block cache status": block_cache_status
+        "block cache status": block_cache_status,
+        "block cache last process time": str(database_handler.all_blocks_process_time)
     }
+
     return jsonify(status)
 
 
