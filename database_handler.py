@@ -1046,6 +1046,7 @@ async def get_similar_users(user_did):
 
 async def blocklists_updater():
     global last_update_top_block
+    global blocklist_updater_status
 
     blocked_list = "blocked"
     blocker_list = "blocker"
@@ -1066,6 +1067,7 @@ async def blocklists_updater():
     logger.info("Top blocks lists page updated.")
 
     blocklist_updater_status.clear()
+
     last_update_top_block = datetime.now()
 
     return top_blocked, top_blockers, blocked_aid, blocker_aid
@@ -1073,29 +1075,31 @@ async def blocklists_updater():
 
 async def top_24blocklists_updater():
     global last_update_top_24_block
+    global blocklist_24_updater_status
 
-    blocked_list = "blocked"
-    blocker_list = "blocker"
+    blocked_list_24 = "blocked"
+    blocker_list_24 = "blocker"
 
     blocklist_24_updater_status.set()
 
     logger.info("Updating top 24 blocks lists requested.")
     await truncate_top24_blocks_table()
-    blocked_results, blockers_results = await get_top24_blocks()  # Get blocks for db
-    logger.debug(f"blocked count: {len(blocked_results)} blockers count: {len(blockers_results)}")
+    blocked_results_24, blockers_results_24 = await get_top24_blocks()  # Get blocks for db
+    logger.debug(f"blocked count: {len(blocked_results_24)} blockers count: {len(blockers_results_24)}")
     # Update blocked entries
-    await update_24_hour_block_list_table(blocked_results, blocked_list)  # add blocked to top blocks table
+    await update_24_hour_block_list_table(blocked_results_24, blocked_list_24)  # add blocked to top blocks table
     logger.info("Updated top blocked db.")
-    await update_24_hour_block_list_table(blockers_results, blocker_list)  # add blocker to top blocks table
+    await update_24_hour_block_list_table(blockers_results_24, blocker_list_24)  # add blocker to top blocks table
     logger.info("Updated top blockers db.")
-    top_blocked, top_blockers, blocked_aid, blocker_aid = await utils.resolve_top24_block_lists()
+    top_blocked_24, top_blockers_24, blocked_aid_24, blocker_aid_24 = await utils.resolve_top24_block_lists()
 
     logger.info("Top 24 hour blocks lists page updated.")
 
     blocklist_24_updater_status.clear()
+
     last_update_top_24_block = datetime.now()
 
-    return top_blocked, top_blockers, blocked_aid, blocker_aid
+    return top_blocked_24, top_blockers_24, blocked_aid_24, blocker_aid_24
 
 
 # ======================================================================================================================

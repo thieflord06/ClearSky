@@ -18,7 +18,7 @@ config = config_helper.read_config()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "3.9.6"
+version = "3.9.7"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -41,9 +41,6 @@ app = Quart(__name__)
 app.secret_key = 'your-secret-key'
 
 session_ip = None
-
-# Create a global lock
-update_lock = asyncio.Lock()
 
 
 # ======================================================================================================================
@@ -312,14 +309,13 @@ async def fun_facts():
     blocked_aid = utils.blocked_avatar_ids_cache.get('blocked_aid')
     blocker_aid = utils.blocker_avatar_ids_cache.get('blocker_aid')
 
-    # Acquire the lock to ensure only one request can proceed with the update
-    async with update_lock:
-        # Check if both lists are empty
-        if resolved_blocked is None or resolved_blockers is None or blocker_aid is None or blocker_aid is None:
-            logger.info("Getting new cache.")
-            resolved_blocked, resolved_blockers, blocked_aid, blocker_aid = await database_handler.blocklists_updater()
+    # Check if both lists are empty
+    if resolved_blocked is None or resolved_blockers is None or blocker_aid is None or blocker_aid is None:
+        logger.info("Getting new cache.")
 
-            database_handler.blocklist_updater_status.clear()
+        asyncio.create_task(database_handler.blocklists_updater())
+
+        return await render_template('please_wait.html')
 
     # If at least one list is not empty, render the regular page
     return await render_template('fun_facts.html', blocked_results=resolved_blocked, blockers_results=resolved_blockers,
@@ -335,24 +331,23 @@ async def funer_facts():
 
         return await render_template('please_wait.html')
 
-    resolved_blocked = utils.resolved_24_blocked_cache.get('resolved_blocked')
-    resolved_blockers = utils.resolved_24blockers_cache.get('resolved_blockers')
+    resolved_blocked_24 = utils.resolved_24_blocked_cache.get('resolved_blocked')
+    resolved_blockers_24 = utils.resolved_24blockers_cache.get('resolved_blockers')
 
-    blocked_aid = utils.blocked_24_avatar_ids_cache.get('blocked_aid')
-    blocker_aid = utils.blocker_24_avatar_ids_cache.get('blocker_aid')
+    blocked_aid_24 = utils.blocked_24_avatar_ids_cache.get('blocked_aid')
+    blocker_aid_24 = utils.blocker_24_avatar_ids_cache.get('blocker_aid')
 
-    # Acquire the lock to ensure only one request can proceed with the update
-    async with update_lock:
-        # Check if both lists are empty
-        if resolved_blocked is None or resolved_blockers is None or blocker_aid is None or blocker_aid is None:
-            logger.info("Getting new cache.")
-            resolved_blocked, resolved_blockers, blocked_aid, blocker_aid = await database_handler.top_24blocklists_updater()
+    # Check if both lists are empty
+    if resolved_blocked_24 is None or resolved_blockers_24 is None or blocker_aid_24 is None or blocker_aid_24 is None:
+        logger.info("Getting new cache.")
 
-            database_handler.blocklist_24_updater_status.clear()
+        asyncio.create_task(database_handler.top_24blocklists_updater())
+
+        return await render_template('please_wait.html')
 
     # If at least one list is not empty, render the regular page
-    return await render_template('funer_facts.html', blocked_results=resolved_blocked,
-                                 blockers_results=resolved_blockers, blocked_aid=blocked_aid, blocker_aid=blocker_aid)
+    return await render_template('funer_facts.html', blocked_results=resolved_blocked_24,
+                                 blockers_results=resolved_blockers_24, blocked_aid=blocked_aid_24, blocker_aid=blocker_aid_24)
 
 
 @app.route('/block_stats')
@@ -361,12 +356,6 @@ async def block_stats():
 
     if utils.block_stats_status.is_set():
         logger.info("Updating block stats.")
-
-        return await render_template('please_wait.html')
-
-    # Check if the update_lock is locked
-    if update_lock.locked():
-        logger.info("Block stats waiting page requested.")
 
         return await render_template('please_wait.html')
 
@@ -400,17 +389,12 @@ async def block_stats():
         average_number_of_blocked
     )
 
-    async with update_lock:
-        # Check if both lists are empty
-        if any(value is None for value in values_to_check):
-            logger.info("Getting new cache.")
+    if any(value is None for value in values_to_check):
+        logger.info("Getting new cache.")
 
-            (number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking,
-             number_block_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000,
-             average_number_of_blocks, number_blocked_1, number_blocked_2_and_100, number_blocked_101_and_1000,
-             number_blocked_greater_than_1000, average_number_of_blocked) = await utils.update_block_statistics()
+        asyncio.create_task(utils.update_block_statistics())
 
-            utils.block_stats_status.clear()
+        return await render_template('please_wait.html')
 
     total_users = await utils.get_user_count()
 

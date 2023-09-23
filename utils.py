@@ -184,6 +184,7 @@ async def resolve_top24_block_lists():
 async def update_block_statistics():
     global block_stats_process_time
     global block_stats_last_update
+    global block_stats_status
 
     logger.info("Updating block statsitics.")
 
@@ -219,6 +220,7 @@ async def update_block_statistics():
     average_number_of_blocked_cache["averageblocked"] = average_number_of_blocked
 
     block_stats_status.clear()
+
     end_time = datetime.now()
 
     block_stats_process_time = end_time - start_time
