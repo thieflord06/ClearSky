@@ -22,47 +22,38 @@ def update_config_based_on_os(config, temp=False):
         if temp:
             if "Windows" not in current_os:
                 log_dir = config.get('temp', 'logdir')
-                users_db_path = config.get('temp', 'users_db_path')
                 if not os.path.exists(log_dir):
                     os.makedirs(log_dir)
-                if not os.path.exists(users_db_path):
-                    os.makedirs(users_db_path)
 
                 args = config.get("temp", "args")
                 log_dir = config.get("temp", "logdir")
                 log_name = config.get("temp", "log_name")
-                users_db = config.get("temp", "users_db_path")
         elif "Windows" in current_os:
             args = config.get("windows", "args")
             log_dir = config.get("windows", "logdir")
             log_name = config.get("windows", "log_name")
-            users_db = config.get("windows", "users_db_path")
         else:
             args = config.get("linux", "args")
             log_dir = config.get("linux", "logdir")
             log_name = config.get("linux", "log_name")
-            users_db = config.get("linux", "users_db_path")
 
         config.set("handler_fileHandler", "args", str(args))
         config.set("handler_fileHandler", "logdir", str(log_dir))
         config.set("handler_fileHandler", "log_name", str(log_name))
-        config.set("handler_fileHandler", "users_db_path", str(users_db))
 
         with open('config.ini', 'w') as configfile:
             config.write(configfile)
             configfile.close()
-        return log_dir, users_db
+        return log_dir
 
     except (configparser.NoOptionError, configparser.NoSectionError, configparser.MissingSectionHeaderError):
         raise
 
 
-def create_log_directory(log_dir, users_db_path):
+def create_log_directory(log_dir):
     try:
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
-        if not os.path.exists(users_db_path):
-            os.makedirs(users_db_path)
     except PermissionError:
         raise PermissionError("Cannot create log directory")
     except OSError:
@@ -71,12 +62,9 @@ def create_log_directory(log_dir, users_db_path):
         if "Windows" not in current_os:
             update_config_based_on_os(read_config(), True)
             log_dir = config.get('temp', 'logdir')
-            users_db_path = config.get('temp', 'users_db_path')
             print("Using temp for logging.")
             if not os.path.exists(log_dir):
                 os.makedirs(log_dir)
-            if not os.path.exists(users_db_path):
-                os.makedirs(users_db_path)
 
 
 def configure_logging():
@@ -92,8 +80,8 @@ def configure_logging():
 
 
 # Set up log files and directories for entire project from config.ini
-log_dir, users_db = update_config_based_on_os(read_config())
-create_log_directory(log_dir, users_db)
+log_dir = update_config_based_on_os(read_config())
+create_log_directory(log_dir)
 
 # Create and configure the logger instance
 logger = configure_logging()
