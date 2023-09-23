@@ -2,7 +2,7 @@
 
 import quart
 from quart import Quart, render_template, request, session, redirect, jsonify
-from datetime import datetime, timedelta
+from datetime import datetime
 import os
 import uuid
 import asyncio
@@ -445,7 +445,7 @@ async def block_stats():
 
 
 # ======================================================================================================================
-# ============================================= API Endpoints +=========================================================
+# ============================================= API Endpoints ==========================================================
 @app.route('/autocomplete')
 async def autocomplete():
     query = request.args.get('query')
@@ -481,7 +481,7 @@ async def autocomplete():
 @app.route('/blocklist')
 async def blocklist_redirect():
     if request.method == 'GET':
-        # Redirect to the root URL '/'
+
         return redirect('/', code=302)
 
 
@@ -495,7 +495,6 @@ async def blocklist(identifier):
     request_from = request.args.get('from')
 
     if request_from == 'next' or request_from == 'previous':
-        # Get pagination parameters from the request (e.g., page number)
         page = request.args.get('page', default=1, type=int)
         items_per_page = 100
         offset = (page - 1) * items_per_page
@@ -511,8 +510,8 @@ async def blocklist(identifier):
         if offset + items_per_page > count:
             more_data_available = False
 
-        # Pass the paginated data to your template
-        return await render_template('blocklist.html', blocklist=blocklist, count=formatted_count, more_data_available=more_data_available, page=page, identifier=identifier, user=handle_identifier)
+        return await render_template('blocklist.html', blocklist=blocklist, count=formatted_count,
+                                     more_data_available=more_data_available, page=page, identifier=identifier, user=handle_identifier)
     else:
 
         return redirect('/')
@@ -521,7 +520,7 @@ async def blocklist(identifier):
 @app.route('/single_blocklist')
 async def single_blocklist_redirect():
     if request.method == 'GET':
-        # Redirect to the root URL '/'
+
         return redirect('/', code=302)
 
 
@@ -553,8 +552,9 @@ async def single_blocklist(identifier):
         if offset + items_per_page > count:
             more_data_available = False
 
-        # Pass the paginated data to your template
-        return await render_template('single_blocklist.html', blocklist=blocklist, dates=dates, count=formatted_count, more_data_available=more_data_available, page=page, identifier=identifier, user=handle_identifier)
+        return await render_template('single_blocklist.html', blocklist=blocklist, dates=dates,
+                                     count=formatted_count, more_data_available=more_data_available, page=page,
+                                     identifier=identifier, user=handle_identifier)
     else:
 
         return redirect('/')

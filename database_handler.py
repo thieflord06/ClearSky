@@ -6,7 +6,6 @@ import asyncpg
 import config_helper
 import utils
 from config_helper import logger
-from aiolimiter import AsyncLimiter
 from cachetools import TTLCache
 from redis import asyncio as aioredis
 from datetime import datetime
@@ -14,9 +13,6 @@ from datetime import datetime
 # Connection pool and lock
 connection_pool = None
 db_lock = asyncio.Lock()
-
-# Create a limiter with a rate limit of 10 requests per second
-limiter = AsyncLimiter(3)
 
 all_blocks_cache = TTLCache(maxsize=2000000, ttl=172800)  # every 48 hours
 
@@ -359,8 +355,6 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
 
 
 async def update_blocklist_table(ident, blocked_by_list, block_date):
-    # blocked_by_list, block_date = utils.get_user_block_list(ident)
-
     if not blocked_by_list:
         return
 
