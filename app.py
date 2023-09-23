@@ -35,6 +35,7 @@ logger.debug("Ran by: " + username)
 logger.debug("Ran at: " + str(current_time))
 logger.info("File Log level: " + str(config.get("handler_fileHandler", "level")))
 logger.info("Stdout Log level: " + str(config.get("handler_consoleHandler", "level")))
+
 app = Quart(__name__)
 
 # Configure session secret key
