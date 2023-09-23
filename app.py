@@ -115,6 +115,7 @@ async def selection_handle():
 
             return await render_template('total_users.html', count=formatted_count)
         if not identifier:  # If form is submitted without anything in the identifier return intentional error
+            logger.warning("Intentional error.")
 
             return await render_template('intentional_error.html')
         # Check if did or handle exists before processing
@@ -221,7 +222,7 @@ async def selection_handle():
                     return await render_template('single_blocklist.html', user=identifier, blocklist=blocklist,
                                                  dates=dates, count=formatted_count, identifier=did_identifier, page=page, more_data_available=more_data_available)
                 elif selection == "6":
-                    logger.info("Requesting in-common blocks for: " + identifier)
+                    logger.info(f"Requesting in-common blocks for: {identifier}")
                     in_common_list, percentages = await database_handler.get_similar_users(did_identifier)
 
                     if "no blocks" in in_common_list:
@@ -692,7 +693,7 @@ async def main():
     asyncio.create_task(database_handler.top_24blocklists_updater())
     asyncio.create_task(utils.update_block_statistics())
 
-    logger.info("Web server starting at: " + ip_address + ":" + port_address)
+    logger.info(f"Web server starting at: {ip_address}:{port_address}")
 
     await app.run_task(host=ip_address, port=port_address)
 
