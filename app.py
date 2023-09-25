@@ -102,9 +102,11 @@ async def selection_handle():
     global session_ip
     data = await request.form
     session_ip = await get_ip()
+
     logger.debug(data)
 
     selection = data.get('selection')
+
     identifier = data.get('identifier')
     identifier = identifier.lower()
     identifier = identifier.strip()
