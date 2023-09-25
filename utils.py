@@ -12,19 +12,19 @@ import re
 from cachetools import TTLCache
 # ======================================================================================================================
 # ================================================ cache variables =====================================================
-resolved_blocked_cache = TTLCache(maxsize=200, ttl=60)
-resolved_blockers_cache = TTLCache(maxsize=200, ttl=60)
+resolved_blocked_cache = TTLCache(maxsize=200, ttl=3600)
+resolved_blockers_cache = TTLCache(maxsize=200, ttl=3600)
 
-resolved_24_blocked_cache = TTLCache(maxsize=200, ttl=60)
-resolved_24blockers_cache = TTLCache(maxsize=200, ttl=60)
+resolved_24_blocked_cache = TTLCache(maxsize=200, ttl=3600)
+resolved_24blockers_cache = TTLCache(maxsize=200, ttl=3600)
 
-blocked_avatar_ids_cache = TTLCache(maxsize=200, ttl=60)
-blocker_avatar_ids_cache = TTLCache(maxsize=200, ttl=60)
+blocked_avatar_ids_cache = TTLCache(maxsize=200, ttl=3600)
+blocker_avatar_ids_cache = TTLCache(maxsize=200, ttl=3600)
 
-blocked_24_avatar_ids_cache = TTLCache(maxsize=200, ttl=60)
-blocker_24_avatar_ids_cache = TTLCache(maxsize=200, ttl=60)
+blocked_24_avatar_ids_cache = TTLCache(maxsize=200, ttl=3600)
+blocker_24_avatar_ids_cache = TTLCache(maxsize=200, ttl=3600)
 
-number_of_total_blocks_cache = TTLCache(maxsize=200, ttl=60)
+number_of_total_blocks_cache = TTLCache(maxsize=200, ttl=14400)
 number_of_unique_users_blocked_cache = TTLCache(maxsize=200, ttl=14400)
 number_of_unique_users_blocking_cache = TTLCache(maxsize=200, ttl=14400)
 number_block_1_cache = TTLCache(maxsize=200, ttl=14400)
