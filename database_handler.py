@@ -24,6 +24,10 @@ last_update_top_block = None
 last_update_top_24_block = None
 all_blocks_process_time = None
 all_blocks_last_update = None
+top_blocks_start_time = None
+top_24_blocks_start_time = None
+top_blocks_process_time = None
+top_24_blocks_process_time = None
 
 
 # ======================================================================================================================
@@ -1041,10 +1045,13 @@ async def get_similar_users(user_did):
 async def blocklists_updater():
     global last_update_top_block
     global blocklist_updater_status
+    global top_blocks_start_time
+    global top_blocks_process_time
 
     blocked_list = "blocked"
     blocker_list = "blocker"
 
+    top_blocks_start_time = datetime.now()
     blocklist_updater_status.set()
 
     logger.info("Updating top blocks lists requested.")
@@ -1063,6 +1070,9 @@ async def blocklists_updater():
     blocklist_updater_status.clear()
 
     last_update_top_block = datetime.now()
+    end_time = datetime.now()
+    top_blocks_process_time = end_time - top_blocks_start_time
+    top_blocks_start_time = None
 
     return top_blocked, top_blockers, blocked_aid, blocker_aid
 
@@ -1070,10 +1080,13 @@ async def blocklists_updater():
 async def top_24blocklists_updater():
     global last_update_top_24_block
     global blocklist_24_updater_status
+    global top_24_blocks_start_time
+    global top_24_blocks_process_time
 
     blocked_list_24 = "blocked"
     blocker_list_24 = "blocker"
 
+    top_24_blocks_start_time = datetime.now()
     blocklist_24_updater_status.set()
 
     logger.info("Updating top 24 blocks lists requested.")
@@ -1092,6 +1105,9 @@ async def top_24blocklists_updater():
     blocklist_24_updater_status.clear()
 
     last_update_top_24_block = datetime.now()
+    end_time = datetime.now()
+    top_24_blocks_process_time = end_time - top_24_blocks_start_time
+    top_24_blocks_start_time = None
 
     return top_blocked_24, top_blockers_24, blocked_aid_24, blocker_aid_24
 

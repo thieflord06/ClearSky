@@ -42,6 +42,9 @@ app = Quart(__name__)
 app.secret_key = 'your-secret-key'
 
 session_ip = None
+fun_start_time = None
+funer_start_time = None
+block_stats_app_start_time = None
 
 
 # ======================================================================================================================
@@ -298,12 +301,41 @@ async def selection_handle():
 
 @app.route('/fun_facts')
 async def fun_facts():
+    global fun_start_time
+
     logger.info("Fun facts requested.")
 
     if database_handler.blocklist_updater_status.is_set():
         logger.info("Updating top blocks.")
 
-        return await render_template('please_wait.html')
+        process_time = database_handler.top_blocks_process_time
+
+        if database_handler.top_blocks_start_time is None:
+            start_time = fun_start_time
+        else:
+            start_time = database_handler.top_blocks_start_time
+
+        if process_time is None:
+            remaining_time = "not yet determined"
+        else:
+            time_elapsed = datetime.now() - start_time
+
+            if time_elapsed < process_time:
+                # Calculate hours and minutes left
+                time_difference = process_time - time_elapsed
+                seconds_left = time_difference.total_seconds()
+                minutes_left = seconds_left / 60
+                # hours = minutes // 60
+                remaining_seconds = seconds_left % 60
+
+                if minutes_left > 1:
+                    remaining_time = f"{round(minutes_left)} mins {round(remaining_seconds)} seconds"
+                elif seconds_left > 0:
+                    remaining_time = f"{round(seconds_left)} seconds"
+            else:
+                remaining_time = "just finished"
+
+        return await render_template('please_wait.html', remaining_time=remaining_time)
 
     resolved_blocked = utils.resolved_blocked_cache.get('resolved_blocked')
     resolved_blockers = utils.resolved_blockers_cache.get('resolved_blockers')
@@ -315,9 +347,36 @@ async def fun_facts():
     if resolved_blocked is None or resolved_blockers is None or blocker_aid is None or blocker_aid is None:
         logger.info("Getting new cache.")
 
+        process_time = database_handler.top_blocks_process_time
+
+        if database_handler.top_blocks_start_time is None:
+            start_time = datetime.now()
+        else:
+            start_time = datetime.now()
+
+        if process_time is None:
+            remaining_time = "not yet determined"
+        else:
+            time_elapsed = datetime.now() - start_time
+
+            if time_elapsed < process_time:
+                # Calculate hours and minutes left
+                time_difference = process_time - time_elapsed
+                seconds_left = time_difference.total_seconds()
+                minutes_left = seconds_left / 60
+                # hours = minutes // 60
+                remaining_seconds = seconds_left % 60
+
+                if minutes_left > 1:
+                    remaining_time = f"{round(minutes_left)} mins {round(remaining_seconds)} seconds"
+                elif seconds_left > 0:
+                    remaining_time = f"{round(seconds_left)} seconds"
+            else:
+                remaining_time = "just finished"
+
         asyncio.create_task(database_handler.blocklists_updater())
 
-        return await render_template('please_wait.html')
+        return await render_template('please_wait.html', remaining_time=remaining_time)
 
     # If at least one list is not empty, render the regular page
     return await render_template('fun_facts.html', blocked_results=resolved_blocked, blockers_results=resolved_blockers,
@@ -326,12 +385,41 @@ async def fun_facts():
 
 @app.route('/funer_facts')
 async def funer_facts():
+    global funer_start_time
+
     logger.info("Funer facts requested.")
 
     if database_handler.blocklist_24_updater_status.is_set():
         logger.info("Updating top 24 blocks.")
 
-        return await render_template('please_wait.html')
+        process_time = database_handler.top_24_blocks_process_time
+
+        if database_handler.top_24_blocks_start_time is None:
+            start_time = funer_start_time
+        else:
+            start_time = database_handler.top_24_blocks_start_time
+
+        if process_time is None:
+            remaining_time = "not yet determined"
+        else:
+            time_elapsed = datetime.now() - start_time
+
+            if time_elapsed < process_time:
+                # Calculate hours and minutes left
+                time_difference = process_time - time_elapsed
+                seconds_left = time_difference.total_seconds()
+                minutes_left = seconds_left / 60
+                # hours = minutes // 60
+                remaining_seconds = seconds_left % 60
+
+                if minutes_left > 1:
+                    remaining_time = f"{round(minutes_left)} mins {round(remaining_seconds)} seconds"
+                elif seconds_left > 0:
+                    remaining_time = f"{round(seconds_left)} seconds"
+            else:
+                remaining_time = "just finished"
+
+        return await render_template('please_wait.html', remaining_time=remaining_time)
 
     resolved_blocked_24 = utils.resolved_24_blocked_cache.get('resolved_blocked')
     resolved_blockers_24 = utils.resolved_24blockers_cache.get('resolved_blockers')
@@ -343,9 +431,36 @@ async def funer_facts():
     if resolved_blocked_24 is None or resolved_blockers_24 is None or blocker_aid_24 is None or blocker_aid_24 is None:
         logger.info("Getting new cache.")
 
+        process_time = database_handler.top_24_blocks_process_time
+
+        if process_time is None:
+            funer_start_time = datetime.now()
+        else:
+            funer_start_time = datetime.now()
+
+        if process_time is None:
+            remaining_time = "not yet determined"
+        else:
+            time_elapsed = datetime.now() - funer_start_time
+
+            if time_elapsed < process_time:
+                # Calculate hours and minutes left
+                time_difference = process_time - time_elapsed
+                seconds_left = time_difference.total_seconds()
+                minutes_left = seconds_left / 60
+                # hours = minutes // 60
+                remaining_seconds = seconds_left % 60
+
+                if minutes_left > 1:
+                    remaining_time = f"{round(minutes_left)} mins {round(remaining_seconds)} seconds"
+                elif seconds_left > 0:
+                    remaining_time = f"{round(seconds_left)} seconds"
+            else:
+                remaining_time = "just finished"
+
         asyncio.create_task(database_handler.top_24blocklists_updater())
 
-        return await render_template('please_wait.html')
+        return await render_template('please_wait.html', remaining_time=remaining_time)
 
     # If at least one list is not empty, render the regular page
     return await render_template('funer_facts.html', blocked_results=resolved_blocked_24,
@@ -354,12 +469,41 @@ async def funer_facts():
 
 @app.route('/block_stats')
 async def block_stats():
+    global block_stats_app_start_time
+
     logger.info(f"Requesting block statistics.")
 
     if utils.block_stats_status.is_set():
         logger.info("Updating block stats.")
 
-        return await render_template('please_wait.html')
+        process_time = utils.block_stats_process_time
+
+        if utils.block_stats_start_time is None:
+            start_time = block_stats_app_start_time
+        else:
+            start_time = utils.block_stats_start_time
+
+        if process_time is None:
+            remaining_time = "not yet determined"
+        else:
+            time_elapsed = datetime.now() - start_time
+
+            if time_elapsed < process_time:
+                # Calculate hours and minutes left
+                time_difference = process_time - time_elapsed
+                seconds_left = time_difference.total_seconds()
+                minutes_left = seconds_left / 60
+                # hours = minutes // 60
+                remaining_seconds = seconds_left % 60
+
+                if minutes_left > 1:
+                    remaining_time = f"{round(minutes_left)} mins {round(remaining_seconds)} seconds"
+                elif seconds_left > 0:
+                    remaining_time = f"{round(seconds_left)} seconds"
+            else:
+                remaining_time = "just finished"
+
+        return await render_template('please_wait.html', remaining_time=remaining_time)
 
     number_of_total_blocks = utils.number_of_total_blocks_cache.get("total_blocks")
     number_of_unique_users_blocked = utils.number_of_unique_users_blocked_cache.get("unique_blocked")
@@ -394,9 +538,36 @@ async def block_stats():
     if any(value is None for value in values_to_check):
         logger.info("Getting new cache.")
 
+        process_time = utils.block_stats_process_time
+
+        if process_time is None:
+            block_stats_app_start_time = datetime.now()
+        else:
+            block_stats_app_start_time = datetime.now()
+
+        if process_time is None:
+            remaining_time = "not yet determined"
+        else:
+            time_elapsed = datetime.now() - block_stats_app_start_time
+
+            if time_elapsed < process_time:
+                # Calculate hours and minutes left
+                time_difference = process_time - time_elapsed
+                seconds_left = time_difference.total_seconds()
+                minutes_left = seconds_left / 60
+                # hours = minutes // 60
+                remaining_seconds = seconds_left % 60
+
+                if minutes_left > 1:
+                    remaining_time = f"{round(minutes_left)} mins {round(remaining_seconds)} seconds"
+                elif seconds_left > 0:
+                    remaining_time = f"{round(seconds_left)} seconds"
+            else:
+                remaining_time = "just finished"
+
         asyncio.create_task(utils.update_block_statistics())
 
-        return await render_template('please_wait.html')
+        return await render_template('please_wait.html', remaining_time=remaining_time)
 
     total_users = await utils.get_user_count()
 

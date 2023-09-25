@@ -12,19 +12,19 @@ import re
 from cachetools import TTLCache
 # ======================================================================================================================
 # ================================================ cache variables =====================================================
-resolved_blocked_cache = TTLCache(maxsize=200, ttl=3600)
-resolved_blockers_cache = TTLCache(maxsize=200, ttl=3600)
+resolved_blocked_cache = TTLCache(maxsize=200, ttl=60)
+resolved_blockers_cache = TTLCache(maxsize=200, ttl=60)
 
-resolved_24_blocked_cache = TTLCache(maxsize=200, ttl=3600)
-resolved_24blockers_cache = TTLCache(maxsize=200, ttl=3600)
+resolved_24_blocked_cache = TTLCache(maxsize=200, ttl=60)
+resolved_24blockers_cache = TTLCache(maxsize=200, ttl=60)
 
-blocked_avatar_ids_cache = TTLCache(maxsize=200, ttl=3600)
-blocker_avatar_ids_cache = TTLCache(maxsize=200, ttl=3600)
+blocked_avatar_ids_cache = TTLCache(maxsize=200, ttl=60)
+blocker_avatar_ids_cache = TTLCache(maxsize=200, ttl=60)
 
-blocked_24_avatar_ids_cache = TTLCache(maxsize=200, ttl=3600)
-blocker_24_avatar_ids_cache = TTLCache(maxsize=200, ttl=3600)
+blocked_24_avatar_ids_cache = TTLCache(maxsize=200, ttl=60)
+blocker_24_avatar_ids_cache = TTLCache(maxsize=200, ttl=60)
 
-number_of_total_blocks_cache = TTLCache(maxsize=200, ttl=14400)
+number_of_total_blocks_cache = TTLCache(maxsize=200, ttl=60)
 number_of_unique_users_blocked_cache = TTLCache(maxsize=200, ttl=14400)
 number_of_unique_users_blocking_cache = TTLCache(maxsize=200, ttl=14400)
 number_block_1_cache = TTLCache(maxsize=200, ttl=14400)
@@ -42,6 +42,7 @@ block_stats_status = asyncio.Event()
 
 block_stats_process_time = None
 block_stats_last_update = None
+block_stats_start_time = None
 
 
 # ======================================================================================================================
@@ -185,10 +186,11 @@ async def update_block_statistics():
     global block_stats_process_time
     global block_stats_last_update
     global block_stats_status
+    global block_stats_start_time
 
     logger.info("Updating block statsitics.")
 
-    start_time = datetime.now()
+    block_stats_start_time = datetime.now()
 
     block_stats_status.set()
 
@@ -223,8 +225,9 @@ async def update_block_statistics():
 
     end_time = datetime.now()
 
-    block_stats_process_time = end_time - start_time
+    block_stats_process_time = end_time - block_stats_start_time
     block_stats_last_update = end_time
+    block_stats_start_time = None
 
     return (number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking,
             number_block_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000,
