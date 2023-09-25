@@ -661,11 +661,14 @@ async def blocklist_redirect():
 @app.route('/blocklist/<identifier>')
 async def blocklist(identifier):
     if not identifier:
+        logger.warning("Page request failed, no identifier present.")
 
         return redirect('/', code=302)
 
     # Check if the 'from' parameter is present in the query string
     request_from = request.args.get('from')
+
+    logger.info(f"{request_from} page request for: {identifier}")
 
     if request_from == 'next' or request_from == 'previous':
         page = request.args.get('page', default=1, type=int)
@@ -686,6 +689,7 @@ async def blocklist(identifier):
         return await render_template('blocklist.html', blocklist=blocklist, count=formatted_count,
                                      more_data_available=more_data_available, page=page, identifier=identifier, user=handle_identifier)
     else:
+        logger.warning("Page request failed, not from organic search.")
 
         return redirect('/')
 
@@ -700,11 +704,14 @@ async def single_blocklist_redirect():
 @app.route('/single_blocklist/<identifier>')
 async def single_blocklist(identifier):
     if not identifier:
+        logger.warning("Page request failed, no identifier present.")
 
         return redirect('/', code=302)
 
     # Check if the 'from' parameter is present in the query string
     request_from = request.args.get('from')
+
+    logger.info(f"{request_from} page request for: {identifier}")
 
     if request_from == 'next' or request_from == 'previous':
         # Get pagination parameters from the request (e.g., page number)
@@ -729,12 +736,15 @@ async def single_blocklist(identifier):
                                      count=formatted_count, more_data_available=more_data_available, page=page,
                                      identifier=identifier, user=handle_identifier)
     else:
+        logger.warning("Page request failed, not from organic search.")
 
         return redirect('/')
 
 
 @app.route('/process_status', methods=['GET'])
 async def update_block_stats():
+    logger.info("System status requested.")
+
     if utils.block_stats_status.is_set():
         stats_status = "processing"
     else:
