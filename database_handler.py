@@ -14,7 +14,7 @@ from datetime import datetime
 connection_pool = None
 db_lock = asyncio.Lock()
 
-all_blocks_cache = TTLCache(maxsize=2000000, ttl=172800)  # every 48 hours
+all_blocks_cache = TTLCache(maxsize=2000000, ttl=14400)  # every 4 hours
 
 blocklist_updater_status = asyncio.Event()
 blocklist_24_updater_status = asyncio.Event()
