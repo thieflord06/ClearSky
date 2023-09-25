@@ -49,6 +49,14 @@ async def create_connection_pool():
                 logger.error("Network connection issue.")
 
 
+# Function to close the connection pool
+async def close_connection_pool():
+    global connection_pool
+
+    if connection_pool:
+        await connection_pool.close()
+
+
 async def populate_redis_with_handles():
     if redis_connected():
         try:
