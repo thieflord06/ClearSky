@@ -18,7 +18,7 @@ config = config_helper.read_config()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "3.9.8"
+version = "3.9.9"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -208,7 +208,8 @@ async def selection_handle():
                             message))
 
                         return await render_template('no_result.html', user=identifier, message=message)
-                    blocks, dates, count = await utils.get_single_user_blocks(did_identifier, limit=items_per_page, offset=offset)
+
+                    blocklist, count = await utils.get_single_user_blocks(did_identifier, limit=items_per_page, offset=offset)
                     formatted_count = '{:,}'.format(count)
                     if utils.is_did(identifier):
                         identifier = handle_identifier
@@ -217,16 +218,14 @@ async def selection_handle():
                         message = "Not blocked by anyone"
                         return await render_template('not_blocked.html', user=identifier, message=message)
 
-                    blocklist = list(zip(blocks, dates))
-
                     logger.info(str(session_ip) + " > " + str(
                         *session.values()) + " | " + "Single Blocklist Request Result: " + identifier + " | " + "Blocked by: " + str(
-                        blocks) + " :: " + "Total count: " + str(formatted_count))
+                        blocklist) + " :: " + "Total count: " + str(formatted_count))
 
                     more_data_available = len(blocklist) == items_per_page
 
                     return await render_template('single_blocklist.html', user=identifier, blocklist=blocklist,
-                                                 dates=dates, count=formatted_count, identifier=did_identifier, page=page, more_data_available=more_data_available)
+                                                 count=formatted_count, identifier=did_identifier, page=page, more_data_available=more_data_available)
                 elif selection == "6":
                     logger.info(f"Requesting in-common blocks for: {identifier}")
                     in_common_list, percentages = await database_handler.get_similar_users(did_identifier)

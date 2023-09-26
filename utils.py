@@ -300,32 +300,36 @@ async def get_single_user_blocks(ident, limit=100, offset=0):
     try:
         # Execute the SQL query to get all the user_dids that have the specified did/ident in their blocklist
         async with database_handler.connection_pool.acquire() as connection:
-            result = await connection.fetch('SELECT user_did, block_date FROM blocklists WHERE blocked_did = $1 ORDER BY block_date DESC LIMIT $2 OFFSET $3', ident, limit, offset)
+            result = await connection.fetch('SELECT b.user_did, b.block_date, u.handle, u.status FROM blocklists AS b JOIN users as u ON b.user_did = u.did WHERE b.blocked_did = $1 ORDER BY block_date DESC LIMIT $2 OFFSET $3', ident, limit, offset)
             count = await connection.fetchval('SELECT COUNT(user_did) FROM blocklists WHERE blocked_did = $1', ident)
 
+            block_list = []
+
             if result:
-                # Extract the user_dids from the query result
-                user_dids = [item[0] for item in result]
-                block_dates = [item[1] for item in result]
-                # count = len(user_dids)
+                # Iterate over blocked_users and extract handle and status
+                for user_did, block_date, handle, status in result:
+                    block_list.append({"handle": handle, "status": status, "blocked_date": block_date})
 
-                # Fetch handles concurrently using asyncio.gather
-                resolved_handles = await asyncio.gather(*[get_user_handle(user_did) for user_did in user_dids])
-
-                return resolved_handles, block_dates, count
+                return block_list, count
             else:
-                # ident = resolve_handle(ident)
-                no_blocks = ident + ": has not been blocked by anyone."
-                date = datetime.now().date()
+                total_blocked = 0
+                if is_did(ident):
+                    ident = await use_handle(ident)
+                handles = [f"{ident} hasn't blocked anyone."]
+                timestamp = datetime.now().date()
+                status = False
+                block_list.append({"handle": handles, "status": status, "blocked_date": timestamp})
 
-                return no_blocks, date, 0
+                return block_list, total_blocked
     except Exception as e:
         logger.error(f"Error fetching blocklists for {ident}: {e}")
-        blocks = "there was an error"
-        date = datetime.now().date()
+        handles = "there was an error"
+        timestamp = datetime.now().date()
         count = 0
+        status = False
+        block_list.append({"handle": handles, "status": status, "blocked_date": timestamp})
 
-        return blocks, date, count
+        return block_list, count
 
 
 async def get_user_block_list(ident):
@@ -433,10 +437,7 @@ async def get_user_block_list(ident):
 
 
 async def process_user_block_list(ident, limit, offset):
-    blocked_users, timestamps, count = await database_handler.get_blocklist(ident, limit=limit, offset=offset)
-
-    if blocked_users is None:
-        blocked_users, timestamps = await get_user_block_list(ident)
+    blocked_users, count = await database_handler.get_blocklist(ident, limit=limit, offset=offset)
 
     block_list = []
 
@@ -446,7 +447,8 @@ async def process_user_block_list(ident, limit, offset):
             ident = await use_handle(ident)
         handles = [f"{ident} hasn't blocked anyone."]
         timestamp = datetime.now().date()
-        block_list.append({"handle": handles, "timestamp": timestamp})
+        status = False
+        block_list.append({"handle": handles, "status": status, "blocked_date": timestamp})
         logger.info(f"{ident} Hasn't blocked anyone.")
 
         return block_list, total_blocked
@@ -454,33 +456,20 @@ async def process_user_block_list(ident, limit, offset):
         total_blocked = 0
         handles = [f"Couldn't find {ident}, there may be a typo."]
         timestamp = datetime.now().date()
-        block_list.append({"handle": handles, "timestamp": timestamp})
+        status = False
+        block_list.append({"handle": handles, "status": status, "blocked_date": timestamp})
         logger.info(f"{ident} doesn't exist.")
 
         return block_list, total_blocked
     else:
-        async with database_handler.connection_pool.acquire() as connection:
-            records = await connection.fetch(
-                'SELECT did, handle FROM users WHERE did = ANY($1)',
-                blocked_users
-            )
+        # blocked_users now contains blocked_did, handle, and status
+        total_blocked = count
 
-            # Create a dictionary that maps did to handle
-            did_to_handle = {record['did']: record['handle'] for record in records}
+        # Iterate over blocked_users and extract handle and status
+        for user_did, blocked_date, handle, status in blocked_users:
+            block_list.append({"handle": handle, "status": status, "blocked_date": blocked_date})
 
-            # Sort records based on the order of blocked_users
-            sorted_records = sorted(records, key=lambda record: blocked_users.index(record['did']))
-
-        handles = [did_to_handle[record['did']] for record in sorted_records]
-        # total_blocked = len(handles)
-
-        for handle, timestamp in zip(handles, timestamps):
-            block_list.append((handle, timestamp))
-
-        # Sort the block_list by timestamp (newest to oldest)
-        block_list = sorted(block_list, key=lambda x: x[1], reverse=True)
-
-        return block_list, count
+        return block_list, total_blocked
 
 
 async def fetch_handles_batch(batch_dids, ad_hoc=False):

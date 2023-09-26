@@ -11,10 +11,16 @@
                     <th class="handle">Handle</th>
                     <th class="date">Date</th>
                 </tr>
-                {% for user, date in blocklist %}
+                {% for item in blocklist %}
                 <tr>
-                    <td class="handle"><a href="https://bsky.app/profile/{{ user }}" target="_blank">{{ user }}</a></td>
-                    <td class="date">{{ date }}</td>
+                    <td class="handle">
+                        {% if item.status %}
+                        <a href="https://bsky.app/profile/{{ item.handle }}" target="_blank">{{ item.handle }}</a>
+                        {% else %}
+                        {{ item.handle }}
+                        {% endif %}
+                    </td>
+                    <td class="date">{{ item.blocked_date }}</td>
                 </tr>
                 {% endfor %}
             </table>
