@@ -366,26 +366,49 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
             # Get all DIDs
             records = await utils.get_all_users()
 
-            # Transform the records into a list of tuples with the correct format for insertion
-            formatted_records = [(record[0],) for record in records]
+            logger.info("Getting current users status")
 
-            logger.info(f"Total DIDs: {len(formatted_records)}")
+            current_true_records = await connection.fetch('SELECT did FROM users WHERE status = TRUE')
+
+            current_true_set = set()
+            for record in current_true_records:
+                current_true_set.add(record["did"])
+
+            logger.info("Comparing status")
+            dids_deactivated = current_true_set - records
+
+            if dids_deactivated:
+                logger.info("deactivating dids")
+                await connection.execute('UPDATE users SET status = FALSE WHERE did = ANY($1)', list(dids_deactivated))
+                logger.info(f"{str(len(dids_deactivated))} dids deactivated.")
+
+            logger.info(f"Total DIDs: {len(records)}")
 
             if init_db_run:
+                records = list(records)
                 logger.info("Connected to db.")
                 async with connection.transaction():
                     # Insert data in batches
-                    for i in range(0, len(formatted_records), batch_size):
+                    for i in range(0, len(records), batch_size):
                         batch_data = records[i: i + batch_size]
                         try:
-                            await connection.executemany('INSERT INTO users (did, status) VALUES ($1, TRUE) ON CONFLICT (did) DO NOTHING', batch_data)
+                            await connection.executemany('INSERT INTO users (did, status) VALUES ($1, TRUE) ON CONFLICT (did) DO UPDATE SET status = TRUE WHERE users.status <> TRUE', batch_data)
 
-                            logger.info(f"Inserted batch {i // batch_size + 1} of {len(formatted_records) // batch_size + 1} batches.")
+                            logger.info(f"Inserted batch {i // batch_size + 1} of {len(records) // batch_size + 1} batches.")
                         except Exception as e:
                             logger.error(f"Error inserting batch {i // batch_size + 1}: {str(e)}")
 
-                    # logger.info("updating dids status")
-                    # await connection.execute('UPDATE users SET status = FALSE WHERE did NOT IN (SELECT unnest($1::text[]))', [did[0] for did in formatted_records])
+                    # query = """UPDATE users
+                    #         SET status = FALSE
+                    #         WHERE did NOT IN (SELECT did FROM users_status_temporary_table WHERE status = TRUE)
+                    #         RETURNING *;
+                    #         """
+                    # result = await connection.fetch(query)
+
+                    # rows_updated = len(result)
+
+                    # logger.info("Updated user status.")
+                    # logger.info(f"dids deactivated: {str(rows_updated)}")
 
         # Return the records when run_update is false and get_count is called
         return records
@@ -545,6 +568,22 @@ async def create_new_users_temporary_table():
         logger.error("Error creating temporary table: %s", e)
 
 
+async def create_user_status_temporary_table():
+    try:
+        logger.info("Creating user status temp table.")
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                query = """
+                CREATE TABLE IF NOT EXISTS users_status_temporary_table (
+                    did text PRIMARY KEY,
+                    status BOOL
+                )
+                """
+                await connection.execute(query)
+    except Exception as e:
+        logger.error("Error creating temporary table: %s", e)
+
+
 async def create_blocklist_temporary_table():
     try:
         logger.info("Creating blocklist temp table.")
@@ -607,6 +646,20 @@ async def update_24_hour_block_list_table(entries, list_type):
         logger.error("Error updating top block table: %s", e)
 
 
+async def update_user_status_temporary_table(entries):
+    try:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                data = [(did[0], True) for did in entries]
+
+                # Insert the new row with the given last_processed_did
+                query = "INSERT INTO users_status_temporary_table (did, status) VALUES ($1, $2)"
+                await connection.executemany(query, data)
+                logger.info("Updated users_status_temporary_table.")
+    except Exception as e:
+        logger.error("Error updating users_status_temporary_table table: %s", e)
+
+
 async def truncate_top_blocks_table():
     try:
         async with connection_pool.acquire() as connection:
@@ -614,6 +667,17 @@ async def truncate_top_blocks_table():
                 # Delete the existing rows if it exists
                 await connection.execute("TRUNCATE top_block")
                 logger.info("Truncated block table.")
+    except Exception as e:
+        logger.error("Error updating top block table: %s", e)
+
+
+async def delete_user_status_temporary_table():
+    try:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                # Delete the existing rows if it exists
+                await connection.execute("DROP TABLE IF EXISTS users_status_temporary_table")
+                logger.info("dropped users_status_temporary_table.")
     except Exception as e:
         logger.error("Error updating top block table: %s", e)
 

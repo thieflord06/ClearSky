@@ -239,7 +239,7 @@ async def get_all_users():
     base_url = "https://bsky.social/xrpc/"
     limit = 1000
     cursor = None
-    records = []
+    records = set()
 
     logger.info("Getting all dids.")
 
@@ -267,7 +267,7 @@ async def get_all_users():
             response_json = response.json()
             repos = response_json.get("repos", [])
             for repo in repos:
-                records.append((repo["did"],))
+                records.add(repo["did"])
 
             cursor = response_json.get("cursor")
             if not cursor:
