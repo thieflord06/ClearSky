@@ -369,7 +369,7 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
             logger.info(f"Total DIDs: {len(records)}")
 
             if init_db_run:
-                # records = list(records)
+                records = list(records)
                 logger.info("Connected to db.")
                 async with connection.transaction():
                     # Insert data in batches
