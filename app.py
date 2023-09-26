@@ -720,13 +720,13 @@ async def single_blocklist(identifier):
         items_per_page = 100
         offset = (page - 1) * items_per_page
 
-        blocks, count = await utils.get_single_user_blocks(identifier, limit=items_per_page, offset=offset)
+        blockslist, count = await utils.get_single_user_blocks(identifier, limit=items_per_page, offset=offset)
 
         formatted_count = '{:,}'.format(count)
         if utils.is_did(identifier):
             handle_identifier = await utils.use_handle(identifier)
 
-        more_data_available = (offset + len(blocks)) < count
+        more_data_available = (offset + len(blocklist)) < count
 
         if offset + items_per_page > count:
             more_data_available = False
