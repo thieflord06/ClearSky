@@ -169,7 +169,7 @@ async def find_handles(value):
     try:
         async with connection_pool.acquire() as connection:
             async with connection.transaction():
-                query_text = "SELECT handle FROM users WHERE lower(handle) LIKE $1 || '%' LIMIT 5"
+                query_text = "SELECT handle FROM users WHERE lower(handle) LIKE $1 || '%' AND status = TRUE LIMIT 5"
 
                 result = await connection.fetch(query_text, value)
 
@@ -382,17 +382,12 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
                     for i in range(0, len(formatted_records), batch_size):
                         batch_data = records[i: i + batch_size]
                         try:
-                            # await connection.executemany('INSERT INTO users (did, status) VALUES ($1, TRUE) ON CONFLICT (did) DO NOTHING', batch_data)
                             await connection.executemany('INSERT INTO users (did, status) VALUES ($1, TRUE) ON CONFLICT (did) DO UPDATE SET status = TRUE WHERE excluded.status = FALSE', batch_data)
-                            # await connection.executemany('UPDATE users SET status = TRUE WHERE did = $1', batch_data)
-
+                            await connection.execute('UPDATE users SET status = FALSE WHERE did NOT IN (SELECT unnest($1::text[]))', [did[0] for did in batch_data])
                             logger.info(f"Inserted batch {i // batch_size + 1} of {len(formatted_records) // batch_size + 1} batches.")
 
                         except Exception as e:
                             logger.error(f"Error inserting batch {i // batch_size + 1}: {str(e)}")
-
-                    # Update did status to false if not in active did list
-                    # await connection.execute('UPDATE users SET status = FALSE WHERE did NOT IN (SELECT unnest($1::text[]))', (tuple(did[0] for did in batch_data),))
 
         # Return the records when run_update is false and get_count is called
         return records
