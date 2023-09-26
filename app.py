@@ -720,9 +720,7 @@ async def single_blocklist(identifier):
         items_per_page = 100
         offset = (page - 1) * items_per_page
 
-        blocks, dates, count = await utils.get_single_user_blocks(identifier, limit=items_per_page, offset=offset)
-
-        blocklist = list(zip(blocks, dates))
+        blocks, count = await utils.get_single_user_blocks(identifier, limit=items_per_page, offset=offset)
 
         formatted_count = '{:,}'.format(count)
         if utils.is_did(identifier):
@@ -733,9 +731,8 @@ async def single_blocklist(identifier):
         if offset + items_per_page > count:
             more_data_available = False
 
-        return await render_template('single_blocklist.html', blocklist=blocklist, dates=dates,
-                                     count=formatted_count, more_data_available=more_data_available, page=page,
-                                     identifier=identifier, user=handle_identifier)
+        return await render_template('single_blocklist.html', blocklist=blocklist, count=formatted_count,
+                                     more_data_available=more_data_available, page=page, identifier=identifier, user=handle_identifier)
     else:
         logger.warning("Page request failed, not from organic search.")
 
