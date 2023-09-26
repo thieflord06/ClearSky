@@ -382,7 +382,7 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
                     for i in range(0, len(formatted_records), batch_size):
                         batch_data = records[i: i + batch_size]
                         try:
-                            await connection.executemany('INSERT INTO users (did, status) VALUES ($1, TRUE) ON CONFLICT (did) DO UPDATE SET status = TRUE WHERE excluded.status = FALSE', batch_data)
+                            await connection.executemany('INSERT INTO users (did, status) VALUES ($1, TRUE) ON CONFLICT (did) DO NOTHING', batch_data)
 
                             logger.info(f"Inserted batch {i // batch_size + 1} of {len(formatted_records) // batch_size + 1} batches.")
                         except Exception as e:
