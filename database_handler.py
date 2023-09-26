@@ -366,31 +366,15 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
             # Get all DIDs
             records = await utils.get_all_users()
 
-            logger.info("Getting current users status")
-
-            current_true_records = await connection.fetch('SELECT did FROM users WHERE status = TRUE')
-
-            current_true_set = set()
-            for record in current_true_records:
-                current_true_set.add(record["did"])
-
-            logger.info("Comparing status")
-            dids_deactivated = current_true_set - records
-
-            if dids_deactivated:
-                logger.info("deactivating dids")
-                await connection.execute('UPDATE users SET status = FALSE WHERE did = ANY($1)', list(dids_deactivated))
-                logger.info(f"{str(len(dids_deactivated))} dids deactivated.")
-
             logger.info(f"Total DIDs: {len(records)}")
 
             if init_db_run:
-                records = list(records)
+                # records = list(records)
                 logger.info("Connected to db.")
                 async with connection.transaction():
                     # Insert data in batches
                     for i in range(0, len(records), batch_size):
-                        batch_data = records[i: i + batch_size]
+                        batch_data = [(did, True) for did in records]
                         try:
                             await connection.executemany('INSERT INTO users (did, status) VALUES ($1, TRUE) ON CONFLICT (did) DO UPDATE SET status = TRUE WHERE users.status <> TRUE', batch_data)
 
@@ -398,17 +382,21 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
                         except Exception as e:
                             logger.error(f"Error inserting batch {i // batch_size + 1}: {str(e)}")
 
-                    # query = """UPDATE users
-                    #         SET status = FALSE
-                    #         WHERE did NOT IN (SELECT did FROM users_status_temporary_table WHERE status = TRUE)
-                    #         RETURNING *;
-                    #         """
-                    # result = await connection.fetch(query)
+        logger.info("Getting current users status")
 
-                    # rows_updated = len(result)
+        current_true_records = await connection.fetch('SELECT did FROM users WHERE status = TRUE')
 
-                    # logger.info("Updated user status.")
-                    # logger.info(f"dids deactivated: {str(rows_updated)}")
+        current_true_set = set()
+        for record in current_true_records:
+            current_true_set.add(record["did"])
+
+        logger.info("Comparing status")
+        dids_deactivated = current_true_set - records
+
+        if dids_deactivated:
+            logger.info("deactivating dids")
+            await connection.execute('UPDATE users SET status = FALSE WHERE did = ANY($1)', list(dids_deactivated))
+            logger.info(f"{str(len(dids_deactivated))} dids deactivated.")
 
         # Return the records when run_update is false and get_count is called
         return records
