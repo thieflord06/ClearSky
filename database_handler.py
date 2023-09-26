@@ -383,11 +383,13 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
                         batch_data = records[i: i + batch_size]
                         try:
                             await connection.executemany('INSERT INTO users (did, status) VALUES ($1, TRUE) ON CONFLICT (did) DO UPDATE SET status = TRUE WHERE excluded.status = FALSE', batch_data)
-                            await connection.execute('UPDATE users SET status = FALSE WHERE did NOT IN (SELECT unnest($1::text[]))', [did[0] for did in batch_data])
-                            logger.info(f"Inserted batch {i // batch_size + 1} of {len(formatted_records) // batch_size + 1} batches.")
 
+                            logger.info(f"Inserted batch {i // batch_size + 1} of {len(formatted_records) // batch_size + 1} batches.")
                         except Exception as e:
                             logger.error(f"Error inserting batch {i // batch_size + 1}: {str(e)}")
+
+                    # logger.info("updating dids status")
+                    # await connection.execute('UPDATE users SET status = FALSE WHERE did NOT IN (SELECT unnest($1::text[]))', [did[0] for did in formatted_records])
 
         # Return the records when run_update is false and get_count is called
         return records
