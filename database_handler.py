@@ -9,6 +9,7 @@ from config_helper import logger
 from cachetools import TTLCache
 from redis import asyncio as aioredis
 from datetime import datetime
+from collections import defaultdict
 
 # Connection pool and lock
 connection_pool = None
@@ -58,7 +59,7 @@ async def close_connection_pool():
 
 
 async def populate_redis_with_handles():
-    if redis_connected():
+    if await redis_connected():
         try:
             # Query handles in batches
             batch_size = 1000  # Adjust the batch size as needed
@@ -74,19 +75,34 @@ async def populate_redis_with_handles():
 
                         if not result:
                             break  # No more handles to fetch
-                        # logger.debug(str(result))
-                        # Store handles in Redis set
+
+                        # Create a temporary dictionary to hold handles by level
+                        handles_by_level = defaultdict(list)
+
+                        # Organize handles into a trie-like structure
+                        for row in result:
+                            handle = row['handle']
+                            logger.debug(str(handle))
+                            if handle:  # Check if handle is not empty
+                                # Group handles by level, e.g., {"a": ["abc", "ade"], "ab": ["abc"]}
+                                for i in range(1, len(handle) + 1):
+                                    prefix = handle[:i]
+                                    handles_by_level[prefix].append(handle)
+
+                        # Store handles in Redis ZSETs by level
                         async with redis_conn as pipe:
-                            for row in result:
-                                handle = row['handle']
-                                logger.debug(str(handle))
-                                if handle:  # Check if handle is not empty
-                                    await pipe.sadd(redis_key_name, handle)
-                            await pipe.execute()
+                            for prefix, handles in handles_by_level.items():
+                                zset_key = f"handles:{prefix}"
+                                # Check if handles already exist in the ZSET
+                                existing_handles = await pipe.zrange(zset_key, 0, -1)
+                                new_handles = [handle for handle in handles if handle not in existing_handles]
+                                # Create a dictionary with new handles as members and scores (use 0 for simplicity)
+                                zset_data = {handle: 0 for handle in new_handles}
+                                await pipe.zadd(zset_key, zset_data)
+                            # await pipe.execute()
 
                         offset += batch_size
                         batch_count += 1
-
                         logger.info(f"Batch {batch_count} processed. Total handles added: {offset}")
 
             logger.info("Handles added to cache successfully.")
@@ -103,41 +119,50 @@ async def populate_redis_with_handles():
 
 async def retrieve_autocomplete_handles(query):
     # Use the SCAN command with the pattern
-    cursor = 100000
-    key = redis_key_name
-    limit = await redis_conn.scard(key)
+    # cursor = 100000
+    # key = redis_key_name
+    # limit = await redis_conn.scard(key)
+    #
+    # if limit > 0:
+    #     while cursor < limit:
+    #         value, matching_handles = await redis_conn.sscan(key, cursor, match=query + '*', count=cursor)
+    #         if 1 <= len(matching_handles) <= 5 or cursor >= limit:
+    #             logger.debug(f"handles found: {str(len(matching_handles))}")
+    #             logger.debug(f"cursor: {str(cursor)}")
+    #
+    #             break
+    #         cursor += 100000
+    #
+    #     if matching_handles:
+    #         matching_handles = matching_handles[:5]
+    #         decoded = [bs.decode('utf-8') for bs in matching_handles]
+    #
+    #         logger.debug("From redis")
+    #
+    #         return decoded[:5]
+    key = f"handles:{query}"
+    matching_handles = await redis_conn.zrange(key, start=0, end=4)  # Fetch the first 5 handles
 
-    if limit > 0:
-        while cursor < limit:
-            value, matching_handles = await redis_conn.sscan(key, cursor, match=query + '*', count=cursor)
-            if 1 <= len(matching_handles) <= 5 or cursor >= limit:
-                logger.debug(f"handles found: {str(len(matching_handles))}")
-                logger.debug(f"cursor: {str(cursor)}")
+    if matching_handles:
+        decoded = [handle.decode('utf-8') for handle in matching_handles]
 
-                break
-            cursor += 100000
+        logger.debug("From redis")
 
-        if matching_handles:
-            matching_handles = matching_handles[:5]
-            decoded = [bs.decode('utf-8') for bs in matching_handles]
-
-            logger.debug("From redis")
-
-            return decoded[:5]
-        else:
-            # Query the database for autocomplete results
-            results = await find_handles(query)
-
-            logger.debug("from db no match in redis")
-            logger.debug(str(results))
-
-            return results
-
+        return decoded[:5]
     else:
         # Query the database for autocomplete results
         results = await find_handles(query)
-        logger.debug("from db")
+
+        logger.debug("from db no match in redis")
+        logger.debug(str(results))
+
         return results
+
+    # else:
+    #     # Query the database for autocomplete results
+    #     results = await find_handles(query)
+    #     logger.debug("from db")
+    #     return results
 
 
 async def find_handles(value):
@@ -159,7 +184,7 @@ async def find_handles(value):
 async def count_users_table():
     async with connection_pool.acquire() as connection:
         # Execute the SQL query to count the rows in the "users" table
-        return await connection.fetchval('SELECT COUNT(*) FROM users')
+        return await connection.fetchval('SELECT COUNT(*) FROM users WHERE status is TRUE')
 
 
 async def get_blocklist(ident, limit=100, offset=0):
@@ -357,10 +382,17 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
                     for i in range(0, len(formatted_records), batch_size):
                         batch_data = records[i: i + batch_size]
                         try:
-                            await connection.executemany('INSERT INTO users (did) VALUES ($1) ON CONFLICT DO NOTHING', batch_data)
+                            # await connection.executemany('INSERT INTO users (did, status) VALUES ($1, TRUE) ON CONFLICT (did) DO NOTHING', batch_data)
+                            await connection.executemany('INSERT INTO users (did, status) VALUES ($1, TRUE) ON CONFLICT (did) DO UPDATE SET status = TRUE WHERE excluded.status = FALSE', batch_data)
+                            # await connection.executemany('UPDATE users SET status = TRUE WHERE did = $1', batch_data)
+
                             logger.info(f"Inserted batch {i // batch_size + 1} of {len(formatted_records) // batch_size + 1} batches.")
+
                         except Exception as e:
                             logger.error(f"Error inserting batch {i // batch_size + 1}: {str(e)}")
+
+                    # Update did status to false if not in active did list
+                    # await connection.execute('UPDATE users SET status = FALSE WHERE did NOT IN (SELECT unnest($1::text[]))', (tuple(did[0] for did in batch_data),))
 
         # Return the records when run_update is false and get_count is called
         return records
@@ -732,18 +764,28 @@ async def get_top_blocks():
             async with connection.transaction():
 
                 # Insert the new row with the given last_processed_did
-                blocked_query = '''SELECT blocked_did, COUNT(*) AS block_count
-                                    FROM blocklists
-                                    GROUP BY blocked_did
+                blocked_query = '''SELECT b.blocked_did, COUNT(*) AS block_count
+                                    FROM blocklists AS b
+                                    WHERE b.blocked_did IN (
+                                    SELECT u.did
+                                    FROM users AS u
+                                    WHERE u.status = TRUE
+                                )
+                                    GROUP BY b.blocked_did
                                     ORDER BY block_count DESC
                                     LIMIT 25'''
 
                 blocked_data = await connection.fetch(blocked_query)
                 blocked_results.append(blocked_data)
 
-                blockers_query = '''SELECT user_did, COUNT(*) AS block_count
-                                    FROM blocklists
-                                    GROUP BY user_did
+                blockers_query = '''SELECT b.user_did, COUNT(*) AS block_count
+                                    FROM blocklists AS b
+                                    WHERE b.user_did IN (
+                                    SELECT u.did
+                                    FROM users AS u
+                                    WHERE u.status = TRUE
+                                )
+                                    GROUP BY b.user_did
                                     ORDER BY block_count DESC
                                     LIMIT 25'''
 
@@ -878,18 +920,20 @@ async def get_top24_blocks():
             async with connection.transaction():
 
                 # Insert the new row with the given last_processed_did
-                blocked_query = '''SELECT blocked_did, COUNT(*) AS block_count
-                                    FROM blocklists
-                                    WHERE TO_DATE(block_date, 'YYYY-MM-DD') >= CURRENT_DATE - INTERVAL '1 day'
-                                    GROUP BY blocked_did
+                blocked_query = '''SELECT b.blocked_did, COUNT(*) AS block_count
+                                    FROM blocklists AS b
+                                    JOIN users AS u ON b.blocked_did = u.did AND u.status = TRUE
+                                    WHERE TO_DATE(b.block_date, 'YYYY-MM-DD') >= CURRENT_DATE - INTERVAL '1 day'
+                                    GROUP BY b.blocked_did
                                     ORDER BY block_count DESC
                                     LIMIT 25'''
 
                 blocked_data = await connection.fetch(blocked_query)
                 blocked_results.append(blocked_data)
 
-                blockers_query = '''SELECT user_did, COUNT(*) AS block_count
-                                    FROM blocklists
+                blockers_query = '''SELECT b.user_did, COUNT(*) AS block_count
+                                    FROM blocklists as b
+                                    JOIN users AS u ON b.user_did = u.did AND u.status = TRUE
                                     WHERE TO_DATE(block_date, 'YYYY-MM-DD') >= CURRENT_DATE - INTERVAL '1 day'
                                     GROUP BY user_did
                                     ORDER BY block_count DESC
