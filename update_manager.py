@@ -104,7 +104,7 @@ async def main():
         await database_handler.close_connection_pool()
         sys.exit()
     elif args.update_handles:
-        await database_handler.create_user_status_temporary_table()
+        # await database_handler.create_user_status_temporary_table()
         # Call the function to update the database with all users dids
         logger.info("Users db update dids only requested.")
         await database_handler.get_all_users_db(True, False, init_db_run=True)
@@ -165,7 +165,7 @@ async def main():
 
                 logger.info("Users db update finished.")
                 await database_handler.delete_new_users_temporary_table()
-                await database_handler.delete_user_status_temporary_table()
+                # await database_handler.delete_user_status_temporary_table()
                 await database_handler.close_connection_pool()
                 sys.exit()
     elif args.retrieve_blocklists_db:
