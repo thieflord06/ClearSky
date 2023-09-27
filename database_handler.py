@@ -374,9 +374,9 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
                 async with connection.transaction():
                     # Insert data in batches
                     for i in range(0, len(records), batch_size):
-                        batch_data = [did for did in records]
+                        # batch_data = [did for did in records]
                         try:
-                            await connection.executemany('INSERT INTO users (did, status) VALUES ($1, TRUE) ON CONFLICT (did) DO UPDATE SET status = TRUE WHERE users.status <> TRUE', batch_data)
+                            await connection.executemany('INSERT INTO users (did, status) VALUES ($1) TRUE ON CONFLICT (did) DO UPDATE SET status = TRUE WHERE users.status <> TRUE', [did for did in records[i: i + batch_size]])
 
                             logger.info(f"Inserted batch {i // batch_size + 1} of {len(records) // batch_size + 1} batches.")
                         except Exception as e:
@@ -390,7 +390,10 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
         for record in current_true_records:
             current_true_set.add(record["did"])
 
+        records = set(records)
+
         logger.info("Comparing status")
+
         dids_deactivated = current_true_set - records
 
         if dids_deactivated:
