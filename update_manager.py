@@ -34,6 +34,7 @@ async def main():
         # Call the function to update the database with all users
         logger.info("Users db update requested.")
         all_dids = await database_handler.get_all_users_db(True, False)
+        all_dids = list(all_dids)
         logger.info("Users db updated dids.")
         logger.info("Update users handles requested.")
         batch_size = 500
