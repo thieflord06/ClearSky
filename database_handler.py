@@ -10,6 +10,7 @@ from cachetools import TTLCache
 from redis import asyncio as aioredis
 from datetime import datetime
 from collections import defaultdict
+import sqlite3
 
 # Connection pool and lock
 connection_pool = None
@@ -36,18 +37,23 @@ top_24_blocks_process_time = None
 async def create_connection_pool():
     global connection_pool
 
-    # Acquire the lock before creating the connection pool
-    async with db_lock:
-        if connection_pool is None:
-            try:
-                connection_pool = await asyncpg.create_pool(
-                    user=pg_user,
-                    password=pg_password,
-                    host=pg_host,
-                    database=pg_database
-                )
-            except OSError:
-                logger.error("Network connection issue.")
+    if local_db(check_local=True):
+        # Use SQLite test database
+        db = local_db()
+        connection_pool = sqlite3.connect(db)
+    else:
+        # Acquire the lock before creating the connection pool
+        async with db_lock:
+            if connection_pool is None:
+                try:
+                    connection_pool = await asyncpg.create_pool(
+                        user=pg_user,
+                        password=pg_password,
+                        host=pg_host,
+                        database=pg_database
+                    )
+                except OSError:
+                    logger.error("Network connection issue db connection not established.")
 
 
 # Function to close the connection pool
@@ -1186,6 +1192,8 @@ def get_database_config():
             redis_username = config.get("redis", "username")
             redis_password = config.get("redis", "password")
             redis_key_name = config.get("redis", "autocomplete")
+            use_local_db = config.get("database", "use_local")
+            local_db = config.get("database", "local_db_connection")
         else:
             logger.info("Database connection: Using environment variables.")
             pg_user = os.environ.get("PG_USER")
@@ -1197,6 +1205,8 @@ def get_database_config():
             redis_username = os.environ.get("REDIS_USERNAME")
             redis_password = os.environ.get("REDIS_PASSWORD")
             redis_key_name = os.environ.get("REDIS_AUTOCOMPLETE")
+            use_local_db = False
+            local_db = None
 
         return {
             "user": pg_user,
@@ -1207,7 +1217,9 @@ def get_database_config():
             "redis_port": redis_port,
             "redis_username": redis_username,
             "redis_password": redis_password,
-            "redis_autocomplete": redis_key_name
+            "redis_autocomplete": redis_key_name,
+            "use_local_db": use_local_db,
+            "local_db": local_db
         }
     except Exception:
         logger.error("Database connection information not present: Set environment variables or config.ini")
@@ -1230,6 +1242,17 @@ redis_password = database_config["redis_password"]
 redis_key_name = database_config["redis_autocomplete"]
 
 redis_conn = aioredis.from_url(f"rediss://{redis_username}:{redis_password}@{redis_host}:{redis_port}")
+
+
+def local_db(check_local=False):
+    if check_local:
+        if database_config["use_local_db"]:
+            logger.warning("Using local db.")
+            return True
+    else:
+        connection = database_config["local_db"]
+
+        return connection
 
 
 async def redis_connected():

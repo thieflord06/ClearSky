@@ -33,7 +33,7 @@ async def main():
     if args.update_users_did_handle_db:
         # Call the function to update the database with all users
         logger.info("Users db update requested.")
-        all_dids = await database_handler.get_all_users_db(True, False)
+        all_dids = await database_handler.get_all_users_db(False, True)
         all_dids = list(all_dids)
         logger.info("Users db updated dids.")
         logger.info("Update users handles requested.")
@@ -60,7 +60,7 @@ async def main():
 
         if last_processed_did:
             # Find the index of the last processed DID in the list
-            start_index = next((i for i, (did,) in enumerate(all_dids) if did == last_processed_did), None)
+            start_index = next((i for i, (did) in enumerate(all_dids) if did == last_processed_did), None)
             if start_index is None:
                 logger.warning(
                     f"Last processed DID '{last_processed_did}' not found in the list. Starting from the beginning.")
