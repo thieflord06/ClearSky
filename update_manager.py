@@ -34,10 +34,9 @@ async def main():
         # Call the function to update the database with all users
         logger.info("Users db update requested.")
         all_dids = await database_handler.get_all_users_db(False, True)
-        all_dids = list(all_dids)
         logger.info("Users db updated dids.")
         logger.info("Update users handles requested.")
-        batch_size = 500
+        batch_size = 1000
         total_dids = len(all_dids)
         total_handles_updated = 0
         table = "temporary_table"
@@ -74,9 +73,8 @@ async def main():
                 for i in range(0, total_dids, batch_size):
                     logger.info("Getting batch to resolve.")
                     batch_dids = all_dids[i:i + batch_size]
-
                     # Process the batch asynchronously
-                    batch_handles_updated = await database_handler.process_batch(batch_dids, False, table, batch_size)
+                    batch_handles_updated = await database_handler.process_batch(batch_dids, True, table, batch_size)
                     total_handles_updated += batch_handles_updated
 
                     # Log progress for the current batch
