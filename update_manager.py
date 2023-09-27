@@ -8,23 +8,23 @@ import argparse
 import asyncio
 import app
 
-# python update_manager.py --update-users-handles // command to update users db with dids and handles (initial or re-initialize)
+# python update_manager.py --update-users-handles // update handles that have changed (initial or re-initialize)
 # python update_manager.py --update-users-did-only-db // command to update users db with dids only
 # python update_manager.py --fetch-users-count // command to get current count in db
 # python update_manager.py --update-blocklists-db // command to update all users blocklists
 # python update_manager.py --retrieve-blocklists-db // initial/re-initialize get for blocklists database
-# python update_manager.py --update-users-dids // update new dids and handles to existing users table
+# python update_manager.py --update-users-dids // update db with new dids and handles
 # python update_manager.py --update-redis-cache // update handles in redis
 
 
 async def main():
     parser = argparse.ArgumentParser(description='ClearSky Server: ' + app.version)
-    parser.add_argument('--update-users-handles', action='store_true', help='Update the database with all users')
+    parser.add_argument('--update-users-handles', action='store_true', help='update handles that have changed')
     parser.add_argument('--update-users-did-only-db', action='store_true', help='Update the database with all users')
     parser.add_argument('--fetch-users-count', action='store_true', help='Fetch the count of users')
     parser.add_argument('--update-blocklists-db', action='store_true', help='Update the blocklists table')
     parser.add_argument('--retrieve-blocklists-db', action='store_true', help='Initial/re-initialize get for blocklists database')
-    parser.add_argument('--update-users-dids', action='store_true', help='update with new dids and update those new dids with handles')
+    parser.add_argument('--update-users-dids', action='store_true', help='update db with new dids and handles')
     parser.add_argument('--update-redis-cache', action='store_true', help='Update the redis cache')
     args = parser.parse_args()
 
