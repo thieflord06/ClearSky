@@ -8,29 +8,29 @@ import argparse
 import asyncio
 import app
 
-# python update_manager.py --update-users-did-handle-db // command to update users db with dids and handles (initial or re-initialize)
+# python update_manager.py --update-users-handles // command to update users db with dids and handles (initial or re-initialize)
 # python update_manager.py --update-users-did-only-db // command to update users db with dids only
 # python update_manager.py --fetch-users-count // command to get current count in db
 # python update_manager.py --update-blocklists-db // command to update all users blocklists
 # python update_manager.py --retrieve-blocklists-db // initial/re-initialize get for blocklists database
-# python update_manager.py --update-handles // update new dids and handles to existing users table
+# python update_manager.py --update-users-dids // update new dids and handles to existing users table
 # python update_manager.py --update-redis-cache // update handles in redis
 
 
 async def main():
     parser = argparse.ArgumentParser(description='ClearSky Server: ' + app.version)
-    parser.add_argument('--update-users-did-handle-db', action='store_true', help='Update the database with all users')
+    parser.add_argument('--update-users-handles', action='store_true', help='Update the database with all users')
     parser.add_argument('--update-users-did-only-db', action='store_true', help='Update the database with all users')
     parser.add_argument('--fetch-users-count', action='store_true', help='Fetch the count of users')
     parser.add_argument('--update-blocklists-db', action='store_true', help='Update the blocklists table')
     parser.add_argument('--retrieve-blocklists-db', action='store_true', help='Initial/re-initialize get for blocklists database')
-    parser.add_argument('--update-handles', action='store_true', help='update with new dids and update those new dids with handles')
+    parser.add_argument('--update-users-dids', action='store_true', help='update with new dids and update those new dids with handles')
     parser.add_argument('--update-redis-cache', action='store_true', help='Update the redis cache')
     args = parser.parse_args()
 
     await database_handler.create_connection_pool()  # Creates connection pool for db
 
-    if args.update_users_did_handle_db:
+    if args.update_users_handles:
         # Call the function to update the database with all users
         logger.info("Users db update requested.")
         all_dids = await database_handler.get_all_users_db(False, True)
@@ -102,7 +102,7 @@ async def main():
         logger.info(f"Total users in the database: {count}")
         await database_handler.close_connection_pool()
         sys.exit()
-    elif args.update_handles:
+    elif args.update_users_dids:
         # await database_handler.create_user_status_temporary_table()
         # Call the function to update the database with all users dids
         logger.info("Users db update dids only requested.")
