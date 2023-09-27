@@ -1251,6 +1251,7 @@ def local_db(check_local=False):
     if check_local:
         if database_config["use_local_db"]:
             logger.warning("Using local db.")
+
             return True
     else:
         connection = database_config["local_db"]
