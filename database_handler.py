@@ -374,7 +374,7 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
                 async with connection.transaction():
                     # Insert data in batches
                     for i in range(0, len(records), batch_size):
-                        batch_data = [(did, True) for did in records]
+                        batch_data = [did for did in records]
                         try:
                             await connection.executemany('INSERT INTO users (did, status) VALUES ($1, TRUE) ON CONFLICT (did) DO UPDATE SET status = TRUE WHERE users.status <> TRUE', batch_data)
 
