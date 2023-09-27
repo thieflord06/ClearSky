@@ -2,6 +2,8 @@
 
 import asyncio
 import os
+import sys
+
 import asyncpg
 import config_helper
 import utils
@@ -53,7 +55,8 @@ async def create_connection_pool():
                         database=pg_database
                     )
                 except OSError:
-                    logger.error("Network connection issue db connection not established.")
+                    logger.error("Network connection issue. db connection not established.")
+                    sys.exit()
 
 
 # Function to close the connection pool
