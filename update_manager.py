@@ -87,20 +87,17 @@ async def main():
 
                 logger.info("Users db update finished.")
                 await database_handler.delete_temporary_table()
-                await database_handler.close_connection_pool()
                 sys.exit()
     elif args.update_users_did_only_db:
         # Call the function to update the database with all users dids
         logger.info("Users db update did only requested.")
         await database_handler.get_all_users_db(True, False, init_db_run=True)
         logger.info("Users db updated dids finished.")
-        await database_handler.close_connection_pool()
         sys.exit()
     elif args.fetch_users_count:
         # Call the function to fetch the count of users
         count = await database_handler.count_users_table()
         logger.info(f"Total users in the database: {count}")
-        await database_handler.close_connection_pool()
         sys.exit()
     elif args.update_users_dids:
         # await database_handler.create_user_status_temporary_table()
@@ -164,22 +161,18 @@ async def main():
 
                 logger.info("Users db update finished.")
                 await database_handler.delete_new_users_temporary_table()
-                # await database_handler.delete_user_status_temporary_table()
-                await database_handler.close_connection_pool()
                 sys.exit()
     elif args.retrieve_blocklists_db:
         logger.info("Get Blocklists db requested.")
         await database_handler.update_all_blocklists()
         await database_handler.delete_blocklist_temporary_table()
         logger.info("Blocklist db fetch finished.")
-        await database_handler.close_connection_pool()
         sys.exit()
     elif args.update_blocklists_db:
         logger.info("Update Blocklists db requested.")
         await database_handler.update_all_blocklists(True)
         await database_handler.delete_blocklist_temporary_table()
         logger.info("Update Blocklists db finished.")
-        await database_handler.close_connection_pool()
         sys.exit()
     elif args.update_redis_cache:
         logger.info("Cache update requested.")
@@ -190,4 +183,3 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
-    sys.exit()

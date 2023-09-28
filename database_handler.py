@@ -583,38 +583,38 @@ async def create_blocklist_temporary_table():
         logger.error("Error creating temporary table: %s", e)
 
 
-async def create_top_block_list_table():
-    try:
-        logger.info("Creating Top block list table.")
-        async with connection_pool.acquire() as connection:
-            async with connection.transaction():
-                query = """
-                CREATE TABLE IF NOT EXISTS top_block (
-                    did text,
-                    count int,
-                    list_type text
-                )
-                """
-                await connection.execute(query)
-    except Exception as e:
-        logger.error("Error creating top block table: %s", e)
-
-
-async def create_24_hour_block_table():
-    try:
-        logger.info("Creating Top 24 hour block list table.")
-        async with connection_pool.acquire() as connection:
-            async with connection.transaction():
-                query = """
-                CREATE TABLE IF NOT EXISTS top_twentyfour_hour_block (
-                    did text,
-                    count int,
-                    list_type text
-                )
-                """
-                await connection.execute(query)
-    except Exception as e:
-        logger.error("Error creating Top 24 hour block list table: %s", e)
+# async def create_top_block_list_table():
+#     try:
+#         logger.info("Creating Top block list table.")
+#         async with connection_pool.acquire() as connection:
+#             async with connection.transaction():
+#                 query = """
+#                 CREATE TABLE IF NOT EXISTS top_block (
+#                     did text,
+#                     count int,
+#                     list_type text
+#                 )
+#                 """
+#                 await connection.execute(query)
+#     except Exception as e:
+#         logger.error("Error creating top block table: %s", e)
+#
+#
+# async def create_24_hour_block_table():
+#     try:
+#         logger.info("Creating Top 24 hour block list table.")
+#         async with connection_pool.acquire() as connection:
+#             async with connection.transaction():
+#                 query = """
+#                 CREATE TABLE IF NOT EXISTS top_twentyfour_hour_block (
+#                     did text,
+#                     count int,
+#                     list_type text
+#                 )
+#                 """
+#                 await connection.execute(query)
+#     except Exception as e:
+#         logger.error("Error creating Top 24 hour block list table: %s", e)
 
 
 async def update_24_hour_block_list_table(entries, list_type):
