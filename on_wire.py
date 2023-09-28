@@ -35,7 +35,8 @@ async def resolve_handle(info):  # Take Handle and get DID
                         message = response.json()["message"]
                         if error_message == "InvalidRequest" and "Unable to resolve handle" in message:
                             logger.warning("Could not find repo: " + str(info))
-                            return "Could not find, there may be a typo."
+
+                            return None
                     except KeyError:
                         pass
                 logger.debug("response: " + str(response_json))
@@ -51,7 +52,7 @@ async def resolve_handle(info):  # Take Handle and get DID
 
     logger.warning("Resolve error for: " + info + " after multiple retries.")
 
-    return "error"
+    return None
 
 
 async def resolve_did(did):  # Take DID and get handle
@@ -120,7 +121,7 @@ async def resolve_did(did):  # Take DID and get handle
 
     logger.warning("Failed to resolve: " + str(did) + " after multiple retries.")
 
-    return "Error"
+    return None
 
 
 async def get_avatar_id(did):

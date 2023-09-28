@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}Account deleted{% endblock %}
+
+{% block content %}
+    <div class="deleted-account-container">
+        <h1>Account deleted</h1>
+        <p>This account ({{ account }}) was deleted</p>
+        <a href="/" class="btn btn-primary">Go Back</a>
+    </div>
+{% endblock %}

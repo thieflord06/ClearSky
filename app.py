@@ -136,10 +136,15 @@ async def selection_handle():
             if utils.is_handle(identifier):
                 did_identifier = await utils.use_did(identifier)
                 handle_identifier = identifier
-            if not handle_identifier or "Could not find" in did_identifier:
-                logger.info(f"Error page loaded for resolution failure using: {identifier}")
+            if not handle_identifier or not did_identifier:
+                if utils.identifier_exists_in_db(identifier):
+                    logger.info(f"Account: {identifier} deleted")
 
-                return await render_template('error.html', content_type='text/html')
+                    return await render_template('account_deleted.html', account=identifier)
+                else:
+                    logger.info(f"Error page loaded for resolution failure using: {identifier}")
+
+                    return await render_template('error.html', content_type='text/html')
             if selection != "4":
                 if not identifier:
                     return await render_template('error.html')

@@ -47,6 +47,28 @@ block_stats_start_time = None
 
 # ======================================================================================================================
 # ============================================= Features functions =====================================================
+async def identifier_exists_in_db(identifier):
+    async with database_handler.connection_pool.acquire() as connection:
+        if is_did(identifier):
+            ident = await connection.fetchval('SELECT did FROM users WHERE did = $1', identifier)
+
+            if ident is not None:
+                ident = True
+            else:
+                ident = False
+        elif is_handle(identifier):
+            ident = await connection.fetchval('SELECT handle FROM users WHERE did = $1', identifier)
+
+            if ident is not None:
+                ident = True
+            else:
+                ident = False
+        else:
+            ident = False
+
+        return ident
+
+
 async def resolve_did(did, count):
     resolved_did = await on_wire.resolve_did(did)
     if resolved_did is not None:
