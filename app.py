@@ -115,11 +115,15 @@ async def selection_handle():
     if selection in ['1', '2', '3', '4', '5', '6', '8']:
         if selection == "4":
             logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count requested")
-            count = await utils.get_user_count()
-            formatted_count = '{:,}'.format(count)
-            logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count: " + str(count))
+            active_count = await utils.get_user_count(get_active=True)
+            total_count = await  utils.get_user_count(get_active=False)
+            formatted_active_count = '{:,}'.format(active_count)
+            formatted_total_count = '{:,}'.format(total_count)
+            # logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count: " + str(total_count))
+            logger.info(f"{session_ip} > {str(*session.values())} | total users count: {formatted_total_count}")
+            logger.info(f"{session_ip} > {str(*session.values())} | total active users count: {formatted_active_count}")
 
-            return await render_template('total_users.html', count=formatted_count)
+            return await render_template('total_users.html', active_count=formatted_active_count, total_count=formatted_total_count)
         if not identifier:  # If form is submitted without anything in the identifier return intentional error
             logger.warning("Intentional error.")
 
@@ -570,7 +574,7 @@ async def block_stats():
 
         return await render_template('please_wait.html', remaining_time=remaining_time)
 
-    total_users = await utils.get_user_count()
+    total_users = await utils.get_user_count(get_active=False)
 
     percent_users_blocked = (int(number_of_unique_users_blocked) / int(total_users)) * 100
     percent_users_blocking = (int(number_of_unique_users_blocking) / int(total_users)) * 100

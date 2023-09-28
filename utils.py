@@ -289,10 +289,12 @@ async def get_user_handle(did):
     return handle
 
 
-async def get_user_count():
+async def get_user_count(get_active=True):
     async with database_handler.connection_pool.acquire() as connection:
-        count = await connection.fetchval('SELECT COUNT(*) FROM users')
-
+        if get_active:
+            count = await connection.fetchval('SELECT COUNT(*) FROM users WHERE status is TRUE')
+        else:
+            count = await connection.fetchval('SELECT COUNT(*) FROM users')
         return count
 
 
