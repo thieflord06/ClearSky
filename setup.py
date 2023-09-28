@@ -1,10 +1,11 @@
-from database_handler import connection_pool
 from config_helper import logger
 import asyncio
+import database_handler
 
-def create_db():
+
+async def create_db():
     try:
-        async with connection_pool.acquire() as connection:
+        async with database_handler.connection_pool.acquire() as connection:
             async with connection.transaction():
                 create_users_table = """
                 CREATE TABLE IF NOT EXISTS users (
@@ -37,17 +38,19 @@ def create_db():
                     list_type text
                 )
                 """
-                connection.execute(create_users_table)
-                connection.execute(create_blocklists_table)
-                connection.execute(create_top_blocks_table)
-                connection.execute(create_top_24_blocks_table)
+                await connection.execute(create_users_table)
+                await connection.execute(create_blocklists_table)
+                await connection.execute(create_top_blocks_table)
+                await connection.execute(create_top_24_blocks_table)
     except Exception as e:
         logger.error(f"Error creating db: {e}")
 
 
+# ======================================================================================================================
+# =============================================== Main Logic ===========================================================
 async def main():
-
-
+    await database_handler.create_connection_pool()
+    await create_db()
 
 
 if __name__ == '__main__':

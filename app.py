@@ -866,8 +866,6 @@ else:
 
 async def main():
     await database_handler.create_connection_pool()  # Creates connection pool for db
-    # await database_handler.create_top_block_list_table()
-    # await database_handler.create_24_hour_block_table()
 
     asyncio.create_task(database_handler.blocklists_updater())
     asyncio.create_task(database_handler.top_24blocklists_updater())
