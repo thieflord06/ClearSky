@@ -113,7 +113,7 @@ async def main():
         all_dids = await database_handler.get_dids_without_handles()
         logger.info("Update users handles requested.")
         total_dids = len(all_dids)
-        batch_size = 1000
+        batch_size = 500
         total_handles_updated = 0
         table = "new_users_temporary_table"
 
