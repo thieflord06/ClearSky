@@ -40,13 +40,18 @@ async def generate_random_block_data(user_data):
         async with database_handler.connection_pool.acquire() as connection:
             async with connection.transaction():
                 # Generate and insert random blocklist data into the 'blocklists' table
-                blocklists_data = []
-                for _ in range(1000000):
-                    user_did = random.choice([user[0] for user in user_data])  # Random user DID
-                    blocked_did = random.choice([user[0] for user in user_data])  # Random blocked DID
-                    block_date = generate_random_date()  # Random block date
 
-                    blocklists_data.append((user_did, blocked_did, block_date))
+                for user in user_data:
+                    blocklists_data = []
+                    user_did = user[0]  # User DID
+                    num_blocked_dids = random.randint(0, 150)  # Random number of blocked_dids (adjust the range as needed)
+
+                    blocked_dids = random.sample([user[0] for user in user_data if user[0] != user_did], num_blocked_dids)
+                    block_dates = [generate_random_date() for _ in range(num_blocked_dids)]
+
+                    # Create blocklist entries for this user
+                    for blocked_did, block_date in zip(blocked_dids, block_dates):
+                        blocklists_data.append((user_did, blocked_did, block_date))
 
                 await connection.executemany(
                     "INSERT INTO blocklists (user_did, blocked_did, block_date) VALUES ($1, $2, $3)",
