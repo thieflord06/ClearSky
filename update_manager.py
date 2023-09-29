@@ -18,7 +18,7 @@ import app
 
 
 async def main():
-    parser = argparse.ArgumentParser(description='ClearSky Server: ' + app.version)
+    parser = argparse.ArgumentParser(description='ClearSky Update Manager: ' + app.version)
     parser.add_argument('--update-users-handles', action='store_true', help='update handles that have changed')
     parser.add_argument('--update-users-did-only-db', action='store_true', help='Update the database with all users')
     parser.add_argument('--fetch-users-count', action='store_true', help='Fetch the count of users')

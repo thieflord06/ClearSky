@@ -5,6 +5,8 @@ from config_helper import logger
 import asyncio
 import database_handler
 import test
+import argparse
+from app import version
 
 
 async def create_db():
@@ -54,19 +56,26 @@ async def create_db():
 # ======================================================================================================================
 # =============================================== Main Logic ===========================================================
 async def main():
+    # python update_manager.py --generate-test-data // generate test data
+    # python update_manager.py --create-db // create db tables
+
+    parser = argparse.ArgumentParser(description='ClearSky Update Manager: ' + version)
+    parser.add_argument('--generate-test-data', action='store_true', help='generate test data')
+    parser.add_argument('--create-db', action='store_true', help='create db tables')
+    args = parser.parse_args()
+
     await database_handler.create_connection_pool()
 
-    if database_handler.local_db():
-        logger.info("Creating local db and tables.")
-        await create_db()
+    if args.generate_test_data:
         user_data_list = await test.generate_random_user_data()
         await test.generate_random_block_data(user_data_list)
         sys.exit()
-    else:
+    elif args.create_db:
         logger.info("creating db tables.")
         await create_db()
         sys.exit()
-
+    else:
+        database_handler.local_db()
 
 if __name__ == '__main__':
     asyncio.run(main())
