@@ -44,7 +44,6 @@ async def create_connection_pool():
                     connection_pool = await asyncpg.create_pool(
                         user=pg_user,
                         password=pg_password,
-                        host=pg_host,
                         database=pg_database
                     )
                 except OSError:
