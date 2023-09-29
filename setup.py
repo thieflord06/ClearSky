@@ -55,7 +55,7 @@ async def create_db():
 async def main():
     await database_handler.create_connection_pool()
 
-    if database_handler.local_db(check_local=True):
+    if database_handler.local_db():
         logger.info("Creating local db and tables.")
         await create_db()
         user_data_list = await test.generate_random_user_data()

@@ -37,11 +37,16 @@ top_24_blocks_process_time = None
 async def create_connection_pool():
     global connection_pool
 
-    if local_db(check_local=True):
+    if local_db():
         async with db_lock:
             if connection_pool is None:
                 try:
-                    pass
+                    connection_pool = await asyncpg.create_pool(
+                        user=pg_user,
+                        password=pg_password,
+                        host=pg_host,
+                        database=pg_database
+                    )
                 except OSError:
                     logger.error("Network connection issue. db connection not established.")
                     sys.exit()
@@ -1215,16 +1220,14 @@ redis_key_name = database_config["redis_autocomplete"]
 redis_conn = aioredis.from_url(f"rediss://{redis_username}:{redis_password}@{redis_host}:{redis_port}")
 
 
-def local_db(check_local=False):
-    if check_local:
-        if database_config["use_local_db"]:
-            logger.warning("Using local db.")
+def local_db():
+    if database_config["use_local_db"]:
+        logger.warning("Using local db.")
 
-            return True
+        return True
     else:
-        connection = database_config["local_db"]
 
-        return connection
+        return False
 
 
 async def redis_connected():
