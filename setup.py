@@ -1,6 +1,9 @@
+# setup.py
+
 from config_helper import logger
 import asyncio
 import database_handler
+import test
 
 
 async def create_db():
@@ -47,53 +50,6 @@ async def create_db():
         logger.error(f"Error creating db: {e}")
 
 
-def create_local_db():
-    conn = database_handler.connection_pool
-    cursor = conn.cursor()
-
-    create_users_table = """
-    CREATE TABLE IF NOT EXISTS users (
-        did text primary key,
-        handle text,
-        status bool
-    )
-    """
-
-    create_blocklists_table = """
-    CREATE TABLE IF NOT EXISTS blocklists (
-        user_did text,
-        blocked_did text,
-        block_date text
-    )
-    """
-
-    create_top_blocks_table = """
-    CREATE TABLE IF NOT EXISTS top_block (
-        did text,
-        count int,
-        list_type text
-    )
-    """
-
-    create_top_24_blocks_table = """
-    CREATE TABLE IF NOT EXISTS top_twentyfour_hour_block (
-        did text,
-        count int,
-        list_type text
-    )
-    """
-
-    # Execute the SQL statements to create tables
-    cursor.execute(create_users_table)
-    cursor.execute(create_blocklists_table)
-    cursor.execute(create_top_blocks_table)
-    cursor.execute(create_top_24_blocks_table)
-
-    # Commit changes and close the connection
-    conn.commit()
-    conn.close()
-
-
 # ======================================================================================================================
 # =============================================== Main Logic ===========================================================
 async def main():
@@ -101,7 +57,9 @@ async def main():
 
     if database_handler.local_db(check_local=True):
         logger.info("Creating local db and tables.")
-        create_local_db()
+        await create_db()
+        user_data_list = await test.generate_random_user_data()
+        await test.generate_random_block_data(user_data_list)
     else:
         logger.info("creating db tables.")
         await create_db()

@@ -3,7 +3,6 @@
 import asyncio
 import os
 import sys
-
 import asyncpg
 import config_helper
 import utils
@@ -12,7 +11,6 @@ from cachetools import TTLCache
 from redis import asyncio as aioredis
 from datetime import datetime
 from collections import defaultdict
-import sqlite3
 
 # Connection pool and lock
 connection_pool = None
@@ -40,9 +38,13 @@ async def create_connection_pool():
     global connection_pool
 
     if local_db(check_local=True):
-        # Use SQLite test database
-        db = local_db()
-        connection_pool = sqlite3.connect(db)
+        async with db_lock:
+            if connection_pool is None:
+                try:
+                    pass
+                except OSError:
+                    logger.error("Network connection issue. db connection not established.")
+                    sys.exit()
     else:
         # Acquire the lock before creating the connection pool
         async with db_lock:
