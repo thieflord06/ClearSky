@@ -56,8 +56,8 @@ async def create_db():
 # ======================================================================================================================
 # =============================================== Main Logic ===========================================================
 async def main():
-    # python update_manager.py --generate-test-data // generate test data
-    # python update_manager.py --create-db // create db tables
+    # python setup.py --generate-test-data // generate test data
+    # python setup.py --create-db // create db tables
 
     parser = argparse.ArgumentParser(description='ClearSky Update Manager: ' + version)
     parser.add_argument('--generate-test-data', action='store_true', help='generate test data')
