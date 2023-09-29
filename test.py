@@ -14,8 +14,13 @@ async def generate_random_user_data():
                 # Generate and insert random user data into the 'users' table
                 user_data = []
                 for _ in range(500000):
-                    did = ''.join(random.choices(string.ascii_letters + string.digits, k=10))  # Random DID
-                    handle = ''.join(random.choices(string.ascii_letters, k=6))  # Random handle
+                    prefix = 'did:plc'
+                    alphanumeric = string.ascii_letters + string.digits
+                    suffix = ''.join(random.choices(alphanumeric + '._:%-', k=10))
+
+                    did = prefix + suffix
+                    random_string = ''.join(random.choices(string.ascii_letters, k=6))
+                    handle = random_string + '.bsky.social'
                     status = random.choice([True, False])  # Random status
 
                     user_data.append((did, handle, status))
@@ -36,7 +41,7 @@ async def generate_random_block_data(user_data):
             async with connection.transaction():
                 # Generate and insert random blocklist data into the 'blocklists' table
                 blocklists_data = []
-                for _ in range(1000):
+                for _ in range(1000000):
                     user_did = random.choice([user[0] for user in user_data])  # Random user DID
                     blocked_did = random.choice([user[0] for user in user_data])  # Random blocked DID
                     block_date = generate_random_date()  # Random block date
