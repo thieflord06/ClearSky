@@ -1,5 +1,6 @@
 # setup.py
 
+import sys
 from config_helper import logger
 import asyncio
 import database_handler
@@ -60,9 +61,11 @@ async def main():
         await create_db()
         user_data_list = await test.generate_random_user_data()
         await test.generate_random_block_data(user_data_list)
+        sys.exit()
     else:
         logger.info("creating db tables.")
         await create_db()
+        sys.exit()
 
 
 if __name__ == '__main__':
