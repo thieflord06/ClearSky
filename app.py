@@ -652,8 +652,9 @@ async def autocomplete():
         # matching_handles = await database_handler.find_handles(query_without_at)
 
         if not matching_handles:
+            matching_handles = None
 
-            return None
+            return jsonify({"suggestions": matching_handles})
         # Add '@' symbol back to the suggestions
         if '@' in query:
             matching_handles_with_at = ['@' + handle for handle in matching_handles]
