@@ -10,9 +10,13 @@
                     <th class="handle">Handle</th>
                     <th class="date">Percent matched</th>
                 </tr>
-                {% for handle, percent in data %}
+                {% for handle, percent, status in data %}
                 <tr>
-                    <td class="handle"><a href="https://bsky.app/profile/{{ handle }}" target="_blank">{{ handle }}</a></td>
+                    {% if status == True %}
+                    <td class="handle"><a href="https://bsky.app/profile/{{ handle }}" target="_blank">{{ handle }}</a>
+                    {% else %}
+                    <td class="handle">{{ handle }}</td>
+                    {% endif %}
                     <td class="date">{{ percent }}%</td>
                 </tr>
                 {% endfor %}

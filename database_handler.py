@@ -1009,9 +1009,16 @@ async def get_similar_blocked_by(user_did):
 
     users = [user for user, percentage in top_similar_users]
     percentages = [percentage for user, percentage in top_similar_users]
+    status_list = []
+    for user, percentage in top_similar_users:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                status = await connection.fetch(
+                    'SELECT status FROM users WHERE did = $1', user)
+                status_list.append(status)
 
     # Return the sorted list of users and their match percentages
-    return users, percentages
+    return users, percentages, status_list
 
 
 async def get_similar_users(user_did):
@@ -1088,8 +1095,15 @@ async def get_similar_users(user_did):
 
     users = [user for user, percentage in top_similar_users]
     percentages = [percentage for user, percentage in top_similar_users]
-
-    return users, percentages
+    status_list = []
+    for user, percentage in top_similar_users:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                status = await connection.fetchval(
+                    'SELECT status FROM users WHERE did = $1', user)
+                status_list.append(status)
+    logger.info(status_list)
+    return users, percentages, status_list
 
 
 async def blocklists_updater():
