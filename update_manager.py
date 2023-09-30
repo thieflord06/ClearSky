@@ -159,9 +159,9 @@ async def main():
                     logger.info("Pausing...")
                     await asyncio.sleep(60)  # Pause for 60 seconds
 
-                logger.info("Users db update finished.")
-                await database_handler.delete_new_users_temporary_table()
-                sys.exit()
+        logger.info("Users db update finished.")
+        await database_handler.delete_new_users_temporary_table()
+        sys.exit()
     elif args.retrieve_blocklists_db:
         logger.info("Get Blocklists db requested.")
         await database_handler.update_all_blocklists()

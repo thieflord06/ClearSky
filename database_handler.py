@@ -104,21 +104,19 @@ async def populate_redis_with_handles():
                                     prefix = handle[:i]
                                     handles_by_level[prefix].append(handle)
 
+                        logger.info("inserting into redis")
                         # Store handles in Redis ZSETs by level
                         async with redis_conn as pipe:
                             for prefix, handles in handles_by_level.items():
                                 zset_key = f"handles:{prefix}"
-                                # Check if handles already exist in the ZSET
-                                existing_handles = await pipe.zrange(zset_key, 0, -1)
-                                new_handles = [handle for handle in handles if handle not in existing_handles]
                                 # Create a dictionary with new handles as members and scores (use 0 for simplicity)
-                                zset_data = {handle: 0 for handle in new_handles}
-                                await pipe.zadd(zset_key, zset_data)
-                            # await pipe.execute()
+                                zset_data = {handle: 0 for handle in handles}
+                                await pipe.zadd(zset_key, zset_data, nx=True)
 
                         offset += batch_size
                         batch_count += 1
-                        logger.info(f"Batch {batch_count} processed. Total handles added: {offset}")
+
+                        logger.info(f"Batch {str(batch_count)} processed. Total handles added: {str(offset)}")
 
             logger.info("Handles added to cache successfully.")
 
@@ -133,51 +131,39 @@ async def populate_redis_with_handles():
 
 
 async def retrieve_autocomplete_handles(query):
-    # Use the SCAN command with the pattern
-    # cursor = 100000
-    # key = redis_key_name
-    # limit = await redis_conn.scard(key)
-    #
-    # if limit > 0:
-    #     while cursor < limit:
-    #         value, matching_handles = await redis_conn.sscan(key, cursor, match=query + '*', count=cursor)
-    #         if 1 <= len(matching_handles) <= 5 or cursor >= limit:
-    #             logger.debug(f"handles found: {str(len(matching_handles))}")
-    #             logger.debug(f"cursor: {str(cursor)}")
-    #
-    #             break
-    #         cursor += 100000
-    #
-    #     if matching_handles:
-    #         matching_handles = matching_handles[:5]
-    #         decoded = [bs.decode('utf-8') for bs in matching_handles]
-    #
-    #         logger.debug("From redis")
-    #
-    #         return decoded[:5]
     key = f"handles:{query}"
-    matching_handles = await redis_conn.zrange(key, start=0, end=4)  # Fetch the first 5 handles
+    try:
+        matching_handles = await asyncio.wait_for(redis_conn.zrange(key, start=0, end=4), timeout=1.5)  # Fetch the first 5 handles
 
-    if matching_handles:
-        decoded = [handle.decode('utf-8') for handle in matching_handles]
+        if matching_handles:
+            decoded = [handle.decode('utf-8') for handle in matching_handles]
 
-        logger.debug("From redis")
+            logger.debug("From redis")
 
-        return decoded[:5]
-    else:
+            return decoded
+        else:
+            results = await asyncio.wait_for(find_handles(query), timeout=5.0)
+
+            logger.info("from db, not in redis")
+            if not results:
+                results = None
+
+            return results
+    except asyncio.TimeoutError:
         # Query the database for autocomplete results
-        results = await find_handles(query)
+        try:
+            results = await asyncio.wait_for(find_handles(query), timeout=5.0)
 
-        logger.debug("from db no match in redis")
-        logger.debug(str(results))
+            logger.debug("from db, timeout in redis")
+            logger.debug(str(results))
 
-        return results
+            return results
+        except asyncio.TimeoutError:
+            logger.info("not quick enough.")
 
-    # else:
-    #     # Query the database for autocomplete results
-    #     results = await find_handles(query)
-    #     logger.debug("from db")
-    #     return results
+            results = None
+
+            return results
 
 
 async def find_handles(value):
