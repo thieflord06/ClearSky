@@ -151,6 +151,22 @@ async def main():
                     batch_handles_updated = await database_handler.process_batch(batch_dids, True, table, batch_size)
                     total_handles_updated += batch_handles_updated
 
+                    # Store handles in Redis ZSETs by level
+                    async with database_handler.redis_conn as pipe:
+                        handles_by_level = database_handler.defaultdict(list)
+                        for handle in batch_handles_updated:
+                            # Group handles by level, e.g., {"a": ["abc", "ade"], "ab": ["abc"]}
+                            for i in range(1, len(handle) + 1):
+                                prefix = handle[:i]
+                                handles_by_level[prefix].append(handle)
+
+                        for prefix, handles in handles_by_level.items():
+                            zset_key = f"handles:{prefix}"
+                            # Create a dictionary with new handles as members and scores (use 0 for simplicity)
+                            zset_data = {handle: 0 for handle in handles}
+                            # Use the ZADD command with the NX option to add only if the element doesn't exist
+                            await pipe.zadd(zset_key, zset_data, nx=True)
+
                     # Log progress for the current batch
                     logger.info(f"Handles updated: {total_handles_updated}/{total_dids}")
                     logger.info(f"First few DIDs in the batch: {batch_dids[:5]}")
