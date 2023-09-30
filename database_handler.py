@@ -164,6 +164,12 @@ async def retrieve_autocomplete_handles(query):
             results = None
 
             return results
+    except Exception as e:
+        logger.error(f"Error getting data from redis, failing over to db: {e}")
+
+        results = await asyncio.wait_for(find_handles(query), timeout=5.0)
+
+        return results
 
 
 async def find_handles(value):
