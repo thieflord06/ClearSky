@@ -172,8 +172,11 @@ async def find_handles(value):
             async with connection.transaction():
                 query_text = "SELECT handle FROM users WHERE lower(handle) LIKE $1 || '%' AND status = TRUE LIMIT 5"
 
-                result = await connection.fetch(query_text, value)
+                result = await asyncio.wait_for(connection.fetch(query_text, value), timeout=5.0)
 
+                if not result:
+
+                    return None
                 # Extract matching handles from the database query result
                 matching_handles = [row['handle'] for row in result]
 
