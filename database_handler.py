@@ -320,8 +320,9 @@ async def update_all_blocklists(run_diff=False):
                 await asyncio.sleep(30)  # Retry after 30 seconds
             except IndexError:
                 logger.warning("Reached end of DID list to update...")
+                await delete_blocklist_temporary_table()
+                logger.info("Update Blocklists db finished.")
                 sys.exit()
-                # break
             except Exception as e:
                 if "429 Too Many Requests" in str(e):
                     logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
