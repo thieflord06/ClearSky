@@ -1248,7 +1248,11 @@ redis_username = database_config["redis_username"]
 redis_password = database_config["redis_password"]
 redis_key_name = database_config["redis_autocomplete"]
 
-redis_conn = aioredis.from_url(f"rediss://{redis_username}:{redis_password}@{redis_host}:{redis_port}")
+if redis_username == "none":
+    logger.warning("Using failover redis.")
+    redis_conn = aioredis.from_url(f"redis://{redis_host}:{redis_port}", password=redis_password)
+else:
+    redis_conn = aioredis.from_url(f"rediss://{redis_username}:{redis_password}@{redis_host}:{redis_port}")
 
 
 def local_db():
