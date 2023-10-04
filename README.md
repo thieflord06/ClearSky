@@ -1,4 +1,4 @@
-# NTP Server
+# Clearsky
 
 This program allows the device to serve as a NTP server to give time to other devices.
 
