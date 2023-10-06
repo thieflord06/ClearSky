@@ -675,7 +675,7 @@ async def blocklist_redirect():
 @app.route('/blocklist/<identifier>')
 async def blocklist(identifier):
     if not identifier:
-        logger.warning("Page request failed, no identifier present.")
+        logger.warning(f"Page request failed, no identifier present. | {str(session_ip)} > " + str(*session.values()))
 
         return redirect('/', code=302)
 
@@ -703,7 +703,7 @@ async def blocklist(identifier):
         return await render_template('blocklist.html', blocklist=blocklist, count=formatted_count,
                                      more_data_available=more_data_available, page=page, identifier=identifier, user=handle_identifier)
     else:
-        logger.warning("Page request failed, not from organic search.")
+        logger.warning(f"Page request failed, not from organic search. | {str(session_ip)} > " + str(*session.values()))
 
         return redirect('/')
 
@@ -718,7 +718,7 @@ async def single_blocklist_redirect():
 @app.route('/single_blocklist/<identifier>')
 async def single_blocklist(identifier):
     if not identifier:
-        logger.warning("Page request failed, no identifier present.")
+        logger.warning(f"Page request failed, no identifier present. | {str(session_ip)} > " + str(*session.values()))
 
         return redirect('/', code=302)
 
@@ -747,7 +747,7 @@ async def single_blocklist(identifier):
         return await render_template('single_blocklist.html', blocklist=blocklist, count=formatted_count,
                                      more_data_available=more_data_available, page=page, identifier=identifier, user=handle_identifier)
     else:
-        logger.warning("Page request failed, not from organic search.")
+        logger.warning(f"Page request failed, not from organic search. | {str(session_ip)} > " + str(*session.values()))
 
         return redirect('/')
 
