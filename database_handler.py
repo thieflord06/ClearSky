@@ -1059,6 +1059,7 @@ async def get_similar_users(user_did):
     # Create a dictionary to store blocklists as sets
     blocklists = {}
     specific_user_blocklist = set()
+
     for row in all_blocklists_rows:
         user_id = row['user_did']
         blocked_id = row['blocked_did']
@@ -1073,11 +1074,13 @@ async def get_similar_users(user_did):
     if not len(specific_user_blocklist):
         users = "no blocks"
         percentages = 0
+        status = None
 
-        return users, percentages
+        return users, percentages, status
 
     # Calculate match percentage for each user
     user_match_percentages = {}
+
     for other_user_did, other_user_blocklist in blocklists.items():
         common_blocked_users = specific_user_blocklist & other_user_blocklist
         common_count = len(common_blocked_users)
