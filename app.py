@@ -116,7 +116,7 @@ async def selection_handle():
         if selection == "4":
             logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count requested")
             active_count = await utils.get_user_count(get_active=True)
-            total_count = await  utils.get_user_count(get_active=False)
+            total_count = await utils.get_user_count(get_active=False)
             formatted_active_count = '{:,}'.format(active_count)
             formatted_total_count = '{:,}'.format(total_count)
             # logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count: " + str(total_count))
@@ -125,7 +125,7 @@ async def selection_handle():
 
             return await render_template('total_users.html', active_count=formatted_active_count, total_count=formatted_total_count)
         if not identifier:  # If form is submitted without anything in the identifier return intentional error
-            logger.warning("Intentional error.")
+            logger.warning(f"Intentional error. | {str(session_ip)} > " + str(*session.values()))
 
             return await render_template('intentional_error.html')
         # Check if did or handle exists before processing
@@ -304,7 +304,7 @@ async def selection_handle():
 
             return await render_template('error.html')
     else:
-        logger.warning(f"Intentional error: selection = {selection}")
+        logger.warning(f"Intentional error: selection = {selection} | {str(session_ip)} > " + str(*session.values()))
 
         return await render_template('intentional_error.html')
 
