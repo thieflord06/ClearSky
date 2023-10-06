@@ -648,8 +648,8 @@ async def autocomplete():
 
         return jsonify({"suggestions": matching_handles})
     else:
-        matching_handles = await database_handler.retrieve_autocomplete_handles(query_without_at)
-        # matching_handles = await database_handler.find_handles(query_without_at)
+        matching_handles = await database_handler.retrieve_autocomplete_handles(query_without_at)  # Use redis
+        # matching_handles = await database_handler.find_handles(query_without_at)  # Only use db
 
         if not matching_handles:
             matching_handles = None
