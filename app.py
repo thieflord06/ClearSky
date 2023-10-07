@@ -18,7 +18,7 @@ config = config_helper.read_config()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "3.9.15"
+version = "3.9.16"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -46,6 +46,8 @@ fun_start_time = None
 funer_start_time = None
 block_stats_app_start_time = None
 db_connected = None
+blocklist_24_failed = asyncio.Event()
+blocklist_failed = asyncio.Event()
 
 
 # ======================================================================================================================
@@ -491,6 +493,10 @@ async def block_stats():
 
     logger.info(f"Requesting block statistics.")
 
+    if not db_connected:
+
+        return await render_template('issue.html')
+
     if utils.block_stats_status.is_set():
         logger.info("Updating block stats.")
 
@@ -772,12 +778,18 @@ async def update_block_stats():
     if database_handler.blocklist_updater_status.is_set():
         top_blocked_status = "processing"
     else:
-        top_blocked_status = "complete"
+        if blocklist_failed:
+            top_blocked_status = "waiting"
+        else:
+            top_blocked_status = "complete"
 
     if database_handler.blocklist_24_updater_status.is_set():
         top_24_blocked_status = "processing"
     else:
-        top_24_blocked_status = "complete"
+        if blocklist_24_failed:
+            top_24_blocked_status = "waiting"
+        else:
+            top_24_blocked_status = "complete"
 
     redis_connection = await database_handler.redis_connected()
 
@@ -793,6 +805,10 @@ async def update_block_stats():
             block_cache_status = "not initialized"
         else:
             block_cache_status = "complete"
+    if not db_connected:
+        db_status = "failed"
+    else:
+        db_status = "connected"
 
     now = datetime.now()
     uptime = now - runtime
@@ -816,7 +832,8 @@ async def update_block_stats():
         "block cache status": block_cache_status,
         "block cache last process time": str(database_handler.all_blocks_process_time),
         "block cache last update": str(all_blocks_last_update),
-        "current time": str(datetime.now())
+        "current time": str(datetime.now()),
+        "db status": db_status
     }
 
     return jsonify(status)
@@ -887,13 +904,21 @@ else:
 
 async def main():
     global db_connected
+
     db_connected = await database_handler.create_connection_pool()
 
     if db_connected:
         await database_handler.create_connection_pool()  # Creates connection pool for db
+        blocklist_24_failed.clear()
+        blocklist_failed.clear()
         asyncio.create_task(database_handler.blocklists_updater())
         asyncio.create_task(database_handler.top_24blocklists_updater())
         asyncio.create_task(utils.update_block_statistics())
+    else:
+        logger.warning("db not operational.")
+
+        blocklist_24_failed.set()
+        blocklist_failed.set()
 
     logger.info(f"Web server starting at: {ip_address}:{port_address}")
 
