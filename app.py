@@ -18,7 +18,7 @@ config = config_helper.read_config()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "3.9.16"
+version = "3.9.17"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -325,6 +325,10 @@ async def fun_facts():
 
     logger.info("Fun facts requested.")
 
+    if not db_connected:
+
+        return await render_template('issue.html')
+
     if database_handler.blocklist_updater_status.is_set():
         logger.info("Updating top blocks.")
 
@@ -408,6 +412,10 @@ async def funer_facts():
     global funer_start_time
 
     logger.info("Funer facts requested.")
+
+    if not db_connected:
+
+        return await render_template('issue.html')
 
     if database_handler.blocklist_24_updater_status.is_set():
         logger.info("Updating top 24 blocks.")
@@ -773,7 +781,10 @@ async def update_block_stats():
     if utils.block_stats_status.is_set():
         stats_status = "processing"
     else:
-        stats_status = "complete"
+        if not db_connected:
+            stats_status = "waiting"
+        else:
+            stats_status = "complete"
 
     if database_handler.blocklist_updater_status.is_set():
         top_blocked_status = "processing"
@@ -890,6 +901,37 @@ async def get_time_since(time):
 
     return elapsed_time
 
+
+async def initialize():
+    global db_connected
+
+    db_connected = await database_handler.create_connection_pool()
+
+    log_warning_once = True
+
+    while True:
+        if db_connected:
+            await database_handler.create_connection_pool()  # Creates connection pool for db
+
+            break
+        else:
+            if log_warning_once:
+                logger.warning("db not operational.")
+
+                log_warning_once = False
+
+                blocklist_24_failed.set()
+                blocklist_failed.set()
+
+        await asyncio.sleep(30)
+
+
+async def run_web_server():
+    logger.info(f"Web server starting at: {ip_address}:{port_address}")
+
+    await app.run_task(host=ip_address, port=port_address)
+
+
 # ======================================================================================================================
 # =============================================== Main Logic ===========================================================
 if not os.environ.get('CLEAR_SKY'):
@@ -903,26 +945,20 @@ else:
 
 
 async def main():
-    global db_connected
+    await asyncio.gather(initialize(), run_web_server())
 
-    db_connected = await database_handler.create_connection_pool()
+    while True:
+        if db_connected:
+            blocklist_24_failed.clear()
+            blocklist_failed.clear()
 
-    if db_connected:
-        await database_handler.create_connection_pool()  # Creates connection pool for db
-        blocklist_24_failed.clear()
-        blocklist_failed.clear()
-        asyncio.create_task(database_handler.blocklists_updater())
-        asyncio.create_task(database_handler.top_24blocklists_updater())
-        asyncio.create_task(utils.update_block_statistics())
-    else:
-        logger.warning("db not operational.")
+            asyncio.create_task(database_handler.blocklists_updater())
+            asyncio.create_task(database_handler.top_24blocklists_updater())
+            asyncio.create_task(utils.update_block_statistics())
 
-        blocklist_24_failed.set()
-        blocklist_failed.set()
+            break
 
-    logger.info(f"Web server starting at: {ip_address}:{port_address}")
-
-    await app.run_task(host=ip_address, port=port_address)
+        await asyncio.sleep(30)
 
 
 if __name__ == '__main__':
