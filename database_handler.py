@@ -49,6 +49,10 @@ async def create_connection_pool():
                 except OSError:
                     logger.error("Network connection issue. db connection not established.")
                     sys.exit()
+                except (asyncpg.exceptions.InvalidAuthorizationSpecificationError,
+                        asyncpg.exceptions.CannotConnectNowError):
+                    # Handle specific exceptions that indicate a connection issue
+                    return False
     else:
         # Acquire the lock before creating the connection pool
         async with db_lock:
@@ -63,6 +67,12 @@ async def create_connection_pool():
                 except OSError:
                     logger.error("Network connection issue. db connection not established.")
                     sys.exit()
+                except (asyncpg.exceptions.InvalidAuthorizationSpecificationError,
+                        asyncpg.exceptions.CannotConnectNowError):
+                    # Handle specific exceptions that indicate a connection issue
+                    return False
+                except asyncpg.InvalidAuthorizationSpecificationError:
+                    logger.error()
 
 
 # Function to close the connection pool
@@ -963,7 +973,7 @@ async def get_similar_blocked_by(user_did):
     # Extract the values from the records
     blocked_by_users_ids = [record['user_did'] for record in blocked_by_users]
 
-    if len(all_blocks_cache) == 0:
+    if not all_blocks_cache:
         logger.info("Caching all blocklists.")
 
         block_cache_status.set()
@@ -1034,7 +1044,7 @@ async def get_similar_users(user_did):
     global all_blocks_process_time
     global all_blocks_last_update
 
-    if len(all_blocks_cache) == 0:
+    if not all_blocks_cache:
         logger.info("Caching all blocklists.")
         start_time = datetime.now()
 

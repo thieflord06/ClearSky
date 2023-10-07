@@ -45,6 +45,7 @@ session_ip = None
 fun_start_time = None
 funer_start_time = None
 block_stats_app_start_time = None
+db_connected = None
 
 
 # ======================================================================================================================
@@ -113,6 +114,13 @@ async def selection_handle():
     identifier = identifier.replace('@', '')
 
     if selection in ['1', '2', '3', '4', '5', '6', '8']:
+        if selection in ['4', '3', '5', '6']:
+            # Example usage:
+            if not db_connected:
+                logger.error("Database connection is not live.")
+
+                return await render_template('issue.html')
+
         if selection == "4":
             logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count requested")
             active_count = await utils.get_user_count(get_active=True)
@@ -878,11 +886,14 @@ else:
 
 
 async def main():
-    await database_handler.create_connection_pool()  # Creates connection pool for db
+    global db_connected
+    db_connected = await database_handler.create_connection_pool()
 
-    asyncio.create_task(database_handler.blocklists_updater())
-    asyncio.create_task(database_handler.top_24blocklists_updater())
-    asyncio.create_task(utils.update_block_statistics())
+    if db_connected:
+        await database_handler.create_connection_pool()  # Creates connection pool for db
+        asyncio.create_task(database_handler.blocklists_updater())
+        asyncio.create_task(database_handler.top_24blocklists_updater())
+        asyncio.create_task(utils.update_block_statistics())
 
     logger.info(f"Web server starting at: {ip_address}:{port_address}")
 
