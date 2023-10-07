@@ -89,6 +89,30 @@ table th.date {
     margin-top: 5px;
 }
 
+#copy-did-button {
+    width: 35%;
+    padding: 8px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    text-align: center;
+    margin-top: 5px;
+}
+
+#copy-handle-button {
+    width: 100%;
+    padding: 8px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    text-align: center;
+    margin-top: 5px;
+}
+
 /* Styles for the loading spinner */
 .loading-spinner {
     border: 16px solid #f3f3f3;
