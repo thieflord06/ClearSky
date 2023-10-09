@@ -119,8 +119,13 @@ async def selection_handle():
         if selection == "4":
             logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count requested")
 
-            active_count = await utils.get_user_count(get_active=True)
-            total_count = await utils.get_user_count(get_active=False)
+            try:
+                active_count = await utils.get_user_count(get_active=True)
+                total_count = await utils.get_user_count(get_active=False)
+            except AttributeError:
+                logger.error("db connection issue.")
+
+                return await render_template('issue.html')
 
             formatted_active_count = '{:,}'.format(active_count)
             formatted_total_count = '{:,}'.format(total_count)
@@ -150,7 +155,17 @@ async def selection_handle():
                     did_identifier = None
                     logger.warning("resolution failed, possible connection issue.")
 
-            persona, status = await utils.identifier_exists_in_db(identifier)
+            if did_identifier is None or handle_identifier is None:
+                logger.warning(f"resolution failure: {identifier}")
+
+                return await render_template('issue.html')
+
+            try:
+                persona, status = await utils.identifier_exists_in_db(identifier)
+            except AttributeError:
+                logger.error("db connection issue.")
+
+                return await render_template('issue.html')
 
             if persona is True and status is True:
                 pass
