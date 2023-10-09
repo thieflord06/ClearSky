@@ -50,23 +50,42 @@ block_stats_start_time = None
 async def identifier_exists_in_db(identifier):
     async with database_handler.connection_pool.acquire() as connection:
         if is_did(identifier):
-            ident = await connection.fetchval('SELECT did FROM users WHERE did = $1', identifier)
+            result = await connection.fetchrow('SELECT did, status FROM users WHERE did = $1', identifier)
 
-            if ident is not None:
+            if result:
+                ident = result['did']
+                status = result['status']
+
+            if ident and status is True:
                 ident = True
+                status = True
+            elif ident and status is False:
+                ident = True
+                status = False
             else:
                 ident = False
+                status = False
         elif is_handle(identifier):
-            ident = await connection.fetchval('SELECT handle FROM users WHERE did = $1', identifier)
+            result = await connection.fetchrow('SELECT handle, status FROM users WHERE handle = $1', identifier)
+            logger.debug(result)
+            if result:
+                ident = result['handle']
+                status = result['status']
 
-            if ident is not None:
+            if ident is not None and status is True:
                 ident = True
+                status = True
+            elif ident is not None and status is False:
+                ident = True
+                status = False
             else:
                 ident = False
+                status = False
         else:
             ident = False
+            status = False
 
-        return ident
+        return ident, status
 
 
 async def resolve_did(did, count):

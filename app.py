@@ -1,6 +1,6 @@
 # app.py
 import sys
-
+import asyncio
 import quart
 from quart import Quart, render_template, request, session, redirect, jsonify
 from datetime import datetime
@@ -136,20 +136,38 @@ async def selection_handle():
         # Check if did or handle exists before processing
         if utils.is_did(identifier) or utils.is_handle(identifier):
             if utils.is_did(identifier):
-                handle_identifier = await utils.use_handle(identifier)
-                did_identifier = identifier
+                try:
+                    did_identifier = identifier
+                    handle_identifier = await asyncio.wait_for(utils.use_handle(identifier), timeout=30)
+                except asyncio.TimeoutError:
+                    handle_identifier = None
+                    logger.warning("resolution failed, possible connection issue.")
             if utils.is_handle(identifier):
-                did_identifier = await utils.use_did(identifier)
-                handle_identifier = identifier
-            if not handle_identifier or not did_identifier:
-                if utils.identifier_exists_in_db(identifier):
+                try:
+                    handle_identifier = identifier
+                    did_identifier = await asyncio.wait_for(utils.use_did(identifier), timeout=30)
+                except asyncio.TimeoutError:
+                    did_identifier = None
+                    logger.warning("resolution failed, possible connection issue.")
+
+            persona, status = await utils.identifier_exists_in_db(identifier)
+
+            if persona is True and status is True:
+                pass
+            elif persona is True and status is False:
+                if selection not in ['1', '2']:
                     logger.info(f"Account: {identifier} deleted")
 
                     return await render_template('account_deleted.html', account=identifier)
-                else:
-                    logger.info(f"Error page loaded for resolution failure using: {identifier}")
+            elif status is False and persona is False:
+                logger.info(f"{identifier}: does not exist.")
 
-                    return await render_template('error.html', content_type='text/html')
+                return await render_template('no_longer_exists.html')
+            else:
+                logger.info(f"Error page loaded for resolution failure using: {identifier}")
+
+                return await render_template('error.html', content_type='text/html')
+
             if selection != "4":
                 if not identifier:
 
@@ -926,26 +944,27 @@ async def initialize():
     else:
         database_handler.redis_connection = True
 
-    while True:
-        db_connected = await database_handler.create_connection_pool()
+    if not db_connected:
+        while True:
+            db_connected = await database_handler.create_connection_pool()
 
-        if db_connected:
-            await database_handler.create_connection_pool()  # Creates connection pool for db
+            if db_connected:
+                await database_handler.create_connection_pool()  # Creates connection pool for db
 
-            if not log_warning_once:
-                logger.warning("db connection established.")
+                if not log_warning_once:
+                    logger.warning("db connection established.")
 
-            break
-        else:
-            if log_warning_once:
-                logger.warning("db not operational.")
+                break
+            else:
+                if log_warning_once:
+                    logger.warning("db not operational.")
 
-                log_warning_once = False
+                    log_warning_once = False
 
-                blocklist_24_failed.set()
-                blocklist_failed.set()
+                    blocklist_24_failed.set()
+                    blocklist_failed.set()
 
-        await asyncio.sleep(30)
+            await asyncio.sleep(30)
 
 
 async def get_ip_address():
