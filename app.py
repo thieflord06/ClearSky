@@ -799,7 +799,7 @@ async def update_block_stats():
     if database_handler.blocklist_updater_status.is_set():
         top_blocked_status = "processing"
     else:
-        if blocklist_failed:
+        if blocklist_failed.is_set():
             top_blocked_status = "waiting"
         else:
             top_blocked_status = "complete"
@@ -807,7 +807,7 @@ async def update_block_stats():
     if database_handler.blocklist_24_updater_status.is_set():
         top_24_blocked_status = "processing"
     else:
-        if blocklist_24_failed:
+        if blocklist_24_failed.is_set():
             top_24_blocked_status = "waiting"
         else:
             top_24_blocked_status = "complete"
