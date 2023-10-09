@@ -927,8 +927,13 @@ async def initialize():
         database_handler.redis_connection = True
 
     while True:
+        db_connected = await database_handler.create_connection_pool()
+
         if db_connected:
             await database_handler.create_connection_pool()  # Creates connection pool for db
+
+            if not log_warning_once:
+                logger.warning("db connection established.")
 
             break
         else:
@@ -940,6 +945,8 @@ async def initialize():
                 blocklist_24_failed.set()
                 blocklist_failed.set()
 
+        logger.debug("no db conn")
+        logger.debug(db_connected)
         await asyncio.sleep(30)
 
 
