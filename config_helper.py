@@ -47,6 +47,7 @@ def update_config_based_on_os(config, temp=False):
         with open('config.ini', 'w') as configfile:
             config.write(configfile)
             configfile.close()
+
         return log_dir
 
     except (configparser.NoOptionError, configparser.NoSectionError, configparser.MissingSectionHeaderError):
@@ -67,22 +68,23 @@ def create_log_directory(log_dir):
             log_dir = config.get('temp', 'logdir')
             print("Using temp for logging.")
             if not os.path.exists(log_dir):
-                os.makedirs(log_dir)
+                try:
+                    os.makedirs(log_dir)
+                except Exception:
+                    # Check if the log file can be opened for writing
+                    try:
+                        with open(logger.handlers[1].baseFilename, 'a'):
+                            pass
+                    except PermissionError:
+                        # If a PermissionError occurs, remove the file handler to prevent writing to the file
+                        logger.handlers = [h for h in logger.handlers if not isinstance(h, logging.FileHandler)]
+                        logger.warning("PermissionError: Logging to file disabled due to lack of write permission.")
 
 
 def configure_logging():
     try:
         logging.config.fileConfig('config.ini')
         logger = logging.getLogger()
-
-        # Check if the log file can be opened for writing
-        try:
-            with open(logger.handlers[1].baseFilename, 'a'):
-                pass
-        except PermissionError:
-            # If a PermissionError occurs, remove the file handler to prevent writing to the file
-            logger.handlers = [h for h in logger.handlers if not isinstance(h, logging.FileHandler)]
-            logger.warning("PermissionError: Logging to file disabled due to lack of write permission.")
 
         return logger
 
