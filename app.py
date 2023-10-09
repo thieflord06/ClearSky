@@ -670,7 +670,7 @@ async def autocomplete():
 
         return jsonify({"suggestions": matching_handles})
     else:
-        if database_handler.redis_connected():
+        if await database_handler.redis_connected():
             matching_handles = await database_handler.retrieve_autocomplete_handles(query_without_at)  # Use redis, failover db
         elif db_connected:
             matching_handles = await database_handler.find_handles(query_without_at)  # Only use db
@@ -732,7 +732,7 @@ async def blocklist(identifier):
     else:
         logger.warning(f"Page request failed, not from organic search. | {str(session_ip)} > " + str(*session.values()))
 
-        return redirect('/')
+        return redirect('/', code=302)
 
 
 @app.route('/single_blocklist')
