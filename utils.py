@@ -11,7 +11,7 @@ import on_wire
 import re
 from cachetools import TTLCache
 # ======================================================================================================================
-# ================================================ cache variables =====================================================
+# ================================================ cache/global variables ==============================================
 resolved_blocked_cache = TTLCache(maxsize=200, ttl=3600)
 resolved_blockers_cache = TTLCache(maxsize=200, ttl=3600)
 

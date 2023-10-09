@@ -13,7 +13,7 @@ import config_helper
 from config_helper import logger
 
 # ======================================================================================================================
-# ============================= Pre-checks // Set up logging and debugging information =================================
+# ======================================== global variables // Set up logging ==========================================
 config = config_helper.read_config()
 
 title_name = "ClearSky"

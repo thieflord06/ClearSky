@@ -4,7 +4,6 @@ import asyncio
 import os
 import sys
 import asyncpg
-
 import app
 import config_helper
 import utils
@@ -14,7 +13,9 @@ from redis import asyncio as aioredis
 from datetime import datetime
 from collections import defaultdict
 
-# Connection pool and lock
+# ======================================================================================================================
+# ===================================================  global variables ================================================
+
 connection_pool = None
 db_lock = asyncio.Lock()
 redis_connection = None
