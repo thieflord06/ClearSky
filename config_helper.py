@@ -60,14 +60,6 @@ def create_log_directory(log_dir):
             os.makedirs(log_dir)
     except PermissionError:
         print("Cannot create log directory")
-        # Check if the log file can be opened for writing
-        try:
-            with open(logger.handlers[1].baseFilename, 'a'):
-                pass
-        except PermissionError:
-            # If a PermissionError occurs, remove the file handler to prevent writing to the file
-            logger.handlers = [h for h in logger.handlers if not isinstance(h, logging.FileHandler)]
-            logger.warning("PermissionError: Logging to file disabled due to lack of write permission.")
     except OSError:
         config = read_config()
         current_os = platform.platform()
@@ -83,6 +75,15 @@ def configure_logging():
     try:
         logging.config.fileConfig('config.ini')
         logger = logging.getLogger()
+
+        # Check if the log file can be opened for writing
+        try:
+            with open(logger.handlers[1].baseFilename, 'a'):
+                pass
+        except PermissionError:
+            # If a PermissionError occurs, remove the file handler to prevent writing to the file
+            logger.handlers = [h for h in logger.handlers if not isinstance(h, logging.FileHandler)]
+            logger.warning("PermissionError: Logging to file disabled due to lack of write permission.")
 
         return logger
 
