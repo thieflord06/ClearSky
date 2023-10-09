@@ -663,7 +663,7 @@ async def autocomplete():
 
         return jsonify({"suggestions": matching_handles})
     else:
-        if await database_handler.redis_connected():
+        if database_handler.redis_connection:
             matching_handles = await database_handler.retrieve_autocomplete_handles(query_without_at)  # Use redis, failover db
         elif db_connected:
             matching_handles = await database_handler.find_handles(query_without_at)  # Only use db
@@ -908,6 +908,8 @@ async def initialize():
 
     if not await database_handler.redis_connected():
         logger.warning("Redis not connected.")
+    else:
+        database_handler.redis_connection = True
 
     while True:
         if db_connected:

@@ -17,6 +17,7 @@ from collections import defaultdict
 # Connection pool and lock
 connection_pool = None
 db_lock = asyncio.Lock()
+redis_connection = None
 
 all_blocks_cache = TTLCache(maxsize=2000000, ttl=14400)  # every 4 hours
 
@@ -143,6 +144,8 @@ async def populate_redis_with_handles():
 
 
 async def retrieve_autocomplete_handles(query):
+    global redis_connection
+
     key = f"handles:{query}"
     try:
         matching_handles = await asyncio.wait_for(redis_conn.zrange(key, start=0, end=4), timeout=1.5)  # Fetch the first 5 handles
@@ -186,6 +189,10 @@ async def retrieve_autocomplete_handles(query):
             return results
     except Exception as e:
         logger.error(f"Error getting data from redis, failing over to db: {e}")
+
+        redis_connection = False
+
+        asyncio.create_task(wait_for_redis())
 
         results = await asyncio.wait_for(find_handles(query), timeout=5.0)
 
@@ -1205,6 +1212,18 @@ async def top_24blocklists_updater():
     top_24_blocks_start_time = None
 
     return top_blocked_24, top_blockers_24, blocked_aid_24, blocker_aid_24
+
+
+async def wait_for_redis():
+    while True:
+        if await redis_connected():
+            global redis_connection
+
+            redis_connection = True
+
+            break
+        else:
+            await asyncio.sleep(30)
 
 
 # ======================================================================================================================
