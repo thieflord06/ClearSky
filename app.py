@@ -109,11 +109,11 @@ async def selection_handle():
     identifier = identifier.replace('@', '')
 
     if selection in ['1', '2', '3', '4', '5', '6', '8']:
-        if selection in ['4', '3', '5', '6']:
-            if not db_connected:
-                logger.error("Database connection is not live.")
-
-                return await render_template('issue.html')
+        # if selection in ['4', '3', '5', '6']:
+        #     if not db_connected:
+        #         logger.error("Database connection is not live.")
+        #
+        #         return await render_template('issue.html')
 
         if selection == "4":
             logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count requested")
@@ -916,7 +916,6 @@ async def initialize():
     global db_connected
 
     db_connected = await database_handler.create_connection_pool()
-
     log_warning_once = True
 
     if not await database_handler.redis_connected():
@@ -964,18 +963,8 @@ async def run_web_server():
     await app.run_task(host=ip_address, port=port_address)
 
 
-# ======================================================================================================================
-# =============================================== Main Logic ===========================================================
-async def main():
-    logger.info(log_version)
-    logger.debug("Ran from: " + current_dir)
-    logger.debug("Ran by: " + username)
-    logger.debug("Ran at: " + str(current_time))
-    logger.info("File Log level: " + str(config.get("handler_fileHandler", "level")))
-    logger.info("Stdout Log level: " + str(config.get("handler_consoleHandler", "level")))
-
-    await asyncio.gather(initialize(), run_web_server())
-
+async def first_run():
+    await asyncio.sleep(5)
     while True:
         if db_connected:
             blocklist_24_failed.clear()
@@ -986,8 +975,20 @@ async def main():
             asyncio.create_task(utils.update_block_statistics())
 
             break
-
         await asyncio.sleep(30)
+
+
+# ======================================================================================================================
+# =============================================== Main Logic ===========================================================
+async def main():
+    logger.info(log_version)
+    logger.debug("Ran from: " + current_dir)
+    logger.debug("Ran by: " + username)
+    logger.debug("Ran at: " + str(current_time))
+    logger.info("File Log level: " + str(config.get("handler_fileHandler", "level")))
+    logger.info("Stdout Log level: " + str(config.get("handler_consoleHandler", "level")))
+
+    await asyncio.gather(initialize(), run_web_server(), first_run())
 
 
 if __name__ == '__main__':
