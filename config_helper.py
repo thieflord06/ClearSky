@@ -57,29 +57,27 @@ def update_config_based_on_os(config, temp=False):
         raise
 
 
-def create_log_directory(log_dir):
+def create_log_directory(log_dir, configer):
     try:
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
     except PermissionError:
         print("Cannot create log directory")
 
-        config = log_dir
-
         # Remove 'fileHandler' from the 'handlers' key value
-        handlers_value = config['logger_root']['handlers']
+        handlers_value = configer['logger_root']['handlers']
         updated_handlers = [handler.strip() for handler in handlers_value.split(',') if
                             handler.strip() != 'fileHandler']
-        config['logger_root']['handlers'] = ','.join(updated_handlers)
+        configer['logger_root']['handlers'] = ','.join(updated_handlers)
 
-        handlers_key_value = config['handlers']['keys']
+        handlers_key_value = configer['handlers']['keys']
         updated_handlers_key = [handler.strip() for handler in handlers_key_value.split(',') if
                                 handler.strip() != 'fileHandler']
-        config['handlers']['keys'] = ','.join(updated_handlers_key)
+        configer['handlers']['keys'] = ','.join(updated_handlers_key)
 
         # Save the updated config to the file
         with open(ini_file, 'w') as configfile:
-            config.write(configfile)
+            configer.write(configfile)
 
         print("PermissionError: Logging to file disabled due to lack of write permission.")
     except OSError:
@@ -106,8 +104,9 @@ def configure_logging():
 
 
 # Set up log files and directories for entire project from config.ini
-log_dir = update_config_based_on_os(read_config())
-create_log_directory(log_dir)
+config = read_config()
+log_dir = update_config_based_on_os(config)
+create_log_directory(log_dir, config)
 
 # Create and configure the logger instance
 logger = configure_logging()
