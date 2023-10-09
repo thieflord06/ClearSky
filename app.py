@@ -110,11 +110,11 @@ async def selection_handle():
     identifier = identifier.replace('@', '')
 
     if selection in ['1', '2', '3', '4', '5', '6', '8']:
-        if selection in ['4', '3', '5', '6']:
-            if not db_connected:
-                logger.error("Database connection is not live.")
-
-                return await render_template('feature_not_available.html')
+        # if selection in ['4', '3', '5', '6']:
+        #     if not db_connected:
+        #         logger.error("Database connection is not live.")
+        #
+        #         return await render_template('feature_not_available.html')
 
         if selection == "4":
             logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count requested")
@@ -945,8 +945,6 @@ async def initialize():
                 blocklist_24_failed.set()
                 blocklist_failed.set()
 
-        logger.debug("no db conn")
-        logger.debug(db_connected)
         await asyncio.sleep(30)
 
 
