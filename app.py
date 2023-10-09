@@ -332,8 +332,9 @@ async def fun_facts():
     logger.info("Fun facts requested.")
 
     if not db_connected:
+        logger.error("Database connection is not live.")
 
-        return await render_template('issue.html')
+        return await render_template('feature_not_available.html')
 
     if database_handler.blocklist_updater_status.is_set():
         logger.info("Updating top blocks.")
@@ -420,8 +421,9 @@ async def funer_facts():
     logger.info("Funer facts requested.")
 
     if not db_connected:
+        logger.error("Database connection is not live.")
 
-        return await render_template('issue.html')
+        return await render_template('feature_not_available.html')
 
     if database_handler.blocklist_24_updater_status.is_set():
         logger.info("Updating top 24 blocks.")
@@ -510,7 +512,7 @@ async def block_stats():
     if not db_connected:
         logger.error("Database connection is not live.")
 
-        return await render_template('issue.html')
+        return await render_template('feature_not_available.html')
 
     if utils.block_stats_status.is_set():
         logger.info("Updating block stats.")
