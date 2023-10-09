@@ -4,6 +4,7 @@ import os
 import platform
 import configparser
 import logging.config
+import sys
 
 
 def read_config():
@@ -11,7 +12,9 @@ def read_config():
     if os.path.exists('config.ini'):
         config.read("config.ini")
     else:
-        raise FileNotFoundError("Config.ini file does not exist\nPlace config.ini in: " + str(os.getcwd()) + "\nRe-run program")
+        print(f"Config.ini file does not exist\nPlace config.ini in: {str(os.getcwd())} \nRe-run program")
+        sys.exit()
+
     return config
 
 
