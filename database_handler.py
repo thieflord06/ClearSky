@@ -4,6 +4,8 @@ import asyncio
 import os
 import sys
 import asyncpg
+
+import app
 import config_helper
 import utils
 from config_helper import logger
@@ -152,22 +154,30 @@ async def retrieve_autocomplete_handles(query):
 
             return decoded
         else:
-            results = await asyncio.wait_for(find_handles(query), timeout=5.0)
+            if app.db_connected:
+                results = await asyncio.wait_for(find_handles(query), timeout=5.0)
 
-            logger.info("from db, not in redis")
-            if not results:
-                results = None
+                logger.info("from db, not in redis")
+                if not results:
+                    results = None
 
-            return results
+                return results
+            else:
+
+                return None
     except asyncio.TimeoutError:
         # Query the database for autocomplete results
         try:
-            results = await asyncio.wait_for(find_handles(query), timeout=5.0)
+            if app.db_connected:
+                results = await asyncio.wait_for(find_handles(query), timeout=5.0)
 
-            logger.debug("from db, timeout in redis")
-            logger.debug(str(results))
+                logger.debug("from db, timeout in redis")
+                logger.debug(str(results))
 
-            return results
+                return results
+            else:
+
+                return None
         except asyncio.TimeoutError:
             logger.info("not quick enough.")
 

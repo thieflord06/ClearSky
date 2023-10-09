@@ -670,8 +670,13 @@ async def autocomplete():
 
         return jsonify({"suggestions": matching_handles})
     else:
-        matching_handles = await database_handler.retrieve_autocomplete_handles(query_without_at)  # Use redis
-        # matching_handles = await database_handler.find_handles(query_without_at)  # Only use db
+        if database_handler.redis_connected():
+            matching_handles = await database_handler.retrieve_autocomplete_handles(query_without_at)  # Use redis, failover db
+        elif db_connected:
+            matching_handles = await database_handler.find_handles(query_without_at)  # Only use db
+        else:
+
+            return None
 
         if not matching_handles:
             matching_handles = None
