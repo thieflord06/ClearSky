@@ -1221,6 +1221,8 @@ async def wait_for_redis():
 
             redis_connection = True
 
+            logger.info("Redis reconnected.")
+
             break
         else:
             await asyncio.sleep(30)
