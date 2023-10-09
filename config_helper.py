@@ -6,11 +6,14 @@ import configparser
 import logging.config
 import sys
 
+ini_file = "config.ini"
+
 
 def read_config():
     config = configparser.ConfigParser()
-    if os.path.exists('config.ini'):
-        config.read("config.ini")
+
+    if os.path.exists(ini_file):
+        config.read(ini_file)
     else:
         print(f"Config.ini file does not exist\nPlace config.ini in: {str(os.getcwd())} \nRe-run program")
         sys.exit()
@@ -44,7 +47,7 @@ def update_config_based_on_os(config, temp=False):
         config.set("handler_fileHandler", "logdir", str(log_dir))
         config.set("handler_fileHandler", "log_name", str(log_name))
 
-        with open('config.ini', 'w') as configfile:
+        with open(ini_file, 'w') as configfile:
             config.write(configfile)
             configfile.close()
 
@@ -60,6 +63,25 @@ def create_log_directory(log_dir):
             os.makedirs(log_dir)
     except PermissionError:
         print("Cannot create log directory")
+
+        config = log_dir
+
+        # Remove 'fileHandler' from the 'handlers' key value
+        handlers_value = config['logger_root']['handlers']
+        updated_handlers = [handler.strip() for handler in handlers_value.split(',') if
+                            handler.strip() != 'fileHandler']
+        config['logger_root']['handlers'] = ','.join(updated_handlers)
+
+        handlers_key_value = config['handlers']['keys']
+        updated_handlers_key = [handler.strip() for handler in handlers_key_value.split(',') if
+                                handler.strip() != 'fileHandler']
+        config['handlers']['keys'] = ','.join(updated_handlers_key)
+
+        # Save the updated config to the file
+        with open(ini_file, 'w') as configfile:
+            config.write(configfile)
+
+        print("PermissionError: Logging to file disabled due to lack of write permission.")
     except OSError:
         config = read_config()
         current_os = platform.platform()
@@ -73,22 +95,13 @@ def create_log_directory(log_dir):
 
 def configure_logging():
     try:
-        logging.config.fileConfig('config.ini')
+        logging.config.fileConfig(ini_file)
         logger = logging.getLogger()
-
-        # Check if the log file can be opened for writing
-        try:
-            with open(logger.handlers[1].baseFilename, 'a'):
-                pass
-        except PermissionError:
-            # If a PermissionError occurs, remove the file handler to prevent writing to the file
-            logger.handlers = [h for h in logger.handlers if not isinstance(h, logging.FileHandler)]
-            logger.warning("PermissionError: Logging to file disabled due to lack of write permission.")
 
         return logger
 
     except Exception as e:
-        logging.error(f"An error occurred while configuring logging: {e}")
+        logging.error(f"An error occurred while configuring logging: {e} {type(e)}")
         raise
 
 
