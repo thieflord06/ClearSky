@@ -1,4 +1,5 @@
 # app.py
+import sys
 
 import quart
 from quart import Quart, render_template, request, session, redirect, jsonify
@@ -957,6 +958,10 @@ async def get_ip_address():
 
 async def run_web_server():
     ip_address, port_address = await get_ip_address()
+
+    if not ip_address or not port_address:
+        logger.error("No IP or port configured.")
+        sys.exit()
 
     logger.info(f"Web server starting at: {ip_address}:{port_address}")
 
