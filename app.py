@@ -668,8 +668,7 @@ async def autocomplete():
         elif db_connected:
             matching_handles = await database_handler.find_handles(query_without_at)  # Only use db
         else:
-
-            return None
+            matching_handles = None
 
         if not matching_handles:
             matching_handles = None
