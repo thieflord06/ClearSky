@@ -93,16 +93,16 @@ async def selection_handle():
         # Redirect to the root URL '/'
         return redirect('/', code=302)
 
+    global session_ip
+
     did_identifier = None
     handle_identifier = None
-    global session_ip
     data = await request.form
     session_ip = await get_ip()
 
     logger.debug(data)
 
     selection = data.get('selection')
-
     identifier = data.get('identifier')
     identifier = identifier.lower()
     identifier = identifier.strip()
@@ -110,7 +110,6 @@ async def selection_handle():
 
     if selection in ['1', '2', '3', '4', '5', '6', '8']:
         if selection in ['4', '3', '5', '6']:
-            # Example usage:
             if not db_connected:
                 logger.error("Database connection is not live.")
 
@@ -118,11 +117,13 @@ async def selection_handle():
 
         if selection == "4":
             logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count requested")
+
             active_count = await utils.get_user_count(get_active=True)
             total_count = await utils.get_user_count(get_active=False)
+
             formatted_active_count = '{:,}'.format(active_count)
             formatted_total_count = '{:,}'.format(total_count)
-            # logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count: " + str(total_count))
+
             logger.info(f"{session_ip} > {str(*session.values())} | total users count: {formatted_total_count}")
             logger.info(f"{session_ip} > {str(*session.values())} | total active users count: {formatted_active_count}")
 
@@ -150,6 +151,7 @@ async def selection_handle():
                     return await render_template('error.html', content_type='text/html')
             if selection != "4":
                 if not identifier:
+
                     return await render_template('error.html')
                 if selection == "1":
                     logger.info(str(session_ip) + " > " + str(
@@ -169,6 +171,7 @@ async def selection_handle():
                 elif selection == "2":
                     logger.info(str(session_ip) + " > " + str(
                         *session.values()) + " | " + "Handle resolve request made for: " + identifier)
+
                     if utils.is_handle(handle_identifier):
                         result = handle_identifier
                     else:
@@ -189,6 +192,7 @@ async def selection_handle():
 
                     blocklist, count = await utils.process_user_block_list(did_identifier, limit=items_per_page, offset=offset)
                     formatted_count = '{:,}'.format(count)
+
                     if utils.is_did(identifier):
                         identifier = handle_identifier
 
@@ -198,6 +202,7 @@ async def selection_handle():
 
                     if count == 0:
                         message = "Not blocking anyone"
+
                         return await render_template('not_blocking.html', user=identifier, message=message)
 
                     more_data_available = len(blocklist) == items_per_page
@@ -223,6 +228,7 @@ async def selection_handle():
 
                     blocklist, count = await utils.get_single_user_blocks(did_identifier, limit=items_per_page, offset=offset)
                     formatted_count = '{:,}'.format(count)
+
                     if utils.is_did(identifier):
                         identifier = handle_identifier
 
@@ -246,6 +252,7 @@ async def selection_handle():
                         message = "No blocks to compare"
 
                         return await render_template('no_result.html', user=identifier, message=message)
+
                     if not in_common_list:
                         message = "No blocks in common with other users"
 
@@ -253,6 +260,7 @@ async def selection_handle():
 
                     in_common_handles = []
                     rounded_percentages = [round(percent, 2) for percent in percentages]
+
                     for did in in_common_list:
                         handle = await utils.get_user_handle(did)
                         in_common_handles.append(handle)
@@ -263,6 +271,7 @@ async def selection_handle():
                     return await render_template('in_common.html', data=in_common_data, user=handle_identifier)
                 elif selection == "7":
                     logger.info(f"Requesting in-common blocked for: {await utils.get_user_handle(identifier)}")
+
                     in_common_list, percentages = await database_handler.get_similar_blocked_by(did_identifier)
 
                     if "no blocks" in in_common_list:
@@ -283,6 +292,7 @@ async def selection_handle():
                     avatar_id_list = []
                     did_list = []
                     rounded_percentages = [round(percent, 2) for percent in percentages]
+
                     for did in in_common_list:
                         handle = await utils.get_user_handle(did)
                         in_common_handles.append(handle)
@@ -297,7 +307,9 @@ async def selection_handle():
                                                  did_list=did_list, avatar_id=avatar_id_list)
                 elif selection == "8":
                     logger.info(f"Requesting handle history for {identifier}")
+
                     handle_history = await utils.get_handle_history(did_identifier)
+
                     logger.info(f"history for {identifier}: {str(handle_history)}")
 
                     return await render_template('handle_history.html', handle_history=handle_history,
@@ -495,6 +507,7 @@ async def block_stats():
     logger.info(f"Requesting block statistics.")
 
     if not db_connected:
+        logger.error("Database connection is not live.")
 
         return await render_template('issue.html')
 

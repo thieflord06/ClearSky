@@ -51,10 +51,13 @@ async def create_connection_pool():
                     )
                 except OSError:
                     logger.error("Network connection issue. db connection not established.")
-                    sys.exit()
+
+                    return False
                 except (asyncpg.exceptions.InvalidAuthorizationSpecificationError,
                         asyncpg.exceptions.CannotConnectNowError):
                     # Handle specific exceptions that indicate a connection issue
+                    logger.error("db connection issue.")
+
                     return False
     else:
         # Acquire the lock before creating the connection pool
@@ -69,13 +72,17 @@ async def create_connection_pool():
                     )
                 except OSError:
                     logger.error("Network connection issue. db connection not established.")
-                    sys.exit()
+
+                    return False
                 except (asyncpg.exceptions.InvalidAuthorizationSpecificationError,
                         asyncpg.exceptions.CannotConnectNowError):
-                    # Handle specific exceptions that indicate a connection issue
+                    logger.error("db connection issue.")
+
                     return False
                 except asyncpg.InvalidAuthorizationSpecificationError:
-                    logger.error()
+                    logger.error("db connection issue.")
+
+                    return False
 
 
 # Function to close the connection pool
