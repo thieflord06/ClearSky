@@ -29,13 +29,6 @@ try:
 except OSError:
     username = "Unknown"
 
-logger.info(log_version)
-logger.debug("Ran from: " + current_dir)
-logger.debug("Ran by: " + username)
-logger.debug("Ran at: " + str(current_time))
-logger.info("File Log level: " + str(config.get("handler_fileHandler", "level")))
-logger.info("Stdout Log level: " + str(config.get("handler_consoleHandler", "level")))
-
 app = Quart(__name__)
 
 # Configure session secret key
@@ -934,7 +927,24 @@ async def initialize():
         await asyncio.sleep(30)
 
 
+async def get_ip_address():
+    if not os.environ.get('CLEAR_SKY'):
+        logger.info("IP connection: Using config.ini")
+        ip_address = config.get("server", "ip")
+        port_address = config.get("server", "port")
+
+        return ip_address, port_address
+    else:
+        logger.info("IP connection: Using environment variables.")
+        ip_address = os.environ.get('CLEAR_SKY_IP')
+        port_address = os.environ.get('CLEAR_SKY_PORT')
+
+        return ip_address, port_address
+
+
 async def run_web_server():
+    ip_address, port_address = await get_ip_address()
+
     logger.info(f"Web server starting at: {ip_address}:{port_address}")
 
     await app.run_task(host=ip_address, port=port_address)
@@ -942,17 +952,14 @@ async def run_web_server():
 
 # ======================================================================================================================
 # =============================================== Main Logic ===========================================================
-if not os.environ.get('CLEAR_SKY'):
-    logger.info("IP connection: Using config.ini")
-    ip_address = config.get("server", "ip")
-    port_address = config.get("server", "port")
-else:
-    logger.info("IP connection: Using environment variables.")
-    ip_address = os.environ.get('CLEAR_SKY_IP')
-    port_address = os.environ.get('CLEAR_SKY_PORT')
-
-
 async def main():
+    logger.info(log_version)
+    logger.debug("Ran from: " + current_dir)
+    logger.debug("Ran by: " + username)
+    logger.debug("Ran at: " + str(current_time))
+    logger.info("File Log level: " + str(config.get("handler_fileHandler", "level")))
+    logger.info("Stdout Log level: " + str(config.get("handler_consoleHandler", "level")))
+
     await asyncio.gather(initialize(), run_web_server())
 
     while True:
