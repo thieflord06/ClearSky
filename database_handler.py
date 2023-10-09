@@ -243,8 +243,14 @@ async def get_blocklist(ident, limit=100, offset=0):
                 total_blocked_count = await connection.fetchval(query2, ident)
 
                 return blocklist_rows, total_blocked_count
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+    except AttributeError:
+        logger.error(f"db connection issue.")
     except Exception as e:
-        logger.error(f"Error retrieving blocklist for {ident}: {e}")
+        logger.error(f"Error retrieving blocklist for {ident}: {e} {type(e)}")
 
         return None, None
 
