@@ -1016,7 +1016,7 @@ async def first_run():
             blocklist_24_failed.clear()
             blocklist_failed.clear()
 
-            tables = database_handler.tables_exists()
+            tables = await database_handler.tables_exists()
 
             if tables is True:
                 asyncio.create_task(database_handler.blocklists_updater())

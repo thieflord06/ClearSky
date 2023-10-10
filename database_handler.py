@@ -1280,10 +1280,15 @@ async def wait_for_redis():
 async def tables_exists():
     async with connection_pool.acquire() as connection:
         async with connection.transaction():
-            users_exist = connection.fetchval(f"SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = '{setup.users_table}'")
-            blocklists_exist = connection.fetchval(f"SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = '{setup.blocklist_table}'")
-            top_blocks_exist = connection.fetchval(f"SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = '{setup.top_blocks_table}'")
-            top_24_exist = connection.fetchval(f"SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = '{setup.top_24_blocks_table}'")
+            query1 = """SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1)"""
+            query2 = """SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1)"""
+            query3 = """SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1)"""
+            query4 = """SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1)"""
+
+            users_exist = await connection.fetchval(query1, setup.users_table)
+            blocklists_exist = await connection.fetchval(query2, setup.blocklist_table)
+            top_blocks_exist = await connection.fetchval(query3, setup.top_blocks_table)
+            top_24_exist = await connection.fetchval(query4, setup.top_24_blocks_table)
 
             values = (users_exist, blocklists_exist, top_blocks_exist, top_24_exist)
 
