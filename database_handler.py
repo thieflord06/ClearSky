@@ -44,7 +44,7 @@ top_24_blocks_process_time = None
 async def create_connection_pool():
     global connection_pool
 
-    if local_db():
+    if await local_db():
         async with db_lock:
             if connection_pool is None:
                 try:
@@ -1203,16 +1203,20 @@ async def blocklists_updater():
     blocklist_updater_status.set()
 
     logger.info("Updating top blocks lists requested.")
+
     await truncate_top_blocks_table()
+
     blocked_results, blockers_results = await get_top_blocks()  # Get blocks for db
     logger.debug(f"blocked count: {len(blocked_results)} blockers count: {len(blockers_results)}")
+
     # Update blocked entries
     await update_top_block_list_table(blocked_results, blocked_list)  # add blocked to top blocks table
     logger.info("Updated top blocked db.")
+
     await update_top_block_list_table(blockers_results, blocker_list)  # add blocker to top blocks table
     logger.info("Updated top blockers db.")
-    top_blocked, top_blockers, blocked_aid, blocker_aid = await utils.resolve_top_block_lists()
 
+    top_blocked, top_blockers, blocked_aid, blocker_aid = await utils.resolve_top_block_lists()
     logger.info("Top blocks lists page updated.")
 
     blocklist_updater_status.clear()
@@ -1371,7 +1375,7 @@ else:
     redis_conn = aioredis.from_url(f"rediss://{redis_username}:{redis_password}@{redis_host}:{redis_port}")
 
 
-def local_db():
+async def local_db():
     if database_config["use_local_db"]:
         logger.warning("Using local db.")
 

@@ -88,11 +88,15 @@ async def identifier_exists_in_db(identifier):
         return ident, status
 
 
-async def resolve_did(did, count):
-    resolved_did = await on_wire.resolve_did(did)
-    if resolved_did is not None:
+async def resolve_did(did, count, test=False):
+    if not test:
+        resolved_did = await on_wire.resolve_did(did)
+        if resolved_did is not None:
 
-        return {'did': did, 'Handle': resolved_did, 'block_count': count, 'ProfileURL': f'https://bsky.app/profile/{did}'}
+            return {'did': did, 'Handle': resolved_did, 'block_count': count, 'ProfileURL': f'https://bsky.app/profile/{did}'}
+    elif test:
+
+        return {'did': did, 'Handle': did, 'block_count': count, 'ProfileURL': f'https://bsky.app/profile/{did}'}
 
     return None
 
@@ -105,13 +109,22 @@ async def resolve_top_block_lists():
     blocked_dids = [record['did'] for record in blocked]
     blocker_dids = [record['did'] for record in blockers]
 
-    # Create a dictionary to store the DID and avatar_id pairs
-    blocked_avatar_dict = {did: await on_wire.get_avatar_id(did) for did in blocked_dids}
-    blocker_avatar_dict = {did: await on_wire.get_avatar_id(did) for did in blocker_dids}
+    if await database_handler.local_db():
+        blocked_avatar_dict = {did: did for did in blocked_dids}
+        blocker_avatar_dict = {did: did for did in blocker_dids}
+    else:
+        # Create a dictionary to store the DID and avatar_id pairs
+        blocked_avatar_dict = {did: await on_wire.get_avatar_id(did) for did in blocked_dids}
+        blocker_avatar_dict = {did: await on_wire.get_avatar_id(did) for did in blocker_dids}
 
-    # Prepare tasks to resolve DIDs concurrently
-    blocked_tasks = [resolve_did(did, count) for did, count in blocked]
-    blocker_tasks = [resolve_did(did, count) for did, count in blockers]
+    if await database_handler.local_db():
+        # Prepare tasks to resolve DIDs concurrently
+        blocked_tasks = [resolve_did(did, count, True) for did, count in blocked]
+        blocker_tasks = [resolve_did(did, count, True) for did, count in blockers]
+    else:
+        # Prepare tasks to resolve DIDs concurrently
+        blocked_tasks = [resolve_did(did, count) for did, count in blocked]
+        blocker_tasks = [resolve_did(did, count) for did, count in blockers]
 
     # Run the resolution tasks concurrently
     resolved_blocked = await asyncio.gather(*blocked_tasks)
@@ -168,13 +181,22 @@ async def resolve_top24_block_lists():
     blocked_dids = [record['did'] for record in blocked]
     blocker_dids = [record['did'] for record in blockers]
 
-    # Create a dictionary to store the DID and avatar_id pairs
-    blocked_avatar_dict = {did: await on_wire.get_avatar_id(did) for did in blocked_dids}
-    blocker_avatar_dict = {did: await on_wire.get_avatar_id(did) for did in blocker_dids}
+    if await database_handler.local_db():
+        blocked_avatar_dict = {did: did for did in blocked_dids}
+        blocker_avatar_dict = {did: did for did in blocker_dids}
+    else:
+        # Create a dictionary to store the DID and avatar_id pairs
+        blocked_avatar_dict = {did: await on_wire.get_avatar_id(did) for did in blocked_dids}
+        blocker_avatar_dict = {did: await on_wire.get_avatar_id(did) for did in blocker_dids}
 
-    # Prepare tasks to resolve DIDs concurrently
-    blocked_tasks = [resolve_did(did, count) for did, count in blocked]
-    blocker_tasks = [resolve_did(did, count) for did, count in blockers]
+    if await database_handler.local_db():
+        # Prepare tasks to resolve DIDs concurrently
+        blocked_tasks = [resolve_did(did, count, True) for did, count in blocked]
+        blocker_tasks = [resolve_did(did, count, True) for did, count in blockers]
+    else:
+        # Prepare tasks to resolve DIDs concurrently
+        blocked_tasks = [resolve_did(did, count) for did, count in blocked]
+        blocker_tasks = [resolve_did(did, count) for did, count in blockers]
 
     # Run the resolution tasks concurrently
     resolved_blocked = await asyncio.gather(*blocked_tasks)
