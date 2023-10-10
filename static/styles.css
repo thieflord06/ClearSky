@@ -90,7 +90,6 @@ table th.date {
 }
 
 #copy-did-button {
-    width: 35%;
     padding: 8px;
     background-color: #007bff;
     color: #fff;
@@ -102,7 +101,6 @@ table th.date {
 }
 
 #copy-handle-button {
-    width: 100%;
     padding: 8px;
     background-color: #007bff;
     color: #fff;
