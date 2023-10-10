@@ -13,7 +13,7 @@ async def generate_random_user_data():
             async with connection.transaction():
                 # Generate and insert random user data into the 'users' table
                 user_data = []
-                for _ in range(100000):
+                for _ in range(1000):
                     prefix = 'did:plc'
                     alphanumeric = string.ascii_letters + string.digits
                     suffix = ''.join(random.choices(alphanumeric + '._:%-', k=10))
