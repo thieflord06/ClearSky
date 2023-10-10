@@ -19,7 +19,7 @@ async def create_db():
         async with database_handler.connection_pool.acquire() as connection:
             async with connection.transaction():
                 create_users_table = """
-                CREATE TABLE IF NOT EXISTS %s (
+                CREATE TABLE IF NOT EXISTS $1 (
                     did text primary key,
                     handle text,
                     status bool
@@ -27,7 +27,7 @@ async def create_db():
                 """
 
                 create_blocklists_table = """
-                CREATE TABLE IF NOT EXISTS %s (
+                CREATE TABLE IF NOT EXISTS $1 (
                     user_did text,
                     blocked_did text,
                     block_date text
@@ -35,7 +35,7 @@ async def create_db():
                 """
 
                 create_top_blocks_table = """
-                CREATE TABLE IF NOT EXISTS %s (
+                CREATE TABLE IF NOT EXISTS $1 (
                     did text,
                     count int,
                     list_type text
@@ -43,7 +43,7 @@ async def create_db():
                 """
 
                 create_top_24_blocks_table = """
-                CREATE TABLE IF NOT EXISTS %s (
+                CREATE TABLE IF NOT EXISTS $1 (
                     did text,
                     count int,
                     list_type text
