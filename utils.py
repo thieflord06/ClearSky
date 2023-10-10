@@ -352,6 +352,13 @@ async def get_user_handle(did):
     return handle
 
 
+async def get_users_did(handle):
+    async with database_handler.connection_pool.acquire() as connection:
+        did = await connection.fetchval('SELECT did FROM users WHERE handle = $1', handle)
+
+    return did
+
+
 async def get_user_count(get_active=True):
     async with database_handler.connection_pool.acquire() as connection:
         if get_active:

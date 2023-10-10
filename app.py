@@ -140,19 +140,27 @@ async def selection_handle():
         # Check if did or handle exists before processing
         if utils.is_did(identifier) or utils.is_handle(identifier):
             if utils.is_did(identifier):
-                try:
+                if not await database_handler.local_db():
+                    try:
+                        did_identifier = identifier
+                        handle_identifier = await asyncio.wait_for(utils.use_handle(identifier), timeout=30)
+                    except asyncio.TimeoutError:
+                        handle_identifier = None
+                        logger.warning("resolution failed, possible connection issue.")
+                else:
                     did_identifier = identifier
-                    handle_identifier = await asyncio.wait_for(utils.use_handle(identifier), timeout=30)
-                except asyncio.TimeoutError:
-                    handle_identifier = None
-                    logger.warning("resolution failed, possible connection issue.")
+                    handle_identifier = await utils.get_user_handle(identifier)
             if utils.is_handle(identifier):
-                try:
+                if not await database_handler.local_db():
+                    try:
+                        handle_identifier = identifier
+                        did_identifier = await asyncio.wait_for(utils.use_did(identifier), timeout=30)
+                    except asyncio.TimeoutError:
+                        did_identifier = None
+                        logger.warning("resolution failed, possible connection issue.")
+                else:
                     handle_identifier = identifier
-                    did_identifier = await asyncio.wait_for(utils.use_did(identifier), timeout=30)
-                except asyncio.TimeoutError:
-                    did_identifier = None
-                    logger.warning("resolution failed, possible connection issue.")
+                    did_identifier = await utils.get_users_did(identifier)
 
             if did_identifier is None or handle_identifier is None:
                 logger.warning(f"resolution failure: {identifier}")
