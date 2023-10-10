@@ -43,8 +43,9 @@ async def generate_random_block_data(user_data):
             async with connection.transaction():
                 # Generate and insert random blocklist data into the 'blocklists' table
 
+                blocklists_data = []
+
                 for user in user_data:
-                    blocklists_data = []
                     user_did = user[0]  # User DID
                     num_blocked_dids = random.randint(0, 150)  # Random number of blocked_dids (adjust the range as needed)
 
