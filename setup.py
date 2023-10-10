@@ -84,7 +84,7 @@ async def main():
 
         sys.exit()
     else:
-        database_handler.local_db()
+        sys.exit()
 
 if __name__ == '__main__':
     asyncio.run(main())
