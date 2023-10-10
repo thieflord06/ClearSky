@@ -18,42 +18,44 @@ async def create_db():
     try:
         async with database_handler.connection_pool.acquire() as connection:
             async with connection.transaction():
-                create_users_table = f"""
-                CREATE TABLE IF NOT EXISTS {users_table} (
+                create_users_table = """
+                CREATE TABLE IF NOT EXISTS %s (
                     did text primary key,
                     handle text,
                     status bool
                 )
                 """
 
-                create_blocklists_table = f"""
-                CREATE TABLE IF NOT EXISTS {blocklist_table} (
+                create_blocklists_table = """
+                CREATE TABLE IF NOT EXISTS %s (
                     user_did text,
                     blocked_did text,
                     block_date text
                 )
                 """
 
-                create_top_blocks_table = f"""
-                CREATE TABLE IF NOT EXISTS {top_blocks_table} (
+                create_top_blocks_table = """
+                CREATE TABLE IF NOT EXISTS %s (
                     did text,
                     count int,
                     list_type text
                 )
                 """
 
-                create_top_24_blocks_table = f"""
-                CREATE TABLE IF NOT EXISTS {top_24_blocks_table} (
+                create_top_24_blocks_table = """
+                CREATE TABLE IF NOT EXISTS %s (
                     did text,
                     count int,
                     list_type text
                 )
                 """
 
-                await connection.execute(create_users_table)
-                await connection.execute(create_blocklists_table)
-                await connection.execute(create_top_blocks_table)
-                await connection.execute(create_top_24_blocks_table)
+                await connection.execute(create_users_table, table_name=users_table)
+                await connection.execute(create_blocklists_table, table_name=blocklist_table)
+                await connection.execute(create_top_blocks_table, table_name=top_blocks_table)
+                await connection.execute(create_top_24_blocks_table, table_name=top_24_blocks_table)
+
+                logger.info("tables created")
     except Exception as e:
         logger.error(f"Error creating db: {e}")
 
@@ -77,7 +79,9 @@ async def main():
         sys.exit()
     elif args.create_db:
         logger.info("creating db tables.")
+
         await create_db()
+
         sys.exit()
     else:
         database_handler.local_db()
