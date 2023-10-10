@@ -15,15 +15,20 @@ This program provides information from Bluesky using ATProto.
 
 ## Codespaces:
 
-Modify config.ini to add: \
-ip = 127.0.0.1, port = 8000 \
-PG_USER: postgres\
-PG_DB: postgres\
-PG_PASSWORD: postgres\
+Modify config.ini to add: 
+
+ip = 127.0.0.1, port = 8000 
+
+PG_USER: postgres
+
+PG_DB: clearskyprod
+
+PG_PASSWORD: postgres
+
 use_local = True
 
-run: pip install -r requirements.txt\
-run: python app.py 
+\
+run: python app.py
 
 open browser from prompt or open URL from ports menu to navigate to site
 
