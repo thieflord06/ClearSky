@@ -352,7 +352,7 @@ async def get_user_handle(did):
     return handle
 
 
-async def get_users_did(handle):
+async def get_user_did(handle):
     async with database_handler.connection_pool.acquire() as connection:
         did = await connection.fetchval('SELECT did FROM users WHERE handle = $1', handle)
 

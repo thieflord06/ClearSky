@@ -160,7 +160,7 @@ async def selection_handle():
                         logger.warning("resolution failed, possible connection issue.")
                 else:
                     handle_identifier = identifier
-                    did_identifier = await utils.get_users_did(identifier)
+                    did_identifier = await utils.get_user_did(identifier)
 
             if did_identifier is None or handle_identifier is None:
                 logger.warning(f"resolution failure: {identifier}")
