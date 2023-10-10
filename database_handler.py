@@ -6,6 +6,7 @@ import sys
 import asyncpg
 import app
 import config_helper
+import setup
 import utils
 from config_helper import logger
 from cachetools import TTLCache
@@ -20,6 +21,7 @@ connection_pool = None
 db_lock = asyncio.Lock()
 redis_connection = None
 once = None
+no_tables = asyncio.Event()
 
 all_blocks_cache = TTLCache(maxsize=2000000, ttl=14400)  # every 4 hours
 
@@ -670,6 +672,8 @@ async def update_24_hour_block_list_table(entries, list_type):
                 query = "INSERT INTO top_twentyfour_hour_block (did, count, list_type) VALUES ($1, $2, $3)"
                 await connection.executemany(query, data)
                 logger.info("Updated top 24 block table.")
+    except asyncpg.exceptions.UndefinedTableError:
+        logger.warning("table doesn't exist")
     except Exception as e:
         logger.error("Error updating top block table: %s", e)
 
@@ -705,6 +709,8 @@ async def update_top_block_list_table(entries, list_type):
                 query = "INSERT INTO top_block (did, count, list_type) VALUES ($1, $2, $3)"
                 await connection.executemany(query, data)
                 logger.info("Updated top block table")
+    except asyncpg.exceptions.UndefinedTableError:
+        logger.warning("table doesn't exist")
     except Exception as e:
         logger.error("Error updating top block table: %s", e)
 
@@ -853,6 +859,10 @@ async def get_top_blocks():
                 blockers_results.append(blockers_data)
 
                 return blocked_data, blockers_data
+    except asyncpg.exceptions.UndefinedTableError:
+        logger.warning("table doesn't exist")
+
+        return None, None
     except Exception as e:
         logger.error("Error retrieving data from db", e)
 
@@ -962,10 +972,15 @@ async def get_block_stats():
                 logger.info("Completed query 13")
 
                 logger.info("All blocklist queries complete.")
+
                 return (number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking,
                         number_block_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000,
                         average_number_of_blocks, number_blocked_1, number_blocked_2_and_100, number_blocked_101_and_1000,
                         number_blocked_greater_than_1000, average_number_blocked)
+    except asyncpg.exceptions.UndefinedTableError:
+        logger.warning("table doesn't exist")
+
+        return None, None, None, None, None, None, None, None, None, None, None, None, None
     except Exception as e:
         logger.error(f"Error retrieving data from db: {e}")
 
@@ -1003,6 +1018,10 @@ async def get_top24_blocks():
                 blockers_results.append(blockers_data)
 
                 return blocked_data, blockers_data
+    except asyncpg.exceptions.UndefinedTableError:
+        logger.warning("table doesn't exist")
+
+        return None, None
     except Exception as e:
         logger.error("Error retrieving data from db", e)
 
@@ -1256,6 +1275,24 @@ async def wait_for_redis():
             break
         else:
             await asyncio.sleep(30)
+
+
+async def tables_exists():
+    async with connection_pool.acquire() as connection:
+        async with connection.transaction():
+            users_exist = connection.fetchval(f"SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = '{setup.users_table}'")
+            blocklists_exist = connection.fetchval(f"SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = '{setup.blocklist_table}'")
+            top_blocks_exist = connection.fetchval(f"SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = '{setup.top_blocks_table}'")
+            top_24_exist = connection.fetchval(f"SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = '{setup.top_24_blocks_table}'")
+
+            values = (users_exist, blocklists_exist, top_blocks_exist, top_24_exist)
+
+            if any(value is False for value in values):
+
+                return False
+            else:
+
+                return True
 
 
 # ======================================================================================================================

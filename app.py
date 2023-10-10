@@ -1016,11 +1016,18 @@ async def first_run():
             blocklist_24_failed.clear()
             blocklist_failed.clear()
 
-            asyncio.create_task(database_handler.blocklists_updater())
-            asyncio.create_task(database_handler.top_24blocklists_updater())
-            asyncio.create_task(utils.update_block_statistics())
+            tables = database_handler.tables_exists()
 
-            break
+            if tables is True:
+                asyncio.create_task(database_handler.blocklists_updater())
+                asyncio.create_task(database_handler.top_24blocklists_updater())
+                asyncio.create_task(utils.update_block_statistics())
+
+                break
+            else:
+                logger.warning("Tables do not exist in db.")
+                sys.exit()
+
         await asyncio.sleep(30)
 
 

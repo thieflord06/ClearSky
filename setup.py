@@ -8,37 +8,42 @@ import test
 import argparse
 from app import version
 
+users_table = "users"
+blocklist_table = "blocklists"
+top_blocks_table = "top_block"
+top_24_blocks_table = "top_twentyfour_hour_block"
+
 
 async def create_db():
     try:
         async with database_handler.connection_pool.acquire() as connection:
             async with connection.transaction():
-                create_users_table = """
-                CREATE TABLE IF NOT EXISTS users (
+                create_users_table = f"""
+                CREATE TABLE IF NOT EXISTS {users_table} (
                     did text primary key,
                     handle text,
                     status bool
                 )
                 """
 
-                create_blocklists_table = """
-                CREATE TABLE IF NOT EXISTS blocklists (
+                create_blocklists_table = f"""
+                CREATE TABLE IF NOT EXISTS {blocklist_table} (
                     user_did text,
                     blocked_did text,
                     block_date text
                 )
                 """
 
-                create_top_blocks_table = """
-                CREATE TABLE IF NOT EXISTS top_block (
+                create_top_blocks_table = f"""
+                CREATE TABLE IF NOT EXISTS {top_blocks_table} (
                     did text,
                     count int,
                     list_type text
                 )
                 """
 
-                create_top_24_blocks_table = """
-                CREATE TABLE IF NOT EXISTS top_twentyfour_hour_block (
+                create_top_24_blocks_table = f"""
+                CREATE TABLE IF NOT EXISTS {top_24_blocks_table} (
                     did text,
                     count int,
                     list_type text
