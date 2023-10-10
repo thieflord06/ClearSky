@@ -159,29 +159,29 @@ async def selection_handle():
                 logger.warning(f"resolution failure: {identifier}")
 
                 return await render_template('error.html')
+            if selection not in ['1', '2']:
+                try:
+                    persona, status = await utils.identifier_exists_in_db(identifier)
+                except AttributeError:
+                    logger.error("db connection issue.")
 
-            try:
-                persona, status = await utils.identifier_exists_in_db(identifier)
-            except AttributeError:
-                logger.error("db connection issue.")
+                    return await render_template('issue.html')
 
-                return await render_template('issue.html')
+                if persona is True and status is True:
+                    pass
+                elif persona is True and status is False:
+                    if selection not in ['1', '2']:
+                        logger.info(f"Account: {identifier} deleted")
 
-            if persona is True and status is True:
-                pass
-            elif persona is True and status is False:
-                if selection not in ['1', '2']:
-                    logger.info(f"Account: {identifier} deleted")
+                        return await render_template('account_deleted.html', account=identifier)
+                elif status is False and persona is False:
+                    logger.info(f"{identifier}: does not exist.")
 
-                    return await render_template('account_deleted.html', account=identifier)
-            elif status is False and persona is False:
-                logger.info(f"{identifier}: does not exist.")
+                    return await render_template('no_longer_exists.html')
+                else:
+                    logger.info(f"Error page loaded for resolution failure using: {identifier}")
 
-                return await render_template('no_longer_exists.html')
-            else:
-                logger.info(f"Error page loaded for resolution failure using: {identifier}")
-
-                return await render_template('error.html', content_type='text/html')
+                    return await render_template('error.html', content_type='text/html')
 
             if selection != "4":
                 if not identifier:
