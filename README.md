@@ -28,9 +28,14 @@ PG_PASSWORD: postgres
 use_local = True
 
 \
+Set up data:
+
 run: python setup.py --create-db
 
 run: python setup.py --generate-test-data (only needed for blocklists data to show)
+
+\
+Deploy application:
 
 run: python app.py
 
