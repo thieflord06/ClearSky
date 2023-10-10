@@ -608,7 +608,7 @@ async def block_stats():
         average_number_of_blocked
     )
 
-    if any(value is None for value in values_to_check):
+    if any(value is None for value in values_to_check) and not await database_handler.local_db():
         logger.info("Getting new cache.")
 
         process_time = utils.block_stats_process_time
