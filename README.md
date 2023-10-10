@@ -29,7 +29,9 @@ use_local = True
 
 \
 run: python setup.py --create-db
+
 run: python setup.py --generate-test-data (only needed for blocklists data to show)
+
 run: python app.py
 
 open browser from prompt or open URL from ports menu to navigate to site
