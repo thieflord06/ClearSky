@@ -158,7 +158,7 @@ async def selection_handle():
             if did_identifier is None or handle_identifier is None:
                 logger.warning(f"resolution failure: {identifier}")
 
-                return await render_template('issue.html')
+                return await render_template('error.html')
 
             try:
                 persona, status = await utils.identifier_exists_in_db(identifier)
