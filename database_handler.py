@@ -1286,8 +1286,8 @@ def get_database_config():
             redis_username = os.environ.get("REDIS_USERNAME")
             redis_password = os.environ.get("REDIS_PASSWORD")
             redis_key_name = os.environ.get("REDIS_AUTOCOMPLETE")
-            use_local_db = False
-            local_db = None
+            use_local_db = os.environ.get("USE_LOCAL_DB")
+            local_db = os.environ.get("LOCAL_DB_CONNECTION")
 
         return {
             "user": pg_user,
