@@ -17,7 +17,7 @@ This program provides information from Bluesky using ATProto.
 
 Modify config.ini to add: 
 
-ip = 127.0.0.1, port = 8000 
+ip = 127.0.0.1, port = 5000 
 
 PG_USER: postgres
 

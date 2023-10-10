@@ -13,13 +13,13 @@ async def generate_random_user_data():
             async with connection.transaction():
                 # Generate and insert random user data into the 'users' table
                 user_data = []
-                for _ in range(10000):
+                for _ in range(50000):
                     prefix = 'did:plc'
                     alphanumeric = string.ascii_letters + string.digits
-                    suffix = ''.join(random.choices(alphanumeric + '._:%-', k=10))
+                    suffix = ''.join(random.choices(alphanumeric + '._:%-', k=24))
 
                     did = prefix + suffix
-                    random_string = ''.join(random.choices(string.ascii_letters, k=6))
+                    random_string = ''.join(random.choices(string.ascii_letters, k=10))
                     handle = random_string + '.bsky.social'
                     status = random.choice([True, False])  # Random status
 
