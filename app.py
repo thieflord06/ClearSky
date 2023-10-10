@@ -1,6 +1,5 @@
 # app.py
 import sys
-import asyncio
 import quart
 from quart import Quart, render_template, request, session, redirect, jsonify
 from datetime import datetime
@@ -19,7 +18,7 @@ config = config_helper.read_config()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "3.9.23"
+version = "3.9.24"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
