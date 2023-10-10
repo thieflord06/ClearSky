@@ -22,7 +22,7 @@ PG_DB: postgres\
 PG_PASSWORD: postgres\
 use_local = True
 
-run: pip install -r requirements.txt
+run: pip install -r requirements.txt\
 run: python app.py 
 
 open browser from prompt or open URL from ports menu to navigate to site
