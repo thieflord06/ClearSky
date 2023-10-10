@@ -34,6 +34,8 @@ run: python setup.py --generate-test-data (only needed for blocklists data to sh
 
 run: python app.py
 
+\
+\
 open browser from prompt or open URL from ports menu to navigate to site
 
 Note: db connection not supported yet. Some things will not function properly.
