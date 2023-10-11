@@ -35,7 +35,7 @@ Set up data:
 ```
 python setup.py --create-db
 
-python setup.py --generate-test-data (only needed for blocklists data to show, will take a couple of minutes)
+python setup.py --generate-test-data (This will take a couple of minutes)
 ```
 \
 Deploy application:
