@@ -37,6 +37,7 @@ number_blocked_2_and_100_cache = TTLCache(maxsize=200, ttl=14400)
 number_blocked_101_and_1000_cache = TTLCache(maxsize=200, ttl=14400)
 number_blocked_greater_than_1000_cache = TTLCache(maxsize=200, ttl=14400)
 average_number_of_blocked_cache = TTLCache(maxsize=200, ttl=14400)
+total_users_cache = TTLCache(maxsize=200, ttl=14400)
 
 block_stats_status = asyncio.Event()
 
@@ -259,12 +260,12 @@ async def update_block_statistics():
 
     (number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking,
      number_block_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000, average_number_of_blocks,
-     number_blocked_1, number_blocked_2_and_100, number_blocked_101_and_1000, number_blocked_greater_than_1000, average_number_of_blocked
+     number_blocked_1, number_blocked_2_and_100, number_blocked_101_and_1000, number_blocked_greater_than_1000, average_number_of_blocked, total_users
      ) = await database_handler.get_block_stats()
 
     values = (number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking, number_block_1,
               number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000, average_number_of_blocks,
-              number_blocked_1, number_blocked_2_and_100, number_blocked_101_and_1000, number_blocked_greater_than_1000, average_number_of_blocked)
+              number_blocked_1, number_blocked_2_and_100, number_blocked_101_and_1000, number_blocked_greater_than_1000, average_number_of_blocked, total_users)
 
     for value in values:
         if value is None:
@@ -283,6 +284,7 @@ async def update_block_statistics():
     number_blocked_101_and_1000_cache["blocked101to1000"] = number_blocked_101_and_1000
     number_blocked_greater_than_1000_cache["blockedmore1000"] = number_blocked_greater_than_1000
     average_number_of_blocked_cache["averageblocked"] = average_number_of_blocked
+    total_users_cache["total_users"] = total_users
 
     block_stats_status.clear()
 
@@ -295,7 +297,7 @@ async def update_block_statistics():
     return (number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking,
             number_block_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000,
             average_number_of_blocks, number_blocked_1, number_blocked_2_and_100, number_blocked_101_and_1000,
-            number_blocked_greater_than_1000, average_number_of_blocked)
+            number_blocked_greater_than_1000, average_number_of_blocked, total_users)
 
 
 async def get_all_users():

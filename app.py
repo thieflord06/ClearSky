@@ -599,6 +599,7 @@ async def block_stats():
     number_blocked_101_and_1000 = utils.number_blocked_101_and_1000_cache.get("blocked101to1000")
     number_blocked_greater_than_1000 = utils.number_blocked_greater_than_1000_cache.get("blockedmore1000")
     average_number_of_blocked = utils.average_number_of_blocked_cache.get("averageblocked")
+    total_users = utils.total_users_cache.get("total_users")
 
     values_to_check = (
         number_of_total_blocks,
@@ -613,7 +614,8 @@ async def block_stats():
         number_blocked_2_and_100,
         number_blocked_101_and_1000,
         number_blocked_greater_than_1000,
-        average_number_of_blocked
+        average_number_of_blocked,
+        total_users
     )
 
     if any(value is None for value in values_to_check) and not await database_handler.local_db():
@@ -650,7 +652,7 @@ async def block_stats():
 
         return await render_template('please_wait.html', remaining_time=remaining_time)
 
-    total_users = await utils.get_user_count(get_active=False)
+    # total_users = await utils.get_user_count(get_active=False)
 
     percent_users_blocked = (int(number_of_unique_users_blocked) / int(total_users)) * 100
     percent_users_blocking = (int(number_of_unique_users_blocking) / int(total_users)) * 100

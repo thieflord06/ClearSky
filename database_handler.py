@@ -944,6 +944,7 @@ async def get_block_stats():
                                     FROM blocklists
                                     GROUP BY blocked_did
                                 ) AS subquery'''
+
                 number_of_total_blocks = await connection.fetchval(query_1)
                 logger.info("Completed query 1")
                 number_of_unique_users_blocked = await connection.fetchval(query_2)
@@ -970,17 +971,19 @@ async def get_block_stats():
                 logger.info("Completed query 12")
                 average_number_blocked = await connection.fetchval(query_13)
                 logger.info("Completed query 13")
+                total_users = await utils.get_user_count(get_active=False)
+                logger.info("Completed query 14")
 
                 logger.info("All blocklist queries complete.")
 
                 return (number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking,
                         number_block_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000,
                         average_number_of_blocks, number_blocked_1, number_blocked_2_and_100, number_blocked_101_and_1000,
-                        number_blocked_greater_than_1000, average_number_blocked)
+                        number_blocked_greater_than_1000, average_number_blocked, total_users)
     except asyncpg.exceptions.UndefinedTableError:
         logger.warning("table doesn't exist")
 
-        return None, None, None, None, None, None, None, None, None, None, None, None, None
+        return None, None, None, None, None, None, None, None, None, None, None, None, None, None
     except Exception as e:
         logger.error(f"Error retrieving data from db: {e}")
 
