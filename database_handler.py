@@ -1110,7 +1110,9 @@ async def get_similar_users(user_did):
     global all_blocks_process_time
     global all_blocks_last_update
 
-    if not all_blocks_cache:
+    all_blocks = all_blocks_cache.get("blocks")
+
+    if not all_blocks:
         logger.info("Caching all blocklists.")
         start_time = datetime.now()
 
@@ -1122,7 +1124,7 @@ async def get_similar_users(user_did):
                 all_blocklists_rows = await connection.fetch(
                     'SELECT user_did, blocked_did FROM blocklists'
                 )
-                all_blocks_cache = all_blocklists_rows
+                all_blocks_cache["blocks"] = all_blocklists_rows
 
                 block_cache_status.clear()
                 end_time = datetime.now()
