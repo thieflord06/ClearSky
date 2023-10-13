@@ -1139,7 +1139,7 @@ async def get_similar_users(user_did):
                 all_blocks_process_time = end_time - start_time
                 all_blocks_last_update = end_time
     else:
-        all_blocklists_rows = all_blocks_cache
+        all_blocklists_rows = all_blocks
 
     # Create a dictionary to store blocklists as sets
     blocklists = {}
