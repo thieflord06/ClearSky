@@ -965,6 +965,8 @@ async def initialize():
     db_connected = await database_handler.create_connection_pool()  # Creates connection pool for db if connection made
     log_warning_once = True
 
+    db_pool_acquired.set()
+
     if not await database_handler.redis_connected():
         logger.warning("Redis not connected.")
     else:
