@@ -9,7 +9,7 @@ import asyncio
 import app
 
 # python update_manager.py --update-users-handles // update handles that have changed (initial or re-initialize)
-# python update_manager.py --update-users-did-only-db // command to update users db with dids only
+# python update_manager.py --update-users-did-only-db // command to update users db
 # python update_manager.py --fetch-users-count // command to get current count in db
 # python update_manager.py --update-blocklists-db // command to update all users blocklists
 # python update_manager.py --retrieve-blocklists-db // initial/re-initialize get for blocklists database
