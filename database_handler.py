@@ -451,7 +451,7 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
             new_dids = records - current_true_set
 
             if init_db_run:
-                if create_connection_pool():
+                if await create_connection_pool():
                     logger.info("Connected to db.")
 
                     records = list(new_dids)
