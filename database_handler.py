@@ -54,17 +54,12 @@ async def create_connection_pool():
                         database=pg_database
                     )
 
-                    return True
                 except OSError:
                     logger.error("Network connection issue. db connection not established.")
-
-                    return False
                 except (asyncpg.exceptions.InvalidAuthorizationSpecificationError,
                         asyncpg.exceptions.CannotConnectNowError):
                     # Handle specific exceptions that indicate a connection issue
                     logger.error("db connection issue.")
-
-                    return False
     else:
         # Acquire the lock before creating the connection pool
         async with db_lock:
@@ -76,21 +71,59 @@ async def create_connection_pool():
                         host=pg_host,
                         database=pg_database
                     )
-
-                    return True
                 except OSError:
                     logger.error("Network connection issue. db connection not established.")
-
-                    return False
                 except (asyncpg.exceptions.InvalidAuthorizationSpecificationError,
                         asyncpg.exceptions.CannotConnectNowError):
                     logger.error("db connection issue.")
-
-                    return False
                 except asyncpg.InvalidAuthorizationSpecificationError:
                     logger.error("db connection issue.")
 
-                    return False
+
+async def db_connected():
+    if await local_db():
+        try:
+            await asyncpg.create_pool(
+                user=pg_user,
+                password=pg_password,
+                database=pg_database
+            )
+
+            return True
+        except OSError:
+            logger.error("Network connection issue. db connection not established.")
+
+            return False
+        except (asyncpg.exceptions.InvalidAuthorizationSpecificationError,
+                asyncpg.exceptions.CannotConnectNowError):
+            # Handle specific exceptions that indicate a connection issue
+            logger.error("db connection issue.")
+
+            return False
+    else:
+        # Acquire the lock before creating the connection pool
+        try:
+            await asyncpg.create_pool(
+                user=pg_user,
+                password=pg_password,
+                host=pg_host,
+                database=pg_database
+            )
+
+            return True
+        except OSError:
+            logger.error("Network connection issue. db connection not established.")
+
+            return False
+        except (asyncpg.exceptions.InvalidAuthorizationSpecificationError,
+                asyncpg.exceptions.CannotConnectNowError):
+            logger.error("db connection issue.")
+
+            return False
+        except asyncpg.InvalidAuthorizationSpecificationError:
+            logger.error("db connection issue.")
+
+            return False
 
 
 # Function to close the connection pool

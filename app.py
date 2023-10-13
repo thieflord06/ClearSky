@@ -41,6 +41,7 @@ block_stats_app_start_time = None
 db_connected = None
 blocklist_24_failed = asyncio.Event()
 blocklist_failed = asyncio.Event()
+db_pool_acquired = asyncio.Event()
 
 
 # ======================================================================================================================
@@ -959,8 +960,9 @@ async def get_time_since(time):
 
 async def initialize():
     global db_connected
+    global db_pool_acquired
 
-    db_connected = await database_handler.create_connection_pool()
+    db_connected = await database_handler.db_connected()
     log_warning_once = True
 
     if not await database_handler.redis_connected():
@@ -968,26 +970,27 @@ async def initialize():
     else:
         database_handler.redis_connection = True
 
-    if not db_connected:
-        while True:
-            db_connected = await database_handler.create_connection_pool()
+    while True:
+        db_connected = await database_handler.db_connected()
 
-            if db_connected:
-                await database_handler.create_connection_pool()  # Creates connection pool for db
+        if db_connected:
+            await database_handler.create_connection_pool()  # Creates connection pool for db
+            db_pool_acquired.set()
 
-                if not log_warning_once:
-                    logger.warning("db connection established.")
+            if not log_warning_once:
+                logger.warning("db connection established.")
 
-                break
-            else:
-                if log_warning_once:
-                    logger.warning("db not operational.")
+            break
+        else:
+            if log_warning_once:
+                logger.warning("db not operational.")
 
-                    log_warning_once = False
+                log_warning_once = False
 
-                    blocklist_24_failed.set()
-                    blocklist_failed.set()
+                blocklist_24_failed.set()
+                blocklist_failed.set()
 
+            logger.info("Waiting for db connection.")
             await asyncio.sleep(30)
 
 
@@ -1019,7 +1022,10 @@ async def run_web_server():
 
 
 async def first_run():
-    await asyncio.sleep(5)
+    while not db_pool_acquired.is_set():
+        logger.info("Waiting for established connection.")
+        await asyncio.sleep(5)
+
     while True:
         if db_connected:
             blocklist_24_failed.clear()
@@ -1050,7 +1056,12 @@ async def main():
     logger.info("File Log level: " + str(config.get("handler_fileHandler", "level")))
     logger.info("Stdout Log level: " + str(config.get("handler_consoleHandler", "level")))
 
-    await asyncio.gather(initialize(), run_web_server(), first_run())
+    initialize_task = asyncio.create_task(initialize())
+    run_web_server_task = asyncio.create_task(run_web_server())
+
+    await initialize_task
+
+    await asyncio.gather(run_web_server_task, first_run())
 
 
 if __name__ == '__main__':
