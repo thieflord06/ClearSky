@@ -6,7 +6,7 @@ import asyncio
 import database_handler
 import test
 import argparse
-from app import version
+import app
 
 users_table = "users"
 blocklist_table = "blocklists"
@@ -65,10 +65,12 @@ async def create_db():
 async def main():
     # python setup.py --generate-test-data // generate test data
     # python setup.py --create-db // create db tables
+    # python setup.py --start-test // create data and start application
 
-    parser = argparse.ArgumentParser(description='ClearSky Update Manager: ' + version)
+    parser = argparse.ArgumentParser(description='ClearSky Update Manager: ' + app.version)
     parser.add_argument('--generate-test-data', action='store_true', help='generate test data')
     parser.add_argument('--create-db', action='store_true', help='create db tables')
+    parser.add_argument('--start-test', action='store_true', help='create data and start application')
     args = parser.parse_args()
 
     await database_handler.create_connection_pool()
@@ -83,6 +85,16 @@ async def main():
         await create_db()
 
         sys.exit()
+    elif args.start_test:
+        logger.info("creating db tables.")
+        await create_db()
+
+        logger.info("Creating test data.")
+        user_data_list = await test.generate_random_user_data()
+        await test.generate_random_block_data(user_data_list)
+
+        logger.info("Starting Application.")
+        await app.main()
     else:
         sys.exit()
 
