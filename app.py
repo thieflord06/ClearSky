@@ -972,6 +972,8 @@ async def initialize():
     else:
         database_handler.redis_connection = True
 
+    logger.info("Initialized.")
+
     if not db_connected:
         while True:
             db_connected = await database_handler.create_connection_pool()
@@ -983,6 +985,7 @@ async def initialize():
                 if not log_warning_once:
                     logger.warning("db connection established.")
 
+                logger.info("Initialized.")
                 break
             else:
                 if log_warning_once:
@@ -1026,7 +1029,7 @@ async def run_web_server():
 
 async def first_run():
     while not db_pool_acquired.is_set():
-        logger.info("Waiting for established connection.")
+        logger.info("db connection not acquired, waiting for established connection.")
         await asyncio.sleep(5)
 
     while True:
