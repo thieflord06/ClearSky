@@ -54,12 +54,17 @@ async def create_connection_pool():
                         database=pg_database
                     )
 
+                    return True
                 except OSError:
                     logger.error("Network connection issue. db connection not established.")
+
+                    return False
                 except (asyncpg.exceptions.InvalidAuthorizationSpecificationError,
                         asyncpg.exceptions.CannotConnectNowError):
                     # Handle specific exceptions that indicate a connection issue
                     logger.error("db connection issue.")
+
+                    return False
     else:
         # Acquire the lock before creating the connection pool
         async with db_lock:
@@ -73,57 +78,17 @@ async def create_connection_pool():
                     )
                 except OSError:
                     logger.error("Network connection issue. db connection not established.")
+
+                    return False
                 except (asyncpg.exceptions.InvalidAuthorizationSpecificationError,
                         asyncpg.exceptions.CannotConnectNowError):
                     logger.error("db connection issue.")
+
+                    return False
                 except asyncpg.InvalidAuthorizationSpecificationError:
                     logger.error("db connection issue.")
 
-
-async def db_connected():
-    if await local_db():
-        try:
-            await asyncpg.create_pool(
-                user=pg_user,
-                password=pg_password,
-                database=pg_database
-            )
-
-            return True
-        except OSError:
-            logger.error("Network connection issue. db connection not established.")
-
-            return False
-        except (asyncpg.exceptions.InvalidAuthorizationSpecificationError,
-                asyncpg.exceptions.CannotConnectNowError):
-            # Handle specific exceptions that indicate a connection issue
-            logger.error("db connection issue.")
-
-            return False
-    else:
-        # Acquire the lock before creating the connection pool
-        try:
-            await asyncpg.create_pool(
-                user=pg_user,
-                password=pg_password,
-                host=pg_host,
-                database=pg_database
-            )
-
-            return True
-        except OSError:
-            logger.error("Network connection issue. db connection not established.")
-
-            return False
-        except (asyncpg.exceptions.InvalidAuthorizationSpecificationError,
-                asyncpg.exceptions.CannotConnectNowError):
-            logger.error("db connection issue.")
-
-            return False
-        except asyncpg.InvalidAuthorizationSpecificationError:
-            logger.error("db connection issue.")
-
-            return False
+                    return False
 
 
 # Function to close the connection pool
@@ -486,21 +451,20 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
             logger.info(f"Total new DIDs: {len(new_dids)}")
 
             if init_db_run:
-                if await db_connected():
-                    logger.info("Connected to db.")
+                logger.info("Connected to db.")
 
-                    records = list(new_dids)
+                records = list(new_dids)
 
-                    async with connection.transaction():
-                        # Insert data in batches
-                        for i in range(0, len(records), batch_size):
-                            batch_data = [(did, True) for did in records[i: i + batch_size]]
-                            try:
-                                await connection.executemany('INSERT INTO users (did, status) VALUES ($1, $2) ON CONFLICT (did) DO UPDATE SET status = TRUE WHERE users.status <> TRUE', batch_data)
+                async with connection.transaction():
+                    # Insert data in batches
+                    for i in range(0, len(records), batch_size):
+                        batch_data = [(did, True) for did in records[i: i + batch_size]]
+                        try:
+                            await connection.executemany('INSERT INTO users (did, status) VALUES ($1, $2) ON CONFLICT (did) DO UPDATE SET status = TRUE WHERE users.status <> TRUE', batch_data)
 
-                                logger.info(f"Inserted batch {i // batch_size + 1} of {len(records) // batch_size + 1} batches.")
-                            except Exception as e:
-                                logger.error(f"Error inserting batch {i // batch_size + 1}: {str(e)}")
+                            logger.info(f"Inserted batch {i // batch_size + 1} of {len(records) // batch_size + 1} batches.")
+                        except Exception as e:
+                            logger.error(f"Error inserting batch {i // batch_size + 1}: {str(e)}")
 
         logger.info("Comparing status")
 

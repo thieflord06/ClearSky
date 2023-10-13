@@ -372,7 +372,7 @@ async def fun_facts():
 
     logger.info("Fun facts requested.")
 
-    if not await database_handler.db_connected():
+    if not db_connected:
         logger.error("Database connection is not live.")
 
         return await render_template('feature_not_available.html')
@@ -461,7 +461,7 @@ async def funer_facts():
 
     logger.info("Funer facts requested.")
 
-    if not await database_handler.db_connected():
+    if not db_connected:
         logger.error("Database connection is not live.")
 
         return await render_template('feature_not_available.html')
@@ -550,7 +550,7 @@ async def block_stats():
 
     logger.info(f"Requesting block statistics.")
 
-    if not await database_handler.db_connected():
+    if db_connected:
         logger.error("Database connection is not live.")
 
         return await render_template('feature_not_available.html')
@@ -724,7 +724,7 @@ async def autocomplete():
     else:
         if database_handler.redis_connection:
             matching_handles = await database_handler.retrieve_autocomplete_handles(query_without_at)  # Use redis, failover db
-        elif await database_handler.db_connected():
+        elif db_connected:
             matching_handles = await database_handler.find_handles(query_without_at)  # Only use db
         else:
             matching_handles = None
@@ -837,7 +837,7 @@ async def update_block_stats():
     if utils.block_stats_status.is_set():
         stats_status = "processing"
     else:
-        if not await database_handler.db_connected():
+        if db_connected:
             stats_status = "waiting"
         else:
             stats_status = "complete"
@@ -872,7 +872,7 @@ async def update_block_stats():
             block_cache_status = "not initialized"
         else:
             block_cache_status = "complete"
-    if not await database_handler.db_connected():
+    if not db_connected:
         db_status = "failed"
     else:
         db_status = "connected"
@@ -1027,7 +1027,7 @@ async def first_run():
         await asyncio.sleep(5)
 
     while True:
-        if await database_handler.db_connected():
+        if db_connected:
             blocklist_24_failed.clear()
             blocklist_failed.clear()
 
