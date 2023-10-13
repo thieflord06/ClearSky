@@ -56,6 +56,9 @@ async def identifier_exists_in_db(identifier):
             if result:
                 ident = result['did']
                 status = result['status']
+            else:
+                ident = None
+                status = None
 
             if ident and status is True:
                 ident = True
@@ -68,10 +71,13 @@ async def identifier_exists_in_db(identifier):
                 status = False
         elif is_handle(identifier):
             result = await connection.fetchrow('SELECT handle, status FROM users WHERE handle = $1', identifier)
-            logger.debug(result)
+
             if result:
                 ident = result['handle']
                 status = result['status']
+            else:
+                ident = None
+                status = None
 
             if ident is not None and status is True:
                 ident = True
