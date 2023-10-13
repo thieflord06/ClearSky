@@ -971,7 +971,7 @@ async def initialize():
         database_handler.redis_connection = True
 
     while True:
-        db_connected = await database_handler.db_connected()
+        db_connected = await database_handler.create_connection_pool()
 
         if db_connected:
             await database_handler.create_connection_pool()  # Creates connection pool for db
