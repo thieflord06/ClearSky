@@ -40,7 +40,7 @@ async def main():
         total_dids = len(all_dids)
         total_handles_updated = 0
         table = "temporary_table"
-
+        processed = 0
         # Check if there is a last processed DID in the temporary table
         async with database_handler.connection_pool.acquire() as connection:
             async with connection.transaction():
@@ -73,12 +73,15 @@ async def main():
                 for i in range(0, total_dids, batch_size):
                     logger.info("Getting batch to resolve.")
                     batch_dids = all_dids[i:i + batch_size]
+
                     # Process the batch asynchronously
                     batch_handles_updated = await database_handler.process_batch(batch_dids, True, table, batch_size)
                     total_handles_updated += batch_handles_updated
+                    processed += len(batch_dids)
 
                     # Log progress for the current batch
                     logger.info(f"Handles updated: {total_handles_updated}/{total_dids}")
+                    logger.info(f"Handles processed: {processed}")
                     logger.info(f"First few DIDs in the batch: {batch_dids[:5]}")
 
                     # Pause after each batch of handles resolved
