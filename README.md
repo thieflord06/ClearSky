@@ -31,16 +31,9 @@ PG_PASSWORD: postgres
 use_local = True
 ```
 \
-Set up data:
+Set up data and deploy application:
 ```
-python setup.py --create-db
-
-python setup.py --generate-test-data (This will take a couple of minutes)
-```
-\
-Deploy application:
-```
-run: python app.py
+python setup.py --start-test
 ```
 \
 \
