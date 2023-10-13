@@ -76,6 +76,8 @@ async def create_connection_pool():
                         host=pg_host,
                         database=pg_database
                     )
+
+                    return True
                 except OSError:
                     logger.error("Network connection issue. db connection not established.")
 
