@@ -550,7 +550,7 @@ async def block_stats():
 
     logger.info(f"Requesting block statistics.")
 
-    if db_connected:
+    if not db_connected:
         logger.error("Database connection is not live.")
 
         return await render_template('feature_not_available.html')
@@ -837,7 +837,7 @@ async def update_block_stats():
     if utils.block_stats_status.is_set():
         stats_status = "processing"
     else:
-        if db_connected:
+        if not db_connected:
             stats_status = "waiting"
         else:
             stats_status = "complete"
@@ -969,29 +969,29 @@ async def initialize():
         logger.warning("Redis not connected.")
     else:
         database_handler.redis_connection = True
+    if not db_connected:
+        while True:
+            db_connected = await database_handler.create_connection_pool()
 
-    while True:
-        db_connected = await database_handler.create_connection_pool()
+            if db_connected:
+                await database_handler.create_connection_pool()  # Creates connection pool for db
+                db_pool_acquired.set()
 
-        if db_connected:
-            await database_handler.create_connection_pool()  # Creates connection pool for db
-            db_pool_acquired.set()
+                if not log_warning_once:
+                    logger.warning("db connection established.")
 
-            if not log_warning_once:
-                logger.warning("db connection established.")
+                break
+            else:
+                if log_warning_once:
+                    logger.warning("db not operational.")
 
-            break
-        else:
-            if log_warning_once:
-                logger.warning("db not operational.")
+                    log_warning_once = False
 
-                log_warning_once = False
+                    blocklist_24_failed.set()
+                    blocklist_failed.set()
 
-                blocklist_24_failed.set()
-                blocklist_failed.set()
-
-            logger.info("Waiting for db connection.")
-            await asyncio.sleep(30)
+                logger.info("Waiting for db connection.")
+                await asyncio.sleep(30)
 
 
 async def get_ip_address():
