@@ -436,33 +436,38 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
 
             logger.info(f"Total DIDs: {len(records)}")
 
+            records = set(records)
+
+            current_true_records = await connection.fetch('SELECT did FROM users WHERE status = TRUE')
+
+            current_true_set = set()
+            for record in current_true_records:
+                current_true_set.add(record["did"])
+
+            logger.info("Getting DIDs to deactivate.")
+            dids_deactivated = current_true_set - records
+
+            logger.info("Getting new DIDs.")
+            new_dids = records - current_true_set
+
             if init_db_run:
-                records = list(records)
-                logger.info("Connected to db.")
-                async with connection.transaction():
-                    # Insert data in batches
-                    for i in range(0, len(records), batch_size):
-                        batch_data = [(did, True) for did in records[i: i + batch_size]]
-                        try:
-                            await connection.executemany('INSERT INTO users (did, status) VALUES ($1, $2) ON CONFLICT (did) DO UPDATE SET status = TRUE WHERE users.status <> TRUE', batch_data)
+                if create_connection_pool():
+                    logger.info("Connected to db.")
 
-                            logger.info(f"Inserted batch {i // batch_size + 1} of {len(records) // batch_size + 1} batches.")
-                        except Exception as e:
-                            logger.error(f"Error inserting batch {i // batch_size + 1}: {str(e)}")
+                    records = list(new_dids)
 
-        logger.info("Getting current users status")
+                    async with connection.transaction():
+                        # Insert data in batches
+                        for i in range(0, len(records), batch_size):
+                            batch_data = [(did, True) for did in records[i: i + batch_size]]
+                            try:
+                                await connection.executemany('INSERT INTO users (did, status) VALUES ($1, $2) ON CONFLICT (did) DO UPDATE SET status = TRUE WHERE users.status <> TRUE', batch_data)
 
-        current_true_records = await connection.fetch('SELECT did FROM users WHERE status = TRUE')
-
-        current_true_set = set()
-        for record in current_true_records:
-            current_true_set.add(record["did"])
-
-        records = set(records)
+                                logger.info(f"Inserted batch {i // batch_size + 1} of {len(records) // batch_size + 1} batches.")
+                            except Exception as e:
+                                logger.error(f"Error inserting batch {i // batch_size + 1}: {str(e)}")
 
         logger.info("Comparing status")
-
-        dids_deactivated = current_true_set - records
 
         if dids_deactivated:
             logger.info("deactivating dids")
