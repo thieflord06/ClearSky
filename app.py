@@ -962,7 +962,7 @@ async def initialize():
     global db_connected
     global db_pool_acquired
 
-    db_connected = await database_handler.db_connected()
+    db_connected = await database_handler.create_connection_pool()
     log_warning_once = True
 
     if not await database_handler.redis_connected():
