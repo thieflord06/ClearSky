@@ -91,7 +91,9 @@ async def main():
 
         logger.info("Creating test data.")
         user_data_list = await test.generate_random_user_data()
+        logger.info("This will take a couple of minutes...please wait.")
         await test.generate_random_block_data(user_data_list)
+        await database_handler.close_connection_pool()
 
         logger.info("Starting Application.")
         await app.main()
