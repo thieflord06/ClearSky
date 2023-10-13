@@ -449,7 +449,7 @@ async def fun_facts():
 
         return await render_template('please_wait.html', remaining_time=remaining_time)
 
-    # If at least one list is not empty, render the regular page
+    # If the lists aren't empty, render the regular page
     return await render_template('fun_facts.html', blocked_results=resolved_blocked, blockers_results=resolved_blockers,
                                  blocked_aid=blocked_aid, blocker_aid=blocker_aid)
 
