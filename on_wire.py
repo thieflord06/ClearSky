@@ -77,6 +77,9 @@ async def resolve_did(did):  # Take DID and get handle
                     stripped_record = record.replace("at://", "")
                     stripped_record = stripped_record.strip("[]").replace("'", "")
 
+                    if "RateLimit Exceeded" in stripped_record:
+                        stripped_record = did
+
                     return stripped_record
                 elif response.status_code == 429:
                     logger.warning("Too many requests, pausing.")
