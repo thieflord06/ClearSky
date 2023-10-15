@@ -23,7 +23,7 @@ redis_connection = None
 once = None
 no_tables = asyncio.Event()
 
-all_blocks_cache = TTLCache(maxsize=2000000, ttl=14400)  # every 4 hours
+all_blocks_cache = TTLCache(maxsize=5000000, ttl=86400)  # every 4 hours
 
 blocklist_updater_status = asyncio.Event()
 blocklist_24_updater_status = asyncio.Event()
@@ -510,7 +510,7 @@ async def update_blocklist_table(ident, blocked_by_list, block_date):
                     'INSERT INTO blocklists (user_did, blocked_did, block_date) VALUES ($1, $2, $3)', data
                 )
             else:
-                logger.info("Blocklist not updated already exists.")
+                logger.debug("Blocklist not updated already exists.")
 
 
 async def does_did_and_handle_exist_in_database(did, handle):
