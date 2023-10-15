@@ -23,7 +23,7 @@ redis_connection = None
 once = None
 no_tables = asyncio.Event()
 
-all_blocks_cache = TTLCache(maxsize=5000000, ttl=86400)  # every 4 hours
+all_blocks_cache = TTLCache(maxsize=5000000, ttl=86400)  # every 24 hours
 
 blocklist_updater_status = asyncio.Event()
 blocklist_24_updater_status = asyncio.Event()
