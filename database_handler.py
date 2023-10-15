@@ -405,7 +405,7 @@ async def update_blocklists_batch(batch_dids):
                 # Update the blocklists table in the database with the retrieved data
                 await update_blocklist_table(did, blocked_users, block_dates)
                 total_blocks_updated += 1  # Increment the counter for updated block lists
-                logger.info(f"Updated block list for DID: {did}")
+                logger.debug(f"Updated block list for DID: {did}")
             else:
                 logger.debug(f"didn't update no blocks: {did}")
                 continue
