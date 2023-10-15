@@ -871,9 +871,9 @@ async def update_block_stats():
         if len(database_handler.all_blocks_cache) == 0:
             block_cache_status = "not initialized"
         else:
-            block_cache_status = "complete"
+            block_cache_status = "In memory"
     if not db_connected:
-        db_status = "failed"
+        db_status = "disconnected"
     else:
         db_status = "connected"
 
