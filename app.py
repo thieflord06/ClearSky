@@ -19,7 +19,7 @@ config = config_helper.read_config()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "3.9.31"
+version = "3.9.32"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -1057,9 +1057,9 @@ async def first_run():
             tables = await database_handler.tables_exists()
 
             if tables:
-                # await database_handler.blocklists_updater()
-                # await database_handler.top_24blocklists_updater()
-                # await utils.update_block_statistics()
+                await database_handler.blocklists_updater()
+                await database_handler.top_24blocklists_updater()
+                await utils.update_block_statistics()
 
                 break
             else:
