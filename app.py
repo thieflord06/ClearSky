@@ -361,6 +361,12 @@ async def selection_handle():
                     logger.info(f"Requesting mute list lookup for: {identifier}")
 
                     mute_lists = await database_handler.get_mutelists(did_identifier)
+
+                    if not mute_lists:
+                        message = "This users is not on any lists."
+
+                        return await render_template('not_on_lists.html', user=identifier, message=message)
+
                     data = json.loads(mute_lists)
 
                     logger.debug(mute_lists)
@@ -1051,9 +1057,9 @@ async def first_run():
             tables = await database_handler.tables_exists()
 
             if tables:
-                await database_handler.blocklists_updater()
-                await database_handler.top_24blocklists_updater()
-                await utils.update_block_statistics()
+                # await database_handler.blocklists_updater()
+                # await database_handler.top_24blocklists_updater()
+                # await utils.update_block_statistics()
 
                 break
             else:

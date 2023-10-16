@@ -1523,7 +1523,12 @@ async def get_mutelists(ident):
                         INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle
                         WHERE mu.did = $1
                         """
-            mute_lists = await connection.fetchval(query, ident)
+            try:
+                mute_lists = await connection.fetchval(query, ident)
+            except Exception as e:
+                logger.error(f"Error retrieving DIDs without handles: {e}")
+
+                return None
 
             return mute_lists
 
