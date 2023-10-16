@@ -668,18 +668,14 @@ async def get_handle_history(identifier):
         return None
 
 
-async def get_user_mutelists(ident):
+async def get_mutelists(ident):
     base_url = "https://bsky.social/xrpc/"
     mute_lists_collection = "app.bsky.graph.list"
-    mute_users_collection = "app.bsky.graph.listitem"
     limit = 100
     mutelists_data = []
-    mutelists_users_data = []
     cursor = None
     retry_count = 0
     max_retries = 5
-
-    logger.debug("Getting mute lists.")
 
     while retry_count < max_retries:
         url = urllib.parse.urljoin(base_url, "com.atproto.repo.listRecords")
@@ -715,48 +711,49 @@ async def get_user_mutelists(ident):
             response_json = response.json()
             list_records = response_json.get("records", [])
 
-            if list_records:
-                for record in list_records:
-                    cid = record.get("cid", {})  # List ID
-                    value = record.get("value", {})
-                    subject = value.get("name")
-                    created_at_value = value.get("createdAt")
-                    description = value.get("description")
+            for record in list_records:
+                cid = record.get("cid", {})  # List ID
+                value = record.get("value", {})
+                subject = value.get("name")
+                created_at_value = value.get("createdAt")
+                description = value.get("description")
+                uri = record.get("uri")
 
-                    if created_at_value:
-                        try:  # Have to check for different time formats in blocklists :/
-                            if '.' in created_at_value and 'Z' in created_at_value:
-                                # If the value contains fractional seconds and 'Z' (UTC time)
-                                created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S.%fZ").date()
-                            elif '.' in created_at_value:
-                                # If the value contains fractional seconds (but no 'Z' indicating time zone)
-                                created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S.%f").date()
-                            elif 'Z' in created_at_value:
-                                # If the value has 'Z' indicating UTC time (but no fractional seconds)
-                                created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%SZ").date()
-                            else:
-                                # If the value has no fractional seconds and no 'Z' indicating time zone
-                                created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S").date()
-                        except ValueError as ve:
-                            logger.warning("No date in blocklist for: " + str(ident) + " | " + str(full_url))
-                            logger.error("error: " + str(ve))
-                            continue
+                if created_at_value:
+                    try:  # Have to check for different time formats in blocklists :/
+                        if '.' in created_at_value and 'Z' in created_at_value:
+                            # If the value contains fractional seconds and 'Z' (UTC time)
+                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S.%fZ").date()
+                        elif '.' in created_at_value:
+                            # If the value contains fractional seconds (but no 'Z' indicating time zone)
+                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S.%f").date()
+                        elif 'Z' in created_at_value:
+                            # If the value has 'Z' indicating UTC time (but no fractional seconds)
+                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%SZ").date()
+                        else:
+                            # If the value has no fractional seconds and no 'Z' indicating time zone
+                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S").date()
+                    except ValueError as ve:
+                        logger.warning("No date in blocklist for: " + str(ident) + " | " + str(full_url))
+                        logger.error("error: " + str(ve))
+                        continue
 
-                        # Create a dictionary to store this record's data
-                        record_data = {
-                            "did": ident,
-                            "cid": cid,
-                            "subject": subject,
-                            "created_at": created_date,
-                            "description": description
-                        }
+                    # Create a dictionary to store this record's data
+                    record_data = {
+                        "uri": uri,
+                        "did": ident,
+                        "cid": cid,
+                        "name": subject,
+                        "created_at": created_date,
+                        "description": description
+                    }
 
-                        # Add this record's data to the list
-                        mutelists_data.append(record_data)
+                    # Add this record's data to the list
+                    mutelists_data.append(record_data)
 
-                cursor = response_json.get("cursor")
-                if not cursor:
-                    break
+            cursor = response_json.get("cursor")
+            if not cursor:
+                break
         elif response.status_code == 429:
             logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
             await asyncio.sleep(60)  # Retry after 60 seconds
@@ -766,7 +763,8 @@ async def get_user_mutelists(ident):
                 message = response.json()["message"]
                 if error_message == "InvalidRequest" and "Could not find repo" in message:
                     logger.warning("Could not find repo: " + str(ident))
-                    return ["no repo"], []
+
+                    return []
             except KeyError:
                 pass
         else:
@@ -777,110 +775,122 @@ async def get_user_mutelists(ident):
 
     if retry_count == max_retries:
         logger.warning("Could not get mute lists for: " + ident)
-        pass
-    if not mutelists_data and retry_count != max_retries:
+
+        return []
+    if not mutelists_data and retry_count >= max_retries:
 
         return []
 
-    logger.debug("Getting mutelist users.")
+    logger.debug(mutelists_data)
+    return mutelists_data
 
-    if list_records:
-        while retry_count < max_retries:
-            url = urllib.parse.urljoin(base_url, "com.atproto.repo.listRecords")
-            params = {
-                "repo": ident,
-                "limit": limit,
-                "collection": mute_users_collection,
-            }
 
-            if cursor:
-                params["cursor"] = cursor
+async def get_mutelist_users(ident):
+    base_url = "https://bsky.social/xrpc/"
+    mute_users_collection = "app.bsky.graph.listitem"
+    limit = 100
+    mutelists_users_data = []
+    cursor = None
+    retry_count = 0
+    max_retries = 5
 
-            encoded_params = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
-            full_url = f"{url}?{encoded_params}"
-            logger.debug(full_url)
+    while retry_count < max_retries:
+        url = urllib.parse.urljoin(base_url, "com.atproto.repo.listRecords")
+        params = {
+            "repo": ident,
+            "limit": limit,
+            "collection": mute_users_collection,
+        }
 
+        if cursor:
+            params["cursor"] = cursor
+
+        encoded_params = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
+        full_url = f"{url}?{encoded_params}"
+        logger.debug(full_url)
+
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
+        except httpx.ReadTimeout:
+            logger.warning("Request timed out. Retrying... Retry count: %d", retry_count)
+            retry_count += 1
+            await asyncio.sleep(10)
+            continue
+        except httpx.RequestError as e:
+            logger.warning("Error during API call: %s", e)
+            retry_count += 1
+            logger.info("sleeping 5")
+            await asyncio.sleep(5)
+            continue
+
+        if response.status_code == 200:
+            response_json = response.json()
+            records = response_json.get("records", [])
+
+            for record in records:
+                cid = record.get("cid", {})  # List ID
+                value = record.get("value", {})
+                subject = value.get("subject")
+                created_at_value = value.get("createdAt")
+                list = value.get("list")
+
+                if created_at_value:
+                    try:  # Have to check for different time formats in blocklists :/
+                        if '.' in created_at_value and 'Z' in created_at_value:
+                            # If the value contains fractional seconds and 'Z' (UTC time)
+                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S.%fZ").date()
+                        elif '.' in created_at_value:
+                            # If the value contains fractional seconds (but no 'Z' indicating time zone)
+                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S.%f").date()
+                        elif 'Z' in created_at_value:
+                            # If the value has 'Z' indicating UTC time (but no fractional seconds)
+                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%SZ").date()
+                        else:
+                            # If the value has no fractional seconds and no 'Z' indicating time zone
+                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S").date()
+                    except ValueError as ve:
+                        logger.warning("No date in blocklist for: " + str(ident) + " | " + str(full_url))
+                        logger.error("error: " + str(ve))
+                        continue
+
+                    # Create a dictionary to store this record's data
+                    user_record_data = {
+                        "list": list,
+                        "cid": cid,
+                        "subject": subject,
+                        "created_at": created_date
+                    }
+
+                    # Add this record's data to the list
+                    mutelists_users_data.append(user_record_data)
+            cursor = response_json.get("cursor")
+            if not cursor:
+                break
+        elif response.status_code == 429:
+            logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
+            await asyncio.sleep(60)  # Retry after 60 seconds
+        elif response.status_code == 400:
             try:
-                async with httpx.AsyncClient() as client:
-                    response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
-            except httpx.ReadTimeout:
-                logger.warning("Request timed out. Retrying... Retry count: %d", retry_count)
-                retry_count += 1
-                await asyncio.sleep(10)
-                continue
-            except httpx.RequestError as e:
-                logger.warning("Error during API call: %s", e)
-                retry_count += 1
-                logger.info("sleeping 5")
-                await asyncio.sleep(5)
-                continue
+                error_message = response.json()["error"]
+                message = response.json()["message"]
+                if error_message == "InvalidRequest" and "Could not find repo" in message:
+                    logger.warning("Could not find repo: " + str(ident))
+                    return []
+            except KeyError:
+                pass
+        else:
+            retry_count += 1
+            logger.warning("Error during API call. Status code: %s", response.status_code)
+            await asyncio.sleep(5)
+            continue
 
-            if response.status_code == 200:
-                response_json = response.json()
-                records = response_json.get("records", [])
+    if retry_count == max_retries:
+        logger.warning("Could not get mute list for: " + ident)
+        pass
+    if not mutelists_users_data and retry_count != max_retries:
 
-                if records:
-                    for record in records:
-                        cid = record.get("cid", {})  # List ID
-                        value = record.get("value", {})
-                        subject = value.get("subject")
-                        created_at_value = value.get("createdAt")
+        return []
 
-                        if created_at_value:
-                            try:  # Have to check for different time formats in blocklists :/
-                                if '.' in created_at_value and 'Z' in created_at_value:
-                                    # If the value contains fractional seconds and 'Z' (UTC time)
-                                    created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S.%fZ").date()
-                                elif '.' in created_at_value:
-                                    # If the value contains fractional seconds (but no 'Z' indicating time zone)
-                                    created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S.%f").date()
-                                elif 'Z' in created_at_value:
-                                    # If the value has 'Z' indicating UTC time (but no fractional seconds)
-                                    created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%SZ").date()
-                                else:
-                                    # If the value has no fractional seconds and no 'Z' indicating time zone
-                                    created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S").date()
-                            except ValueError as ve:
-                                logger.warning("No date in blocklist for: " + str(ident) + " | " + str(full_url))
-                                logger.error("error: " + str(ve))
-                                continue
-
-                            # Create a dictionary to store this record's data
-                            user_record_data = {
-                                "cid": cid,
-                                "subject": subject,
-                                "created_at": created_date
-                            }
-
-                            # Add this record's data to the list
-                            mutelists_users_data.append(user_record_data)
-
-                    cursor = response_json.get("cursor")
-                    if not cursor:
-                        break
-            elif response.status_code == 429:
-                logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
-                await asyncio.sleep(60)  # Retry after 60 seconds
-            elif response.status_code == 400:
-                try:
-                    error_message = response.json()["error"]
-                    message = response.json()["message"]
-                    if error_message == "InvalidRequest" and "Could not find repo" in message:
-                        logger.warning("Could not find repo: " + str(ident))
-                        return ["no repo"], []
-                except KeyError:
-                    pass
-            else:
-                retry_count += 1
-                logger.warning("Error during API call. Status code: %s", response.status_code)
-                await asyncio.sleep(5)
-                continue
-
-        if retry_count == max_retries:
-            logger.warning("Could not get block list for: " + ident)
-            pass
-        if not mutelists_data and retry_count != max_retries:
-
-            return [], []
-
-    return mutelists_data, mutelists_users_data
+    logger.debug(mutelists_users_data)
+    return mutelists_users_data

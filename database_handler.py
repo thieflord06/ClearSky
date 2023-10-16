@@ -395,6 +395,94 @@ async def update_all_blocklists(run_diff=False):
     logger.info(f"Block lists updated: {total_blocks_updated}/{total_dids}")
 
 
+async def update_all_mutelists():
+    all_dids = await get_all_users_db(False, True)
+
+    total_dids = len(all_dids)
+    batch_size = 200
+    pause_interval = 200  # Pause every x DID requests
+    processed_count = 0
+
+    total_blocks_updated = 0
+    tasks = []
+
+    # Check if there is a last processed DID in the temporary table
+    async with connection_pool.acquire() as connection:
+        async with connection.transaction():
+            try:
+                query = "SELECT last_processed_did FROM mute_temporary_table"
+                last_processed_did = await connection.fetchval(query)
+                logger.debug("last did from db: " + str(last_processed_did))
+            except Exception as e:
+                last_processed_did = None
+                logger.error(f"Exception getting from db: {str(e)}")
+
+    if not last_processed_did:
+        await create_mutelist_temporary_table()
+
+    if last_processed_did:
+        # Find the index of the last processed DID in the list
+        start_index = next((i for i, (did) in enumerate(all_dids) if did == last_processed_did), None)
+        if start_index is None:
+            logger.warning(
+                f"Last processed DID '{last_processed_did}' not found in the list. Starting from the beginning.")
+        else:
+            logger.info(f"Resuming processing from DID: {last_processed_did}")
+            all_dids = all_dids[start_index:]
+
+    cumulative_processed_count = 0  # Initialize cumulative count
+
+    for i in range(0, total_dids, batch_size):
+        remaining_dids = total_dids - i
+        current_batch_size = min(batch_size, remaining_dids)
+
+        batch_dids = all_dids[i:i + current_batch_size]
+        # Use the limiter to rate-limit the function calls
+        while True:
+            try:
+                task = asyncio.create_task(update_mute_lists_batch(batch_dids))
+                tasks.append(task)
+
+                # Update the temporary table with the last processed DID
+                last_processed_did = batch_dids[-1]  # Assuming DID is the first element in each tuple
+                logger.debug("Last processed DID: " + str(last_processed_did))
+                await update_mutelist_temporary_table(last_processed_did)
+
+                cumulative_processed_count += len(batch_dids)
+
+                # Log information for each batch
+                logger.info(f"Processing batch {i // batch_size + 1}/{total_dids // batch_size + 1}...")
+                logger.info(f"Processing {cumulative_processed_count}/{total_dids} DIDs...")
+
+                # Pause every 100 DID requests
+                if processed_count % pause_interval == 0:
+                    logger.info(f"Pausing after {i + 1} DID requests...")
+                    await asyncio.sleep(30)  # Pause for 30 seconds
+
+                break  # Break the loop if the request is successful
+            except asyncpg.ConnectionDoesNotExistError:
+                logger.warning("Connection error. Retrying after 30 seconds...")
+                await asyncio.sleep(30)  # Retry after 30 seconds
+            except IndexError:
+                logger.warning("Reached end of DID list to update...")
+                await delete_mutelist_temporary_table()
+                logger.info("Update Blocklists db finished.")
+                sys.exit()
+            except Exception as e:
+                if "429 Too Many Requests" in str(e):
+                    logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
+                    await asyncio.sleep(60)  # Retry after 60 seconds
+                else:
+                    logger.error("None excepted error, sleeping..." + str(e))
+                    await asyncio.sleep(60)
+                    # raise e
+
+        processed_count += batch_size
+
+    await asyncio.gather(*tasks)
+    logger.info(f"Mute lists updated: {total_blocks_updated}/{total_dids}")
+
+
 async def update_blocklists_batch(batch_dids):
     total_blocks_updated = 0
 
@@ -402,32 +490,45 @@ async def update_blocklists_batch(batch_dids):
         try:
             # Logic to retrieve block list and mutelists for the current DID
             blocked_users, block_dates = await utils.get_user_block_list(did)
-            mutelists_data, mutelists_users_data = await utils.get_user_mutelists(did)
 
             if blocked_users and block_dates:
                 # Update the blocklists table in the database with the retrieved data
                 await update_blocklist_table(did, blocked_users, block_dates)
                 total_blocks_updated += 1  # Increment the counter for updated block lists
+
                 logger.debug(f"Updated block list for DID: {did}")
             else:
                 logger.debug(f"didn't update no blocks: {did}")
                 continue
+        except Exception as e:
+            logger.error(f"Error updating block list for DID {did}: {e}")
+
+    return total_blocks_updated
+
+
+async def update_mute_lists_batch(batch_dids):
+    total_mutes_updated = 0
+
+    for did in batch_dids:
+        try:
+            # Logic to retrieve block list and mutelists for the current DID
+            mutelists_data = await utils.get_mutelists(did)
 
             if mutelists_data:
+                mutelists_users_data = await utils.get_mutelist_users(did)
+
                 # Update the mutelist tables in the database with the retrieved data
                 await update_mutelist_tables(did, mutelists_data, mutelists_users_data)
-
-                if not blocked_users and block_dates:
-                    total_blocks_updated += 1
+                total_mutes_updated += 1
 
                 logger.debug(f"Updated mute lists for DID: {did}")
             else:
                 logger.debug(f"didn't update no mutelists: {did}")
                 continue
         except Exception as e:
-            logger.error(f"Error updating block list for DID {did}: {e}")
+            logger.error(f"Error updating mute list for DID {did}: {e}")
 
-    return total_blocks_updated
+    return total_mutes_updated
 
 
 async def get_all_users_db(run_update=False, get_dids=False, get_count=False, init_db_run=False):
@@ -529,9 +630,6 @@ async def update_blocklist_table(ident, blocked_by_list, block_date):
 
 
 async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data):
-    if not mutelists_data:
-        return
-
     async with connection_pool.acquire() as connection:
         async with connection.transaction():
 
@@ -545,11 +643,11 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data):
 
             # Create a list of tuples containing the data to be inserted
             records_to_insert = [
-                (record["did"], record["cid"], record["created_at"].strftime('%Y-%m-%d'), record["description"])
+                (record["uri"], record["did"], record["cid"], record["name"], record["created_at"].strftime('%Y-%m-%d'), record["description"])
                 for record in mutelists_data]
 
             # Convert the new mutelist entries to a set for comparison
-            new_mutelist_entries = {(record[1], record[2]) for record in records_to_insert}
+            new_mutelist_entries = {(record[0], record[1]) for record in records_to_insert}
             logger.debug("New mutelist entries for " + ident + ": " + str(new_mutelist_entries))
 
             # Check if there are differences between the existing and new mutelist entries
@@ -559,7 +657,7 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data):
 
                 # Insert the new mutelist entries
                 await connection.executemany(
-                    """INSERT INTO {} (did, cid, created_date, description) VALUES ($1, $2, $3, $4)""".format(setup.mute_lists_table),
+                    """INSERT INTO {} (uri, did, cid, name, created_date, description) VALUES ($1, $2, $3, $4, $5, $6)""".format(setup.mute_lists_table),
                     records_to_insert
                 )
             else:
@@ -575,29 +673,30 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data):
                         WHERE ml.did = $1""", ident
                 )
 
-                existing_mutelist_users_entries = {(record['did'], record['cid']) for record in existing_users_records}
+                existing_mutelist_users_entries = {(record['list'], record['did']) for record in existing_users_records}
                 logger.debug("Existing entires " + ident + ": " + str(existing_mutelist_users_entries))
 
                 # Create a list of tuples containing the data to be inserted
                 records_to_insert = [
-                    (record["did"], record["cid"], record["date_added"].strftime('%Y-%m-%d'))
+                    (record["list"], record["cid"], record["subject"], record["created_at"].strftime('%Y-%m-%d'))
                     for record in mutelists_users_data]
 
                 # Convert the new mutelist entries to a set for comparison
-                new_mutelist_users_entries = {(record[1], record[2]) for record in records_to_insert}
-                logger.debug("New mutelist entries for " + ident + ": " + str(new_mutelist_users_entries))
+                new_mutelist_users_entries = {(record[0], record[1]) for record in records_to_insert}
+                logger.debug("New mutelist users entries for " + ident + ": " + str(new_mutelist_users_entries))
 
                 # Check if there are differences between the existing and new mutelist entries
                 if existing_mutelist_users_entries != new_mutelist_users_entries:
                     # Delete existing mutelist entries for the specified ident
-                    await connection.execute("""DELETE FROM mutelists_users as mu
-                                                JOIN mutelists AS ml
-                                                ON mu.cid = ml.cid
-                                                WHERE ml.did = $1""", ident)
+                    await connection.execute("""DELETE FROM mutelists_users
+                                                WHERE list IN (
+                                                    SELECT uri
+                                                    FROM mutelists
+                                                    WHERE did = $1)""", ident)
 
                     # Insert the new mutelist entries
                     await connection.executemany(
-                        """INSERT INTO {} (did, cid, date_added) VALUES ($1, $2, $3)""".format(
+                        """INSERT INTO {} (list, cid, did, date_added) VALUES ($1, $2, $3, $4)""".format(
                             setup.mute_lists_users_table),
                         records_to_insert
                     )
@@ -761,6 +860,21 @@ async def create_blocklist_temporary_table():
         logger.error("Error creating temporary table: %s", e)
 
 
+async def create_mutelist_temporary_table():
+    try:
+        logger.info("Creating mutelist temp table.")
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                query = """
+                CREATE TABLE IF NOT EXISTS mute_temporary_table (
+                    last_processed_did text PRIMARY KEY
+                )
+                """
+                await connection.execute(query)
+    except Exception as e:
+        logger.error("Error creating temporary table: %s", e)
+
+
 async def update_24_hour_block_list_table(entries, list_type):
     try:
         async with connection_pool.acquire() as connection:
@@ -855,6 +969,16 @@ async def delete_blocklist_temporary_table():
         logger.error("Error deleting temporary table: %s", e)
 
 
+async def delete_mutelist_temporary_table():
+    try:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                query = "DROP TABLE IF EXISTS block_temporary_table"
+                await connection.execute(query)
+    except Exception as e:
+        logger.error("Error deleting temporary table: %s", e)
+
+
 async def delete_temporary_table():
     try:
         async with connection_pool.acquire() as connection:
@@ -884,6 +1008,20 @@ async def update_blocklist_temporary_table(last_processed_did):
 
                 # Insert the new row with the given last_processed_did
                 query = "INSERT INTO block_temporary_table (last_processed_did) VALUES ($1)"
+                await connection.execute(query, last_processed_did)
+    except Exception as e:
+        logger.error("Error updating temporary table: %s", e)
+
+
+async def update_mutelist_temporary_table(last_processed_did):
+    try:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                # Delete the existing row if it exists
+                await connection.execute("TRUNCATE mute_temporary_table")
+
+                # Insert the new row with the given last_processed_did
+                query = "INSERT INTO mute_temporary_table (last_processed_did) VALUES ($1)"
                 await connection.execute(query, last_processed_did)
     except Exception as e:
         logger.error("Error updating temporary table: %s", e)

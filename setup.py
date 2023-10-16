@@ -54,8 +54,10 @@ async def create_db():
 
                 create_mute_lists_table = """
                 CREATE TABLE IF NOT EXISTS {} (
+                    uri text,
                     did text,
                     cid text primary key,
+                    name text,
                     created_date text,
                     description text
                 )
@@ -63,6 +65,7 @@ async def create_db():
 
                 create_mute_list_users_table = """
                 CREATE TABLE IF NOT EXISTS {} (
+                    list text,
                     cid text primary key,
                     did text,
                     date_added text

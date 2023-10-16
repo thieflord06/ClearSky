@@ -15,6 +15,7 @@ import app
 # python update_manager.py --retrieve-blocklists-db // initial/re-initialize get for blocklists database
 # python update_manager.py --update-users-dids // update db with new dids and handles
 # python update_manager.py --update-redis-cache // update handles in redis
+# python update_manager.py --retrieve-mutelists-db // initial/re-initialize get for mutelists database
 
 
 async def main():
@@ -26,6 +27,7 @@ async def main():
     parser.add_argument('--retrieve-blocklists-db', action='store_true', help='Initial/re-initialize get for blocklists database')
     parser.add_argument('--update-users-dids', action='store_true', help='update db with new dids and handles')
     parser.add_argument('--update-redis-cache', action='store_true', help='Update the redis cache')
+    parser.add_argument('--retrieve-mutelists-db', action='store_true', help='Initial/re-initialize get for mutelists database')
     args = parser.parse_args()
 
     await database_handler.create_connection_pool()  # Creates connection pool for db
@@ -169,6 +171,12 @@ async def main():
         logger.info("Get Blocklists db requested.")
         await database_handler.update_all_blocklists()
         await database_handler.delete_blocklist_temporary_table()
+        logger.info("Blocklist db fetch finished.")
+        sys.exit()
+    elif args.retrieve_mutelists_db:
+        logger.info("Get Mutelists db requested.")
+        await database_handler.update_all_mutelists()
+        await database_handler.delete_mutelist_temporary_table()
         logger.info("Blocklist db fetch finished.")
         sys.exit()
     elif args.update_blocklists_db:
