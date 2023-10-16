@@ -400,8 +400,10 @@ async def update_blocklists_batch(batch_dids):
 
     for did in batch_dids:
         try:
-            # Logic to retrieve block list for the current DID
+            # Logic to retrieve block list and mutelists for the current DID
             blocked_users, block_dates = await utils.get_user_block_list(did)
+            mutelists_data, mutelists_users_data = await utils.get_user_mutelists(did)
+
             if blocked_users and block_dates:
                 # Update the blocklists table in the database with the retrieved data
                 await update_blocklist_table(did, blocked_users, block_dates)
@@ -409,6 +411,18 @@ async def update_blocklists_batch(batch_dids):
                 logger.debug(f"Updated block list for DID: {did}")
             else:
                 logger.debug(f"didn't update no blocks: {did}")
+                continue
+
+            if mutelists_data:
+                # Update the mutelist tables in the database with the retrieved data
+                await update_mutelist_tables(did, mutelists_data, mutelists_users_data)
+
+                if not blocked_users and block_dates:
+                    total_blocks_updated += 1
+
+                logger.debug(f"Updated mute lists for DID: {did}")
+            else:
+                logger.debug(f"didn't update no mutelists: {did}")
                 continue
         except Exception as e:
             logger.error(f"Error updating block list for DID {did}: {e}")
@@ -512,6 +526,83 @@ async def update_blocklist_table(ident, blocked_by_list, block_date):
                 )
             else:
                 logger.debug("Blocklist not updated already exists.")
+
+
+async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data):
+    if not mutelists_data:
+        return
+
+    async with connection_pool.acquire() as connection:
+        async with connection.transaction():
+
+            # Retrieve the existing blocklist entries for the specified ident
+            existing_records = await connection.fetch(
+                'SELECT did, cid FROM {} WHERE did = $1'.format(setup.mute_lists_table), ident
+            )
+
+            existing_mutelist_entries = {(record['did'], record['cid']) for record in existing_records}
+            logger.debug("Existing entires " + ident + ": " + str(existing_mutelist_entries))
+
+            # Create a list of tuples containing the data to be inserted
+            records_to_insert = [
+                (record["did"], record["cid"], record["created_at"].strftime('%Y-%m-%d'), record["description"])
+                for record in mutelists_data]
+
+            # Convert the new mutelist entries to a set for comparison
+            new_mutelist_entries = {(record[1], record[2]) for record in records_to_insert}
+            logger.debug("New mutelist entries for " + ident + ": " + str(new_mutelist_entries))
+
+            # Check if there are differences between the existing and new mutelist entries
+            if existing_mutelist_entries != new_mutelist_entries:
+                # Delete existing mutelist entries for the specified ident
+                await connection.execute('DELETE FROM {} WHERE did = $1'.format(setup.mute_lists_table), ident)
+
+                # Insert the new mutelist entries
+                await connection.executemany(
+                    """INSERT INTO {} (did, cid, created_date, description) VALUES ($1, $2, $3, $4)""".format(setup.mute_lists_table),
+                    records_to_insert
+                )
+            else:
+                logger.debug("Mutelist not updated; already exists.")
+
+            if mutelists_users_data:
+                # Retrieve the existing blocklist entries for the specified ident
+                existing_users_records = await connection.fetch(
+                    """SELECT mu.did, mu.cid
+                        FROM mutelists_users as mu
+                        JOIN mutelists AS ml
+                        ON mu.cid = ml.cid
+                        WHERE ml.did = $1""", ident
+                )
+
+                existing_mutelist_users_entries = {(record['did'], record['cid']) for record in existing_users_records}
+                logger.debug("Existing entires " + ident + ": " + str(existing_mutelist_users_entries))
+
+                # Create a list of tuples containing the data to be inserted
+                records_to_insert = [
+                    (record["did"], record["cid"], record["date_added"].strftime('%Y-%m-%d'))
+                    for record in mutelists_users_data]
+
+                # Convert the new mutelist entries to a set for comparison
+                new_mutelist_users_entries = {(record[1], record[2]) for record in records_to_insert}
+                logger.debug("New mutelist entries for " + ident + ": " + str(new_mutelist_users_entries))
+
+                # Check if there are differences between the existing and new mutelist entries
+                if existing_mutelist_users_entries != new_mutelist_users_entries:
+                    # Delete existing mutelist entries for the specified ident
+                    await connection.execute("""DELETE FROM mutelists_users as mu
+                                                JOIN mutelists AS ml
+                                                ON mu.cid = ml.cid
+                                                WHERE ml.did = $1""", ident)
+
+                    # Insert the new mutelist entries
+                    await connection.executemany(
+                        """INSERT INTO {} (did, cid, date_added) VALUES ($1, $2, $3)""".format(
+                            setup.mute_lists_users_table),
+                        records_to_insert
+                    )
+                else:
+                    logger.debug("Mutelist not updated; already exists.")
 
 
 async def does_did_and_handle_exist_in_database(did, handle):

@@ -12,6 +12,8 @@ users_table = "users"
 blocklist_table = "blocklists"
 top_blocks_table = "top_block"
 top_24_blocks_table = "top_twentyfour_hour_block"
+mute_lists_table = "mutelists"
+mute_lists_users_table = "mutelists_users"
 
 
 async def create_db():
@@ -50,10 +52,29 @@ async def create_db():
                 )
                 """.format(top_24_blocks_table)
 
+                create_mute_lists_table = """
+                CREATE TABLE IF NOT EXISTS {} (
+                    did text,
+                    cid text primary key,
+                    created_date text,
+                    description text
+                )
+                """.format(mute_lists_table)
+
+                create_mute_list_users_table = """
+                CREATE TABLE IF NOT EXISTS {} (
+                    cid text primary key,
+                    did text,
+                    date_added text
+                )
+                """.format(mute_lists_users_table)
+
                 await connection.execute(create_users_table)
                 await connection.execute(create_blocklists_table)
                 await connection.execute(create_top_blocks_table)
                 await connection.execute(create_top_24_blocks_table)
+                await connection.execute(create_mute_lists_table)
+                await connection.execute(create_mute_list_users_table)
 
                 logger.info("tables created")
     except Exception as e:
