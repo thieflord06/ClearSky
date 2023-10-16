@@ -177,7 +177,7 @@ async def main():
         logger.info("Get Mutelists db requested.")
         await database_handler.update_all_mutelists()
         await database_handler.delete_mutelist_temporary_table()
-        logger.info("Blocklist db fetch finished.")
+        logger.info("Mutelists db fetch finished.")
         sys.exit()
     elif args.update_blocklists_db:
         logger.info("Update Blocklists db requested.")
