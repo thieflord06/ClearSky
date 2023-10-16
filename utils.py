@@ -738,8 +738,15 @@ async def get_mutelists(ident):
                         logger.error("error: " + str(ve))
                         continue
 
+                    parts = uri.split('/')
+                    list_id = parts[-1]
+
+                    list_base_url = "https://bsky.app/profile"
+                    list_full_url = f"""{list_base_url}/{ident}/lists/{list_id}"""
+
                     # Create a dictionary to store this record's data
                     record_data = {
+                        "url": list_full_url,
                         "uri": uri,
                         "did": ident,
                         "cid": cid,

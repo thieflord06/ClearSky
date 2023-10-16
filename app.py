@@ -1,4 +1,5 @@
 # app.py
+import json
 import sys
 import quart
 from quart import Quart, render_template, request, session, redirect, jsonify
@@ -109,7 +110,7 @@ async def selection_handle():
     identifier = identifier.strip()
     identifier = identifier.replace('@', '')
 
-    if selection in ['1', '2', '3', '4', '5', '6', '8']:
+    if selection in ['1', '2', '3', '4', '5', '6', '8', '9']:
         # if selection in ['4', '3', '5', '6']:
         #     if not db_connected:
         #         logger.error("Database connection is not live.")
@@ -356,6 +357,16 @@ async def selection_handle():
 
                     return await render_template('handle_history.html', handle_history=handle_history,
                                                  identity=identifier)
+                elif selection == "9":
+                    logger.info(f"Requesting mute list lookup for: {identifier}")
+
+                    mute_lists = await database_handler.get_mutelists(did_identifier)
+                    data = json.loads(mute_lists)
+
+                    logger.debug(mute_lists)
+
+                    return await render_template('mutelist.html', user=handle_identifier, mute_lists=data)
+
         else:
             logger.info(f"Error page loaded because {identifier} isn't a did or handle")
 
@@ -1040,9 +1051,9 @@ async def first_run():
             tables = await database_handler.tables_exists()
 
             if tables:
-                await database_handler.blocklists_updater()
-                await database_handler.top_24blocklists_updater()
-                await utils.update_block_statistics()
+                # await database_handler.blocklists_updater()
+                # await database_handler.top_24blocklists_updater()
+                # await utils.update_block_statistics()
 
                 break
             else:

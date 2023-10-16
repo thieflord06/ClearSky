@@ -643,11 +643,11 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data):
 
             # Create a list of tuples containing the data to be inserted
             records_to_insert = [
-                (record["uri"], record["did"], record["cid"], record["name"], record["created_at"].strftime('%Y-%m-%d'), record["description"])
+                (record["url"], record["uri"], record["did"], record["cid"], record["name"], record["created_at"].strftime('%Y-%m-%d'), record["description"])
                 for record in mutelists_data]
 
             # Convert the new mutelist entries to a set for comparison
-            new_mutelist_entries = {(record[0], record[1]) for record in records_to_insert}
+            new_mutelist_entries = {(record[1], record[2]) for record in records_to_insert}
             logger.debug("New mutelist entries for " + ident + ": " + str(new_mutelist_entries))
 
             # Check if there are differences between the existing and new mutelist entries
@@ -657,7 +657,7 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data):
 
                 # Insert the new mutelist entries
                 await connection.executemany(
-                    """INSERT INTO {} (uri, did, cid, name, created_date, description) VALUES ($1, $2, $3, $4, $5, $6)""".format(setup.mute_lists_table),
+                    """INSERT INTO {} (url, uri, did, cid, name, created_date, description) VALUES ($1, $2, $3, $4, $5, $6, $7)""".format(setup.mute_lists_table),
                     records_to_insert
                 )
             else:
@@ -1503,6 +1503,29 @@ async def top_24blocklists_updater():
     top_24_blocks_start_time = None
 
     return top_blocked_24, top_blockers_24, blocked_aid_24, blocker_aid_24
+
+
+async def get_mutelists(ident):
+    async with connection_pool.acquire() as connection:
+        async with connection.transaction():
+            query = """
+                            SELECT json_agg(jsonb_build_object(
+                            'url', ml.url,
+                            'creator', u.handle, -- Replace ml.did with u.handle
+                            'status', u.status,
+                            'list_name', ml.name,
+                            'description', ml.description,
+                            'list_created_date', ml.created_date,
+                            'date_user_added', mu.date_added
+                        )) AS mutelists
+                        FROM mutelists AS ml
+                        INNER JOIN mutelists_users AS mu ON ml.uri = mu.list
+                        INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle
+                        WHERE mu.did = $1
+                        """
+            mute_lists = await connection.fetchval(query, ident)
+
+            return mute_lists
 
 
 async def wait_for_redis():
