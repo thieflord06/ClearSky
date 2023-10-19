@@ -1464,7 +1464,10 @@ async def blocklists_updater():
 
     last_update_top_block = datetime.now()
     end_time = datetime.now()
-    top_blocks_process_time = end_time - top_blocks_start_time
+
+    if top_blocks_start_time is not None:
+        top_blocks_process_time = end_time - top_blocks_start_time
+
     top_blocks_start_time = None
 
     return top_blocked, top_blockers, blocked_aid, blocker_aid
@@ -1499,7 +1502,10 @@ async def top_24blocklists_updater():
 
     last_update_top_24_block = datetime.now()
     end_time = datetime.now()
-    top_24_blocks_process_time = end_time - top_24_blocks_start_time
+
+    if top_24_blocks_start_time is not None:
+        top_24_blocks_process_time = end_time - top_24_blocks_start_time
+
     top_24_blocks_start_time = None
 
     return top_blocked_24, top_blockers_24, blocked_aid_24, blocker_aid_24
