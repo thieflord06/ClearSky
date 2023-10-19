@@ -80,7 +80,7 @@ async def resolve_did(did):  # Take DID and get handle
                     if "RateLimit Exceeded" in stripped_record:
                         stripped_record = did
 
-                    return stripped_record
+                        return stripped_record
                 elif response.status_code == 429:
                     logger.warning("Too many requests, pausing.")
                     await asyncio.sleep(60)
