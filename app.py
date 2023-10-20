@@ -111,6 +111,10 @@ async def selection_handle():
     identifier = identifier.replace('@', '')
 
     if selection in ['1', '2', '3', '4', '5', '6', '8', '9']:
+        if selection == "9":
+            logger.info("Mutelist requested.")
+
+            return await render_template('coming_soon.html')
         # if selection in ['4', '3', '5', '6']:
         #     if not db_connected:
         #         logger.error("Database connection is not live.")
