@@ -167,14 +167,17 @@ async def selection_handle():
                 else:
                     handle_identifier = identifier
                     did_identifier = await utils.get_user_did(identifier)
+            if did_identifier and handle_identifier:
+                pass
+            else:
+                if did_identifier is None:
+                    did_identifier = await utils.get_user_handle(identifier)
+                elif handle_identifier is None:
+                    handle_identifier = await utils.get_user_handle(identifier)
 
-            if did_identifier is None or handle_identifier is None:
-                logger.warning(f"resolution failure: {identifier}")
-
-                return await render_template('error.html')
-            if selection not in ['1', '2']:
                 try:
                     persona, status = await utils.identifier_exists_in_db(identifier)
+                    logger.debug(f"persona: {persona} status: {status}")
                 except AttributeError:
                     logger.error("db connection issue.")
 
@@ -183,14 +186,13 @@ async def selection_handle():
                 if persona is True and status is True:
                     pass
                 elif persona is True and status is False:
-                    if selection not in ['1', '2']:
-                        logger.info(f"Account: {identifier} deleted")
+                    logger.info(f"Account: {identifier} deleted")
 
-                        return await render_template('account_deleted.html', account=identifier)
+                    return await render_template('account_deleted.html', account=identifier)
                 elif status is False and persona is False:
                     logger.info(f"{identifier}: does not exist.")
 
-                    return await render_template('no_longer_exists.html')
+                    return await render_template('error.html')
                 else:
                     logger.info(f"Error page loaded for resolution failure using: {identifier}")
 
@@ -1061,9 +1063,9 @@ async def first_run():
             tables = await database_handler.tables_exists()
 
             if tables:
-                await database_handler.blocklists_updater()
-                await database_handler.top_24blocklists_updater()
-                await utils.update_block_statistics()
+                # await database_handler.blocklists_updater()
+                # await database_handler.top_24blocklists_updater()
+                # await utils.update_block_statistics()
 
                 break
             else:
