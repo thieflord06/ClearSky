@@ -149,6 +149,7 @@ async def selection_handle():
             logger.warning(f"Intentional error. | {str(session_ip)} > " + str(*session.values()))
 
             return await render_template('intentional_error.html')
+
         # Check if did or handle exists before processing
         if utils.is_did(identifier) or utils.is_handle(identifier):
             if utils.is_did(identifier):
@@ -162,6 +163,7 @@ async def selection_handle():
                 else:
                     did_identifier = identifier
                     handle_identifier = await utils.get_user_handle(identifier)
+
             if utils.is_handle(identifier):
                 if not await database_handler.local_db():
                     try:
@@ -173,6 +175,7 @@ async def selection_handle():
                 else:
                     handle_identifier = identifier
                     did_identifier = await utils.get_user_did(identifier)
+
             if did_identifier and handle_identifier:
                 pass
             else:
@@ -208,6 +211,7 @@ async def selection_handle():
                 if not identifier:
 
                     return await render_template('error.html')
+
                 if selection == "1":
                     logger.info(str(session_ip) + " > " + str(
                         *session.values()) + ": " + "DID resolve request made for: " + identifier)
