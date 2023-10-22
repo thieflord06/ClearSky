@@ -127,6 +127,7 @@ async def selection_handle():
             try:
                 active_count = await utils.get_user_count(get_active=True)
                 total_count = await utils.get_user_count(get_active=False)
+                deleted_count = await utils.get_deleted_users_count()
             except AttributeError:
                 logger.error("db connection issue.")
 
@@ -134,11 +135,15 @@ async def selection_handle():
 
             formatted_active_count = '{:,}'.format(active_count)
             formatted_total_count = '{:,}'.format(total_count)
+            formatted_deleted_count = '{:,}'.format(deleted_count)
 
             logger.info(f"{session_ip} > {str(*session.values())} | total users count: {formatted_total_count}")
             logger.info(f"{session_ip} > {str(*session.values())} | total active users count: {formatted_active_count}")
+            logger.info(f"{session_ip} > {str(*session.values())} | total deleted users count: {formatted_deleted_count}")
 
-            return await render_template('total_users.html', active_count=formatted_active_count, total_count=formatted_total_count)
+            return await render_template('total_users.html', active_count=formatted_active_count,
+                                         total_count=formatted_total_count, deleted_count=formatted_deleted_count)
+
         if not identifier:  # If form is submitted without anything in the identifier return intentional error
             logger.warning(f"Intentional error. | {str(session_ip)} > " + str(*session.values()))
 

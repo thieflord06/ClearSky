@@ -376,6 +376,13 @@ async def get_user_count(get_active=True):
         return count
 
 
+async def get_deleted_users_count():
+    async with database_handler.connection_pool.acquire() as connection:
+        count = await connection.fetchval('SELECT COUNT(*) FROM USERS WHERE status is FALSE')
+
+        return count
+
+
 async def get_single_user_blocks(ident, limit=100, offset=0):
     try:
         # Execute the SQL query to get all the user_dids that have the specified did/ident in their blocklist
