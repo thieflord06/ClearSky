@@ -249,6 +249,11 @@ async def selection_handle():
                     items_per_page = 100
                     offset = (page - 1) * items_per_page
 
+                    if not did_identifier:
+                        message = "Could not find, there may be a typo"
+
+                        return await render_template('no_result.html', user=identifier, message=message)
+
                     blocklist, count = await utils.process_user_block_list(did_identifier, limit=items_per_page, offset=offset)
                     formatted_count = '{:,}'.format(count)
 
@@ -276,7 +281,7 @@ async def selection_handle():
                     items_per_page = 100
                     offset = (page - 1) * items_per_page
 
-                    if "Could not find, there may be a typo" in did_identifier:
+                    if not did_identifier:
                         message = "Could not find, there may be a typo"
 
                         logger.info(str(session_ip) + " > " + str(
@@ -1073,9 +1078,9 @@ async def first_run():
             tables = await database_handler.tables_exists()
 
             if tables:
-                await database_handler.blocklists_updater()
-                await database_handler.top_24blocklists_updater()
-                await utils.update_block_statistics()
+                # await database_handler.blocklists_updater()
+                # await database_handler.top_24blocklists_updater()
+                # await utils.update_block_statistics()
 
                 break
             else:
