@@ -751,10 +751,10 @@ async def add_new_prefixes(handles):
             async with connection.transaction():
                 try:
                     query = """INSERT INTO user_prefixes(handle, prefix1, prefix2, prefix3)
-                                    VALUES(%s,
-                                    SUBSTRING(%s, 1, 1),
-                                    SUBSTRING(%s, 1, 2),
-                                    SUBSTRING(%s, 1, 3)
+                                    VALUES($1,
+                                    SUBSTRING($1, 1, 1),
+                                    SUBSTRING($1, 1, 2),
+                                    SUBSTRING($1, 1, 3)
                                     );"""
 
                     await connection.execute(query, handle)
