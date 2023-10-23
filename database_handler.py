@@ -745,6 +745,23 @@ async def update_user_handles(handles_to_update):
         logger.info(f"Updated {len(handles_to_update)} handles in the database.")
 
 
+async def add_new_prefixes(handles):
+    for handle in handles:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                try:
+                    query = """INSERT INTO user_prefixes(handle, prefix1, prefix2, prefix3)
+                                    VALUES(%s,
+                                    SUBSTRING(%s, 1, 1),
+                                    SUBSTRING(%s, 1, 2),
+                                    SUBSTRING(%s, 1, 3)
+                                    );"""
+
+                    await connection.execute(query, handle)
+                except Exception as e:
+                    logger.error(f"Error updating prefixes: {e}")
+
+
 async def process_batch(batch_dids, ad_hoc, table, batch_size):
     batch_handles_and_dids = await utils.fetch_handles_batch(batch_dids, ad_hoc)
     logger.info("Batch resolved.")
@@ -768,6 +785,7 @@ async def process_batch(batch_dids, ad_hoc, table, batch_size):
                 handles_to_update.append((did, handle))
 
         if handles_to_update:
+            only_handles = []
             while True:
                 try:
                     # Update the database with the batch of handles
@@ -777,26 +795,32 @@ async def process_batch(batch_dids, ad_hoc, table, batch_size):
                             await update_user_handles(handles_to_update)
                             total_handles_updated += len(handles_to_update)
 
-                    logger.info("inserting batch into redis")
-                    handles_by_level = defaultdict(list)
+                    for did, handle in handles_to_update:
+                        only_handles.append(handle)
+
+                    logger.info("Adding new prefixes.")
+                    await add_new_prefixes(only_handles)
+
+                    # logger.info("inserting batch into redis")
+                    # handles_by_level = defaultdict(list)
 
                     # Organize handles into a trie-like structure
-                    for did, handle in handles_to_update:
-                        # handle = row['handle']
-                        logger.debug(str(handle))
-                        if handle:  # Check if handle is not empty
-                            # Group handles by level, e.g., {"a": ["abc", "ade"], "ab": ["abc"]}
-                            for i in range(1, len(handle) + 1):
-                                prefix = handle[:i]
-                                handles_by_level[prefix].append(handle)
+                    # for did, handle in handles_to_update:
+                    #     # handle = row['handle']
+                    #     logger.debug(str(handle))
+                    #     if handle:  # Check if handle is not empty
+                    #         # Group handles by level, e.g., {"a": ["abc", "ade"], "ab": ["abc"]}
+                    #         for i in range(1, len(handle) + 1):
+                    #             prefix = handle[:i]
+                    #             handles_by_level[prefix].append(handle)
 
                     # Store handles in Redis ZSETs by level
-                    async with redis_conn as pipe:
-                        for prefix, handles in handles_by_level.items():
-                            zset_key = f"handles:{prefix}"
-                            # Create a dictionary with new handles as members and scores (use 0 for simplicity)
-                            zset_data = {handle: 0 for handle in handles}
-                            await pipe.zadd(zset_key, zset_data, nx=True)
+                    # async with redis_conn as pipe:
+                    #     for prefix, handles in handles_by_level.items():
+                    #         zset_key = f"handles:{prefix}"
+                    #         # Create a dictionary with new handles as members and scores (use 0 for simplicity)
+                    #         zset_data = {handle: 0 for handle in handles}
+                    #         await pipe.zadd(zset_key, zset_data, nx=True)
 
                     # Update the temporary table with the last processed DID
                     last_processed_did = handle_batch[-1][0]  # Assuming DID is the first element in each tuple
