@@ -74,12 +74,18 @@ async def create_db():
                 )
                 """.format(mute_lists_users_table)
 
+                index_1 = """CREATE INDEX IF NOT EXISTS blocklist_user_did ON blocklists (user_did)"""
+                index_2 = """CREATE INDEX IF NOT EXISTS blocklist_blocked_did ON blocklists (blocked_did)"""
+
                 await connection.execute(create_users_table)
                 await connection.execute(create_blocklists_table)
                 await connection.execute(create_top_blocks_table)
                 await connection.execute(create_top_24_blocks_table)
                 await connection.execute(create_mute_lists_table)
                 await connection.execute(create_mute_list_users_table)
+
+                await connection.execute(index_1)
+                await connection.execute(index_2)
 
                 logger.info("tables created")
     except Exception as e:
