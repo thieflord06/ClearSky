@@ -165,7 +165,6 @@ async def retrieve_autocomplete_handles(query):
     key = f"handles:{query}"
     try:
         matching_handles = await asyncio.wait_for(redis_conn.zrange(key, start=0, end=4), timeout=1.5)  # Fetch the first 5 handles
-
         if matching_handles:
             decoded = [handle.decode('utf-8') for handle in matching_handles]
 
@@ -173,30 +172,22 @@ async def retrieve_autocomplete_handles(query):
 
             return decoded
         else:
-            if app.db_connected:
-                results = await asyncio.wait_for(find_handles(query), timeout=5.0)
+            results = await asyncio.wait_for(find_handles(query), timeout=5.0)
 
-                logger.info("from db, not in redis")
-                if not results:
-                    results = None
+            logger.info("from db, not in redis")
+            if not results:
+                results = None
 
-                return results
-            else:
-
-                return None
+            return results
     except asyncio.TimeoutError:
         # Query the database for autocomplete results
         try:
-            if app.db_connected:
-                results = await asyncio.wait_for(find_handles(query), timeout=5.0)
+            results = await asyncio.wait_for(find_handles(query), timeout=5.0)
 
-                logger.debug("from db, timeout in redis")
-                logger.debug(str(results))
+            logger.debug("from db, timeout in redis")
+            logger.debug(str(results))
 
-                return results
-            else:
-
-                return None
+            return results
         except asyncio.TimeoutError:
             logger.info("not quick enough.")
 
@@ -226,10 +217,34 @@ async def find_handles(value):
     try:
         async with connection_pool.acquire() as connection:
             async with connection.transaction():
-                query_text = "SELECT handle FROM users WHERE lower(handle) LIKE $1 || '%' AND status = TRUE LIMIT 5"
+                logger.debug(f"{value}")
 
-                result = await asyncio.wait_for(connection.fetch(query_text, value), timeout=5.0)
+                value_length = len(value)
 
+                query_text1 = """SELECT handle FROM user_prefixes
+                                WHERE prefix1 = $1
+                                AND handle LIKE $2 || '%'
+                                LIMIT 5"""
+                query_text2 = """SELECT handle FROM user_prefixes
+                                WHERE prefix2 = $1
+                                AND handle LIKE $2 || '%'
+                                LIMIT 5"""
+                query_text3 = """SELECT handle FROM user_prefixes
+                                WHERE prefix3 = $1
+                                AND handle LIKE $2 || '%'
+                                LIMIT 5"""
+
+                if value_length == 1:
+                    prefix = value[0]
+                    result = await asyncio.wait_for(connection.fetch(query_text1, prefix, value), timeout=5.0)
+                elif value_length == 2:
+                    prefix = value[:2]
+                    result = await asyncio.wait_for(connection.fetch(query_text2, prefix, value), timeout=5.0)
+                elif value_length >= 3:
+                    prefix = value[:3]
+                    result = await asyncio.wait_for(connection.fetch(query_text3, prefix, value), timeout=5.0)
+
+                logger.debug("autocomplete fulfilled.")
                 if not result:
 
                     return None
