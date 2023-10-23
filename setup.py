@@ -14,6 +14,7 @@ top_blocks_table = "top_block"
 top_24_blocks_table = "top_twentyfour_hour_block"
 mute_lists_table = "mutelists"
 mute_lists_users_table = "mutelists_users"
+user_prefixes_table = "user_prefixes"
 
 
 async def create_db():
@@ -74,8 +75,18 @@ async def create_db():
                 )
                 """.format(mute_lists_users_table)
 
+                create_user_prefixes = """CREATE TABLE IF NOT EXISTS {} (
+                handle TEXT PRIMARY KEY,
+                prefix1 TEXT NOT NULL,
+                prefix2 TEXT NOT NULL,
+                prefix3 TEXT NOT NULL
+                )""".format(user_prefixes_table)
+
                 index_1 = """CREATE INDEX IF NOT EXISTS blocklist_user_did ON blocklists (user_did)"""
                 index_2 = """CREATE INDEX IF NOT EXISTS blocklist_blocked_did ON blocklists (blocked_did)"""
+                index_3 = """CREATE INDEX idx_user_prefixes_prefix1 ON user_prefixes(prefix1)"""
+                index_4 = """CREATE INDEX idx_user_prefixes_prefix2 ON user_prefixes(prefix2)"""
+                index_5 = """CREATE INDEX idx_user_prefixes_prefix3 ON user_prefixes(prefix3)"""
 
                 await connection.execute(create_users_table)
                 await connection.execute(create_blocklists_table)
@@ -83,9 +94,13 @@ async def create_db():
                 await connection.execute(create_top_24_blocks_table)
                 await connection.execute(create_mute_lists_table)
                 await connection.execute(create_mute_list_users_table)
+                await connection.execute(create_user_prefixes)
 
                 await connection.execute(index_1)
                 await connection.execute(index_2)
+                await connection.execute(index_3)
+                await connection.execute(index_4)
+                await connection.execute(index_5)
 
                 logger.info("tables created")
     except Exception as e:
