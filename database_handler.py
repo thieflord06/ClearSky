@@ -801,27 +801,6 @@ async def process_batch(batch_dids, ad_hoc, table, batch_size):
                     logger.info("Adding new prefixes.")
                     await add_new_prefixes(only_handles)
 
-                    # logger.info("inserting batch into redis")
-                    # handles_by_level = defaultdict(list)
-
-                    # Organize handles into a trie-like structure
-                    # for did, handle in handles_to_update:
-                    #     # handle = row['handle']
-                    #     logger.debug(str(handle))
-                    #     if handle:  # Check if handle is not empty
-                    #         # Group handles by level, e.g., {"a": ["abc", "ade"], "ab": ["abc"]}
-                    #         for i in range(1, len(handle) + 1):
-                    #             prefix = handle[:i]
-                    #             handles_by_level[prefix].append(handle)
-
-                    # Store handles in Redis ZSETs by level
-                    # async with redis_conn as pipe:
-                    #     for prefix, handles in handles_by_level.items():
-                    #         zset_key = f"handles:{prefix}"
-                    #         # Create a dictionary with new handles as members and scores (use 0 for simplicity)
-                    #         zset_data = {handle: 0 for handle in handles}
-                    #         await pipe.zadd(zset_key, zset_data, nx=True)
-
                     # Update the temporary table with the last processed DID
                     last_processed_did = handle_batch[-1][0]  # Assuming DID is the first element in each tuple
                     logger.debug("Last processed DID: " + str(last_processed_did))
