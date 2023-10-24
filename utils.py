@@ -296,7 +296,8 @@ async def update_block_statistics():
 
     end_time = datetime.now()
 
-    block_stats_process_time = end_time - block_stats_start_time
+    if block_stats_start_time is not None:
+        block_stats_process_time = end_time - block_stats_start_time
     block_stats_last_update = end_time
     block_stats_start_time = None
 
