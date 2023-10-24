@@ -20,7 +20,7 @@
                         {{ item.handle }}
                         {% endif %}
                     </td>
-                    <td class="date">{{ item.blocked_date|strftime('%Y-%m-%d %H:%M:%S %Z') }}</td>
+                    <td class="date">{{ item.blocked_date.strftime('%Y-%m-%d %I:%M:%S %p') }}</td>
                 </tr>
                 {% endfor %}
             </table>
