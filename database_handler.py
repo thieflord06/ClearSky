@@ -504,11 +504,11 @@ async def update_blocklists_batch(batch_dids):
     for did in batch_dids:
         try:
             # Logic to retrieve block list and mutelists for the current DID
-            blocked_users, block_dates = await utils.get_user_block_list(did)
+            blocked_data = await utils.get_user_block_list(did)
 
-            if blocked_users and block_dates:
+            if blocked_data:
                 # Update the blocklists table in the database with the retrieved data
-                await update_blocklist_table(did, blocked_users, block_dates)
+                await update_blocklist_table(did, blocked_data)
                 total_blocks_updated += 1  # Increment the counter for updated block lists
 
                 logger.debug(f"Updated block list for DID: {did}")
@@ -610,35 +610,37 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
         return records
 
 
-async def update_blocklist_table(ident, blocked_by_list, block_date):
-    if not blocked_by_list:
+async def update_blocklist_table(ident, blocked_data):
+    if not blocked_data:
         return
 
     async with connection_pool.acquire() as connection:
         async with connection.transaction():
             # Retrieve the existing blocklist entries for the specified ident
             existing_records = await connection.fetch(
-                'SELECT blocked_did, block_date FROM blocklists WHERE user_did = $1', ident
+                'SELECT cid FROM blocklists WHERE user_did = $1', ident
             )
-            existing_blocklist_entries = {(record['blocked_did'], record['block_date']) for record in existing_records}
+            existing_blocklist_entries = {record for record in existing_records}
             logger.debug("Existing entires " + ident + ": " + str(existing_blocklist_entries))
 
             # Prepare the data to be inserted into the database
-            data = [(ident, blocked_did, date.strftime('%Y-%m-%d')) for blocked_did, date in zip(blocked_by_list, block_date)]
+            data = [(ident, subject, created_date, uri, cid) for subject, created_date, uri, cid in blocked_data]
             logger.debug("Data to be inserted: " + str(data))
 
             # Convert the new blocklist entries to a set for comparison
-            new_blocklist_entries = {(record[1], record[2]) for record in data}
+            new_blocklist_entries = {record[4] for record in data}
             logger.debug("new blocklist entry " + ident + " : " + str(new_blocklist_entries))
 
+            differences = new_blocklist_entries - existing_blocklist_entries
+
             # Check if there are differences between the existing and new blocklist entries
-            if existing_blocklist_entries != new_blocklist_entries:
+            if differences:
                 # Delete existing blocklist entries for the specified ident
                 await connection.execute('DELETE FROM blocklists WHERE user_did = $1', ident)
 
                 # Insert the new blocklist entries
                 await connection.executemany(
-                    'INSERT INTO blocklists (user_did, blocked_did, block_date) VALUES ($1, $2, $3) ON CONFLICT (user_did, blocked_did) DO NOTHING', data
+                    'INSERT INTO blocklists (user_did, blocked_did, block_date, cid, uri) VALUES ($1, $2, $3, $5, $4) ON CONFLICT (user_did, blocked_did) DO NOTHING', data
                 )
             else:
                 logger.debug("Blocklist not updated already exists.")

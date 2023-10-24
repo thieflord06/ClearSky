@@ -423,8 +423,7 @@ async def get_user_block_list(ident):
     base_url = "https://bsky.social/xrpc/"
     collection = "app.bsky.graph.block"
     limit = 100
-    blocked_users = []
-    created_dates = []
+    blocked_data = []
     cursor = None
     retry_count = 0
     max_retries = 5
@@ -467,30 +466,10 @@ async def get_user_block_list(ident):
                 value = record.get("value", {})
                 subject = value.get("subject")
                 created_at_value = value.get("createdAt")
-                if subject:
-                    blocked_users.append(subject)
-                else:
-                    logger.info(f"didn't update no blocks: {ident}")
-                    continue
-                if created_at_value:
-                    try:  # Have to check for different time formats in blocklists :/
-                        if '.' in created_at_value and 'Z' in created_at_value:
-                            # If the value contains fractional seconds and 'Z' (UTC time)
-                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S.%fZ").date()
-                        elif '.' in created_at_value:
-                            # If the value contains fractional seconds (but no 'Z' indicating time zone)
-                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S.%f").date()
-                        elif 'Z' in created_at_value:
-                            # If the value has 'Z' indicating UTC time (but no fractional seconds)
-                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%SZ").date()
-                        else:
-                            # If the value has no fractional seconds and no 'Z' indicating time zone
-                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S").date()
-                    except ValueError as ve:
-                        logger.warning("No date in blocklist for: " + str(ident) + " | " + str(full_url))
-                        logger.error("error: " + str(ve))
-                        continue
-                    created_dates.append(created_date)
+                uri = value.get("uri")
+                cid = value.get("cid")
+
+                blocked_data.append((subject, created_at_value, uri, cid))
 
             cursor = response_json.get("cursor")
             if not cursor:
@@ -516,11 +495,11 @@ async def get_user_block_list(ident):
     if retry_count == max_retries:
         logger.warning("Could not get block list for: " + ident)
         pass
-    if not blocked_users and retry_count != max_retries:
+    if not blocked_data and retry_count != max_retries:
 
-        return [], []
+        return []
 
-    return blocked_users, created_dates
+    return blocked_data
 
 
 async def process_user_block_list(ident, limit, offset):
