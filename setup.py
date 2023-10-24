@@ -33,7 +33,9 @@ async def create_db():
                 CREATE TABLE IF NOT EXISTS {} (
                     user_did text,
                     blocked_did text,
-                    block_date timestamp,
+                    block_date timestamptz,
+                    cid text,
+                    uri text,
                     CONSTRAINT unique_blocklist_entry UNIQUE (user_did, blocked_did)
                 )
                 """.format(blocklist_table)
