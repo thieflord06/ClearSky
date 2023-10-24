@@ -244,6 +244,11 @@ table td {
   margin-bottom: 10px;
 }
 
+#mute-list {
+    position: relative;
+    padding-bottom: 20px; /* Add some bottom padding to create space for the button */
+}
+
 /* styles for mobile */
 @media (max-width: 480px) {
     .result-container {
@@ -338,6 +343,22 @@ table td {
         font-size: 30px;
         text-align: center;
         margin-top: 20px;
+    }
+
+    .creator, .list_name, description {
+        white-space: pre-line;
+        max-width: none;
+        text-overflow: clip;
+        word-wrap: break-word;
+    }
+
+    #mute-list {
+        position: relative;
+        padding-bottom: 20px; /* Add some bottom padding to create space for the button */
+    }
+
+    #go-back-button {
+        bottom: 10px; /* Adjust the distance from the bottom as needed */
     }
 
     #go-back-button {
