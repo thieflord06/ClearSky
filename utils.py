@@ -490,7 +490,8 @@ async def get_user_block_list(ident):
                 message = response.json()["message"]
                 if error_message == "InvalidRequest" and "Could not find repo" in message:
                     logger.warning("Could not find repo: " + str(ident))
-                    return ["no repo"], []
+
+                    return None
             except KeyError:
                 pass
         else:
