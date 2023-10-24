@@ -467,13 +467,15 @@ async def get_user_block_list(ident):
                 subject = value.get("subject")
                 created_at_value = value.get("createdAt")
                 timestamp = datetime.fromisoformat(created_at_value)
-                uri = value.get("uri")
-                cid = value.get("cid")
+                uri = record.get("uri")
+                cid = record.get("cid")
+
+                logger.debug(f"subject: {subject} created: {timestamp} uri: {uri} cid: {cid}")
 
                 if subject and timestamp and uri and cid:
                     blocked_data.append((subject, timestamp, uri, cid))
                 else:
-                    continue
+                    return None
 
             cursor = response_json.get("cursor")
 
@@ -497,14 +499,15 @@ async def get_user_block_list(ident):
             await asyncio.sleep(5)
             continue
 
+        logger.debug(blocked_data)
+        return blocked_data
+
     if retry_count == max_retries:
         logger.warning("Could not get block list for: " + ident)
         pass
     if not blocked_data and retry_count != max_retries:
 
-        return []
-
-    return blocked_data
+        return None
 
 
 async def process_user_block_list(ident, limit, offset):
