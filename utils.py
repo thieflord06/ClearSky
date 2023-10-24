@@ -466,13 +466,17 @@ async def get_user_block_list(ident):
                 value = record.get("value", {})
                 subject = value.get("subject")
                 created_at_value = value.get("createdAt")
-                timestamp = datetime.fromisoformat(created_at_value).timestamp()
+                timestamp = datetime.fromisoformat(created_at_value)
                 uri = value.get("uri")
                 cid = value.get("cid")
 
-                blocked_data.append((subject, timestamp, uri, cid))
+                if subject and timestamp and uri and cid:
+                    blocked_data.append((subject, timestamp, uri, cid))
+                else:
+                    continue
 
             cursor = response_json.get("cursor")
+
             if not cursor:
                 break
         elif response.status_code == 429:
