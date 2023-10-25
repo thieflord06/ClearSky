@@ -993,7 +993,7 @@ async def delete_mutelist_temporary_table():
     try:
         async with connection_pool.acquire() as connection:
             async with connection.transaction():
-                query = "DROP TABLE IF EXISTS block_temporary_table"
+                query = "DROP TABLE IF EXISTS mute_temporary_table"
                 await connection.execute(query)
     except Exception as e:
         logger.error("Error deleting temporary table: %s", e)
