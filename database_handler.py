@@ -620,7 +620,7 @@ async def update_blocklist_table(ident, blocked_data):
             existing_records = await connection.fetch(
                 'SELECT cid FROM blocklists WHERE user_did = $1', ident
             )
-            existing_blocklist_entries = {record for record in existing_records}
+            existing_blocklist_entries = {record['cid'] for record in existing_records}
             logger.debug("Existing entires " + ident + ": " + str(existing_blocklist_entries))
 
             # Prepare the data to be inserted into the database
@@ -631,17 +631,23 @@ async def update_blocklist_table(ident, blocked_data):
             new_blocklist_entries = {record[4] for record in data}
             logger.debug("new blocklist entry " + ident + " : " + str(new_blocklist_entries))
 
-            differences = new_blocklist_entries - existing_blocklist_entries
+            # Calculate the differences
+            to_insert = new_blocklist_entries - existing_blocklist_entries
+            to_delete = existing_blocklist_entries - new_blocklist_entries
 
-            # Check if there are differences between the existing and new blocklist entries
-            if differences:
-                # Delete existing blocklist entries for the specified ident
-                await connection.execute('DELETE FROM blocklists WHERE user_did = $1', ident)
+            # Delete existing blocklist entries that are not in the new list
+            if to_delete:
+                await connection.execute('DELETE FROM blocklists WHERE user_did = $1 AND cid = ANY($2::text[])', ident, list(to_delete))
+                logger.debug(f"Blocks deleted for: {ident}")
 
+            if to_insert:
                 # Insert the new blocklist entries
+                insert_data = [(ident, subject, created_date, uri, cid) for subject, created_date, uri, cid in
+                               blocked_data if cid in to_insert]
                 await connection.executemany(
-                    'INSERT INTO blocklists (user_did, blocked_did, block_date, cid, uri) VALUES ($1, $2, $3, $5, $4) ON CONFLICT (user_did, blocked_did) DO NOTHING', data
+                    'INSERT INTO blocklists (user_did, blocked_did, block_date, cid, uri) VALUES ($1, $2, $3, $5, $4) ON CONFLICT (user_did, blocked_did) DO NOTHING', insert_data
                 )
+                logger.debug(f"Blocks added for: {ident}")
             else:
                 logger.debug("Blocklist not updated already exists.")
 
