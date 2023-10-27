@@ -633,17 +633,14 @@ async def update_blocklist_table(ident, blocked_data):
 
             # Calculate the differences
             to_insert = new_blocklist_entries - existing_blocklist_entries
-            to_delete = existing_blocklist_entries - new_blocklist_entries
 
-            # Delete existing blocklist entries that are not in the new list
-            if to_delete:
-                await connection.execute('DELETE FROM blocklists WHERE user_did = $1 AND cid = ANY($2::text[])', ident, list(to_delete))
-                logger.debug(f"Blocks deleted for: {ident}")
-
-            if to_insert:
-                # Insert the new blocklist entries
+            if existing_blocklist_entries != new_blocklist_entries:
                 insert_data = [(ident, subject, created_date, uri, cid) for subject, created_date, uri, cid in
                                blocked_data if cid in to_insert]
+
+                await connection.execute('DELETE FROM blocklists WHERE user_did = $1', ident)
+
+                # Insert the new blocklist entries
                 await connection.executemany(
                     'INSERT INTO blocklists (user_did, blocked_did, block_date, cid, uri) VALUES ($1, $2, $3, $5, $4)', insert_data
                 )
