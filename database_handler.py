@@ -642,7 +642,7 @@ async def update_blocklist_table(ident, blocked_data):
 
                 # Insert the new blocklist entries
                 await connection.executemany(
-                    'INSERT INTO blocklists (user_did, blocked_did, block_date, cid, uri) VALUES ($1, $2, $3, $5, $4)', insert_data
+                    'INSERT INTO blocklists (user_did, blocked_did, block_date, cid, uri) VALUES ($1, $2, $3, $5, $4) ON CONFLICT (user_did, blocked_did) DO NOTHING', insert_data
                 )
                 logger.debug(f"Blocks added for: {ident}")
             else:
