@@ -408,6 +408,10 @@ async def fun_facts():
 
     logger.info("Fun facts requested.")
 
+    if True:
+
+        return await render_template('known_issue.html')
+
     if not db_connected:
         logger.error("Database connection is not live.")
 
@@ -497,6 +501,10 @@ async def funer_facts():
 
     logger.info("Funer facts requested.")
 
+    if True:
+
+        return await render_template('known_issue.html')
+
     if not db_connected:
         logger.error("Database connection is not live.")
 
@@ -585,6 +593,10 @@ async def block_stats():
     global block_stats_app_start_time
 
     logger.info(f"Requesting block statistics.")
+
+    if True:
+
+        return await render_template('known_issue.html')
 
     if not db_connected:
         logger.error("Database connection is not live.")
@@ -1076,9 +1088,9 @@ async def first_run():
             tables = await database_handler.tables_exists()
 
             if tables:
-                await database_handler.blocklists_updater()
-                await database_handler.top_24blocklists_updater()
-                await utils.update_block_statistics()
+                # await database_handler.blocklists_updater()
+                # await database_handler.top_24blocklists_updater()
+                # await utils.update_block_statistics()
 
                 break
             else:
