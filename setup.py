@@ -35,7 +35,8 @@ async def create_db():
                     blocked_did text,
                     block_date timestamptz,
                     cid text,
-                    uri text
+                    uri text,
+                    CONSTRAINT unique_blocklist_entry UNIQUE (user_did, blocked_did)
                 )
                 """.format(blocklist_table)
 
