@@ -111,7 +111,7 @@ async def selection_handle():
     identifier = identifier.strip()
     identifier = identifier.replace('@', '')
 
-    # if selection in ['1', '2', '3', '4', '5', '6', '8', '9']:
+    if selection in ['1', '2', '3', '4', '5', '6', '8', '9']:
         # if selection == "9":
         #     logger.info("Mutelist requested.")
         #
