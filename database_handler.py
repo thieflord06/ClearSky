@@ -618,9 +618,9 @@ async def update_blocklist_table(ident, blocked_data):
         async with connection.transaction():
             # Retrieve the existing blocklist entries for the specified ident
             existing_records = await connection.fetch(
-                'SELECT cid FROM blocklists WHERE user_did = $1', ident
+                'SELECT uri FROM blocklists WHERE user_did = $1', ident
             )
-            existing_blocklist_entries = {record['cid'] for record in existing_records}
+            existing_blocklist_entries = {record['uri'] for record in existing_records}
             logger.debug("Existing entires " + ident + ": " + str(existing_blocklist_entries))
 
             # Prepare the data to be inserted into the database
@@ -628,21 +628,15 @@ async def update_blocklist_table(ident, blocked_data):
             logger.debug("Data to be inserted: " + str(data))
 
             # Convert the new blocklist entries to a set for comparison
-            new_blocklist_entries = {record[4] for record in data}
+            new_blocklist_entries = {record[3] for record in data}
             logger.debug("new blocklist entry " + ident + " : " + str(new_blocklist_entries))
 
-            # Calculate the differences
-            to_insert = new_blocklist_entries - existing_blocklist_entries
-
             if existing_blocklist_entries != new_blocklist_entries:
-                insert_data = [(ident, subject, created_date, uri, cid) for subject, created_date, uri, cid in
-                               blocked_data if cid in to_insert]
-
                 await connection.execute('DELETE FROM blocklists WHERE user_did = $1', ident)
 
                 # Insert the new blocklist entries
                 await connection.executemany(
-                    'INSERT INTO blocklists (user_did, blocked_did, block_date, cid, uri) VALUES ($1, $2, $3, $5, $4) ON CONFLICT (user_did, blocked_did) DO NOTHING', insert_data
+                    'INSERT INTO blocklists (user_did, blocked_did, block_date, cid, uri) VALUES ($1, $2, $3, $5, $4) ON CONFLICT (user_did, blocked_did) DO NOTHING', data
                 )
                 logger.debug(f"Blocks added for: {ident}")
             else:
