@@ -116,11 +116,9 @@ async def selection_handle():
         #     logger.info("Mutelist requested.")
         #
         #     return await render_template('coming_soon.html')
-        # if selection in ['4', '3', '5', '6']:
-        #     if not db_connected:
-        #         logger.error("Database connection is not live.")
-        #
-        #         return await render_template('feature_not_available.html')
+        if selection in ['4', '3', '5', '6', '9']:
+
+            return await render_template('known_issue.html')
 
         if selection == "4":
             logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count requested")
