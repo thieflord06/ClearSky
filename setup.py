@@ -31,6 +31,7 @@ async def create_db():
 
                 create_blocklists_table = """
                 CREATE TABLE IF NOT EXISTS {} (
+                    id serial primary key,
                     user_did text,
                     blocked_did text,
                     block_date timestamptz,
