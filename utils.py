@@ -410,6 +410,7 @@ async def get_single_user_blocks(ident, limit=100, offset=0):
 
                 return block_list, total_blocked
     except Exception as e:
+        block_list = []
         logger.error(f"Error fetching blocklists for {ident}: {e}")
         handles = "there was an error"
         timestamp = datetime.now().date()
