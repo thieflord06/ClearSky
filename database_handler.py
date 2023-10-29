@@ -1534,7 +1534,7 @@ async def get_mutelists(ident):
             query = """
                             SELECT json_agg(jsonb_build_object(
                             'url', ml.url,
-                            'creator', u.handle, -- Replace ml.did with u.handle
+                            'creator', u.handle,
                             'status', u.status,
                             'list_name', ml.name,
                             'description', ml.description,
