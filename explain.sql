@@ -242,3 +242,12 @@ Aggregate  (cost=41.02..41.03 rows=1 width=8)
   ->  Index Only Scan using unique_blocklist_entry on blocklists  (cost=0.56..40.64 rows=151 width=33)
         Index Cond: (user_did = 'did:plc:w4xbfzo7kqfes5zb7r6qv3rw'::text)
 
+EXPLAIN SELECT b.user_did, b.block_date, u.handle, u.status FROM blocklists AS b JOIN users as u ON b.user_did = u.did WHERE b.blocked_did = $1 ORDER BY block_date DESC LIMIT $2 OFFSET $3;
+Limit  (cost=232.97..233.13 rows=61 width=64)
+  ->  Sort  (cost=232.97..233.13 rows=61 width=64)
+        Sort Key: b.block_date DESC
+        ->  Nested Loop  (cost=0.98..231.17 rows=61 width=64)
+              ->  Index Scan using blocklist_blocked_did on blocklists b  (cost=0.56..69.82 rows=61 width=41)
+                    Index Cond: (blocked_did = 'did:plc:w4xbfzo7kqfes5zb7r6qv3rw'::text)
+              ->  Index Scan using users_pkey on users u  (cost=0.43..2.65 rows=1 width=56)
+                    Index Cond: (did = b.user_did)
