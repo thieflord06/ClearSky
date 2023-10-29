@@ -4,7 +4,6 @@ import asyncio
 import os
 import sys
 import asyncpg
-import app
 import config_helper
 import setup
 import utils
