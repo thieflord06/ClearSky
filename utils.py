@@ -329,9 +329,11 @@ async def get_all_users():
         try:
             response = requests.get(full_url)
         except httpx.RequestError as e:
+            response = None
             logger.warning("Error during API call: %s", e)
             await asyncio.sleep(60)  # Retry after 60 seconds
         except Exception as e:
+            response = None
             logger.warning("Error during API call: %s", str(e))
             await asyncio.sleep(60)  # Retry after 60 seconds
 
@@ -349,7 +351,7 @@ async def get_all_users():
             await asyncio.sleep(60)  # Retry after 60 seconds
         else:
             logger.warning("Response status code: " + str(response.status_code))
-            pass
+            await asyncio.sleep(60)  # Retry after 60 seconds
 
     return records
 
