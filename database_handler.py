@@ -1380,8 +1380,8 @@ async def get_similar_users(user_did):
 
                 block_cache_status.clear()
                 end_time = datetime.now()
-
-                all_blocks_process_time = end_time - start_time
+                if start_time is not None:
+                    all_blocks_process_time = end_time - start_time
                 all_blocks_last_update = end_time
     else:
         all_blocklists_rows = all_blocks
