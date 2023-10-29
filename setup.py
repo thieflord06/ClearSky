@@ -60,9 +60,9 @@ async def create_db():
                 create_mute_lists_table = """
                 CREATE TABLE IF NOT EXISTS {} (
                     url text,
-                    uri text,
+                    uri text primary key,
                     did text,
-                    cid text primary key,
+                    cid text,
                     name text,
                     created_date text,
                     description text
