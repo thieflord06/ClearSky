@@ -521,7 +521,14 @@ async def get_user_block_list(ident):
 
 
 async def process_user_block_list(ident, limit, offset):
+    block_list = []
+
     blocked_users, count = await database_handler.get_blocklist(ident, limit=limit, offset=offset)
+
+    if blocked_users:
+        # Iterate over blocked_users and extract handle and status
+        for user_did, block_date, handle, status in blocked_users:
+            block_list.append({"handle": handle, "status": status, "blocked_date": block_date})
 
     if count > 0:
         pages = count / 100
@@ -529,8 +536,6 @@ async def process_user_block_list(ident, limit, offset):
         pages = math.ceil(pages)
     else:
         pages = 0
-
-    block_list = []
 
     if not blocked_users:
         total_blocked = 0
@@ -542,8 +547,9 @@ async def process_user_block_list(ident, limit, offset):
         logger.info(f"{ident} doesn't exist.")
 
         return block_list, total_blocked, pages
+    else:
 
-    return blocked_users, count, pages
+        return block_list, count, pages
 
 
 async def fetch_handles_batch(batch_dids, ad_hoc=False):
