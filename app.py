@@ -90,12 +90,12 @@ async def contact():
 
 # ======================================================================================================================
 # ============================================= API Endpoints ==========================================================
-@app.route('/api/v1/blocklist/<identifier>', defaults={'page': 1})
-@app.route('/api/v1/blocklist/<identifier>/<int:page>')
-async def get_blocklist(user_identifier):
+@app.route('/api/v1/blocklist/<client_identifier>', defaults={'page': 1})
+@app.route('/api/v1/blocklist/<client_identifier>/<int:page>')
+async def get_blocklist(client_identifier):
     global session_ip
 
-    identifier = sanitization(user_identifier)
+    identifier = sanitization(client_identifier)
     did_identifier, handle_identifier = pre_process_identifier(identifier)
     status = preprocess_status(identifier)
     session_ip = await get_ip()
@@ -117,12 +117,12 @@ async def get_blocklist(user_identifier):
     return jsonify(blocklist_data)
 
 
-@app.route('/api/v1/single-blocklist/<identifier>', defaults={'page': 1})
-@app.route('/api/v1/single-blocklist/<identifier>/<int:page>')
-async def get_single_blocklist(user_identifier):
+@app.route('/api/v1/single-blocklist/<client_identifier>', defaults={'page': 1})
+@app.route('/api/v1/single-blocklist/<client_identifier>/<int:page>')
+async def get_single_blocklist(client_identifier):
     global session_ip
 
-    identifier = sanitization(user_identifier)
+    identifier = sanitization(client_identifier)
     did_identifier, handle_identifier = pre_process_identifier(identifier)
     status = preprocess_status(identifier)
     session_ip = await get_ip()
@@ -144,11 +144,11 @@ async def get_single_blocklist(user_identifier):
     return jsonify(blocklist_data)
 
 
-@app.route('/api/v1/in-common-blocklist/<identifier>')
-async def get_in_common_blocklist(user_identifier):
+@app.route('/api/v1/in-common-blocklist/<client_identifier>')
+async def get_in_common_blocklist(client_identifier):
     global session_ip
 
-    identifier = sanitization(user_identifier)
+    identifier = sanitization(client_identifier)
     did_identifier, handle_identifier = pre_process_identifier(identifier)
     status = preprocess_status(identifier)
     session_ip = await get_ip()
@@ -166,11 +166,11 @@ async def get_in_common_blocklist(user_identifier):
     return jsonify(blocklist_data)
 
 
-@app.route('/api/v1/in-common-blocked-by/<identifier>')
-async def get_in_common_blocked(user_identifier):
+@app.route('/api/v1/in-common-blocked-by/<client_identifier>')
+async def get_in_common_blocked(client_identifier):
     global session_ip
 
-    identifier = sanitization(user_identifier)
+    identifier = sanitization(client_identifier)
     did_identifier, handle_identifier = pre_process_identifier(identifier)
     status = preprocess_status(identifier)
     session_ip = await get_ip()
@@ -218,11 +218,11 @@ async def get_total_users():
     return jsonify(data)
 
 
-@app.route('/api/v1/get-did/<identifier>')
-async def get_did_info(user_identifier):
+@app.route('/api/v1/get-did/<client_identifier>')
+async def get_did_info(client_identifier):
     global session_ip
 
-    identifier = sanitization(user_identifier)
+    identifier = sanitization(client_identifier)
     did_identifier, handle_identifier = pre_process_identifier(identifier)
     status = preprocess_status(identifier)
     session_ip = await get_ip()
@@ -241,11 +241,11 @@ async def get_did_info(user_identifier):
     return jsonify(data)
 
 
-@app.route('/api/v1/get-handle/<identifier>')
-async def get_handle_info(user_identifier):
+@app.route('/api/v1/get-handle/<client_identifier>')
+async def get_handle_info(client_identifier):
     global session_ip
 
-    identifier = sanitization(user_identifier)
+    identifier = sanitization(client_identifier)
     did_identifier, handle_identifier = pre_process_identifier(identifier)
     status = preprocess_status(identifier)
     session_ip = await get_ip()
@@ -264,11 +264,11 @@ async def get_handle_info(user_identifier):
     return jsonify(data)
 
 
-@app.route('/api/v1/get-handle-history/<identifier>')
-async def get_handle_history_info(user_identifier):
+@app.route('/api/v1/get-handle-history/<client_identifier>')
+async def get_handle_history_info(client_identifier):
     global session_ip
 
-    identifier = sanitization(user_identifier)
+    identifier = sanitization(client_identifier)
     did_identifier, handle_identifier = pre_process_identifier(identifier)
     status = preprocess_status(identifier)
     session_ip = await get_ip()
@@ -287,11 +287,11 @@ async def get_handle_history_info(user_identifier):
     return jsonify(data)
 
 
-@app.route('/api/v1/get-list/<identifier>')
-async def get_list_info(user_identifier):
+@app.route('/api/v1/get-list/<client_identifier>')
+async def get_list_info(client_identifier):
     global session_ip
 
-    identifier = sanitization(user_identifier)
+    identifier = sanitization(client_identifier)
     did_identifier, handle_identifier = pre_process_identifier(identifier)
     status = preprocess_status(identifier)
     session_ip = await get_ip()
@@ -999,9 +999,9 @@ async def first_run():
             tables = await database_handler.tables_exists()
 
             if tables:
-                await database_handler.blocklists_updater()
-                await database_handler.top_24blocklists_updater()
-                await utils.update_block_statistics()
+                # await database_handler.blocklists_updater()
+                # await database_handler.top_24blocklists_updater()
+                # await utils.update_block_statistics()
 
                 break
             else:
