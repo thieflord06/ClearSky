@@ -15,7 +15,7 @@ Implemented:
 
             /api/v1/get-handle/<handle/did>
 
-            /api/v1/get-handle-history/<handle/did
+            /api/v1/get-handle-history/<handle/did>
 
         Not ready to test:
             /api/v1/in-common-blocklist/<handle/did>
@@ -31,7 +31,7 @@ Implemented:
             /api/v1/in-common-blocked-by/<handle/did>
 
     component:
-        /api/v1/base/autocomplete
+        /api/v1/base/autocomplete/<handle(partial/complete)>
 
     system_data:
         /api/v1/base/internal/status/process-status
