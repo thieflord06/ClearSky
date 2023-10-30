@@ -1,29 +1,34 @@
 Implemented:
 
     User_data:
-        /api/v1/blocklist/<handle/did>
-        /api/v1/blocklist/<handle/did>/<int:page>
+        Ready to test:
+            /api/v1/blocklist/<handle/did>
+            /api/v1/blocklist/<handle/did>/<int:page>
 
-        /api/v1/single-blocklist/<handle/did>
-        /api/v1/single-blocklist/<handle/did>/<int:page>
+            /api/v1/single-blocklist/<handle/did>
+            /api/v1/single-blocklist/<handle/did>/<int:page>
 
-        /api/v1/in-common-blocklist/<handle/did>
 
-        /api/v1/total-users
+            /api/v1/total-users
 
-        /api/v1/get-did/<handle/did>
+            /api/v1/get-did/<handle/did>
 
-        /api/v1/get-handle/<handle/did>
+            /api/v1/get-handle/<handle/did>
 
-        /api/v1/get-handle-history/<handle/did
+            /api/v1/get-handle-history/<handle/did
 
-        /api/v1/get-list/<handle/did>
+        Not ready to test:
+            /api/v1/in-common-blocklist/<handle/did>
 
-        /api/v1/lists/fun-facts
+            /api/v1/get-list/<handle/did>
 
-        /api/v1/lists/funer-facts
+            /api/v1/lists/fun-facts
 
-        /api/v1/lists/block-stats
+            /api/v1/lists/funer-facts
+
+            /api/v1/lists/block-stats
+
+            /api/v1/in-common-blocked-by/<handle/did>
 
     component:
         /api/v1/base/autocomplete
