@@ -95,9 +95,9 @@ async def contact():
 async def get_blocklist(client_identifier):
     global session_ip
 
-    identifier = sanitization(client_identifier)
-    did_identifier, handle_identifier = pre_process_identifier(identifier)
-    status = preprocess_status(identifier)
+    identifier = await sanitization(client_identifier)
+    did_identifier, handle_identifier = await pre_process_identifier(identifier)
+    status = await preprocess_status(identifier)
     session_ip = await get_ip()
 
     if did_identifier and handle_identifier and status:
@@ -122,9 +122,9 @@ async def get_blocklist(client_identifier):
 async def get_single_blocklist(client_identifier):
     global session_ip
 
-    identifier = sanitization(client_identifier)
-    did_identifier, handle_identifier = pre_process_identifier(identifier)
-    status = preprocess_status(identifier)
+    identifier = await sanitization(client_identifier)
+    did_identifier, handle_identifier = await pre_process_identifier(identifier)
+    status = await preprocess_status(identifier)
     session_ip = await get_ip()
 
     if did_identifier and handle_identifier and status:
@@ -148,9 +148,9 @@ async def get_single_blocklist(client_identifier):
 async def get_in_common_blocklist(client_identifier):
     global session_ip
 
-    identifier = sanitization(client_identifier)
-    did_identifier, handle_identifier = pre_process_identifier(identifier)
-    status = preprocess_status(identifier)
+    identifier = await sanitization(client_identifier)
+    did_identifier, handle_identifier = await pre_process_identifier(identifier)
+    status = await preprocess_status(identifier)
     session_ip = await get_ip()
 
     if did_identifier and handle_identifier and status:
@@ -170,9 +170,9 @@ async def get_in_common_blocklist(client_identifier):
 async def get_in_common_blocked(client_identifier):
     global session_ip
 
-    identifier = sanitization(client_identifier)
-    did_identifier, handle_identifier = pre_process_identifier(identifier)
-    status = preprocess_status(identifier)
+    identifier = await sanitization(client_identifier)
+    did_identifier, handle_identifier = await pre_process_identifier(identifier)
+    status = await preprocess_status(identifier)
     session_ip = await get_ip()
 
     if did_identifier and handle_identifier and status:
@@ -222,9 +222,9 @@ async def get_total_users():
 async def get_did_info(client_identifier):
     global session_ip
 
-    identifier = sanitization(client_identifier)
-    did_identifier, handle_identifier = pre_process_identifier(identifier)
-    status = preprocess_status(identifier)
+    identifier = await sanitization(client_identifier)
+    did_identifier, handle_identifier = await pre_process_identifier(identifier)
+    status = await preprocess_status(identifier)
     session_ip = await get_ip()
 
     if did_identifier and handle_identifier and status:
@@ -245,9 +245,9 @@ async def get_did_info(client_identifier):
 async def get_handle_info(client_identifier):
     global session_ip
 
-    identifier = sanitization(client_identifier)
-    did_identifier, handle_identifier = pre_process_identifier(identifier)
-    status = preprocess_status(identifier)
+    identifier = await sanitization(client_identifier)
+    did_identifier, handle_identifier = await pre_process_identifier(identifier)
+    status = await preprocess_status(identifier)
     session_ip = await get_ip()
 
     if did_identifier and handle_identifier and status:
@@ -268,9 +268,9 @@ async def get_handle_info(client_identifier):
 async def get_handle_history_info(client_identifier):
     global session_ip
 
-    identifier = sanitization(client_identifier)
-    did_identifier, handle_identifier = pre_process_identifier(identifier)
-    status = preprocess_status(identifier)
+    identifier = await sanitization(client_identifier)
+    did_identifier, handle_identifier = await pre_process_identifier(identifier)
+    status = await preprocess_status(identifier)
     session_ip = await get_ip()
 
     if did_identifier and handle_identifier and status:
@@ -291,9 +291,9 @@ async def get_handle_history_info(client_identifier):
 async def get_list_info(client_identifier):
     global session_ip
 
-    identifier = sanitization(client_identifier)
-    did_identifier, handle_identifier = pre_process_identifier(identifier)
-    status = preprocess_status(identifier)
+    identifier = await sanitization(client_identifier)
+    did_identifier, handle_identifier = await pre_process_identifier(identifier)
+    status = await preprocess_status(identifier)
     session_ip = await get_ip()
 
     if did_identifier and handle_identifier and status:
