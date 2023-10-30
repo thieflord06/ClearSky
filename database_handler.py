@@ -251,8 +251,14 @@ async def find_handles(value):
                 matching_handles = [row['handle'] for row in result]
 
                 return matching_handles
+    except asyncpg.ConnectionDoesNotExistError:
+        logger.error("db connection issue.")
+
+        return None
     except Exception as e:
         logger.error(f"Error retrieving autocomplete handles: {e}")
+
+        return None
 
 
 async def count_users_table():
