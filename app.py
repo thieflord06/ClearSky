@@ -101,7 +101,7 @@ async def get_blocklist(client_identifier):
     session_ip = await get_ip()
 
     if did_identifier and handle_identifier and status:
-        logger.info(f"<< {session_ip} - {session} blocklist request: {identifier}")
+        logger.info(f"<< {session_ip} - {session['session_number']} blocklist request: {identifier}")
 
         page = request.args.get('page', default=1, type=int)
         items_per_page = 100
@@ -110,7 +110,7 @@ async def get_blocklist(client_identifier):
         blocklist_data = await utils.process_user_block_list(did_identifier, limit=items_per_page, offset=offset)
         # formatted_count = '{:,}'.format(count)
 
-        logger.info(f">> {session_ip} - {session} blocklist result returned: {identifier}")
+        logger.info(f">> {session_ip} - {session['session_number']} blocklist result returned: {identifier}")
     else:
         blocklist_data = None
 
@@ -128,7 +128,7 @@ async def get_single_blocklist(client_identifier):
     session_ip = await get_ip()
 
     if did_identifier and handle_identifier and status:
-        logger.info(f"<< {session_ip} - {session} single blocklist request: {identifier}")
+        logger.info(f"<< {session_ip} - {session['session_number']} single blocklist request: {identifier}")
 
         page = request.args.get('page', default=1, type=int)
         items_per_page = 100
@@ -137,7 +137,7 @@ async def get_single_blocklist(client_identifier):
         blocklist_data = await utils.get_single_user_blocks(did_identifier, limit=items_per_page, offset=offset)
         # formatted_count = '{:,}'.format(count)
 
-        logger.info(f">> {session_ip} - {session} single blocklist result returned: {identifier}")
+        logger.info(f">> {session_ip} - {session['session_number']} single blocklist result returned: {identifier}")
     else:
         blocklist_data = None
 
@@ -154,12 +154,12 @@ async def get_in_common_blocklist(client_identifier):
     session_ip = await get_ip()
 
     if did_identifier and handle_identifier and status:
-        logger.info(f"<< {session_ip} - {session} in-common blocklist request: {identifier}")
+        logger.info(f"<< {session_ip} - {session['session_number']} in-common blocklist request: {identifier}")
 
         blocklist_data = await database_handler.get_similar_users(did_identifier)
         # formatted_count = '{:,}'.format(count)
 
-        logger.info(f">> {session_ip} - {session} in-common blocklist result returned: {identifier}")
+        logger.info(f">> {session_ip} - {session['session_number']} in-common blocklist result returned: {identifier}")
     else:
         blocklist_data = None
 
@@ -176,12 +176,12 @@ async def get_in_common_blocked(client_identifier):
     session_ip = await get_ip()
 
     if did_identifier and handle_identifier and status:
-        logger.info(f"<< {session_ip} - {session} in-common blocked request: {identifier}")
+        logger.info(f"<< {session_ip} - {session['session_number']} in-common blocked request: {identifier}")
 
         blocklist_data = await database_handler.get_similar_blocked_by(did_identifier)
         # formatted_count = '{:,}'.format(count)
 
-        logger.info(f">> {session_ip} - {session} in-common blocked result returned: {identifier}")
+        logger.info(f">> {session_ip} - {session['session_number']} in-common blocked result returned: {identifier}")
     else:
         blocklist_data = None
 
@@ -194,7 +194,7 @@ async def get_total_users():
 
     session_ip = await get_ip()
 
-    logger.info(f"<< {session_ip} - {session} total users request")
+    logger.info(f"<< {session_ip} - {session['session_number']} total users request")
 
     try:
         active_count = await utils.get_user_count(get_active=True)
@@ -213,7 +213,7 @@ async def get_total_users():
 
     data = {formatted_active_count, formatted_total_count, formatted_deleted_count}
 
-    logger.info(f">> {session_ip} - {session} total users result returned")
+    logger.info(f">> {session_ip} - {session['session_number']} total users result returned")
 
     return jsonify(data)
 
@@ -228,13 +228,16 @@ async def get_did_info(client_identifier):
     session_ip = await get_ip()
 
     if did_identifier and handle_identifier and status:
-        logger.info(f"<< {session_ip} - {session} get did request: {identifier}")
+        logger.info(f"<< {session_ip} - {session['session_number']} get did request: {identifier}")
 
         avatar_id = await on_wire.get_avatar_id(did_identifier)
 
-        data = {identifier, did_identifier, avatar_id}
+        data = {"identifier": identifier,
+                "did_identifier": did_identifier,
+                "avatar_id": avatar_id
+                }
 
-        logger.info(f">> {session_ip} - {session} did result returned: {identifier}")
+        logger.info(f">> {session_ip} - {session['session_number']} did result returned: {identifier}")
     else:
         data = None
 
@@ -251,13 +254,13 @@ async def get_handle_info(client_identifier):
     session_ip = await get_ip()
 
     if did_identifier and handle_identifier and status:
-        logger.info(f"<< {session_ip} - {session} get handle request: {identifier}")
+        logger.info(f"<< {session_ip} - {session['session_number']} get handle request: {identifier}")
 
         avatar_id = await on_wire.get_avatar_id(did_identifier)
 
         data = {identifier, handle_identifier, avatar_id}
 
-        logger.info(f">> {session_ip} - {session} handle result returned: {identifier}")
+        logger.info(f">> {session_ip} - {session['session_number']} handle result returned: {identifier}")
     else:
         data = None
 
@@ -274,13 +277,13 @@ async def get_handle_history_info(client_identifier):
     session_ip = await get_ip()
 
     if did_identifier and handle_identifier and status:
-        logger.info(f"<< {session_ip} - {session} get handle history request: {identifier}")
+        logger.info(f"<< {session_ip} - {session['session_number']} get handle history request: {identifier}")
 
         handle_history = await utils.get_handle_history(did_identifier)
 
         data = {identifier, handle_history}
 
-        logger.info(f">> {session_ip} - {session} handle history result returned: {identifier}")
+        logger.info(f">> {session_ip} - {session['session_number']} handle history result returned: {identifier}")
     else:
         data = None
 
@@ -297,13 +300,13 @@ async def get_list_info(client_identifier):
     session_ip = await get_ip()
 
     if did_identifier and handle_identifier and status:
-        logger.info(f"<< {session_ip} - {session} get mute/block list request: {identifier}")
+        logger.info(f"<< {session_ip} - {session['session_number']} get mute/block list request: {identifier}")
 
         mute_lists = await database_handler.get_mutelists(did_identifier)
 
         data = {identifier, mute_lists}
 
-        logger.info(f">> {session_ip} - {session} mute/block list result returned: {identifier}")
+        logger.info(f">> {session_ip} - {session['session_number']} mute/block list result returned: {identifier}")
     else:
         data = None
 
