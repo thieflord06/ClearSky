@@ -59,7 +59,6 @@ async def index():
 
 @app.route('/images/favicon.png')
 async def favicon():
-
     return await quart.send_from_directory('images', 'favicon.png')
 
 
@@ -72,19 +71,16 @@ async def faq():
 
 @app.route('/coming_soon')
 async def coming_soon():
-
     return await render_template('coming_soon.html')
 
 
 @app.route('/status')
 async def always_200():
-
     return "OK", 200
 
 
 @app.route('/contact')
 async def contact():
-
     return await render_template('contact.html')
 
 
@@ -200,20 +196,24 @@ async def get_total_users():
         active_count = await utils.get_user_count(get_active=True)
         total_count = await utils.get_user_count(get_active=False)
         deleted_count = await utils.get_deleted_users_count()
+
+        formatted_active_count = '{:,}'.format(active_count)
+        formatted_total_count = '{:,}'.format(total_count)
+        formatted_deleted_count = '{:,}'.format(deleted_count)
     except AttributeError:
         logger.error("db connection issue.")
-        active_count = None
-        total_count = None
-        deleted_count = None
+        formatted_active_count = None
+        formatted_total_count = None
+        formatted_deleted_count = None
         # return await render_template('issue.html')
 
-    formatted_active_count = '{:,}'.format(active_count)
-    formatted_total_count = '{:,}'.format(total_count)
-    formatted_deleted_count = '{:,}'.format(deleted_count)
-
-    data = {formatted_active_count, formatted_total_count, formatted_deleted_count}
+    count_data = {"active_count": formatted_active_count,
+                  "total_count": formatted_total_count,
+                  "deleted_count": formatted_deleted_count}
 
     logger.info(f">> {session_ip} - {session['session_number']} total users result returned")
+
+    data = {"data": count_data}
 
     return jsonify(data)
 
@@ -227,20 +227,24 @@ async def get_did_info(client_identifier):
     status = await preprocess_status(identifier)
     session_ip = await get_ip()
 
+    logger.debug("here")
+    logger.info(f"<< {session_ip} - {session['session_number']} get did request: {client_identifier}")
+
     if did_identifier and handle_identifier and status:
-        logger.info(f"<< {session_ip} - {session['session_number']} get did request: {identifier}")
 
         avatar_id = await on_wire.get_avatar_id(did_identifier)
 
-        data = {"identifier": identifier,
-                "did_identifier": did_identifier,
-                "user_url": f"https://bsky.app/profile/{did_identifier}",
-                "avatar_url": f"https://av-cdn.bsky.app/img/avatar/plain/{avatar_id}"
-                }
+        did_data = {"identifier": identifier,
+                    "did_identifier": did_identifier,
+                    "user_url": f"https://bsky.app/profile/{did_identifier}",
+                    "avatar_url": f"https://av-cdn.bsky.app/img/avatar/plain/{avatar_id}"
+                    }
 
-        logger.info(f">> {session_ip} - {session['session_number']} did result returned: {identifier}")
+        logger.info(f">> {session_ip} - {session['session_number']} did result returned: {client_identifier}")
     else:
-        data = None
+        did_data = None
+
+    data = {"data": did_data}
 
     return jsonify(data)
 
@@ -259,15 +263,17 @@ async def get_handle_info(client_identifier):
 
         avatar_id = await on_wire.get_avatar_id(did_identifier)
 
-        data = {"identifier": identifier,
-                "handle_identifier": handle_identifier,
-                "user_url": f"https://bsky.app/profile/{did_identifier}",
-                "avatar_url": f"https://av-cdn.bsky.app/img/avatar/plain/{avatar_id}"
-                }
+        handle_data = {"identifier": identifier,
+                       "handle_identifier": handle_identifier,
+                       "user_url": f"https://bsky.app/profile/{did_identifier}",
+                       "avatar_url": f"https://av-cdn.bsky.app/img/avatar/plain/{avatar_id}"
+                       }
 
         logger.info(f">> {session_ip} - {session['session_number']} handle result returned: {identifier}")
     else:
-        data = None
+        handle_data = None
+
+    data = {"data": handle_data}
 
     return jsonify(data)
 
@@ -286,11 +292,15 @@ async def get_handle_history_info(client_identifier):
 
         handle_history = await utils.get_handle_history(did_identifier)
 
-        data = {identifier, handle_history}
+        handle_history_data = {"identifier": identifier,
+                               "handle_history": handle_history
+                               }
 
         logger.info(f">> {session_ip} - {session['session_number']} handle history result returned: {identifier}")
     else:
-        data = None
+        handle_history_data = None
+
+    data = {"data": handle_history_data}
 
     return jsonify(data)
 
@@ -318,7 +328,7 @@ async def get_list_info(client_identifier):
     return jsonify(data)
 
 
-@app.route('/fun_facts')
+@app.route('/api/v1/fun-facts')
 async def fun_facts():
     global fun_start_time
 
@@ -411,7 +421,7 @@ async def fun_facts():
                                  blocked_aid=blocked_aid, blocker_aid=blocker_aid)
 
 
-@app.route('/funer_facts')
+@app.route('/api/v1/funer-facts')
 async def funer_facts():
     global funer_start_time
 
@@ -501,10 +511,11 @@ async def funer_facts():
 
     # If at least one list is not empty, render the regular page
     return await render_template('funer_facts.html', blocked_results=resolved_blocked_24,
-                                 blockers_results=resolved_blockers_24, blocked_aid=blocked_aid_24, blocker_aid=blocker_aid_24)
+                                 blockers_results=resolved_blockers_24, blocked_aid=blocked_aid_24,
+                                 blocker_aid=blocker_aid_24)
 
 
-@app.route('/block_stats')
+@app.route('/api/v1/block-stats')
 async def block_stats():
     global block_stats_app_start_time
 
@@ -626,14 +637,20 @@ async def block_stats():
     percent_users_blocking = round(percent_users_blocking, 2)
 
     percent_number_blocking_1 = round((int(number_blocking_1) / int(number_of_unique_users_blocking) * 100), 2)
-    percent_number_blocking_2_and_100 = round((int(number_blocking_2_and_100) / int(number_of_unique_users_blocking) * 100), 2)
-    percent_number_blocking_101_and_1000 = round((int(number_blocking_101_and_1000) / int(number_of_unique_users_blocking) * 100), 2)
-    percent_number_blocking_greater_than_1000 = round((int(number_blocking_greater_than_1000) / int(number_of_unique_users_blocking) * 100), 2)
+    percent_number_blocking_2_and_100 = round(
+        (int(number_blocking_2_and_100) / int(number_of_unique_users_blocking) * 100), 2)
+    percent_number_blocking_101_and_1000 = round(
+        (int(number_blocking_101_and_1000) / int(number_of_unique_users_blocking) * 100), 2)
+    percent_number_blocking_greater_than_1000 = round(
+        (int(number_blocking_greater_than_1000) / int(number_of_unique_users_blocking) * 100), 2)
 
     percent_number_blocked_1 = round((int(number_blocked_1) / int(number_of_unique_users_blocked) * 100), 2)
-    percent_number_blocked_2_and_100 = round((int(number_blocked_2_and_100) / int(number_of_unique_users_blocked) * 100), 2)
-    percent_number_blocked_101_and_1000 = round((int(number_blocked_101_and_1000) / int(number_of_unique_users_blocked) * 100), 2)
-    percent_number_blocked_greater_than_1000 = round((int(number_blocked_greater_than_1000) / int(number_of_unique_users_blocked) * 100), 2)
+    percent_number_blocked_2_and_100 = round(
+        (int(number_blocked_2_and_100) / int(number_of_unique_users_blocked) * 100), 2)
+    percent_number_blocked_101_and_1000 = round(
+        (int(number_blocked_101_and_1000) / int(number_of_unique_users_blocked) * 100), 2)
+    percent_number_blocked_greater_than_1000 = round(
+        (int(number_blocked_greater_than_1000) / int(number_of_unique_users_blocked) * 100), 2)
 
     average_number_of_blocks_round = round(float(average_number_of_blocks), 2)
     average_number_of_blocked_round = round(float(average_number_of_blocked), 2)
@@ -665,7 +682,7 @@ async def block_stats():
                                  )
 
 
-@app.route('/autocomplete')
+@app.route('/api/v1/base/autocomplete')
 async def autocomplete():
     query = request.args.get('query')
     query = query.lower()
@@ -685,7 +702,8 @@ async def autocomplete():
         return jsonify({"suggestions": matching_handles})
     else:
         if database_handler.redis_connection:
-            matching_handles = await database_handler.retrieve_autocomplete_handles(query_without_at)  # Use redis, failover db
+            matching_handles = await database_handler.retrieve_autocomplete_handles(
+                query_without_at)  # Use redis, failover db
         elif db_connected:
             matching_handles = await database_handler.find_handles(query_without_at)  # Only use db
         else:
@@ -705,21 +723,19 @@ async def autocomplete():
             return jsonify({'suggestions': matching_handles})
 
 
-@app.route('/blocklist')
+@app.route('/api/v1/blocklist')
 async def blocklist_redirect():
     if request.method == 'GET':
-
         return redirect('/', code=302)
 
 
-@app.route('/single_blocklist')
+@app.route('/api/v1/single-blocklist')
 async def single_blocklist_redirect():
     if request.method == 'GET':
-
         return redirect('/', code=302)
 
 
-@app.route('/process_status', methods=['GET'])
+@app.route('/api/v1/base/internal/status/process-status', methods=['GET'])
 async def update_block_stats():
     logger.info("System status requested.")
 
@@ -876,7 +892,6 @@ async def preprocess_status(identifier):
 
 
 def generate_session_number():
-
     return str(uuid.uuid4().hex)
 
 
@@ -896,7 +911,6 @@ async def get_ip():  # Get IP address of session request
 
 async def get_time_since(time):
     if time is None:
-
         return "Not initialized"
     time_difference = datetime.now() - time
 
