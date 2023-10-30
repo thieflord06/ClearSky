@@ -1575,6 +1575,10 @@ async def wait_for_redis():
 
             break
         else:
+            redis_connection = False
+
+            logger.warning("Redis disconnected.")
+
             await asyncio.sleep(30)
 
 
