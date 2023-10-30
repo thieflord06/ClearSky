@@ -1,5 +1,5 @@
 # utils.py
-
+import math
 import httpx
 import urllib.parse
 from datetime import datetime
@@ -525,6 +525,13 @@ async def get_user_block_list(ident):
 async def process_user_block_list(ident, limit, offset):
     blocked_users, count = await database_handler.get_blocklist(ident, limit=limit, offset=offset)
 
+    if count > 0:
+        pages = count / 100
+
+        pages = math.ceil(pages)
+    else:
+        pages = 0
+
     block_list = []
 
     if not blocked_users:
@@ -533,20 +540,18 @@ async def process_user_block_list(ident, limit, offset):
             ident = await use_handle(ident)
         handles = [f"{ident} hasn't blocked anyone."]
         timestamp = datetime.now().date()
-        status = False
-        block_list.append({"handle": handles, "status": status, "blocked_date": timestamp})
+        block_list.append({"handle": handles, "blocked_date": timestamp})
         logger.info(f"{ident} Hasn't blocked anyone.")
 
-        return block_list, total_blocked
+        return block_list, total_blocked, pages
     elif "no repo" in blocked_users:
         total_blocked = 0
         handles = [f"Couldn't find {ident}, there may be a typo."]
         timestamp = datetime.now().date()
-        status = False
-        block_list.append({"handle": handles, "status": status, "blocked_date": timestamp})
+        block_list.append({"handle": handles, "blocked_date": timestamp})
         logger.info(f"{ident} doesn't exist.")
 
-        return block_list, total_blocked
+        return block_list, total_blocked, pages
     else:
         # blocked_users now contains blocked_did, handle, and status
         total_blocked = count
@@ -555,7 +560,7 @@ async def process_user_block_list(ident, limit, offset):
         for user_did, blocked_date, handle, status in blocked_users:
             block_list.append({"handle": handle, "status": status, "blocked_date": blocked_date})
 
-        return block_list, total_blocked
+        return block_list, total_blocked, pages
 
 
 async def fetch_handles_batch(batch_dids, ad_hoc=False):
