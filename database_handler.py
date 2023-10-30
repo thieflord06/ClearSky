@@ -666,7 +666,7 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data):
             # Check if there are differences between the existing and new mutelist entries
             if existing_mutelist_entries != new_mutelist_entries:
                 # Delete existing mutelist entries for the specified ident
-                await connection.execute('DELETE FROM {} WHERE did = $1'.format(setup.mute_lists_table), ident)
+                await connection.execute('DELETE FROM {} WHERE did = $1'.format(setup.mute_lists_table), ident).format(setup.mute_lists_table)
 
                 # Insert the new mutelist entries
                 await connection.executemany(
