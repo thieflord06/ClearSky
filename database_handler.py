@@ -768,7 +768,7 @@ async def add_new_prefixes(handles):
                                     SUBSTRING($1, 1, 1),
                                     SUBSTRING($1, 1, 2),
                                     SUBSTRING($1, 1, 3)
-                                    );"""
+                                    ) ON CONFLICT (handle) DO NOTHING;"""
 
                     await connection.execute(query, handle)
                 except Exception as e:
