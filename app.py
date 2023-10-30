@@ -128,29 +128,41 @@ async def get_blocklist(client_identifier, page):
 
 @app.route('/api/v1/single-blocklist/<client_identifier>', defaults={'page': 1})
 @app.route('/api/v1/single-blocklist/<client_identifier>/<int:page>')
-async def get_single_blocklist(client_identifier):
+async def get_single_blocklist(client_identifier, page):
     global session_ip
 
+    session_ip = await get_ip()
     identifier = await sanitization(client_identifier)
+
+    logger.info(f"<< {session_ip} - {session['session_number']} single blocklist request: {identifier}")
+
     did_identifier, handle_identifier = await pre_process_identifier(identifier)
     status = await preprocess_status(identifier)
-    session_ip = await get_ip()
 
     if did_identifier and handle_identifier and status:
-        logger.info(f"<< {session_ip} - {session['session_number']} single blocklist request: {identifier}")
-
-        page = request.args.get('page', default=1, type=int)
         items_per_page = 100
         offset = (page - 1) * items_per_page
 
-        blocklist_data = await utils.get_single_user_blocks(did_identifier, limit=items_per_page, offset=offset)
-        # formatted_count = '{:,}'.format(count)
+        blocklist, count, pages = await utils.get_single_user_blocks(did_identifier, limit=items_per_page, offset=offset)
+        formatted_count = '{:,}'.format(count)
+
+        blocklist_data = {"blocklist": blocklist,
+                          "count": formatted_count,
+                          "pages": pages}
 
         logger.info(f">> {session_ip} - {session['session_number']} single blocklist result returned: {identifier}")
     else:
         blocklist_data = None
+        count = 0
 
-    return jsonify(blocklist_data)
+        blocklist_data = {"blocklist": blocklist_data,
+                          "count": count}
+
+    data = {"identity": identifier,
+            "status": status,
+            "data": blocklist_data}
+
+    return jsonify(data)
 
 
 @app.route('/api/v1/in-common-blocklist/<client_identifier>')
