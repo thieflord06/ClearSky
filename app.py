@@ -88,314 +88,226 @@ async def contact():
     return await render_template('contact.html')
 
 
-# Handles selection for form
-@app.route('/selection_handle', methods=['POST', 'GET'])
-async def selection_handle():
-    # Check if the request method is GET direct to selection_handle
-    if request.method == 'GET':
-        # Redirect to the root URL '/'
-        return redirect('/', code=302)
-
+# ======================================================================================================================
+# ============================================= API Endpoints ==========================================================
+@app.route('/api/v1/blocklist/<identifier>', defaults={'page': 1})
+@app.route('/api/v1/blocklist/<identifier>/<int:page>')
+async def get_blocklist(user_identifier):
     global session_ip
 
-    did_identifier = None
-    handle_identifier = None
-    data = await request.form
+    identifier = sanitization(user_identifier)
+    did_identifier, handle_identifier = pre_process_identifier(identifier)
+    status = preprocess_status(identifier)
     session_ip = await get_ip()
 
-    logger.debug(data)
+    if did_identifier and handle_identifier and status:
+        logger.info(f"<< {session_ip} - {session} blocklist request: {identifier}")
 
-    selection = data.get('selection')
-    identifier = data.get('identifier')
-    identifier = identifier.lower()
-    identifier = identifier.strip()
-    identifier = identifier.replace('@', '')
+        page = request.args.get('page', default=1, type=int)
+        items_per_page = 100
+        offset = (page - 1) * items_per_page
 
-    if selection in ['1', '2', '3', '4', '5', '6', '8', '9']:
-        # if selection in ['4', '3', '5', '6', '9']:
-        #
-        #     return await render_template('known_issue.html')
+        blocklist_data = await utils.process_user_block_list(did_identifier, limit=items_per_page, offset=offset)
+        # formatted_count = '{:,}'.format(count)
 
-        if selection == "4":
-            logger.info(str(session_ip) + " > " + str(*session.values()) + " | " + "Total User count requested")
-
-            try:
-                active_count = await utils.get_user_count(get_active=True)
-                total_count = await utils.get_user_count(get_active=False)
-                deleted_count = await utils.get_deleted_users_count()
-            except AttributeError:
-                logger.error("db connection issue.")
-
-                return await render_template('issue.html')
-
-            formatted_active_count = '{:,}'.format(active_count)
-            formatted_total_count = '{:,}'.format(total_count)
-            formatted_deleted_count = '{:,}'.format(deleted_count)
-
-            logger.info(f"{session_ip} > {str(*session.values())} | total users count: {formatted_total_count}")
-            logger.info(f"{session_ip} > {str(*session.values())} | total active users count: {formatted_active_count}")
-            logger.info(f"{session_ip} > {str(*session.values())} | total deleted users count: {formatted_deleted_count}")
-
-            return await render_template('total_users.html', active_count=formatted_active_count,
-                                         total_count=formatted_total_count, deleted_count=formatted_deleted_count)
-
-        if not identifier:  # If form is submitted without anything in the identifier return intentional error
-            logger.warning(f"Intentional error. | {str(session_ip)} > " + str(*session.values()))
-
-            return await render_template('intentional_error.html')
-
-        # Check if did or handle exists before processing
-        if utils.is_did(identifier) or utils.is_handle(identifier):
-            if utils.is_did(identifier):
-                if not await database_handler.local_db():
-                    try:
-                        did_identifier = identifier
-                        handle_identifier = await asyncio.wait_for(utils.use_handle(identifier), timeout=30)
-                    except asyncio.TimeoutError:
-                        handle_identifier = None
-                        logger.warning("resolution failed, possible connection issue.")
-                else:
-                    did_identifier = identifier
-                    handle_identifier = await utils.get_user_handle(identifier)
-
-            if utils.is_handle(identifier):
-                if not await database_handler.local_db():
-                    try:
-                        handle_identifier = identifier
-                        did_identifier = await asyncio.wait_for(utils.use_did(identifier), timeout=30)
-                    except asyncio.TimeoutError:
-                        did_identifier = None
-                        logger.warning("resolution failed, possible connection issue.")
-                else:
-                    handle_identifier = identifier
-                    did_identifier = await utils.get_user_did(identifier)
-
-            if did_identifier and handle_identifier:
-                pass
-            else:
-                if did_identifier is None:
-                    did_identifier = await utils.get_user_handle(identifier)
-                elif handle_identifier is None:
-                    handle_identifier = await utils.get_user_handle(identifier)
-
-                try:
-                    persona, status = await utils.identifier_exists_in_db(identifier)
-                    logger.debug(f"persona: {persona} status: {status}")
-                except AttributeError:
-                    logger.error("db connection issue.")
-
-                    return await render_template('issue.html')
-
-                if persona is True and status is True:
-                    pass
-                elif persona is True and status is False:
-                    logger.info(f"Account: {identifier} deleted")
-
-                    return await render_template('account_deleted.html', account=identifier)
-                elif status is False and persona is False:
-                    logger.info(f"{identifier}: does not exist.")
-
-                    return await render_template('error.html')
-                else:
-                    logger.info(f"Error page loaded for resolution failure using: {identifier}")
-
-                    return await render_template('error.html', content_type='text/html')
-
-            if selection != "4":
-                if not identifier:
-
-                    return await render_template('error.html')
-
-                if selection == "1":
-                    logger.info(str(session_ip) + " > " + str(
-                        *session.values()) + ": " + "DID resolve request made for: " + identifier)
-                    if utils.is_did(did_identifier):
-                        result = did_identifier
-                    elif "Could not find, there may be a typo." in did_identifier:
-                        result = did_identifier
-                    else:
-                        result = identifier
-                    logger.info(str(session_ip) + " > " + str(
-                        *session.values()) + " | " + "Request Result: " + identifier + " | " + result)
-
-                    avatar_id = await on_wire.get_avatar_id(did_identifier)
-
-                    return await render_template('did.html', result=result, did=did_identifier, avatar_id=avatar_id)
-                elif selection == "2":
-                    logger.info(str(session_ip) + " > " + str(
-                        *session.values()) + " | " + "Handle resolve request made for: " + identifier)
-
-                    if utils.is_handle(handle_identifier):
-                        result = handle_identifier
-                    else:
-                        result = identifier
-                    logger.info(str(session_ip) + " > " + str(
-                        *session.values()) + " | " + "Request Result: " + identifier + " | " + str(result))
-
-                    avatar_id = await on_wire.get_avatar_id(did_identifier)
-
-                    return await render_template('handle.html', result=result, did=did_identifier, avatar_id=avatar_id)
-                elif selection == "3":
-                    logger.info(str(session_ip) + " > " + str(
-                        *session.values()) + " | " + "Block list requested for: " + identifier)
-
-                    page = request.args.get('page', default=1, type=int)
-                    items_per_page = 100
-                    offset = (page - 1) * items_per_page
-
-                    if not did_identifier:
-                        message = "Could not find, there may be a typo"
-
-                        return await render_template('no_result.html', user=identifier, message=message)
-
-                    blocklist, count = await utils.process_user_block_list(did_identifier, limit=items_per_page, offset=offset)
-                    formatted_count = '{:,}'.format(count)
-
-                    if utils.is_did(identifier):
-                        identifier = handle_identifier
-
-                    logger.info(str(session_ip) + " > " + str(
-                        *session.values()) + " | " + "Blocklist Request Result: " + identifier + " | " + "Total blocked: " + str(
-                        formatted_count) + " :: " + str(blocklist))
-
-                    if count == 0:
-                        message = "Not blocking anyone"
-
-                        return await render_template('not_blocking.html', user=identifier, message=message)
-
-                    more_data_available = len(blocklist) == items_per_page
-
-                    return await render_template('blocklist.html', blocklist=blocklist, user=identifier,
-                                                 count=formatted_count, identifier=did_identifier, page=page, more_data_available=more_data_available)
-                elif selection == "5":
-                    logger.info(str(session_ip) + " > " + str(
-                        *session.values()) + " | " + "Single Block list requested for: " + identifier)
-
-                    page = request.args.get('page', default=1, type=int)
-                    items_per_page = 100
-                    offset = (page - 1) * items_per_page
-
-                    if not did_identifier:
-                        message = "Could not find, there may be a typo"
-
-                        logger.info(str(session_ip) + " > " + str(
-                            *session.values()) + " | " + "Single Blocklist Request Result: " + identifier + " | " + "Blocked by: " + str(
-                            message))
-
-                        return await render_template('no_result.html', user=identifier, message=message)
-
-                    blocklist, count = await utils.get_single_user_blocks(did_identifier, limit=items_per_page, offset=offset)
-                    formatted_count = '{:,}'.format(count)
-
-                    if utils.is_did(identifier):
-                        identifier = handle_identifier
-
-                    if count == 0:
-                        message = "Not blocked by anyone"
-                        return await render_template('not_blocked.html', user=identifier, message=message)
-
-                    logger.info(str(session_ip) + " > " + str(
-                        *session.values()) + " | " + "Single Blocklist Request Result: " + identifier + " | " + "Blocked by: " + str(
-                        blocklist) + " :: " + "Total count: " + str(formatted_count))
-
-                    more_data_available = len(blocklist) == items_per_page
-
-                    return await render_template('single_blocklist.html', user=identifier, blocklist=blocklist,
-                                                 count=formatted_count, identifier=did_identifier, page=page, more_data_available=more_data_available)
-                elif selection == "6":
-                    logger.info(f"Requesting in-common blocks for: {identifier}")
-                    in_common_list, percentages, status_list = await database_handler.get_similar_users(did_identifier)
-
-                    if "no blocks" in in_common_list:
-                        message = "No blocks to compare"
-
-                        return await render_template('no_result.html', user=identifier, message=message)
-
-                    if not in_common_list:
-                        message = "No blocks in common with other users"
-
-                        return await render_template('no_result.html', user=identifier, message=message)
-
-                    in_common_handles = []
-                    rounded_percentages = [round(percent, 2) for percent in percentages]
-
-                    for did in in_common_list:
-                        handle = await utils.get_user_handle(did)
-                        in_common_handles.append(handle)
-                    logger.info(in_common_handles)
-
-                    in_common_data = zip(in_common_handles, rounded_percentages, status_list)
-
-                    return await render_template('in_common.html', data=in_common_data, user=handle_identifier)
-                elif selection == "7":
-                    logger.info(f"Requesting in-common blocked for: {await utils.get_user_handle(identifier)}")
-
-                    in_common_list, percentages = await database_handler.get_similar_blocked_by(did_identifier)
-
-                    if "no blocks" in in_common_list:
-                        in_common_list = ["No blocks to compare"]
-                        percentage = [0]
-
-                        return await render_template('in_common.html', in_common_list=in_common_list,
-                                                     percentages=percentage, user=handle_identifier)
-
-                    if not in_common_list:
-                        in_common_list = ["No blocks in common with other users"]
-                        percentage = [0]
-
-                        return await render_template('in_common.html', in_common_list=in_common_list,
-                                                     percentages=percentage, user=handle_identifier)
-
-                    in_common_handles = []
-                    avatar_id_list = []
-                    did_list = []
-                    rounded_percentages = [round(percent, 2) for percent in percentages]
-
-                    for did in in_common_list:
-                        handle = await utils.get_user_handle(did)
-                        in_common_handles.append(handle)
-                        avatar_id = on_wire.get_avatar_id(did)
-                        avatar_id_list.append(avatar_id)
-                        did_list.append(did)
-
-                    logger.info(in_common_handles)
-
-                    return await render_template('in_common.html', in_common_list=in_common_list,
-                                                 percentages=rounded_percentages, user=handle_identifier,
-                                                 did_list=did_list, avatar_id=avatar_id_list)
-                elif selection == "8":
-                    logger.info(f"Requesting handle history for {identifier}")
-
-                    handle_history = await utils.get_handle_history(did_identifier)
-
-                    logger.info(f"history for {identifier}: {str(handle_history)}")
-
-                    return await render_template('handle_history.html', handle_history=handle_history,
-                                                 identity=identifier)
-                elif selection == "9":
-                    logger.info(f"Requesting mute list lookup for: {identifier}")
-
-                    mute_lists = await database_handler.get_mutelists(did_identifier)
-
-                    if not mute_lists:
-                        message = "This users is not on any lists."
-
-                        return await render_template('not_on_lists.html', user=identifier, message=message)
-
-                    data = json.loads(mute_lists)
-
-                    logger.debug(mute_lists)
-
-                    return await render_template('mutelist.html', user=handle_identifier, mute_lists=data)
-
-        else:
-            logger.info(f"Error page loaded because {identifier} isn't a did or handle")
-
-            return await render_template('error.html')
+        logger.info(f">> {session_ip} - {session} blocklist result returned: {identifier}")
     else:
-        logger.warning(f"Intentional error: selection = {selection} | {str(session_ip)} > " + str(*session.values()))
+        blocklist_data = None
 
-        return await render_template('intentional_error.html')
+    return jsonify(blocklist_data)
+
+
+@app.route('/api/v1/single-blocklist/<identifier>', defaults={'page': 1})
+@app.route('/api/v1/single-blocklist/<identifier>/<int:page>')
+async def get_single_blocklist(user_identifier):
+    global session_ip
+
+    identifier = sanitization(user_identifier)
+    did_identifier, handle_identifier = pre_process_identifier(identifier)
+    status = preprocess_status(identifier)
+    session_ip = await get_ip()
+
+    if did_identifier and handle_identifier and status:
+        logger.info(f"<< {session_ip} - {session} single blocklist request: {identifier}")
+
+        page = request.args.get('page', default=1, type=int)
+        items_per_page = 100
+        offset = (page - 1) * items_per_page
+
+        blocklist_data = await utils.get_single_user_blocks(did_identifier, limit=items_per_page, offset=offset)
+        # formatted_count = '{:,}'.format(count)
+
+        logger.info(f">> {session_ip} - {session} single blocklist result returned: {identifier}")
+    else:
+        blocklist_data = None
+
+    return jsonify(blocklist_data)
+
+
+@app.route('/api/v1/in-common-blocklist/<identifier>')
+async def get_in_common_blocklist(user_identifier):
+    global session_ip
+
+    identifier = sanitization(user_identifier)
+    did_identifier, handle_identifier = pre_process_identifier(identifier)
+    status = preprocess_status(identifier)
+    session_ip = await get_ip()
+
+    if did_identifier and handle_identifier and status:
+        logger.info(f"<< {session_ip} - {session} in-common blocklist request: {identifier}")
+
+        blocklist_data = await database_handler.get_similar_users(did_identifier)
+        # formatted_count = '{:,}'.format(count)
+
+        logger.info(f">> {session_ip} - {session} in-common blocklist result returned: {identifier}")
+    else:
+        blocklist_data = None
+
+    return jsonify(blocklist_data)
+
+
+@app.route('/api/v1/in-common-blocked-by/<identifier>')
+async def get_in_common_blocked(user_identifier):
+    global session_ip
+
+    identifier = sanitization(user_identifier)
+    did_identifier, handle_identifier = pre_process_identifier(identifier)
+    status = preprocess_status(identifier)
+    session_ip = await get_ip()
+
+    if did_identifier and handle_identifier and status:
+        logger.info(f"<< {session_ip} - {session} in-common blocked request: {identifier}")
+
+        blocklist_data = await database_handler.get_similar_blocked_by(did_identifier)
+        # formatted_count = '{:,}'.format(count)
+
+        logger.info(f">> {session_ip} - {session} in-common blocked result returned: {identifier}")
+    else:
+        blocklist_data = None
+
+    return jsonify(blocklist_data)
+
+
+@app.route('/api/v1/total-users')
+async def get_total_users():
+    global session_ip
+
+    session_ip = await get_ip()
+
+    logger.info(f"<< {session_ip} - {session} total users request")
+
+    try:
+        active_count = await utils.get_user_count(get_active=True)
+        total_count = await utils.get_user_count(get_active=False)
+        deleted_count = await utils.get_deleted_users_count()
+    except AttributeError:
+        logger.error("db connection issue.")
+        active_count = None
+        total_count = None
+        deleted_count = None
+        # return await render_template('issue.html')
+
+    formatted_active_count = '{:,}'.format(active_count)
+    formatted_total_count = '{:,}'.format(total_count)
+    formatted_deleted_count = '{:,}'.format(deleted_count)
+
+    data = {formatted_active_count, formatted_total_count, formatted_deleted_count}
+
+    logger.info(f">> {session_ip} - {session} total users result returned")
+
+    return jsonify(data)
+
+
+@app.route('/api/v1/get-did/<identifier>')
+async def get_did_info(user_identifier):
+    global session_ip
+
+    identifier = sanitization(user_identifier)
+    did_identifier, handle_identifier = pre_process_identifier(identifier)
+    status = preprocess_status(identifier)
+    session_ip = await get_ip()
+
+    if did_identifier and handle_identifier and status:
+        logger.info(f"<< {session_ip} - {session} get did request: {identifier}")
+
+        avatar_id = await on_wire.get_avatar_id(did_identifier)
+
+        data = {identifier, did_identifier, avatar_id}
+
+        logger.info(f">> {session_ip} - {session} did result returned: {identifier}")
+    else:
+        data = None
+
+    return jsonify(data)
+
+
+@app.route('/api/v1/get-handle/<identifier>')
+async def get_handle_info(user_identifier):
+    global session_ip
+
+    identifier = sanitization(user_identifier)
+    did_identifier, handle_identifier = pre_process_identifier(identifier)
+    status = preprocess_status(identifier)
+    session_ip = await get_ip()
+
+    if did_identifier and handle_identifier and status:
+        logger.info(f"<< {session_ip} - {session} get handle request: {identifier}")
+
+        avatar_id = await on_wire.get_avatar_id(did_identifier)
+
+        data = {identifier, handle_identifier, avatar_id}
+
+        logger.info(f">> {session_ip} - {session} handle result returned: {identifier}")
+    else:
+        data = None
+
+    return jsonify(data)
+
+
+@app.route('/api/v1/get-handle-history/<identifier>')
+async def get_handle_history_info(user_identifier):
+    global session_ip
+
+    identifier = sanitization(user_identifier)
+    did_identifier, handle_identifier = pre_process_identifier(identifier)
+    status = preprocess_status(identifier)
+    session_ip = await get_ip()
+
+    if did_identifier and handle_identifier and status:
+        logger.info(f"<< {session_ip} - {session} get handle history request: {identifier}")
+
+        handle_history = await utils.get_handle_history(did_identifier)
+
+        data = {identifier, handle_history}
+
+        logger.info(f">> {session_ip} - {session} handle history result returned: {identifier}")
+    else:
+        data = None
+
+    return jsonify(data)
+
+
+@app.route('/api/v1/get-list/<identifier>')
+async def get_list_info(user_identifier):
+    global session_ip
+
+    identifier = sanitization(user_identifier)
+    did_identifier, handle_identifier = pre_process_identifier(identifier)
+    status = preprocess_status(identifier)
+    session_ip = await get_ip()
+
+    if did_identifier and handle_identifier and status:
+        logger.info(f"<< {session_ip} - {session} get mute/block list request: {identifier}")
+
+        mute_lists = await database_handler.get_mutelists(did_identifier)
+
+        data = {identifier, mute_lists}
+
+        logger.info(f">> {session_ip} - {session} mute/block list result returned: {identifier}")
+    else:
+        data = None
+
+    return jsonify(data)
 
 
 @app.route('/fun_facts')
@@ -745,8 +657,6 @@ async def block_stats():
                                  )
 
 
-# ======================================================================================================================
-# ============================================= API Endpoints ==========================================================
 @app.route('/autocomplete')
 async def autocomplete():
     query = request.args.get('query')
@@ -794,84 +704,11 @@ async def blocklist_redirect():
         return redirect('/', code=302)
 
 
-@app.route('/blocklist/<identifier>')
-async def blocklist(identifier):
-    if not identifier:
-        logger.warning(f"Page request failed, no identifier present. | {str(session_ip)} > " + str(*session.values()))
-
-        return redirect('/', code=302)
-
-    # Check if the 'from' parameter is present in the query string
-    request_from = request.args.get('from')
-
-    logger.info(f"{request_from} page request for: {identifier}")
-
-    if request_from == 'next' or request_from == 'previous':
-        page = request.args.get('page', default=1, type=int)
-        items_per_page = 100
-        offset = (page - 1) * items_per_page
-
-        blocklist, count = await utils.process_user_block_list(identifier, limit=items_per_page, offset=offset)
-
-        formatted_count = '{:,}'.format(count)
-        if utils.is_did(identifier):
-            handle_identifier = await utils.use_handle(identifier)
-
-        more_data_available = (offset + len(blocklist)) < count
-
-        if offset + items_per_page > count:
-            more_data_available = False
-
-        return await render_template('blocklist.html', blocklist=blocklist, count=formatted_count,
-                                     more_data_available=more_data_available, page=page, identifier=identifier, user=handle_identifier)
-    else:
-        logger.warning(f"Page request failed, not from organic search. | {str(session_ip)} > " + str(*session.values()))
-
-        return redirect('/', code=302)
-
-
 @app.route('/single_blocklist')
 async def single_blocklist_redirect():
     if request.method == 'GET':
 
         return redirect('/', code=302)
-
-
-@app.route('/single_blocklist/<identifier>')
-async def single_blocklist(identifier):
-    if not identifier:
-        logger.warning(f"Page request failed, no identifier present. | {str(session_ip)} > " + str(*session.values()))
-
-        return redirect('/', code=302)
-
-    # Check if the 'from' parameter is present in the query string
-    request_from = request.args.get('from')
-
-    logger.info(f"{request_from} page request for: {identifier}")
-
-    if request_from == 'next' or request_from == 'previous':
-        # Get pagination parameters from the request (e.g., page number)
-        page = request.args.get('page', default=1, type=int)
-        items_per_page = 100
-        offset = (page - 1) * items_per_page
-
-        blocklist, count = await utils.get_single_user_blocks(identifier, limit=items_per_page, offset=offset)
-
-        formatted_count = '{:,}'.format(count)
-        if utils.is_did(identifier):
-            handle_identifier = await utils.use_handle(identifier)
-
-        more_data_available = (offset + len(blocklist)) < count
-
-        if offset + items_per_page > count:
-            more_data_available = False
-
-        return await render_template('single_blocklist.html', blocklist=blocklist, count=formatted_count,
-                                     more_data_available=more_data_available, page=page, identifier=identifier, user=handle_identifier)
-    else:
-        logger.warning(f"Page request failed, not from organic search. | {str(session_ip)} > " + str(*session.values()))
-
-        return redirect('/')
 
 
 @app.route('/process_status', methods=['GET'])
@@ -952,6 +789,84 @@ async def update_block_stats():
 
 # ======================================================================================================================
 # ============================================= Main functions =========================================================
+async def sanitization(identifier):
+    identifier = identifier.lower()
+    identifier = identifier.strip()
+    identifier = identifier.replace('@', '')
+
+    return identifier
+
+
+async def pre_process_identifier(identifier):
+    did_identifier = None
+    handle_identifier = None
+
+    if not identifier:  # If form is submitted without anything in the identifier return intentional error
+
+        # return await render_template('intentional_error.html')
+        return None, None
+
+    # Check if did or handle exists before processing
+    if utils.is_did(identifier) or utils.is_handle(identifier):
+        if utils.is_did(identifier):
+            if not await database_handler.local_db():
+                try:
+                    did_identifier = identifier
+                    handle_identifier = await asyncio.wait_for(utils.use_handle(identifier), timeout=30)
+                except asyncio.TimeoutError:
+                    handle_identifier = None
+                    logger.warning("resolution failed, possible connection issue.")
+            else:
+                did_identifier = identifier
+                handle_identifier = await utils.get_user_handle(identifier)
+        elif utils.is_handle(identifier):
+            if not await database_handler.local_db():
+                try:
+                    handle_identifier = identifier
+                    did_identifier = await asyncio.wait_for(utils.use_did(identifier), timeout=30)
+                except asyncio.TimeoutError:
+                    did_identifier = None
+                    logger.warning("resolution failed, possible connection issue.")
+            else:
+                handle_identifier = identifier
+                did_identifier = await utils.get_user_did(identifier)
+        else:
+            did_identifier = None
+            handle_identifier = None
+
+        return did_identifier, handle_identifier
+
+
+async def preprocess_status(identifier):
+    try:
+        persona, status = await utils.identifier_exists_in_db(identifier)
+        logger.debug(f"persona: {persona} status: {status}")
+    except AttributeError:
+        logger.error("db connection issue.")
+
+        # return await render_template('issue.html')
+        return None
+
+    if persona is True and status is True:
+
+        return True
+    elif persona is True and status is False:
+        logger.info(f"Account: {identifier} deleted")
+
+        # return await render_template('account_deleted.html', account=identifier)
+        return False
+    elif status is False and persona is False:
+        logger.info(f"{identifier}: does not exist.")
+
+        # return await render_template('error.html')
+        return None
+    else:
+        logger.info(f"Error page loaded for resolution failure using: {identifier}")
+
+        # return await render_template('error.html', content_type='text/html')
+        return False
+
+
 def generate_session_number():
 
     return str(uuid.uuid4().hex)
