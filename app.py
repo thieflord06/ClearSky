@@ -707,10 +707,9 @@ async def block_stats():
                                  )
 
 
-@app.route('/api/v1/base/autocomplete')
-async def autocomplete():
-    query = request.args.get('query')
-    query = query.lower()
+@app.route('/api/v1/base/autocomplete/<client_identifier>')
+async def autocomplete(client_identifier):
+    query = client_identifier.lower()
 
     # Remove the '@' symbol if it exists
     query_without_at = query.lstrip('@')
