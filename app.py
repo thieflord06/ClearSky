@@ -234,7 +234,8 @@ async def get_did_info(client_identifier):
 
         data = {"identifier": identifier,
                 "did_identifier": did_identifier,
-                "avatar_id": avatar_id
+                "user_url": f"https://bsky.app/profile/{did_identifier}",
+                "avatar_url": f"https://av-cdn.bsky.app/img/avatar/plain/{avatar_id}"
                 }
 
         logger.info(f">> {session_ip} - {session['session_number']} did result returned: {identifier}")
@@ -258,7 +259,11 @@ async def get_handle_info(client_identifier):
 
         avatar_id = await on_wire.get_avatar_id(did_identifier)
 
-        data = {identifier, handle_identifier, avatar_id}
+        data = {"identifier": identifier,
+                "handle_identifier": handle_identifier,
+                "user_url": f"https://bsky.app/profile/{did_identifier}",
+                "avatar_url": f"https://av-cdn.bsky.app/img/avatar/plain/{avatar_id}"
+                }
 
         logger.info(f">> {session_ip} - {session['session_number']} handle result returned: {identifier}")
     else:
