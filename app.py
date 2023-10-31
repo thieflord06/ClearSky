@@ -46,6 +46,19 @@ blocklist_failed = asyncio.Event()
 db_pool_acquired = asyncio.Event()
 
 
+async def api_key_required(func):
+    api_keys = await database_handler.get_api_keys()
+
+    async def wrapper(*args, **kwargs):
+        provided_api_key = request.headers.get("X-API-Key")
+        if provided_api_key not in api_keys:
+            return func(*args, **kwargs)
+        else:
+            return "Unauthorized", 401  # Return an error response if the API key is not valid
+
+    return wrapper
+
+
 # ======================================================================================================================
 # ================================================== HTML Pages ========================================================
 @app.route('/')
@@ -180,7 +193,6 @@ async def get_in_common_blocklist(client_identifier):
         logger.info(f"<< {session_ip} - {session['session_number']} in-common blocklist request: {identifier}")
 
         blocklist_data = await database_handler.get_similar_users(did_identifier)
-        # formatted_count = '{:,}'.format(count)
 
         logger.info(f">> {session_ip} - {session['session_number']} in-common blocklist result returned: {identifier}")
     else:
@@ -242,7 +254,6 @@ async def get_total_users():
         formatted_active_count = None
         formatted_total_count = None
         formatted_deleted_count = None
-        # return await render_template('issue.html')
 
     count_data = {"active_count": formatted_active_count,
                   "total_count": formatted_total_count,
@@ -853,6 +864,7 @@ async def single_blocklist_redirect():
 
 
 @app.route('/api/v1/base/internal/status/process-status', methods=['GET'])
+@api_key_required
 async def update_block_stats():
     logger.info("System status requested.")
 

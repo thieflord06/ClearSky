@@ -1610,6 +1610,24 @@ async def tables_exists():
                 return False
 
 
+async def get_api_keys():
+    async with connection_pool.acquire() as connection:
+        async with connection.transaction():
+            try:
+                query = """SELECT key FROM API where status is True"""
+
+                results = await connection.fetch(query)
+
+                key_list = [key['key'] for key in results]
+
+                return key_list
+            except Exception as e:
+                # Handle other exceptions as needed
+                logger.error(f"Error getting API keys: {e}")
+
+                return []
+
+
 # ======================================================================================================================
 # ============================================ get database credentials ================================================
 def get_database_config():
