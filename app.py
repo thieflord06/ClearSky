@@ -274,7 +274,8 @@ def api_key_required(func):
         api_keys = await database_handler.get_api_keys()
         provided_api_key = request.headers.get("X-API-Key")
         if provided_api_key not in api_keys:
-            logger.warning("Unauthorized API access.")
+            ip = await get_ip()
+            logger.warning(f"<< {ip}: Unauthorized API access.")
 
             return "Unauthorized", 401  # Return an error response if the API key is not valid
 
