@@ -346,11 +346,14 @@ async def get_list_info(client_identifier):
 
         mute_lists = await database_handler.get_mutelists(did_identifier)
 
-        data = {identifier, mute_lists}
+        list_data = {"identifier": identifier,
+                     "lists": mute_lists}
 
         logger.info(f">> {session_ip} - {session['session_number']} mute/block list result returned: {identifier}")
     else:
-        data = None
+        list_data = None
+
+    data = {"data": list_data}
 
     return jsonify(data)
 
