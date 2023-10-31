@@ -104,7 +104,8 @@ async def get_blocklist(client_identifier, page):
         items_per_page = 100
         offset = (page - 1) * items_per_page
 
-        blocklist, count, pages = await utils.process_user_block_list(did_identifier, limit=items_per_page, offset=offset)
+        blocklist, count, pages = await utils.process_user_block_list(did_identifier, limit=items_per_page,
+                                                                      offset=offset)
         formatted_count = '{:,}'.format(count)
 
         blocklist_data = {"blocklist": blocklist,
@@ -143,7 +144,8 @@ async def get_single_blocklist(client_identifier, page):
         items_per_page = 100
         offset = (page - 1) * items_per_page
 
-        blocklist, count, pages = await utils.get_single_user_blocks(did_identifier, limit=items_per_page, offset=offset)
+        blocklist, count, pages = await utils.get_single_user_blocks(did_identifier, limit=items_per_page,
+                                                                     offset=offset)
         formatted_count = '{:,}'.format(count)
 
         blocklist_data = {"blocklist": blocklist,
@@ -366,9 +368,16 @@ async def fun_facts():
     if not db_connected:
         logger.error("Database connection is not live.")
 
-        return await render_template('feature_not_available.html')
+        message = "db not connected"
+        error = {"error": message}
+
+        data = {"data": error}
+
+        return jsonify(data)
 
     if database_handler.blocklist_updater_status.is_set():
+        remaining_time = "not yet determined"
+
         logger.info("Updating top blocks.")
 
         process_time = database_handler.top_blocks_process_time
@@ -398,7 +407,10 @@ async def fun_facts():
             else:
                 remaining_time = "just finished"
 
-        return await render_template('please_wait.html', remaining_time=remaining_time)
+        timing = {"timeLeft": remaining_time}
+        data = {"data": timing}
+
+        return jsonify(data)
 
     resolved_blocked = utils.resolved_blocked_cache.get('resolved_blocked')
     resolved_blockers = utils.resolved_blockers_cache.get('resolved_blockers')
@@ -408,6 +420,8 @@ async def fun_facts():
 
     # Check if both lists are empty
     if resolved_blocked is None or resolved_blockers is None or blocker_aid is None or blocker_aid is None:
+        remaining_time = "not yet determined"
+
         logger.info("Getting new cache.")
 
         process_time = database_handler.top_blocks_process_time
@@ -439,11 +453,22 @@ async def fun_facts():
 
         asyncio.create_task(database_handler.blocklists_updater())
 
-        return await render_template('please_wait.html', remaining_time=remaining_time)
+        timing = {"timeLeft": remaining_time}
+        data = {"data": timing}
 
-    # If the lists aren't empty, render the regular page
-    return await render_template('fun_facts.html', blocked_results=resolved_blocked, blockers_results=resolved_blockers,
-                                 blocked_aid=blocked_aid, blocker_aid=blocker_aid)
+        return jsonify(data)
+
+    data_lists = {"blocked": resolved_blocked,
+                  "blockers": resolved_blockers,
+                  "blocked_aid": blocked_aid,
+                  "blockers_aid": blocker_aid
+                  }
+
+    profile_url = "https://av-cdn.bsky.app/img/avatar/plain/{{item.did}}/{{blocked_aid[item.did]}}"
+
+    data = {"data": data_lists}
+
+    return jsonify(data)
 
 
 @app.route('/api/v1/funer-facts')
@@ -459,9 +484,16 @@ async def funer_facts():
     if not db_connected:
         logger.error("Database connection is not live.")
 
-        return await render_template('feature_not_available.html')
+        message = "db not connected"
+        error = {"error": message}
+
+        data = {"data": error}
+
+        return jsonify(data)
 
     if database_handler.blocklist_24_updater_status.is_set():
+        remaining_time = "not yet determined"
+
         logger.info("Updating top 24 blocks.")
 
         process_time = database_handler.top_24_blocks_process_time
@@ -491,7 +523,10 @@ async def funer_facts():
             else:
                 remaining_time = "just finished"
 
-        return await render_template('please_wait.html', remaining_time=remaining_time)
+        timing = {"timeLeft": remaining_time}
+        data = {"data": timing}
+
+        return jsonify(data)
 
     resolved_blocked_24 = utils.resolved_24_blocked_cache.get('resolved_blocked')
     resolved_blockers_24 = utils.resolved_24blockers_cache.get('resolved_blockers')
@@ -501,6 +536,8 @@ async def funer_facts():
 
     # Check if both lists are empty
     if resolved_blocked_24 is None or resolved_blockers_24 is None or blocker_aid_24 is None or blocker_aid_24 is None:
+        remaining_time = "not yet determined"
+
         logger.info("Getting new cache.")
 
         process_time = database_handler.top_24_blocks_process_time
@@ -532,12 +569,22 @@ async def funer_facts():
 
         asyncio.create_task(database_handler.top_24blocklists_updater())
 
-        return await render_template('please_wait.html', remaining_time=remaining_time)
+        timing = {"timeLeft": remaining_time}
+        data = {"data": timing}
 
-    # If at least one list is not empty, render the regular page
-    return await render_template('funer_facts.html', blocked_results=resolved_blocked_24,
-                                 blockers_results=resolved_blockers_24, blocked_aid=blocked_aid_24,
-                                 blocker_aid=blocker_aid_24)
+        return jsonify(data)
+
+    data_lists = {"blocked24": resolved_blocked_24,
+                  "blockers24": resolved_blockers_24,
+                  "blocked_aid": blocked_aid_24,
+                  "blockers_aid": blocker_aid_24
+                  }
+
+    profile_url = "https://av-cdn.bsky.app/img/avatar/plain/{{item.did}}/{{blocked_aid[item.did]}}"
+
+    data = {"data": data_lists}
+
+    return jsonify(data)
 
 
 @app.route('/api/v1/block-stats')
@@ -553,9 +600,16 @@ async def block_stats():
     if not db_connected:
         logger.error("Database connection is not live.")
 
-        return await render_template('feature_not_available.html')
+        message = "db not connected"
+        error = {"error": message}
+
+        data = {"data": error}
+
+        return jsonify(data)
 
     if utils.block_stats_status.is_set():
+        remaining_time = "not yet determined"
+
         logger.info("Updating block stats.")
 
         process_time = utils.block_stats_process_time
@@ -585,7 +639,10 @@ async def block_stats():
             else:
                 remaining_time = "just finished"
 
-        return await render_template('please_wait.html', remaining_time=remaining_time)
+        timing = {"timeLeft": remaining_time}
+        data = {"data": timing}
+
+        return jsonify(data)
 
     number_of_total_blocks = utils.number_of_total_blocks_cache.get("total_blocks")
     number_of_unique_users_blocked = utils.number_of_unique_users_blocked_cache.get("unique_blocked")
@@ -620,6 +677,8 @@ async def block_stats():
     )
 
     if any(value is None for value in values_to_check) and not await database_handler.local_db():
+        remaining_time = "not yet determined"
+
         logger.info("Getting new cache.")
 
         process_time = utils.block_stats_process_time
@@ -651,7 +710,10 @@ async def block_stats():
 
         asyncio.create_task(utils.update_block_statistics())
 
-        return await render_template('please_wait.html', remaining_time=remaining_time)
+        timing = {"timeLeft": remaining_time}
+        data = {"data": timing}
+
+        return jsonify(data)
 
     # total_users = await utils.get_user_count(get_active=False)
 
@@ -680,31 +742,48 @@ async def block_stats():
     average_number_of_blocks_round = round(float(average_number_of_blocks), 2)
     average_number_of_blocked_round = round(float(average_number_of_blocked), 2)
 
-    return await render_template('blocklist_stats.html', number_of_total_blocks='{:,}'.format(number_of_total_blocks),
-                                 number_of_unique_users_blocked='{:,}'.format(number_of_unique_users_blocked),
-                                 number_of_unique_users_blocking='{:,}'.format(number_of_unique_users_blocking),
-                                 total_users='{:,}'.format(total_users),
-                                 percent_users_blocked=percent_users_blocked,
-                                 percent_users_blocking=percent_users_blocking,
-                                 number_block_1='{:,}'.format(number_blocking_1),
-                                 number_blocking_2_and_100='{:,}'.format(number_blocking_2_and_100),
-                                 number_blocking_101_and_1000='{:,}'.format(number_blocking_101_and_1000),
-                                 number_blocking_greater_than_1000='{:,}'.format(number_blocking_greater_than_1000),
-                                 percent_number_blocking_1=percent_number_blocking_1,
-                                 percent_number_blocking_2_and_100=percent_number_blocking_2_and_100,
-                                 percent_number_blocking_101_and_1000=percent_number_blocking_101_and_1000,
-                                 percent_number_blocking_greater_than_1000=percent_number_blocking_greater_than_1000,
-                                 average_number_of_blocks='{:,}'.format(average_number_of_blocks_round),
-                                 number_blocked_1='{:,}'.format(number_blocked_1),
-                                 number_blocked_2_and_100='{:,}'.format(number_blocked_2_and_100),
-                                 number_blocked_101_and_1000='{:,}'.format(number_blocked_101_and_1000),
-                                 number_blocked_greater_than_1000='{:,}'.format(number_blocked_greater_than_1000),
-                                 percent_number_blocked_1=percent_number_blocked_1,
-                                 percent_number_blocked_2_and_100=percent_number_blocked_2_and_100,
-                                 percent_number_blocked_101_and_1000=percent_number_blocked_101_and_1000,
-                                 percent_number_blocked_greater_than_1000=percent_number_blocked_greater_than_1000,
-                                 average_number_of_blocked=average_number_of_blocked_round
-                                 )
+    number_of_total_blocks_formatted = '{:,}'.format(number_of_total_blocks)
+    number_of_unique_users_blocked_formatted = '{:,}'.format(number_of_unique_users_blocked)
+    number_of_unique_users_blocking_formatted = '{:,}'.format(number_of_unique_users_blocking)
+    total_users_formatted = '{:,}'.format(total_users)
+    number_block_1_formatted = '{:,}'.format(number_blocking_1)
+    number_blocking_2_and_100_formatted = '{:,}'.format(number_blocking_2_and_100)
+    number_blocking_101_and_1000_formatted = '{:,}'.format(number_blocking_101_and_1000)
+    number_blocking_greater_than_1000_formatted = '{:,}'.format(number_blocking_greater_than_1000)
+    average_number_of_blocks_formatted = '{:,}'.format(average_number_of_blocks_round)
+    number_blocked_1_formatted = '{:,}'.format(number_blocked_1)
+    number_blocked_2_and_100_formatted = '{:,}'.format(number_blocked_2_and_100)
+    number_blocked_101_and_1000_formatted = '{:,}'.format(number_blocked_101_and_1000)
+    number_blocked_greater_than_1000_formatted = '{:,}'.format(number_blocked_greater_than_1000)
+
+    stats_data = {"numberOfTotalBlocks": number_of_total_blocks_formatted,
+                  "numberOfUniqueUsersBlocked": number_of_unique_users_blocked_formatted,
+                  "numberOfUniqueUsersBlocking": number_of_unique_users_blocking_formatted,
+                  "totalUsers": total_users_formatted,
+                  "percentUsersBlocked": percent_users_blocked,
+                  "percentUsersBlocking": percent_users_blocking,
+                  "numberBlock1": number_block_1_formatted,
+                  "numberBlocking2and100": number_blocking_2_and_100_formatted,
+                  "numberBlocking101and1000": number_blocking_101_and_1000_formatted,
+                  "numberBlockingGreaterThan1000": number_blocking_greater_than_1000_formatted,
+                  "percentNumberBlocking1": percent_number_blocking_1,
+                  "percentNumberBlocking2and100": percent_number_blocking_2_and_100,
+                  "percentNumberBlocking101and1000": percent_number_blocking_101_and_1000,
+                  "percentNumberBlockingGreaterThan1000": percent_number_blocking_greater_than_1000,
+                  "averageNumberOfBlocks": average_number_of_blocks_formatted,
+                  "numberBlocked1": number_blocked_1_formatted,
+                  "numberBlocked2and100": number_blocked_2_and_100_formatted,
+                  "numberBlocked101and1000": number_blocked_101_and_1000_formatted,
+                  "numberBlockedGreaterThan1000": number_blocked_greater_than_1000_formatted,
+                  "percentNumberBlocked1": percent_number_blocked_1,
+                  "percentNumberBlocked2and100": percent_number_blocked_2_and_100,
+                  "percentNumberBlocked101and1000": percent_number_blocked_101_and_1000,
+                  "percentNumberBlockedGreaterThan1000": percent_number_blocked_greater_than_1000,
+                  "averageNumberOfBlocked": average_number_of_blocked_round}
+
+    data = {"data": stats_data}
+
+    return jsonify(data)
 
 
 @app.route('/api/v1/base/autocomplete/<client_identifier>')
