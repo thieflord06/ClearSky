@@ -269,7 +269,6 @@ async def first_run():
 
 
 def api_key_required(func):
-
     async def wrapper(*args, **kwargs):
         api_keys = await database_handler.get_api_keys()
         provided_api_key = request.headers.get("X-API-Key")
@@ -324,7 +323,6 @@ async def contact():
 # ============================================= API Endpoints ==========================================================
 @app.route('/api/v1/blocklist/<client_identifier>', defaults={'page': 1})
 @app.route('/api/v1/blocklist/<client_identifier>/<int:page>')
-@api_key_required
 async def get_blocklist(client_identifier, page):
     global session_ip
 
@@ -366,7 +364,6 @@ async def get_blocklist(client_identifier, page):
 
 @app.route('/api/v1/single-blocklist/<client_identifier>', defaults={'page': 1})
 @app.route('/api/v1/single-blocklist/<client_identifier>/<int:page>')
-@api_key_required
 async def get_single_blocklist(client_identifier, page):
     global session_ip
 
@@ -406,7 +403,6 @@ async def get_single_blocklist(client_identifier, page):
 
 
 @app.route('/api/v1/in-common-blocklist/<client_identifier>')
-@api_key_required
 async def get_in_common_blocklist(client_identifier):
     global session_ip
 
@@ -433,7 +429,6 @@ async def get_in_common_blocklist(client_identifier):
 
 
 @app.route('/api/v1/in-common-blocked-by/<client_identifier>')
-@api_key_required
 async def get_in_common_blocked(client_identifier):
     global session_ip
 
@@ -461,7 +456,6 @@ async def get_in_common_blocked(client_identifier):
 
 
 @app.route('/api/v1/total-users')
-@api_key_required
 async def get_total_users():
     global session_ip
 
@@ -495,7 +489,6 @@ async def get_total_users():
 
 
 @app.route('/api/v1/get-did/<client_identifier>')
-@api_key_required
 async def get_did_info(client_identifier):
     global session_ip
 
@@ -527,7 +520,6 @@ async def get_did_info(client_identifier):
 
 
 @app.route('/api/v1/get-handle/<client_identifier>')
-@api_key_required
 async def get_handle_info(client_identifier):
     global session_ip
 
@@ -557,7 +549,6 @@ async def get_handle_info(client_identifier):
 
 
 @app.route('/api/v1/get-handle-history/<client_identifier>')
-@api_key_required
 async def get_handle_history_info(client_identifier):
     global session_ip
 
@@ -585,7 +576,6 @@ async def get_handle_history_info(client_identifier):
 
 
 @app.route('/api/v1/get-list/<client_identifier>')
-@api_key_required
 async def get_list_info(client_identifier):
     global session_ip
 
@@ -613,7 +603,6 @@ async def get_list_info(client_identifier):
 
 
 @app.route('/api/v1/fun-facts')
-@api_key_required
 async def fun_facts():
     global fun_start_time
 
@@ -730,7 +719,6 @@ async def fun_facts():
 
 
 @app.route('/api/v1/funer-facts')
-@api_key_required
 async def funer_facts():
     global funer_start_time
 
@@ -847,7 +835,6 @@ async def funer_facts():
 
 
 @app.route('/api/v1/block-stats')
-@api_key_required
 async def block_stats():
     global block_stats_app_start_time
 
@@ -1047,7 +1034,6 @@ async def block_stats():
 
 
 @app.route('/api/v1/base/autocomplete/<client_identifier>')
-@api_key_required
 async def autocomplete(client_identifier):
     query = client_identifier.lower()
 
@@ -1085,20 +1071,6 @@ async def autocomplete(client_identifier):
         else:
 
             return jsonify({'suggestions': matching_handles})
-
-
-@app.route('/api/v1/blocklist')
-@api_key_required
-async def blocklist_redirect():
-    if request.method == 'GET':
-        return redirect('/', code=302)
-
-
-@app.route('/api/v1/single-blocklist')
-@api_key_required
-async def single_blocklist_redirect():
-    if request.method == 'GET':
-        return redirect('/', code=302)
 
 
 @app.route('/api/v1/base/internal/status/process-status', methods=['GET'])
