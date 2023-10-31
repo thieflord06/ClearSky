@@ -34,3 +34,11 @@ Implemented:
 
 not implemented:
     /api/v1/in-common-blocked-by/<handle/did>
+
+
+API key header: {X-API-Key: "test"}
+
+"Unauthorized", 401
+"deleted", 410
+"Doesn't exist", 404
+"Bad Request", 400
