@@ -1614,7 +1614,7 @@ async def get_api_keys():
     async with connection_pool.acquire() as connection:
         async with connection.transaction():
             try:
-                query = """SELECT key FROM API where status is True"""
+                query = """SELECT key FROM API where valid is True"""
 
                 results = await connection.fetch(query)
 

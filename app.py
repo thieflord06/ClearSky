@@ -46,15 +46,16 @@ blocklist_failed = asyncio.Event()
 db_pool_acquired = asyncio.Event()
 
 
-async def api_key_required(func):
-    api_keys = await database_handler.get_api_keys()
+def api_key_required(func):
 
     async def wrapper(*args, **kwargs):
+        api_keys = await database_handler.get_api_keys()
         provided_api_key = request.headers.get("X-API-Key")
         if provided_api_key not in api_keys:
-            return func(*args, **kwargs)
-        else:
             return "Unauthorized", 401  # Return an error response if the API key is not valid
+
+        else:
+            return await func(*args, **kwargs)
 
     return wrapper
 
@@ -864,7 +865,6 @@ async def single_blocklist_redirect():
 
 
 @app.route('/api/v1/base/internal/status/process-status', methods=['GET'])
-@api_key_required
 async def update_block_stats():
     logger.info("System status requested.")
 
