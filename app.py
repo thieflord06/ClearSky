@@ -363,7 +363,8 @@ async def get_list_info(client_identifier):
     else:
         list_data = None
 
-    data = {"data": list_data}
+    data = {"identifier": identifier,
+            "data": list_data}
 
     return jsonify(data)
 
