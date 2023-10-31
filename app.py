@@ -186,7 +186,12 @@ async def get_in_common_blocklist(client_identifier):
     else:
         blocklist_data = None
 
-    return jsonify(blocklist_data)
+    common_list = {"inCommonList": blocklist_data}
+
+    data = {"identity": identifier,
+            "data": common_list}
+
+    return jsonify(data)
 
 
 @app.route('/api/v1/in-common-blocked-by/<client_identifier>')
@@ -208,7 +213,12 @@ async def get_in_common_blocked(client_identifier):
     else:
         blocklist_data = None
 
-    return jsonify(blocklist_data)
+    common_list = {"inCommonList": blocklist_data}
+
+    data = {"identity": identifier,
+            "data": common_list}
+
+    return jsonify(data)
 
 
 @app.route('/api/v1/total-users')

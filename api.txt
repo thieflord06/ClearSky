@@ -23,7 +23,7 @@ Implemented:
             /api/v1/lists/block-stats
 
             /api/v1/get-list/<handle/did>
-        Not ready to test:
+
             /api/v1/in-common-blocklist/<handle/did>
 
     component:
