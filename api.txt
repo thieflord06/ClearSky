@@ -8,7 +8,6 @@ Implemented:
             /api/v1/single-blocklist/<handle/did>
             /api/v1/single-blocklist/<handle/did>/<int:page>
 
-
             /api/v1/total-users
 
             /api/v1/get-did/<handle/did>
