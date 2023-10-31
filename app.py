@@ -46,6 +46,228 @@ blocklist_failed = asyncio.Event()
 db_pool_acquired = asyncio.Event()
 
 
+# ======================================================================================================================
+# ============================================= Main functions =========================================================
+async def sanitization(identifier):
+    identifier = identifier.lower()
+    identifier = identifier.strip()
+    identifier = identifier.replace('@', '')
+
+    return identifier
+
+
+async def pre_process_identifier(identifier):
+    did_identifier = None
+    handle_identifier = None
+
+    if not identifier:  # If form is submitted without anything in the identifier return intentional error
+
+        # return await render_template('intentional_error.html')
+        return None, None
+
+    # Check if did or handle exists before processing
+    if utils.is_did(identifier) or utils.is_handle(identifier):
+        if utils.is_did(identifier):
+            if not await database_handler.local_db():
+                try:
+                    did_identifier = identifier
+                    handle_identifier = await asyncio.wait_for(utils.use_handle(identifier), timeout=30)
+                except asyncio.TimeoutError:
+                    handle_identifier = None
+                    logger.warning("resolution failed, possible connection issue.")
+            else:
+                did_identifier = identifier
+                handle_identifier = await utils.get_user_handle(identifier)
+        elif utils.is_handle(identifier):
+            if not await database_handler.local_db():
+                try:
+                    handle_identifier = identifier
+                    did_identifier = await asyncio.wait_for(utils.use_did(identifier), timeout=30)
+                except asyncio.TimeoutError:
+                    did_identifier = None
+                    logger.warning("resolution failed, possible connection issue.")
+            else:
+                handle_identifier = identifier
+                did_identifier = await utils.get_user_did(identifier)
+        else:
+            did_identifier = None
+            handle_identifier = None
+
+        return did_identifier, handle_identifier
+
+
+async def preprocess_status(identifier):
+    try:
+        persona, status = await utils.identifier_exists_in_db(identifier)
+        logger.debug(f"persona: {persona} status: {status}")
+    except AttributeError:
+        logger.error("db connection issue.")
+
+        # return await render_template('issue.html')
+        return None
+
+    if persona is True and status is True:
+
+        return True
+    elif persona is True and status is False:
+        logger.info(f"Account: {identifier} deleted")
+
+        # return await render_template('account_deleted.html', account=identifier)
+        return False
+    elif status is False and persona is False:
+        logger.info(f"{identifier}: does not exist.")
+
+        # return await render_template('error.html')
+        return None
+    else:
+        logger.info(f"Error page loaded for resolution failure using: {identifier}")
+
+        # return await render_template('error.html', content_type='text/html')
+        return False
+
+
+def generate_session_number():
+    return str(uuid.uuid4().hex)
+
+
+async def get_ip():  # Get IP address of session request
+    if 'X-Forwarded-For' in request.headers:
+        # Get the client's IP address from the X-Forwarded-For header
+        ip = request.headers.get('X-Forwarded-For')
+        # The client's IP address may contain multiple comma-separated values
+        # Extract the first IP address from the list
+        ip = ip.split(',')[0].strip()
+    else:
+        # Use the remote address if the X-Forwarded-For header is not available
+        ip = request.remote_addr
+
+    return ip
+
+
+async def get_time_since(time):
+    if time is None:
+        return "Not initialized"
+    time_difference = datetime.now() - time
+
+    minutes = int((time_difference.total_seconds() / 60))
+    hours = minutes // 60
+    remaining_minutes = minutes % 60
+
+    if hours > 0 and remaining_minutes > 0:
+        if hours == 1:
+            elapsed_time = f"{int(hours)} hour {int(remaining_minutes)} minutes ago"
+        else:
+            elapsed_time = f"{int(hours)} hours {int(remaining_minutes)} minutes ago"
+    elif hours > 0:
+        if hours == 1:
+            elapsed_time = f"{int(hours)} hour ago"
+        else:
+            elapsed_time = f"{int(hours)} hours ago"
+    elif minutes > 0:
+        if minutes == 1:
+            elapsed_time = f"{int(minutes)} minute ago"
+        else:
+            elapsed_time = f"{int(minutes)} minutes ago"
+    else:
+        elapsed_time = "less than a minute ago"
+
+    return elapsed_time
+
+
+async def initialize():
+    global db_connected
+    global db_pool_acquired
+
+    db_connected = await database_handler.create_connection_pool()  # Creates connection pool for db if connection made
+    log_warning_once = True
+
+    db_pool_acquired.set()
+
+    if not await database_handler.redis_connected():
+        logger.warning("Redis not connected.")
+    else:
+        database_handler.redis_connection = True
+
+    logger.info("Initialized.")
+
+    if not db_connected:
+        while True:
+            db_connected = await database_handler.create_connection_pool()
+
+            if db_connected:
+                # await database_handler.create_connection_pool()  # Creates connection pool for db
+                db_pool_acquired.set()
+
+                if not log_warning_once:
+                    logger.warning("db connection established.")
+
+                logger.info("Initialized.")
+                break
+            else:
+                if log_warning_once:
+                    logger.warning("db not operational.")
+
+                    log_warning_once = False
+
+                    blocklist_24_failed.set()
+                    blocklist_failed.set()
+
+                logger.info("Waiting for db connection.")
+                await asyncio.sleep(30)
+
+
+async def get_ip_address():
+    if not os.environ.get('CLEAR_SKY'):
+        logger.info("IP connection: Using config.ini")
+        ip_address = config.get("server", "ip")
+        port_address = config.get("server", "port")
+
+        return ip_address, port_address
+    else:
+        logger.info("IP connection: Using environment variables.")
+        ip_address = os.environ.get('CLEAR_SKY_IP')
+        port_address = os.environ.get('CLEAR_SKY_PORT')
+
+        return ip_address, port_address
+
+
+async def run_web_server():
+    ip_address, port_address = await get_ip_address()
+
+    if not ip_address or not port_address:
+        logger.error("No IP or port configured.")
+        sys.exit()
+
+    logger.info(f"Web server starting at: {ip_address}:{port_address}")
+
+    await app.run_task(host=ip_address, port=port_address)
+
+
+async def first_run():
+    while not db_pool_acquired.is_set():
+        logger.info("db connection not acquired, waiting for established connection.")
+        await asyncio.sleep(5)
+
+    while True:
+        if db_connected:
+            blocklist_24_failed.clear()
+            blocklist_failed.clear()
+
+            tables = await database_handler.tables_exists()
+
+            if tables:
+                # await database_handler.blocklists_updater()
+                # await database_handler.top_24blocklists_updater()
+                # await utils.update_block_statistics()
+
+                break
+            else:
+                logger.warning("Tables do not exist in db.")
+                sys.exit()
+
+        await asyncio.sleep(30)
+
+
 def api_key_required(func):
 
     async def wrapper(*args, **kwargs):
@@ -938,228 +1160,6 @@ async def update_block_stats():
     }
 
     return jsonify(status)
-
-
-# ======================================================================================================================
-# ============================================= Main functions =========================================================
-async def sanitization(identifier):
-    identifier = identifier.lower()
-    identifier = identifier.strip()
-    identifier = identifier.replace('@', '')
-
-    return identifier
-
-
-async def pre_process_identifier(identifier):
-    did_identifier = None
-    handle_identifier = None
-
-    if not identifier:  # If form is submitted without anything in the identifier return intentional error
-
-        # return await render_template('intentional_error.html')
-        return None, None
-
-    # Check if did or handle exists before processing
-    if utils.is_did(identifier) or utils.is_handle(identifier):
-        if utils.is_did(identifier):
-            if not await database_handler.local_db():
-                try:
-                    did_identifier = identifier
-                    handle_identifier = await asyncio.wait_for(utils.use_handle(identifier), timeout=30)
-                except asyncio.TimeoutError:
-                    handle_identifier = None
-                    logger.warning("resolution failed, possible connection issue.")
-            else:
-                did_identifier = identifier
-                handle_identifier = await utils.get_user_handle(identifier)
-        elif utils.is_handle(identifier):
-            if not await database_handler.local_db():
-                try:
-                    handle_identifier = identifier
-                    did_identifier = await asyncio.wait_for(utils.use_did(identifier), timeout=30)
-                except asyncio.TimeoutError:
-                    did_identifier = None
-                    logger.warning("resolution failed, possible connection issue.")
-            else:
-                handle_identifier = identifier
-                did_identifier = await utils.get_user_did(identifier)
-        else:
-            did_identifier = None
-            handle_identifier = None
-
-        return did_identifier, handle_identifier
-
-
-async def preprocess_status(identifier):
-    try:
-        persona, status = await utils.identifier_exists_in_db(identifier)
-        logger.debug(f"persona: {persona} status: {status}")
-    except AttributeError:
-        logger.error("db connection issue.")
-
-        # return await render_template('issue.html')
-        return None
-
-    if persona is True and status is True:
-
-        return True
-    elif persona is True and status is False:
-        logger.info(f"Account: {identifier} deleted")
-
-        # return await render_template('account_deleted.html', account=identifier)
-        return False
-    elif status is False and persona is False:
-        logger.info(f"{identifier}: does not exist.")
-
-        # return await render_template('error.html')
-        return None
-    else:
-        logger.info(f"Error page loaded for resolution failure using: {identifier}")
-
-        # return await render_template('error.html', content_type='text/html')
-        return False
-
-
-def generate_session_number():
-    return str(uuid.uuid4().hex)
-
-
-async def get_ip():  # Get IP address of session request
-    if 'X-Forwarded-For' in request.headers:
-        # Get the client's IP address from the X-Forwarded-For header
-        ip = request.headers.get('X-Forwarded-For')
-        # The client's IP address may contain multiple comma-separated values
-        # Extract the first IP address from the list
-        ip = ip.split(',')[0].strip()
-    else:
-        # Use the remote address if the X-Forwarded-For header is not available
-        ip = request.remote_addr
-
-    return ip
-
-
-async def get_time_since(time):
-    if time is None:
-        return "Not initialized"
-    time_difference = datetime.now() - time
-
-    minutes = int((time_difference.total_seconds() / 60))
-    hours = minutes // 60
-    remaining_minutes = minutes % 60
-
-    if hours > 0 and remaining_minutes > 0:
-        if hours == 1:
-            elapsed_time = f"{int(hours)} hour {int(remaining_minutes)} minutes ago"
-        else:
-            elapsed_time = f"{int(hours)} hours {int(remaining_minutes)} minutes ago"
-    elif hours > 0:
-        if hours == 1:
-            elapsed_time = f"{int(hours)} hour ago"
-        else:
-            elapsed_time = f"{int(hours)} hours ago"
-    elif minutes > 0:
-        if minutes == 1:
-            elapsed_time = f"{int(minutes)} minute ago"
-        else:
-            elapsed_time = f"{int(minutes)} minutes ago"
-    else:
-        elapsed_time = "less than a minute ago"
-
-    return elapsed_time
-
-
-async def initialize():
-    global db_connected
-    global db_pool_acquired
-
-    db_connected = await database_handler.create_connection_pool()  # Creates connection pool for db if connection made
-    log_warning_once = True
-
-    db_pool_acquired.set()
-
-    if not await database_handler.redis_connected():
-        logger.warning("Redis not connected.")
-    else:
-        database_handler.redis_connection = True
-
-    logger.info("Initialized.")
-
-    if not db_connected:
-        while True:
-            db_connected = await database_handler.create_connection_pool()
-
-            if db_connected:
-                # await database_handler.create_connection_pool()  # Creates connection pool for db
-                db_pool_acquired.set()
-
-                if not log_warning_once:
-                    logger.warning("db connection established.")
-
-                logger.info("Initialized.")
-                break
-            else:
-                if log_warning_once:
-                    logger.warning("db not operational.")
-
-                    log_warning_once = False
-
-                    blocklist_24_failed.set()
-                    blocklist_failed.set()
-
-                logger.info("Waiting for db connection.")
-                await asyncio.sleep(30)
-
-
-async def get_ip_address():
-    if not os.environ.get('CLEAR_SKY'):
-        logger.info("IP connection: Using config.ini")
-        ip_address = config.get("server", "ip")
-        port_address = config.get("server", "port")
-
-        return ip_address, port_address
-    else:
-        logger.info("IP connection: Using environment variables.")
-        ip_address = os.environ.get('CLEAR_SKY_IP')
-        port_address = os.environ.get('CLEAR_SKY_PORT')
-
-        return ip_address, port_address
-
-
-async def run_web_server():
-    ip_address, port_address = await get_ip_address()
-
-    if not ip_address or not port_address:
-        logger.error("No IP or port configured.")
-        sys.exit()
-
-    logger.info(f"Web server starting at: {ip_address}:{port_address}")
-
-    await app.run_task(host=ip_address, port=port_address)
-
-
-async def first_run():
-    while not db_pool_acquired.is_set():
-        logger.info("db connection not acquired, waiting for established connection.")
-        await asyncio.sleep(5)
-
-    while True:
-        if db_connected:
-            blocklist_24_failed.clear()
-            blocklist_failed.clear()
-
-            tables = await database_handler.tables_exists()
-
-            if tables:
-                # await database_handler.blocklists_updater()
-                # await database_handler.top_24blocklists_updater()
-                # await utils.update_block_statistics()
-
-                break
-            else:
-                logger.warning("Tables do not exist in db.")
-                sys.exit()
-
-        await asyncio.sleep(30)
 
 
 # ======================================================================================================================
