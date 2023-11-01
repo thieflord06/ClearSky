@@ -1,13 +1,14 @@
 # app.py
+
 import functools
 import sys
 import quart
 from quart import Quart, render_template, request, session, redirect, jsonify
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import uuid
 import asyncio
-from quart_rate_limiter import RateLimiter
+from quart_rate_limiter import RateLimiter, rate_limit
 import database_handler
 import on_wire
 import utils
@@ -334,6 +335,7 @@ async def contact():
 @app.route('/api/v1/blocklist/<client_identifier>', defaults={'page': 1})
 @app.route('/api/v1/blocklist/<client_identifier>/<int:page>')
 @api_key_required
+@rate_limit(100, timedelta(seconds=1))
 async def get_blocklist(client_identifier, page):
     global session_ip
 
@@ -376,6 +378,7 @@ async def get_blocklist(client_identifier, page):
 @app.route('/api/v1/single-blocklist/<client_identifier>', defaults={'page': 1})
 @app.route('/api/v1/single-blocklist/<client_identifier>/<int:page>')
 @api_key_required
+@rate_limit(100, timedelta(seconds=1))
 async def get_single_blocklist(client_identifier, page):
     global session_ip
 
@@ -416,6 +419,7 @@ async def get_single_blocklist(client_identifier, page):
 
 @app.route('/api/v1/in-common-blocklist/<client_identifier>')
 @api_key_required
+@rate_limit(100, timedelta(seconds=1))
 async def get_in_common_blocklist(client_identifier):
     global session_ip
 
@@ -443,6 +447,7 @@ async def get_in_common_blocklist(client_identifier):
 
 @app.route('/api/v1/in-common-blocked-by/<client_identifier>')
 @api_key_required
+@rate_limit(100, timedelta(seconds=1))
 async def get_in_common_blocked(client_identifier):
     global session_ip
 
@@ -471,6 +476,7 @@ async def get_in_common_blocked(client_identifier):
 
 @app.route('/api/v1/total-users')
 @api_key_required
+@rate_limit(100, timedelta(seconds=1))
 async def get_total_users():
     global session_ip
 
@@ -505,6 +511,7 @@ async def get_total_users():
 
 @app.route('/api/v1/get-did/<client_identifier>')
 @api_key_required
+@rate_limit(100, timedelta(seconds=1))
 async def get_did_info(client_identifier):
     global session_ip
 
@@ -537,6 +544,7 @@ async def get_did_info(client_identifier):
 
 @app.route('/api/v1/get-handle/<client_identifier>')
 @api_key_required
+@rate_limit(100, timedelta(seconds=1))
 async def get_handle_info(client_identifier):
     global session_ip
 
@@ -567,6 +575,7 @@ async def get_handle_info(client_identifier):
 
 @app.route('/api/v1/get-handle-history/<client_identifier>')
 @api_key_required
+@rate_limit(100, timedelta(seconds=1))
 async def get_handle_history_info(client_identifier):
     global session_ip
 
@@ -595,6 +604,7 @@ async def get_handle_history_info(client_identifier):
 
 @app.route('/api/v1/get-list/<client_identifier>')
 @api_key_required
+@rate_limit(100, timedelta(seconds=1))
 async def get_list_info(client_identifier):
     global session_ip
 
@@ -623,6 +633,7 @@ async def get_list_info(client_identifier):
 
 @app.route('/api/v1/fun-facts')
 @api_key_required
+@rate_limit(100, timedelta(seconds=1))
 async def fun_facts():
     global fun_start_time
 
@@ -740,6 +751,7 @@ async def fun_facts():
 
 @app.route('/api/v1/funer-facts')
 @api_key_required
+@rate_limit(100, timedelta(seconds=1))
 async def funer_facts():
     global funer_start_time
 
@@ -857,6 +869,7 @@ async def funer_facts():
 
 @app.route('/api/v1/block-stats')
 @api_key_required
+@rate_limit(100, timedelta(seconds=1))
 async def block_stats():
     global block_stats_app_start_time
 
@@ -1057,6 +1070,7 @@ async def block_stats():
 
 @app.route('/api/v1/base/autocomplete/<client_identifier>')
 @api_key_required
+@rate_limit(100, timedelta(seconds=1))
 async def autocomplete(client_identifier):
     query = client_identifier.lower()
 
@@ -1098,6 +1112,7 @@ async def autocomplete(client_identifier):
 
 @app.route('/api/v1/base/internal/status/process-status', methods=['GET'])
 @api_key_required
+@rate_limit(1, timedelta(seconds=1))
 async def update_block_stats():
     logger.info("System status requested.")
 
