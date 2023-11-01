@@ -36,7 +36,7 @@ not implemented:
     /api/v1/in-common-blocked-by/<handle/did>
 
 
-API key header: {X-API-Key: "test"}
+API key header: {X-API-Key: "CLEARSKYtest90asdfghjklqwerr2345"}
 
 "Unauthorized", 401
 "deleted", 410
