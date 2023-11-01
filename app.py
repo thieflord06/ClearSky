@@ -14,7 +14,7 @@ import on_wire
 import utils
 import config_helper
 from config_helper import logger
-from environment import api_environment
+from environment import get_api_var
 
 # ======================================================================================================================
 # ======================================== global variables // Set up logging ==========================================
@@ -274,6 +274,7 @@ async def first_run():
 def api_key_required(func):
     @functools.wraps(func)
     async def wrapper(*args, **kwargs):
+        api_environment = get_api_var()
         api_keys = await database_handler.get_api_keys(api_environment)
         provided_api_key = request.headers.get("X-API-Key")
         if provided_api_key not in api_keys:
