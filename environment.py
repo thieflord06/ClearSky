@@ -8,6 +8,6 @@ if not os.getenv('CLEAR_SKY'):
     if not api_environment:
         api_environment = "production"
 else:
-    api_environment = os.environ.get("ENVIRONMENT")
+    api_environment = os.environ.get("CLEARSKY_ENVIRONMENT")
     if not api_environment:
         api_environment = "production"
