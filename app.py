@@ -1,6 +1,5 @@
 # app.py
 import functools
-import json
 import sys
 import quart
 from quart import Quart, render_template, request, session, redirect, jsonify
@@ -8,6 +7,7 @@ from datetime import datetime
 import os
 import uuid
 import asyncio
+from quart_rate_limiter import RateLimiter
 import database_handler
 import on_wire
 import utils
@@ -32,6 +32,7 @@ except OSError:
     username = "Unknown"
 
 app = Quart(__name__)
+rate_limiter = RateLimiter(app)
 
 # Configure session secret key
 app.secret_key = 'your-secret-key'
@@ -283,6 +284,11 @@ def api_key_required(func):
             return await func(*args, **kwargs)
 
     return wrapper
+
+
+@app.errorhandler(429)
+def ratelimit_error(e):
+    return jsonify(error="ratelimit exceeded", message=str(e.description)), 429
 
 
 # ======================================================================================================================

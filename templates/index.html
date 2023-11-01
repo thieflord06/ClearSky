@@ -4,40 +4,10 @@
     <div class="form-container">
         <div id="index-container">
             <form id="search-form" action="/selection_handle" method="POST">
-                <div class="form-group">
-                    <label for="selection">Select an option:</label>
-                    <select name="selection" id="selection" class="form-control">
-                        <option value="3" title="Get a list of users that a specific person is blocking">Who are they blocking</option>
-                        <option value="5" title="Get a list of users that block a specific user">Who is blocking them</option>
-                        <option value="6" title="Get a list of users whose blocks are in common with a specific user">In-common blocks</option>
-                        <option value="8" title="Get the handle history of a user">Handle history</option>
-                        <option value="1" title="Get the associated Decentralized Identifier of a handle">Get DID</option>
-                        <option value="2" title="Get the associated handle of a Decentralized Identifier">Get Handle</option>
-                        <option value="4" title="Total number of Bluesky users">Number of Bluesky users</option>
-                        <option value="9" title="Get the list of Mute/Block lists a user is on">Get mute/block lists</option>
-<!--                        <option value="7" title="Get a list of users who are blocked by the same people">In-common blocked</option>-->
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="identifier">Enter DID or Handle:</label>
-                    <input type="text" name="identifier" id="identifier" class="form-control" placeholder="e.g. @example.bsky.social" title="e.g. did:abc123 or @mike.bsky.social" autocomplete="off">
-                    <div id="autocomplete-suggestions"></div>
-                    <input type="hidden" name="identifier_hidden" id="identifier_hidden" value="">
-                    <input type="hidden" name="skipOption5" id="skipOption5">
-                </div>
-                <div class="form-group">
-                    <input type="submit" value="Submit" class="btn btn-primary" id="submit-button" disabled>
-                </div>
                 <div class="note">
                     *Note: The data retrieved from this site is for information purposes only.
                 </div>
             </form>
         </div>
     </div>
-    <div id="loading-screen" style="display: none;">
-        {% include "_loading.html" %}
-    </div>
-    {% if request.path == '/' %} {# Check if the current page is the index page #}
-        <script src="{{ url_for('static', filename='script.js') }}"></script> {# Include script.js only for the index page #}
-    {% endif %}
 {% endblock %}
