@@ -1614,7 +1614,7 @@ async def get_api_keys(environment):
     async with connection_pool.acquire() as connection:
         async with connection.transaction():
             try:
-                query = """SELECT key FROM API where environment = $1 AND valid is True"""
+                query = """SELECT key FROM API WHERE environment = $1 AND valid is True"""
 
                 results = await connection.fetch(query, environment)
 
