@@ -311,13 +311,19 @@ async def favicon():
 
 @app.route('/frequently_asked')
 async def faq():
-    logger.info("FAQ requested.")
+    session_ip = await get_ip()
+
+    logger.info(f"{session_ip} - FAQ requested.")
 
     return await render_template('coming_soon.html')
 
 
 @app.route('/coming_soon')
 async def coming_soon():
+    session_ip = await get_ip()
+
+    logger.info(f"{session_ip} - Coming soon requested.")
+
     return await render_template('coming_soon.html')
 
 
@@ -328,6 +334,10 @@ async def always_200():
 
 @app.route('/contact')
 async def contact():
+    session_ip = await get_ip()
+
+    logger.info(f"{session_ip} - Contact requested.")
+
     return await render_template('contact.html')
 
 
@@ -339,8 +349,9 @@ async def contact():
 @rate_limit(100, timedelta(seconds=1))
 async def get_blocklist(client_identifier, page):
     session_ip = await get_ip()
-    identifier = await sanitization(client_identifier)
     api_key = request.headers.get('X-API-Key')
+
+    identifier = await sanitization(client_identifier)
 
     logger.info(f"<< {session_ip} - {api_key} - blocklist request: {identifier}")
 
@@ -381,8 +392,9 @@ async def get_blocklist(client_identifier, page):
 @rate_limit(100, timedelta(seconds=1))
 async def get_single_blocklist(client_identifier, page):
     session_ip = await get_ip()
-    identifier = await sanitization(client_identifier)
     api_key = request.headers.get('X-API-Key')
+
+    identifier = await sanitization(client_identifier)
 
     logger.info(f"<< {session_ip} - {api_key} - single blocklist request: {identifier}")
 
