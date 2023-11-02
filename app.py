@@ -39,7 +39,6 @@ rate_limiter = RateLimiter(app)
 # Configure session secret key
 app.secret_key = 'your-secret-key'
 
-session_ip = None
 fun_start_time = None
 funer_start_time = None
 block_stats_app_start_time = None
@@ -339,8 +338,6 @@ async def contact():
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def get_blocklist(client_identifier, page):
-    global session_ip
-
     session_ip = await get_ip()
     identifier = await sanitization(client_identifier)
     api_key = request.headers.get('X-API-Key')
@@ -383,8 +380,6 @@ async def get_blocklist(client_identifier, page):
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def get_single_blocklist(client_identifier, page):
-    global session_ip
-
     session_ip = await get_ip()
     identifier = await sanitization(client_identifier)
     api_key = request.headers.get('X-API-Key')
@@ -829,7 +824,7 @@ async def fun_facts():
                   "blockers_aid": blocker_aid
                   }
 
-    profile_url = "https://av-cdn.bsky.app/img/avatar/plain/{{item.did}}/{{blocked_aid[item.did]}}"
+    # profile_url = "https://av-cdn.bsky.app/img/avatar/plain/{{item.did}}/{{blocked_aid[item.did]}}"
 
     data = {"data": data_lists}
 
@@ -847,7 +842,7 @@ async def funer_facts():
     session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
 
-    logger.info(f"<< Funer facts requeste: {session_ip} - {api_key}")
+    logger.info(f"<< Funer facts requested: {session_ip} - {api_key}")
 
     # if True:
     #
@@ -958,7 +953,7 @@ async def funer_facts():
                   "blockers_aid": blocker_aid_24
                   }
 
-    profile_url = "https://av-cdn.bsky.app/img/avatar/plain/{{item.did}}/{{blocked_aid[item.did]}}"
+    # profile_url = "https://av-cdn.bsky.app/img/avatar/plain/{{item.did}}/{{blocked_aid[item.did]}}"
 
     data = {"data": data_lists}
 
