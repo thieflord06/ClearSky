@@ -3,7 +3,7 @@
 import functools
 import sys
 import quart
-from quart import Quart, render_template, request, session, redirect, jsonify
+from quart import Quart, render_template, request, session, jsonify
 from datetime import datetime, timedelta
 import os
 import uuid
