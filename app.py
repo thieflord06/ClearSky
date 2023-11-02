@@ -345,7 +345,7 @@ async def get_blocklist(client_identifier, page):
     identifier = await sanitization(client_identifier)
     api_key = request.headers.get('X-API-Key')
 
-    logger.info(f"<< {session_ip} - {api_key} - {session['session_number']} blocklist request: {identifier}")
+    logger.info(f"<< {session_ip} - {api_key} - blocklist request: {identifier}")
 
     did_identifier, handle_identifier = await pre_process_identifier(identifier)
     status = await preprocess_status(identifier)
@@ -362,8 +362,6 @@ async def get_blocklist(client_identifier, page):
         blocklist_data = {"blocklist": blocklist,
                           "count": formatted_count,
                           "pages": pages}
-
-        logger.info(f">> {session_ip} - {session['session_number']} blocklist result returned: {identifier}")
     else:
         blocklist = None
         count = 0
@@ -374,6 +372,8 @@ async def get_blocklist(client_identifier, page):
     data = {"identity": identifier,
             "status": status,
             "data": blocklist_data}
+
+    logger.info(f">> {session_ip} - {api_key} - blocklist result returned: {identifier}")
 
     return jsonify(data)
 
@@ -389,7 +389,7 @@ async def get_single_blocklist(client_identifier, page):
     identifier = await sanitization(client_identifier)
     api_key = request.headers.get('X-API-Key')
 
-    logger.info(f"<< {session_ip} - {api_key} - {session['session_number']} single blocklist request: {identifier}")
+    logger.info(f"<< {session_ip} - {api_key} - single blocklist request: {identifier}")
 
     did_identifier, handle_identifier = await pre_process_identifier(identifier)
     status = await preprocess_status(identifier)
@@ -405,8 +405,6 @@ async def get_single_blocklist(client_identifier, page):
         blocklist_data = {"blocklist": blocklist,
                           "count": formatted_count,
                           "pages": pages}
-
-        logger.info(f">> {session_ip} - {session['session_number']} single blocklist result returned: {identifier}")
     else:
         blocklist_data = None
         count = 0
@@ -418,6 +416,8 @@ async def get_single_blocklist(client_identifier, page):
             "status": status,
             "data": blocklist_data}
 
+    logger.info(f">> {session_ip} - {api_key} - single blocklist result returned: {identifier}")
+
     return jsonify(data)
 
 
@@ -425,20 +425,19 @@ async def get_single_blocklist(client_identifier, page):
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def get_in_common_blocklist(client_identifier):
-    global session_ip
-
-    identifier = await sanitization(client_identifier)
-    did_identifier, handle_identifier = await pre_process_identifier(identifier)
-    status = await preprocess_status(identifier)
     session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
 
+    identifier = await sanitization(client_identifier)
+
+    did_identifier, handle_identifier = await pre_process_identifier(identifier)
+    status = await preprocess_status(identifier)
+
+    logger.info(f"<< {session_ip} - {api_key} - in-common blocklist request: {identifier}")
+
     if did_identifier and handle_identifier and status:
-        logger.info(f"<< {session_ip} - {api_key} - {session['session_number']} in-common blocklist request: {identifier}")
 
         blocklist_data = await database_handler.get_similar_users(did_identifier)
-
-        logger.info(f">> {session_ip} - {session['session_number']} in-common blocklist result returned: {identifier}")
     else:
         blocklist_data = None
 
@@ -446,6 +445,8 @@ async def get_in_common_blocklist(client_identifier):
 
     data = {"identity": identifier,
             "data": common_list}
+
+    logger.info(f">> {session_ip} - {api_key} - in-common blocklist result returned: {identifier}")
 
     return jsonify(data)
 
@@ -454,21 +455,21 @@ async def get_in_common_blocklist(client_identifier):
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def get_in_common_blocked(client_identifier):
-    global session_ip
-
-    identifier = await sanitization(client_identifier)
-    did_identifier, handle_identifier = await pre_process_identifier(identifier)
-    status = await preprocess_status(identifier)
     session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
 
+    identifier = await sanitization(client_identifier)
+
+    did_identifier, handle_identifier = await pre_process_identifier(identifier)
+    status = await preprocess_status(identifier)
+
+    logger.info(f"<< {session_ip} - {api_key} - in-common blocked request: {identifier}")
+
     if did_identifier and handle_identifier and status:
-        logger.info(f"<< {session_ip} - {api_key} - {session['session_number']} in-common blocked request: {identifier}")
 
         blocklist_data = await database_handler.get_similar_blocked_by(did_identifier)
         # formatted_count = '{:,}'.format(count)
 
-        logger.info(f">> {session_ip} - {session['session_number']} in-common blocked result returned: {identifier}")
     else:
         blocklist_data = None
 
@@ -477,6 +478,8 @@ async def get_in_common_blocked(client_identifier):
     data = {"identity": identifier,
             "data": common_list}
 
+    logger.info(f">> {session_ip} - {api_key} - in-common blocked result returned: {identifier}")
+
     return jsonify(data)
 
 
@@ -484,12 +487,10 @@ async def get_in_common_blocked(client_identifier):
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def get_total_users():
-    global session_ip
-
     session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
 
-    logger.info(f"<< {session_ip} - {api_key} - {session['session_number']} total users request")
+    logger.info(f"<< {session_ip} - {api_key} - total users request")
 
     try:
         active_count = await utils.get_user_count(get_active=True)
@@ -509,9 +510,9 @@ async def get_total_users():
                   "total_count": formatted_total_count,
                   "deleted_count": formatted_deleted_count}
 
-    logger.info(f">> {session_ip} - {session['session_number']} total users result returned")
-
     data = {"data": count_data}
+
+    logger.info(f">> {session_ip} - {api_key} - total users result returned")
 
     return jsonify(data)
 
@@ -520,16 +521,15 @@ async def get_total_users():
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def get_did_info(client_identifier):
-    global session_ip
-
-    identifier = await sanitization(client_identifier)
-    did_identifier, handle_identifier = await pre_process_identifier(identifier)
-    status = await preprocess_status(identifier)
     session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
 
-    logger.debug("here")
-    logger.info(f"<< {session_ip} - {api_key} - {session['session_number']} get did request: {client_identifier}")
+    identifier = await sanitization(client_identifier)
+
+    did_identifier, handle_identifier = await pre_process_identifier(identifier)
+    status = await preprocess_status(identifier)
+
+    logger.info(f"<< {session_ip} - {api_key} - get did request: {client_identifier}")
 
     if did_identifier and handle_identifier and status:
 
@@ -540,12 +540,12 @@ async def get_did_info(client_identifier):
                     "user_url": f"https://bsky.app/profile/{did_identifier}",
                     "avatar_url": f"https://av-cdn.bsky.app/img/avatar/plain/{avatar_id}"
                     }
-
-        logger.info(f">> {session_ip} - {session['session_number']} did result returned: {client_identifier}")
     else:
         did_data = None
 
     data = {"data": did_data}
+
+    logger.info(f">> {session_ip} - {api_key} - did result returned: {client_identifier}")
 
     return jsonify(data)
 
@@ -554,16 +554,17 @@ async def get_did_info(client_identifier):
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def get_handle_info(client_identifier):
-    global session_ip
-
-    identifier = await sanitization(client_identifier)
-    did_identifier, handle_identifier = await pre_process_identifier(identifier)
-    status = await preprocess_status(identifier)
     session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
 
+    identifier = await sanitization(client_identifier)
+
+    did_identifier, handle_identifier = await pre_process_identifier(identifier)
+    status = await preprocess_status(identifier)
+
+    logger.info(f"<< {session_ip} - {api_key} - get handle request: {identifier}")
+
     if did_identifier and handle_identifier and status:
-        logger.info(f"<< {session_ip} - {api_key} - {session['session_number']} get handle request: {identifier}")
 
         avatar_id = await on_wire.get_avatar_id(did_identifier)
 
@@ -572,12 +573,12 @@ async def get_handle_info(client_identifier):
                        "user_url": f"https://bsky.app/profile/{did_identifier}",
                        "avatar_url": f"https://av-cdn.bsky.app/img/avatar/plain/{avatar_id}"
                        }
-
-        logger.info(f">> {session_ip} - {session['session_number']} handle result returned: {identifier}")
     else:
         handle_data = None
 
     data = {"data": handle_data}
+
+    logger.info(f">> {session_ip} - {api_key} - handle result returned: {identifier}")
 
     return jsonify(data)
 
@@ -586,28 +587,29 @@ async def get_handle_info(client_identifier):
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def get_handle_history_info(client_identifier):
-    global session_ip
-
-    identifier = await sanitization(client_identifier)
-    did_identifier, handle_identifier = await pre_process_identifier(identifier)
-    status = await preprocess_status(identifier)
     session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
 
+    identifier = await sanitization(client_identifier)
+
+    did_identifier, handle_identifier = await pre_process_identifier(identifier)
+    status = await preprocess_status(identifier)
+
+    logger.info(f"<< {session_ip} - {api_key} - get handle history request: {identifier}")
+
     if did_identifier and handle_identifier and status:
-        logger.info(f"<< {session_ip} - {api_key} - {session['session_number']} get handle history request: {identifier}")
 
         handle_history = await utils.get_handle_history(did_identifier)
 
         handle_history_data = {"identifier": identifier,
                                "handle_history": handle_history
                                }
-
-        logger.info(f">> {session_ip} - {session['session_number']} handle history result returned: {identifier}")
     else:
         handle_history_data = None
 
     data = {"data": handle_history_data}
+
+    logger.info(f">> {session_ip} - {api_key} - handle history result returned: {identifier}")
 
     return jsonify(data)
 
@@ -616,28 +618,29 @@ async def get_handle_history_info(client_identifier):
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def get_list_info(client_identifier):
-    global session_ip
-
-    identifier = await sanitization(client_identifier)
-    did_identifier, handle_identifier = await pre_process_identifier(identifier)
-    status = await preprocess_status(identifier)
     session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
 
+    identifier = await sanitization(client_identifier)
+
+    did_identifier, handle_identifier = await pre_process_identifier(identifier)
+    status = await preprocess_status(identifier)
+
+    logger.info(f"<< {session_ip} - {api_key} - get mute/block list request: {identifier}")
+
     if did_identifier and handle_identifier and status:
-        logger.info(f"<< {session_ip} - {api_key} - {session['session_number']} get mute/block list request: {identifier}")
 
         mute_lists = await database_handler.get_mutelists(did_identifier)
 
         list_data = {"identifier": identifier,
                      "lists": mute_lists}
-
-        logger.info(f">> {session_ip} - {api_key} - {session['session_number']} mute/block list result returned: {identifier}")
     else:
         list_data = None
 
     data = {"identifier": identifier,
             "data": list_data}
+
+    logger.info(f">> {session_ip} - {api_key} - mute/block list result returned: {identifier}")
 
     return jsonify(data)
 
@@ -646,8 +649,6 @@ async def get_list_info(client_identifier):
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def get_blocked_search(client_identifier, search_identifier):
-    global session_ip
-
     api_key = request.headers.get('X-API-Key')
     session_ip = await get_ip()
 
@@ -680,8 +681,6 @@ async def get_blocked_search(client_identifier, search_identifier):
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def get_blocking_search(client_identifier, search_identifier):
-    global session_ip
-
     api_key = request.headers.get('X-API-Key')
     session_ip = await get_ip()
 
@@ -717,8 +716,9 @@ async def fun_facts():
     global fun_start_time
 
     api_key = request.headers.get('X-API-Key')
+    session_ip = await get_ip()
 
-    logger.info(f"Fun facts requested: {api_key}")
+    logger.info(f"<< Fun facts requested: {session_ip} - {api_key}")
 
     # if True:
     #
@@ -731,6 +731,8 @@ async def fun_facts():
         error = {"error": message}
 
         data = {"data": error}
+
+        logger.info(f">> Fun facts result returned: {session_ip} - {api_key}")
 
         return jsonify(data)
 
@@ -768,6 +770,8 @@ async def fun_facts():
 
         timing = {"timeLeft": remaining_time}
         data = {"data": timing}
+
+        logger.info(f">> Fun facts result returned: {session_ip} - {api_key}")
 
         return jsonify(data)
 
@@ -815,6 +819,8 @@ async def fun_facts():
         timing = {"timeLeft": remaining_time}
         data = {"data": timing}
 
+        logger.info(f">> Fun facts result returned: {session_ip} - {api_key}")
+
         return jsonify(data)
 
     data_lists = {"blocked": resolved_blocked,
@@ -827,6 +833,8 @@ async def fun_facts():
 
     data = {"data": data_lists}
 
+    logger.info(f">> Fun facts result returned: {session_ip} - {api_key}")
+
     return jsonify(data)
 
 
@@ -836,9 +844,10 @@ async def fun_facts():
 async def funer_facts():
     global funer_start_time
 
+    session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
 
-    logger.info(f"Funer facts requeste: {api_key}")
+    logger.info(f"<< Funer facts requeste: {session_ip} - {api_key}")
 
     # if True:
     #
@@ -851,6 +860,8 @@ async def funer_facts():
         error = {"error": message}
 
         data = {"data": error}
+
+        logger.info(f">> Funer facts result returned: {session_ip} - {api_key}")
 
         return jsonify(data)
 
@@ -888,6 +899,8 @@ async def funer_facts():
 
         timing = {"timeLeft": remaining_time}
         data = {"data": timing}
+
+        logger.info(f">> Funer facts result returned: {session_ip} - {api_key}")
 
         return jsonify(data)
 
@@ -935,6 +948,8 @@ async def funer_facts():
         timing = {"timeLeft": remaining_time}
         data = {"data": timing}
 
+        logger.info(f">> Funer facts result returned: {session_ip} - {api_key}")
+
         return jsonify(data)
 
     data_lists = {"blocked24": resolved_blocked_24,
@@ -947,6 +962,8 @@ async def funer_facts():
 
     data = {"data": data_lists}
 
+    logger.info(f">> Funer facts result returned: {session_ip} - {api_key}")
+
     return jsonify(data)
 
 
@@ -956,9 +973,10 @@ async def funer_facts():
 async def block_stats():
     global block_stats_app_start_time
 
+    session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
 
-    logger.info(f"Requesting block statistics: {api_key}")
+    logger.info(f"<< Requesting block statistics: {session_ip} - {api_key}")
 
     # if True:
     #
@@ -971,6 +989,8 @@ async def block_stats():
         error = {"error": message}
 
         data = {"data": error}
+
+        logger.info(f">> block stats result returned: {session_ip} - {api_key}")
 
         return jsonify(data)
 
@@ -1008,6 +1028,8 @@ async def block_stats():
 
         timing = {"timeLeft": remaining_time}
         data = {"data": timing}
+
+        logger.info(f">> block stats result returned: {session_ip} - {api_key}")
 
         return jsonify(data)
 
@@ -1080,6 +1102,8 @@ async def block_stats():
         timing = {"timeLeft": remaining_time}
         data = {"data": timing}
 
+        logger.info(f">> block stats result returned: {session_ip} - {api_key}")
+
         return jsonify(data)
 
     # total_users = await utils.get_user_count(get_active=False)
@@ -1150,6 +1174,8 @@ async def block_stats():
 
     data = {"data": stats_data}
 
+    logger.info(f">> block stats result returned: {session_ip} - {api_key}")
+
     return jsonify(data)
 
 
@@ -1157,9 +1183,10 @@ async def block_stats():
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def autocomplete(client_identifier):
+    session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
 
-    logger.debug(f"Autocomplete request: {api_key}")
+    logger.debug(f"Autocomplete request: {session_ip} - {api_key}")
 
     query = client_identifier.lower()
 
@@ -1202,10 +1229,11 @@ async def autocomplete(client_identifier):
 @app.route('/api/v1/base/internal/status/process-status', methods=['GET'])
 @api_key_required
 @rate_limit(1, timedelta(seconds=1))
-async def update_block_stats():
+async def get_internal_status():
     api_key = request.headers.get('X-API-Key')
+    session_ip = await get_ip()
 
-    logger.info(f"System status requested: {api_key}")
+    logger.info(f"<< System status requested: {session_ip} - {api_key}")
 
     if utils.block_stats_status.is_set():
         stats_status = "processing"
@@ -1275,6 +1303,8 @@ async def update_block_stats():
         "current time": str(datetime.now()),
         "db status": db_status
     }
+
+    logger.info(f">> System status result returned: {session_ip} - {api_key}")
 
     return jsonify(status)
 
