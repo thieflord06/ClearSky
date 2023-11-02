@@ -1125,6 +1125,30 @@ async def get_top_blocks():
         logger.error("Error retrieving data from db", e)
 
 
+async def update_did_service(data):
+    try:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                for record in data:
+                    query = """SELECT did, pds FROM users where did = $1"""
+
+                    did_exists = await connection.fetch(query, record[0])
+                    if did_exists:
+                        if not did_exists[0]["pds"]:
+                            insert_pds_query = """UPDATE users SET created_date = $2,  pds = $3 WHERE did = $1"""
+
+                            await connection.execute(insert_pds_query, record[0], record[1], record[2])
+                        else:
+                            logger.info("no db action.")
+                            continue
+                    else:
+                        insert_query = """INSERT INTO users (did, created_date, pds, handle) VALUES ($1, $2, $3, $4)"""
+
+                        await connection.execute(insert_query, record[0], record[1], record[2], record[3])
+    except Exception as e:
+        logger.error("Error retrieving/inserting data to db", e)
+
+
 async def get_block_stats():
     try:
         async with connection_pool.acquire() as connection:
