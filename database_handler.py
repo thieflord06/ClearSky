@@ -1140,6 +1140,7 @@ async def update_did_service(data):
 
                             await connection.execute(insert_pds_query, record[0], record[1], record[2])
                         else:
+                            logger.debug("Up to date.")
                             continue
                     else:
                         insert_query = """INSERT INTO users (did, created_date, pds, handle) VALUES ($1, $2, $3, $4)"""
@@ -1162,6 +1163,19 @@ async def update_last_created_did_date(last_created):
                 await connection.execute(insert_query, last_created)
     except Exception as e:
         logger.error("Error updating temporary table: %s", e)
+
+
+async def check_last_created_did_date():
+    try:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                query = """SELECT * FROM last_did_created_date"""
+
+                value = await connection.fetchval(query)
+
+                return value
+    except Exception as e:
+        logger.error("Error retrieving data", e)
 
 
 async def get_block_stats():

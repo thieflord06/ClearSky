@@ -10,6 +10,7 @@ from config_helper import logger
 import on_wire
 import re
 from cachetools import TTLCache
+import json
 # ======================================================================================================================
 # ================================================ cache/global variables ==============================================
 resolved_blocked_cache = TTLCache(maxsize=100, ttl=3600)
@@ -907,3 +908,71 @@ async def get_mutelist_users(ident):
 
     logger.debug(mutelists_users_data)
     return mutelists_users_data
+
+
+def fetch_data_with_after_parameter(url, after_value):
+    response = requests.get(url, params={'after': after_value})
+    if response.status_code == 200:
+        db_data = []
+
+        for line in response.iter_lines():
+            try:
+                record = json.loads(line)
+                did = record.get("did")
+                in_record = record.get("operation")
+                service = in_record.get("service")
+                handle = in_record.get("handle")
+                if not service or handle is None:
+                    in_endpoint = in_record.get("services")
+                    in_services = in_endpoint.get("atproto_pds")
+                    preprocessed_handle = in_record.get("alsoKnownAs")
+                    handle = [item.replace("at://", "") for item in preprocessed_handle]
+                    handle = handle[0]
+                    service = in_services.get("endpoint")
+
+                created_date = record.get("createdAt")
+                created_date = datetime.fromisoformat(created_date)
+
+                db_data.append([did, created_date, service, handle])
+            except json.JSONDecodeError:
+                logger.error(f"Failed to parse JSON line: {line}")
+                continue
+
+        # Check if there's any data in the list before getting the last created_date
+        if db_data:
+            last_created_date = db_data[-1][1]  # Access the last element and the created_date (index 1)
+        else:
+            last_created_date = None
+
+        return db_data, last_created_date
+    else:
+        # Handle any errors or exceptions here
+        logger.error(f"Error fetching data. Status code: {response.status_code}")
+
+        return None, None
+
+
+async def get_all_did_records(last_cursor=None):
+    url = 'https://plc.directory/export'
+    after_value = last_cursor
+
+    while True:
+        data, last_created = fetch_data_with_after_parameter(url, after_value)
+
+        logger.info("data batch fetched.")
+        if data is None:
+            break
+        else:
+            # print(data)
+            await database_handler.update_did_service(data)
+
+        if last_created:
+            logger.info(f"Data fetched until createdAt: {last_created}")
+
+            await database_handler.update_last_created_did_date(last_created)
+
+            # Update the after_value for the next request
+            after_value = last_created
+        else:
+            logger.warning("Exiting.")
+            break

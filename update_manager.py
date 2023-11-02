@@ -7,6 +7,7 @@ import sys
 import argparse
 import asyncio
 import app
+import utils
 
 # python update_manager.py --update-users-handles // update handles that have changed (initial or re-initialize)
 # python update_manager.py --update-users-did-only-db // command to update users db
@@ -16,7 +17,7 @@ import app
 # python update_manager.py --update-users-dids // update db with new dids and handles
 # python update_manager.py --update-redis-cache // update handles in redis
 # python update_manager.py --retrieve-mutelists-db // initial/re-initialize get for mutelists database
-
+# python update_manager.py --update-all-did-pds-service-info // get past dids and service info
 
 async def main():
     parser = argparse.ArgumentParser(description='ClearSky Update Manager: ' + app.version)
@@ -28,6 +29,7 @@ async def main():
     parser.add_argument('--update-users-dids', action='store_true', help='update db with new dids and handles')
     parser.add_argument('--update-redis-cache', action='store_true', help='Update the redis cache')
     parser.add_argument('--retrieve-mutelists-db', action='store_true', help='Initial/re-initialize get for mutelists database')
+    parser.add_argument('--update-all-did-pds-service-info', action='store_true', help='get past dids and service info')
     args = parser.parse_args()
 
     await database_handler.create_connection_pool()  # Creates connection pool for db
@@ -190,6 +192,12 @@ async def main():
         status = await database_handler.populate_redis_with_handles()
         if not status:
             logger.info("Cache update complete.")
+    elif args.update_all_did_pds_service_info:
+        logger.info("Update did pds service information.")
+        last_value = await database_handler.check_last_created_did_date()
+        if last_value:
+            logger.info(f"last value retrieved, starting from: {last_value}")
+        await utils.get_all_did_records(last_value)
 
 
 if __name__ == '__main__':
