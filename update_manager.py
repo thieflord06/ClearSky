@@ -19,6 +19,7 @@ import utils
 # python update_manager.py --retrieve-mutelists-db // initial/re-initialize get for mutelists database
 # python update_manager.py --update-all-did-pds-service-info // get past dids and service info
 
+
 async def main():
     parser = argparse.ArgumentParser(description='ClearSky Update Manager: ' + app.version)
     parser.add_argument('--update-users-handles', action='store_true', help='update handles that have changed')
