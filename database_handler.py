@@ -503,6 +503,44 @@ async def update_all_mutelists():
     logger.info(f"Mute lists updated: {total_blocks_updated}/{total_dids}")
 
 
+async def blocklist_search(search_list, lookup, switch):
+    async with connection_pool.acquire() as connection:
+        async with connection.transaction():
+            try:
+                blocking = """SELECT 1
+                                FROM blocklists AS b
+                                INNER JOIN users AS u1 ON b.user_did = u1.did
+                                INNER JOIN users AS u2 ON b.blocked_did = u2.did
+                                WHERE u1.handle = $1
+                                  AND u2.handle = $2"""
+
+                blocked = """SELECT 1
+                                FROM blocklists AS b
+                                INNER JOIN users AS u1 ON b.user_did = u1.did
+                                INNER JOIN users AS u2 ON b.blocked_did = u2.did
+                                WHERE u1.handle = $2
+                                  AND u2.handle = $1"""
+
+                if "blocking" in switch:
+                    query = blocking
+                elif "blocked" in switch:
+                    query = blocked
+                else:
+                    return False
+
+                result = await connection.fetchval(query, search_list, lookup)
+
+                if result:
+                    return True
+                else:
+                    return False
+
+            except Exception as e:
+                logger.error(f"Error retrieving blocklist search result: {e}")
+
+                return False
+
+
 async def update_blocklists_batch(batch_dids):
     total_blocks_updated = 0
 

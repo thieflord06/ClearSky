@@ -642,6 +642,74 @@ async def get_list_info(client_identifier):
     return jsonify(data)
 
 
+@app.route('/api/v1/blocklist-search-blocked/<client_identifier>/<search_identifier>')
+@api_key_required
+@rate_limit(100, timedelta(seconds=1))
+async def get_blocked_search(client_identifier, search_identifier):
+    global session_ip
+
+    api_key = request.headers.get('X-API-Key')
+    session_ip = await get_ip()
+
+    logger.info(f"<< {session_ip} - {api_key} - blocklist[blocked] search request: {client_identifier}:{search_identifier}")
+
+    client_identifier = await sanitization(client_identifier)
+    search_identifier = await sanitization(search_identifier)
+
+    client_is_handle = utils.is_handle(client_identifier)
+    search_is_handle = utils.is_handle(search_identifier)
+
+    if client_is_handle and search_is_handle:
+        result = await database_handler.blocklist_search(client_identifier, search_identifier, switch="blocked")
+    else:
+        result = None
+
+    if result:
+        block_data = {"result": result}
+    else:
+        block_data = None
+
+    data = {"data": block_data}
+
+    logger.info(f">> {session_ip} - {api_key} - blocklist[blocked] search result returned: {client_identifier}:{search_identifier}")
+
+    return jsonify(data)
+
+
+@app.route('/api/v1/blocklist-search-blocking/<client_identifier>/<search_identifier>')
+@api_key_required
+@rate_limit(100, timedelta(seconds=1))
+async def get_blocking_search(client_identifier, search_identifier):
+    global session_ip
+
+    api_key = request.headers.get('X-API-Key')
+    session_ip = await get_ip()
+
+    logger.info(f"<< {session_ip} - {api_key} - blocklist[blocking] search request: {client_identifier}:{search_identifier}")
+
+    client_identifier = await sanitization(client_identifier)
+    search_identifier = await sanitization(search_identifier)
+
+    client_is_handle = utils.is_handle(client_identifier)
+    search_is_handle = utils.is_handle(search_identifier)
+
+    if client_is_handle and search_is_handle:
+        result = await database_handler.blocklist_search(client_identifier, search_identifier, switch="blocking")
+    else:
+        result = None
+
+    if result:
+        block_data = {"result": result}
+    else:
+        block_data = None
+
+    data = {"data": block_data}
+
+    logger.info(f">> {session_ip} - {api_key} - blocklist[blocking] search result returned: {client_identifier}:{search_identifier}")
+
+    return jsonify(data)
+
+
 @app.route('/api/v1/fun-facts')
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
