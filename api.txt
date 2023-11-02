@@ -26,6 +26,10 @@ Implemented:
 
             /api/v1/in-common-blocklist/<handle/did>
 
+            /api/v1/blocklist-search-blocking/<handle1>/<handle2> (is handle 1 blocking handle 2)
+
+            /api/v1/blocklist-search-blocked/<handle1>/<handle2> (is handle 1 blocked by handle 2)
+
     component:
         /api/v1/base/autocomplete/<handle(partial/complete)>
 
