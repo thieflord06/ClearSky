@@ -18,12 +18,14 @@ def fetch_data_with_after_parameter(url, after_value):
                 in_record = record.get("operation")
                 service = in_record.get("service")
                 handle = in_record.get("handle")
-                if not service or not handle:
+                if not service or handle is None:
                     in_endpoint = in_record.get("services")
                     in_services = in_endpoint.get("atproto_pds")
-                    handle = in_record.get("alsoKnownAs")
+                    preprocessed_handle = in_record.get("alsoKnownAs")
+                    handle = [item.replace("at://", "") for item in preprocessed_handle]
+                    handle = handle[0]
                     service = in_services.get("endpoint")
-                    # print(response.json())
+
                 created_date = record.get("createdAt")
                 created_date = datetime.fromisoformat(created_date)
 
@@ -62,15 +64,21 @@ async def get_all_did_records():
 
         if last_created:
             logger.info(f"Data fetched until createdAt: {last_created}")
+
+            await database_handler.update_last_created_did_date(last_created)
+
             # Update the after_value for the next request
             after_value = last_created
         else:
+            logger.warning("Exiting.")
             break
 
 
 async def main():
     await database_handler.create_connection_pool()
+
     logger.info("connedted to db.")
+
     await get_all_did_records()
 
 

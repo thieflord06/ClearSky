@@ -15,6 +15,7 @@ top_24_blocks_table = "top_twentyfour_hour_block"
 mute_lists_table = "mutelists"
 mute_lists_users_table = "mutelists_users"
 user_prefixes_table = "user_prefixes"
+last_created_table = "last_did_created_date"
 
 
 async def create_db():
@@ -85,6 +86,9 @@ async def create_db():
                 prefix3 TEXT NOT NULL
                 )""".format(user_prefixes_table)
 
+                create_last_created_table = """CREATE TABLE IF NOT EXISTS {} (
+                last_created timestamptz PRIMARY KEY""".format(last_created_table)
+
                 index_1 = """CREATE INDEX IF NOT EXISTS blocklist_user_did ON blocklists (user_did)"""
                 index_2 = """CREATE INDEX IF NOT EXISTS blocklist_blocked_did ON blocklists (blocked_did)"""
                 index_3 = """CREATE INDEX idx_user_prefixes_prefix1 ON user_prefixes(prefix1)"""
@@ -98,6 +102,7 @@ async def create_db():
                 await connection.execute(create_mute_lists_table)
                 await connection.execute(create_mute_list_users_table)
                 await connection.execute(create_user_prefixes)
+                await connection.execute(create_last_created_table)
 
                 await connection.execute(index_1)
                 await connection.execute(index_2)

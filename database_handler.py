@@ -1130,16 +1130,16 @@ async def update_did_service(data):
         async with connection_pool.acquire() as connection:
             async with connection.transaction():
                 for record in data:
-                    query = """SELECT did, pds FROM users where did = $1"""
+                    query = """SELECT did, pds, created_date FROM users where did = $1"""
 
                     did_exists = await connection.fetch(query, record[0])
+
                     if did_exists:
-                        if not did_exists[0]["pds"]:
+                        if not did_exists[0]["pds"] or not did_exists[0]["created_date"]:
                             insert_pds_query = """UPDATE users SET created_date = $2,  pds = $3 WHERE did = $1"""
 
                             await connection.execute(insert_pds_query, record[0], record[1], record[2])
                         else:
-                            logger.info("no db action.")
                             continue
                     else:
                         insert_query = """INSERT INTO users (did, created_date, pds, handle) VALUES ($1, $2, $3, $4)"""
@@ -1147,6 +1147,21 @@ async def update_did_service(data):
                         await connection.execute(insert_query, record[0], record[1], record[2], record[3])
     except Exception as e:
         logger.error("Error retrieving/inserting data to db", e)
+
+
+async def update_last_created_did_date(last_created):
+    try:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                # Delete the existing row if it exists
+                delete_query = f"TRUNCATE {setup.last_created_table}"
+                await connection.execute(delete_query)
+
+                # Insert the new row with the given last_processed_did
+                insert_query = f"INSERT INTO {setup.last_created_table} (last_created) VALUES ($1)"
+                await connection.execute(insert_query, last_created)
+    except Exception as e:
+        logger.error("Error updating temporary table: %s", e)
 
 
 async def get_block_stats():
