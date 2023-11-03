@@ -617,6 +617,8 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
 
 async def update_blocklist_table(ident, blocked_data, forced=False):
     counter = 0
+    touched_actor = "crawler"
+
     if not blocked_data:
         return counter
 
@@ -630,7 +632,7 @@ async def update_blocklist_table(ident, blocked_data, forced=False):
             logger.debug("Existing entires " + ident + ": " + str(existing_blocklist_entries))
 
             # Prepare the data to be inserted into the database
-            data = [(ident, subject, created_date, uri, cid, datetime.now(pytz.utc).isoformat()) for subject, created_date, uri, cid in blocked_data]
+            data = [(ident, subject, created_date, uri, cid, datetime.now(pytz.utc).isoformat(), touched_actor) for subject, created_date, uri, cid in blocked_data]
             logger.debug("Data to be inserted: " + str(data))
 
             # Convert the new blocklist entries to a set for comparison
@@ -642,7 +644,7 @@ async def update_blocklist_table(ident, blocked_data, forced=False):
 
                 # Insert the new blocklist entries
                 await connection.executemany(
-                    'INSERT INTO blocklists (user_did, blocked_did, block_date, cid, uri, touched) VALUES ($1, $2, $3, $5, $4, $6)', data
+                    'INSERT INTO blocklists (user_did, blocked_did, block_date, cid, uri, touched, touched_actor) VALUES ($1, $2, $3, $5, $4, $6, $7)', data
                 )
                 logger.info(f"Blocks added for: {ident}")
 
