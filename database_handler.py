@@ -617,7 +617,10 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
 
 async def update_blocklist_table(ident, blocked_data, forced=False):
     counter = 0
-    touched_actor = "crawler"
+    if not forced:
+        touched_actor = "crawler"
+    else:
+        touched_actor = "forced_crawler"
 
     if not blocked_data:
         return counter
