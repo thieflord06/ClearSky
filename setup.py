@@ -16,7 +16,7 @@ mute_lists_table = "mutelists"
 mute_lists_users_table = "mutelists_users"
 user_prefixes_table = "user_prefixes"
 last_created_table = "last_did_created_date"
-blocklist_backup_table = "blocklists_backup"
+blocklist_transaction_table = "blocklists_transaction"
 
 
 async def create_db():
@@ -43,8 +43,9 @@ async def create_db():
                 )
                 """.format(blocklist_table)
 
-                create_blocklists_table = """
+                create_blocklists_transaction_table = """
                 CREATE TABLE IF NOT EXISTS {} (
+                    serial_id BIGSERIAL,
                     user_did text,
                     blocked_did text,
                     block_date timestamptz,
@@ -53,7 +54,7 @@ async def create_db():
                     touched timestamptz,
                     touched_actor text
                 )
-                """.format(blocklist_backup_table)
+                """.format(blocklist_transaction_table)
 
                 create_top_blocks_table = """
                 CREATE TABLE IF NOT EXISTS {} (
@@ -116,6 +117,7 @@ async def create_db():
                 await connection.execute(create_mute_list_users_table)
                 await connection.execute(create_user_prefixes)
                 await connection.execute(create_last_created_table)
+                await connection.execute(create_blocklists_transaction_table)
 
                 await connection.execute(index_1)
                 await connection.execute(index_2)
