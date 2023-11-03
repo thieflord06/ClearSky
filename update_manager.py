@@ -13,7 +13,8 @@ import utils
 # python update_manager.py --update-users-did-only-db // command to update users db
 # python update_manager.py --fetch-users-count // command to get current count in db
 # python update_manager.py --update-blocklists-db // command to update all users blocklists
-# python update_manager.py --retrieve-blocklists-db // initial/re-initialize get for blocklists database
+# python update_manager.py --retrieve-blocklists-db // initial/update get for blocklists database
+# python update_manager.py --retrieve-blocklists-forced-db // force re-initialize get blocklists
 # python update_manager.py --update-users-dids // update db with new dids and handles
 # python update_manager.py --update-redis-cache // update handles in redis
 # python update_manager.py --retrieve-mutelists-db // initial/re-initialize get for mutelists database
@@ -27,6 +28,7 @@ async def main():
     parser.add_argument('--fetch-users-count', action='store_true', help='Fetch the count of users')
     parser.add_argument('--update-blocklists-db', action='store_true', help='Update the blocklists table')
     parser.add_argument('--retrieve-blocklists-db', action='store_true', help='Initial/re-initialize get for blocklists database')
+    parser.add_argument('--retrieve-blocklists-forced-db', action='store_true', help='force re-initialize get blocklists')
     parser.add_argument('--update-users-dids', action='store_true', help='update db with new dids and handles')
     parser.add_argument('--update-redis-cache', action='store_true', help='Update the redis cache')
     parser.add_argument('--retrieve-mutelists-db', action='store_true', help='Initial/re-initialize get for mutelists database')
