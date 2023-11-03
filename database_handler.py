@@ -633,7 +633,7 @@ async def update_blocklist_table(ident, blocked_data):
             logger.debug("Existing entires " + ident + ": " + str(existing_blocklist_entries))
 
             # Prepare the data to be inserted into the database
-            data = [(ident, subject, created_date, uri, cid, datetime.now(pytz.utc).isoformat()) for subject, created_date, uri, cid in blocked_data]
+            data = [(ident, subject, created_date, uri, cid, datetime.now().isoformat()) for subject, created_date, uri, cid in blocked_data]
             logger.debug("Data to be inserted: " + str(data))
 
             # Convert the new blocklist entries to a set for comparison
