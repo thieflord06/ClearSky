@@ -382,13 +382,13 @@ async def update_all_blocklists(run_diff=False):
 
                 cumulative_processed_count += len(batch_dids)
 
-                # Log information for each batch
-                logger.info(f"Processing batch {i // batch_size + 1}/{total_dids // batch_size + 1}...")
-                logger.info(f"Processing {cumulative_processed_count}/{total_dids} DIDs...")
-
                 # Pause every 100 DID requests
                 if processed_count % pause_interval == 0:
+                    # Log information for each batch
+                    logger.info(f"Processing batch {i // batch_size + 1}/{total_dids // batch_size + 1}...")
+                    logger.info(f"Processing {cumulative_processed_count}/{total_dids} DIDs...")
                     logger.info(f"Pausing after {i + 1} DID requests...")
+
                     await asyncio.sleep(30)  # Pause for 30 seconds
 
                 break  # Break the loop if the request is successful
