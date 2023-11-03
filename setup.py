@@ -16,6 +16,7 @@ mute_lists_table = "mutelists"
 mute_lists_users_table = "mutelists_users"
 user_prefixes_table = "user_prefixes"
 last_created_table = "last_did_created_date"
+blocklist_backup_table = "blocklists_backup"
 
 
 async def create_db():
@@ -32,15 +33,27 @@ async def create_db():
 
                 create_blocklists_table = """
                 CREATE TABLE IF NOT EXISTS {} (
-                    id serial primary key,
                     user_did text,
                     blocked_did text,
                     block_date timestamptz,
                     cid text,
-                    uri text,
-                    CONSTRAINT unique_blocklist_entry UNIQUE (user_did, blocked_did)
+                    uri text primary key,
+                    touched timestamptz,
+                    touched_actor text
                 )
                 """.format(blocklist_table)
+
+                create_blocklists_table = """
+                CREATE TABLE IF NOT EXISTS {} (
+                    user_did text,
+                    blocked_did text,
+                    block_date timestamptz,
+                    cid text,
+                    uri text primary key,
+                    touched timestamptz,
+                    touched_actor text
+                )
+                """.format(blocklist_backup_table)
 
                 create_top_blocks_table = """
                 CREATE TABLE IF NOT EXISTS {} (
