@@ -12,6 +12,7 @@ from cachetools import TTLCache
 from redis import asyncio as aioredis
 from datetime import datetime
 from collections import defaultdict
+import pytz
 
 # ======================================================================================================================
 # ===================================================  global variables ================================================
@@ -630,8 +631,11 @@ async def update_blocklist_table(ident, blocked_data):
             existing_blocklist_entries = {record['uri'] for record in existing_records}
             logger.debug("Existing entires " + ident + ": " + str(existing_blocklist_entries))
 
+            now = datetime.now(pytz.utc)
+            timestamp_with_tz = now.isoformat()
+            timestamp = datetime.fromisoformat(timestamp_with_tz)
             # Prepare the data to be inserted into the database
-            data = [(ident, subject, created_date, uri, cid, datetime.now().isoformat()) for subject, created_date, uri, cid in blocked_data]
+            data = [(ident, subject, created_date, uri, cid, timestamp) for subject, created_date, uri, cid in blocked_data]
             logger.debug("Data to be inserted: " + str(data))
 
             # Convert the new blocklist entries to a set for comparison
