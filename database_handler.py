@@ -321,7 +321,7 @@ async def get_dids_without_handles():
         return []
 
 
-async def update_all_blocklists(run_diff=False):
+async def update_all_blocklists(run_diff=False, forced=False):
     all_dids = await get_all_users_db(False, True)
     total_dids = len(all_dids)
     batch_size = 200
@@ -373,7 +373,7 @@ async def update_all_blocklists(run_diff=False):
         # Use the limiter to rate-limit the function calls
         while True:
             try:
-                task = asyncio.create_task(update_blocklists_batch(batch_dids))
+                task = asyncio.create_task(update_blocklists_batch(batch_dids, forced=forced))
                 tasks.append(task)
 
                 # Update the temporary table with the last processed DID
@@ -504,7 +504,7 @@ async def update_all_mutelists():
     logger.info(f"Mute lists updated: {total_blocks_updated}/{total_dids}")
 
 
-async def update_blocklists_batch(batch_dids):
+async def update_blocklists_batch(batch_dids, forced=False):
     total_blocks_updated = 0
 
     for did in batch_dids:
@@ -514,7 +514,7 @@ async def update_blocklists_batch(batch_dids):
 
             if blocked_data:
                 # Update the blocklists table in the database with the retrieved data
-                total_blocks_updated += await update_blocklist_table(did, blocked_data)
+                total_blocks_updated += await update_blocklist_table(did, blocked_data, forced=forced)
             else:
                 logger.debug(f"didn't update no blocks: {did}")
                 continue
@@ -615,7 +615,7 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
         return records
 
 
-async def update_blocklist_table(ident, blocked_data):
+async def update_blocklist_table(ident, blocked_data, forced=False):
     counter = 0
     if not blocked_data:
         return counter
@@ -637,7 +637,7 @@ async def update_blocklist_table(ident, blocked_data):
             new_blocklist_entries = {record[3] for record in data}
             logger.debug("new blocklist entry " + ident + " : " + str(new_blocklist_entries))
 
-            if existing_blocklist_entries != new_blocklist_entries:
+            if existing_blocklist_entries != new_blocklist_entries or forced:
                 await connection.execute('DELETE FROM blocklists WHERE user_did = $1', ident)
 
                 # Insert the new blocklist entries
