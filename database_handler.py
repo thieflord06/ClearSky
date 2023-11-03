@@ -643,9 +643,9 @@ async def update_blocklist_table(ident, blocked_data):
                 await connection.executemany(
                     'INSERT INTO blocklists (user_did, blocked_did, block_date, cid, uri) VALUES ($1, $2, $3, $5, $4, $6)', data
                 )
-                logger.debug(f"Blocks added for: {ident}")
+                logger.info(f"Blocks added for: {ident}")
             else:
-                logger.debug("Blocklist not updated already exists.")
+                logger.info("Blocklist not updated already exists.")
 
 
 async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data):
