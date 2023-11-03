@@ -4,8 +4,6 @@ import asyncio
 import os
 import sys
 import asyncpg
-import pytz
-
 import config_helper
 import setup
 import utils
