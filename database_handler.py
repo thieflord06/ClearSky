@@ -514,17 +514,14 @@ async def update_blocklists_batch(batch_dids):
 
             if blocked_data:
                 # Update the blocklists table in the database with the retrieved data
-                await update_blocklist_table(did, blocked_data)
-                total_blocks_updated += 1  # Increment the counter for updated block lists
-
-                logger.debug(f"Updated block list for DID: {did}")
+                total_blocks_updated += await update_blocklist_table(did, blocked_data)
             else:
                 logger.debug(f"didn't update no blocks: {did}")
                 continue
         except Exception as e:
             logger.error(f"Error updating block list for DID {did}: {e}")
 
-    logger.info(f"Blocks updated: {total_blocks_updated}")
+    logger.info(f"Blocks updated in batch: {total_blocks_updated}")
 
     return total_blocks_updated
 
@@ -619,8 +616,9 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
 
 
 async def update_blocklist_table(ident, blocked_data):
+    counter = 0
     if not blocked_data:
-        return
+        return counter
 
     async with connection_pool.acquire() as connection:
         async with connection.transaction():
@@ -650,8 +648,14 @@ async def update_blocklist_table(ident, blocked_data):
                     'INSERT INTO blocklists (user_did, blocked_did, block_date, cid, uri, touched) VALUES ($1, $2, $3, $5, $4, $6)', data
                 )
                 logger.info(f"Blocks added for: {ident}")
+
+                counter += 1
+
+                return counter
             else:
                 logger.info("Blocklist not updated already exists.")
+
+                return counter
 
 
 async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data):
