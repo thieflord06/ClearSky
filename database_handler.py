@@ -523,6 +523,8 @@ async def update_blocklists_batch(batch_dids):
         except Exception as e:
             logger.error(f"Error updating block list for DID {did}: {e}")
 
+    logger.info(f"Blocks updated: {total_blocks_updated}")
+
     return total_blocks_updated
 
 
