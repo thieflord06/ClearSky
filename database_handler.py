@@ -629,7 +629,7 @@ async def update_blocklist_table(ident, blocked_data):
             logger.debug("Existing entires " + ident + ": " + str(existing_blocklist_entries))
 
             # Prepare the data to be inserted into the database
-            data = [(ident, subject, created_date, uri, cid) for subject, created_date, uri, cid in blocked_data]
+            data = [(ident, subject, created_date, uri, cid, datetime.now().timestamp()) for subject, created_date, uri, cid in blocked_data]
             logger.debug("Data to be inserted: " + str(data))
 
             # Convert the new blocklist entries to a set for comparison
@@ -641,7 +641,7 @@ async def update_blocklist_table(ident, blocked_data):
 
                 # Insert the new blocklist entries
                 await connection.executemany(
-                    'INSERT INTO blocklists (user_did, blocked_did, block_date, cid, uri) VALUES ($1, $2, $3, $5, $4)', data
+                    'INSERT INTO blocklists (user_did, blocked_did, block_date, cid, uri) VALUES ($1, $2, $3, $5, $4, $6)', data
                 )
                 logger.debug(f"Blocks added for: {ident}")
             else:
