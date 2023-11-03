@@ -481,13 +481,19 @@ async def get_user_block_list(ident):
                     blocked_data.append((subject, timestamp, uri, cid))
                 else:
                     if not timestamp:
+                        timestamp = None
+                        blocked_data.append((subject, timestamp, uri, cid))
                         logger.warning("missing timestamp")
                     elif not uri:
+                        uri = None
+                        blocked_data.append((subject, timestamp, uri, cid))
                         logger.warning("Missing uri")
                     elif not cid:
+                        cid = None
+                        blocked_data.append((subject, timestamp, uri, cid))
                         logger.warning("missing cid")
-
-                    return None
+                    else:
+                        return None
 
             cursor = response_json.get("cursor")
 
@@ -513,11 +519,13 @@ async def get_user_block_list(ident):
             continue
 
         logger.debug(blocked_data)
+
         return blocked_data
 
     if retry_count == max_retries:
         logger.warning("Could not get block list for: " + ident)
-        pass
+
+        return None
     if not blocked_data and retry_count != max_retries:
 
         return None
