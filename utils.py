@@ -923,12 +923,22 @@ def fetch_data_with_after_parameter(url, after_value):
                 service = in_record.get("service")
                 handle = in_record.get("handle")
                 if not service or handle is None:
+                    # logger.info(record)
                     in_endpoint = in_record.get("services")
                     in_services = in_endpoint.get("atproto_pds")
                     preprocessed_handle = in_record.get("alsoKnownAs")
-                    handle = [item.replace("at://", "") for item in preprocessed_handle]
-                    handle = handle[0]
-                    service = in_services.get("endpoint")
+                    try:
+                        handle = [item.replace("at://", "") for item in preprocessed_handle]
+                        handle = handle[0]
+                    except Exception as e:
+                        logger.warning(f"There was an issue retrieving the handle: {record}")
+                        logger.error(f"Error: {e}")
+                        handle = None
+                    try:
+                        service = in_services.get("endpoint")
+                    except AttributeError:
+                        logger.warning(f"There was an issue retrieving the pds: {record}")
+                        service = None
 
                 created_date = record.get("createdAt")
                 created_date = datetime.fromisoformat(created_date)

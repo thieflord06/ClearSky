@@ -199,7 +199,7 @@ async def main():
         if last_value:
             logger.info(f"last value retrieved, starting from: {last_value}")
         await utils.get_all_did_records(last_value)
-
+        logger.info("Finished processing data.")
 
 if __name__ == '__main__':
     asyncio.run(main())
