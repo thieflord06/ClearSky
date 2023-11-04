@@ -27,7 +27,9 @@ async def create_db():
                 CREATE TABLE IF NOT EXISTS {} (
                     did text primary key,
                     handle text,
-                    status bool
+                    status bool,
+                    pds text,
+                    created_date text
                 )
                 """.format(users_table)
 
