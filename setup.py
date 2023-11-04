@@ -47,12 +47,12 @@ async def create_db():
 
                 create_blocklists_transaction_table = """
                 CREATE TABLE IF NOT EXISTS {} (
-                    serial_id BIGSERIAL,
+                    serial_id BIGSERIAL primary key,
                     user_did text,
                     blocked_did text,
                     block_date timestamptz,
                     cid text,
-                    uri text primary key,
+                    uri text,
                     touched timestamptz,
                     touched_actor text
                 )
