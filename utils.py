@@ -616,7 +616,7 @@ async def use_did(identifier):
 
 async def get_handle_history(identifier):
     base_url = "https://plc.directory/"
-    collection = "log"
+    collection = "log/audit"
     retry_count = 0
     max_retries = 5
     also_known_as_list = []
@@ -643,22 +643,25 @@ async def get_handle_history(identifier):
             response_json = response.json()
 
             for record in response_json:
-                if "alsoKnownAs" in record:
-                    also_known_as = record["alsoKnownAs"]
-                    cleaned_also_known_as = [item.replace("at://", "") for item in also_known_as]
-                    also_known_as_list.extend(cleaned_also_known_as)
+                also_known_as = record["operation"]["alsoKnownAs"]
+                created_at_value = record["createdAt"]
+                created_at = datetime.fromisoformat(created_at_value)
+                cleaned_also_known_as = [(item.replace("at://", ""), created_at) for item in also_known_as]
+                also_known_as_list.extend(cleaned_also_known_as)
 
             # Remove adjacent duplicates while preserving non-adjacent duplicates
-            cleaned_also_known_as_list = []
-            prev_item = None
-            for item in also_known_as_list:
-                if item != prev_item:
-                    cleaned_also_known_as_list.append(item)
-                prev_item = item
+            # cleaned_also_known_as_list = []
+            # prev_item = None
+            # for item in also_known_as_list:
+            #     if item != prev_item:
+            #         cleaned_also_known_as_list.append(item)
+            #     prev_item = item
 
-            cleaned_also_known_as_list.reverse()
+            also_known_as_list.reverse()
+            # cleaned_also_known_as_list.reverse()
 
-            return cleaned_also_known_as_list
+            return also_known_as_list
+            # return cleaned_also_known_as_list
         elif response.status_code == 429:
             logger.warning("Received 429 Too Many Requests. Retrying after 30 seconds...")
             await asyncio.sleep(30)  # Retry after 60 seconds
@@ -668,9 +671,10 @@ async def get_handle_history(identifier):
                 message = response.json()["message"]
                 if error_message == "InvalidRequest" and "Could not find repo" in message:
                     logger.warning("Could not find repo: " + str(identifier))
+
                     return ["no repo"]
             except KeyError:
-                pass
+                return None
         else:
             retry_count += 1
             logger.warning("Error during API call. Status code: %s", response.status_code)
