@@ -859,7 +859,7 @@ async def get_mutelist_users(ident):
                 value = record.get("value", {})
                 subject = value.get("subject")
                 created_at_value = value.get("createdAt")
-                list = value.get("list")
+                uri = value.get("list")
 
                 if created_at_value:
                     try:  # Have to check for different time formats in blocklists :/
@@ -882,7 +882,7 @@ async def get_mutelist_users(ident):
 
                     # Create a dictionary to store this record's data
                     user_record_data = {
-                        "list": list,
+                        "uri": uri,
                         "cid": cid,
                         "subject": subject,
                         "created_at": created_date

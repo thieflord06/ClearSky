@@ -710,12 +710,12 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data):
                         WHERE ml.did = $1""", ident
                 )
 
-                existing_mutelist_users_entries = {(record['list'], record['did']) for record in existing_users_records}
+                existing_mutelist_users_entries = {(record['uri'], record['did']) for record in existing_users_records}
                 logger.debug("Existing entires " + ident + ": " + str(existing_mutelist_users_entries))
 
                 # Create a list of tuples containing the data to be inserted
                 records_to_insert = [
-                    (record["list"], record["cid"], record["subject"], record["created_at"].strftime('%Y-%m-%d'))
+                    (record["uri"], record["cid"], record["subject"], record["created_at"].strftime('%Y-%m-%d'))
                     for record in mutelists_users_data]
 
                 # Convert the new mutelist entries to a set for comparison
@@ -733,7 +733,7 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data):
 
                     # Insert the new mutelist entries
                     await connection.executemany(
-                        """INSERT INTO {} (list, cid, did, date_added) VALUES ($1, $2, $3, $4)""".format(
+                        """INSERT INTO {} (uri, cid, did, date_added) VALUES ($1, $2, $3, $4)""".format(
                             setup.mute_lists_users_table),
                         records_to_insert
                     )
