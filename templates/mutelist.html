@@ -24,12 +24,29 @@
                     </td>
                     <td class="list_name"><a href="{{ item.url }}" target="_blank">{{ item.list_name }}</a></td>
                     <td class="description">{{ item.description }}</td>
-                    <td class="date_created">{{ item.list_created_date }}</td>
-                    <td class="date_added">{{ item.date_user_added }}</td>
+                    <td class="date_created" data-utc-timestamp="{{ item.list_created_date.timestamp() }}">{{ item.list_created_date }}</td>
+                    <td class="date_added" data-utc-timestamp="{{ item.date_user_added.timestamp() }}">{{ item.date_user_added }}</td>
                 </tr>
                 {% endfor %}
             </table>
         </div>
         <a href="/" class="btn btn-primary" id="go-back-button">Go Back</a>
     </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Get all elements with the data-utc-timestamp attribute
+            const utcTimestampElements = document.querySelectorAll("[data-utc-timestamp]");
+
+            utcTimestampElements.forEach(function (element) {
+                const utcTimestamp = parseFloat(element.getAttribute("data-utc-timestamp") * 1000); // Convert to milliseconds
+                const localDate = new Date(utcTimestamp);
+
+                // Format the local date as desired (e.g., 'YYYY-MM-DD hh:mm:ss a')
+                const localDateString = localDate.toLocaleString();
+
+                // Update the content of the element with the local date
+                element.textContent = localDateString;
+            });
+        });
+    </script>
 {% endblock %}
