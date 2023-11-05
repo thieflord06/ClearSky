@@ -17,6 +17,8 @@ mute_lists_users_table = "mutelists_users"
 user_prefixes_table = "user_prefixes"
 last_created_table = "last_did_created_date"
 blocklist_transaction_table = "blocklists_transaction"
+mute_lists_transaction_table = "mutelists_transaction"
+mute_lists_users_transaction_table = "mutelists_users_transaction"
 
 
 async def create_db():
@@ -81,19 +83,50 @@ async def create_db():
                     did text,
                     cid text,
                     name text,
-                    created_date text,
-                    description text
+                    created_date timestamptz,
+                    description text,
+                    touched timestamptz,
+                    touched_actor text
                 )
                 """.format(mute_lists_table)
 
+                create_mute_lists_transaction_table = """
+                CREATE TABLE IF NOT EXISTS {} (
+                    url text,
+                    uri text primary key,
+                    did text,
+                    cid text,
+                    name text,
+                    created_date timestamptz,
+                    description text,
+                    touched timestamptz,
+                    touched_actor text
+                )
+                """.format(mute_lists_transaction_table)
+
                 create_mute_list_users_table = """
                 CREATE TABLE IF NOT EXISTS {} (
-                    list text,
-                    cid text primary key,
+                    uri text,
+                    cid text,
                     did text,
-                    date_added text
+                    date_added timestamptz,
+                    touched timestamptz,
+                    touched_actor text,
+                    PRIMARY KEY (uri, did)
                 )
                 """.format(mute_lists_users_table)
+
+                create_mute_list_users_transaction_table = """
+                CREATE TABLE IF NOT EXISTS {} (
+                    uri text,
+                    cid text,
+                    did text,
+                    date_added timestamptz,
+                    touched timestamptz,
+                    touched_actor text,
+                    PRIMARY KEY (uri, did)
+                )
+                """.format(mute_lists_users_transaction_table)
 
                 create_user_prefixes = """CREATE TABLE IF NOT EXISTS {} (
                 handle TEXT PRIMARY KEY,
@@ -120,6 +153,8 @@ async def create_db():
                 await connection.execute(create_user_prefixes)
                 await connection.execute(create_last_created_table)
                 await connection.execute(create_blocklists_transaction_table)
+                await connection.execute(create_mute_lists_transaction_table)
+                await connection.execute(create_mute_list_users_transaction_table)
 
                 await connection.execute(index_1)
                 await connection.execute(index_2)
