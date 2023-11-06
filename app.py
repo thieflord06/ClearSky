@@ -382,11 +382,9 @@ async def selection_handle():
 
                         return await render_template('not_on_lists.html', user=identifier, message=message)
 
-                    data = json.loads(mute_lists)
-
                     logger.debug(mute_lists)
 
-                    return await render_template('mutelist.html', user=handle_identifier, mute_lists=data)
+                    return await render_template('mutelist.html', user=handle_identifier, mute_lists=mute_lists)
 
         else:
             logger.info(f"Error page loaded because {identifier} isn't a did or handle")
