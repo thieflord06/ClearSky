@@ -1608,28 +1608,33 @@ async def get_mutelists(ident):
     async with connection_pool.acquire() as connection:
         async with connection.transaction():
             query = """
-                            SELECT json_agg(jsonb_build_object(
-                            'url', ml.url,
-                            'creator', u.handle,
-                            'status', u.status,
-                            'list_name', ml.name,
-                            'description', ml.description,
-                            'list_created_date', ml.created_date,
-                            'date_user_added', mu.date_added
-                        )) AS mutelists
-                        FROM mutelists AS ml
-                        INNER JOIN mutelists_users AS mu ON ml.uri = mu.list_uri
-                        INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle
-                        WHERE mu.did = $1
-                        """
+            SELECT ml.url, u.handle, u.status, ml.name, ml.description, ml.created_date, mu.date_added
+            FROM mutelists AS ml
+            INNER JOIN mutelists_users AS mu ON ml.uri = mu.list_uri
+            INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle
+            WHERE mu.did = $1
+            """
             try:
-                mute_lists = await connection.fetchval(query, ident)
+                mute_lists = await connection.fetch(query, ident)
             except Exception as e:
                 logger.error(f"Error retrieving DIDs without handles: {e}")
 
                 return None
 
-            return mute_lists
+            lists = []
+            for record in mute_lists:
+                data = {
+                    "url": record['url'],
+                    "handle": record['handle'],
+                    "status": record['status'],
+                    "name": record['name'],
+                    "description": record['description'],
+                    "created_date": record['created_date'],
+                    "date_added": record['date_added']
+                }
+                lists.append(data)
+
+            return lists
 
 
 async def wait_for_redis():
