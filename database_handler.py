@@ -1618,7 +1618,7 @@ async def get_mutelists(ident):
                             'date_user_added', mu.date_added
                         )) AS mutelists
                         FROM mutelists AS ml
-                        INNER JOIN mutelists_users AS mu ON ml.uri = mu.uri
+                        INNER JOIN mutelists_users AS mu ON ml.uri = mu.list_uri
                         INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle
                         WHERE mu.did = $1
                         """
