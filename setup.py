@@ -107,20 +107,22 @@ async def create_db():
 
                 create_mute_list_users_table = """
                 CREATE TABLE IF NOT EXISTS {} (
-                    uri text,
+                    list_uri text,
+                    listitem_uri text,
                     cid text,
                     did text,
                     date_added timestamptz,
                     touched timestamptz,
                     touched_actor text,
-                    PRIMARY KEY (uri, did)
+                    PRIMARY KEY (listitem_uri, did)
                 )
                 """.format(mute_lists_users_table)
 
                 create_mute_list_users_transaction_table = """
                 CREATE TABLE IF NOT EXISTS {} (
                     serial_id BIGSERIAL primary key,
-                    uri text,
+                    list_uri text,
+                    listitem_uri,
                     cid text,
                     did text,
                     date_added timestamptz,

@@ -20,7 +20,7 @@
                         {{ item.handle }}
                         {% endif %}
                     </td>
-                    <td class="date" data-utc-timestamp="{{ item.blocked_date.timestamp() }}">{{ item.blocked_date }}</td>
+                    <td class="date" data-utc-timestamp="{% if item.blocked_date % }{{ item.blocked_date.timestamp() }}{% else %}None{% endif %}">{{ item.blocked_date }}</td>
                 </tr>
                 {% endfor %}
             </table>
