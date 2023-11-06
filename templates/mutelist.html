@@ -24,8 +24,8 @@
                     </td>
                     <td class="list_name"><a href="{{ item.url }}" target="_blank">{{ item.list_name }}</a></td>
                     <td class="description">{{ item.description }}</td>
-                    <td class="date_created" data-utc-timestamp="{% if item.blocked_date % }{{ item.list_created_date.timestamp() }}{% else %}None{% endif %}">{{ item.list_created_date }}</td>
-                    <td class="date_added" data-utc-timestamp="{% if item.blocked_date % }{{ item.date_user_added.timestamp() }}{% else %}None{% endif %}">{{ item.date_user_added }}</td>
+                    <td class="date_created" data-utc-timestamp="{% if item.list_created_date % }{{ item.list_created_date.timestamp() }}{% else %}None{% endif %}">{{ item.list_created_date }}</td>
+                    <td class="date_added" data-utc-timestamp="{% if item.date_user_added % }{{ item.date_user_added.timestamp() }}{% else %}None{% endif %}">{{ item.date_user_added }}</td>
                 </tr>
                 {% endfor %}
             </table>
