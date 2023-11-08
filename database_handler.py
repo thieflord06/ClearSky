@@ -327,10 +327,9 @@ async def crawl_all(forced=False):
     batch_size = 500
     pause_interval = 500  # Pause every x DID requests
     processed_count = 0
-    table = "temporary_table"
-
+    cumulative_processed_count = 0  # Initialize cumulative count
     total_blocks_updated = 0
-    tasks = []
+    table = "temporary_table"
 
     # Check if there is a last processed DID in the temporary table
     async with connection_pool.acquire() as connection:
@@ -356,119 +355,84 @@ async def crawl_all(forced=False):
             logger.info(f"Resuming processing from DID: {last_processed_did}")
             all_dids = all_dids[start_index:]
 
-    cumulative_processed_count = 0  # Initialize cumulative count
-
     for i in range(0, total_dids, batch_size):
         remaining_dids = total_dids - i
         current_batch_size = min(batch_size, remaining_dids)
 
         batch_dids = all_dids[i:i + current_batch_size]
 
-        while True:
-            try:
-                task = asyncio.create_task(crawler_batch(batch_dids, batch_size, forced=forced))
-                tasks.append(task)
+        await crawler_batch(batch_dids, forced=forced)
 
-                # Update the temporary table with the last processed DID
-                last_processed_did = batch_dids[-1]  # Assuming DID is the first element in each tuple
-                logger.debug("Last processed DID: " + str(last_processed_did))
-                await update_temporary_table(last_processed_did, table)
+        # Update the temporary table with the last processed DID
+        last_processed_did = batch_dids[-1]  # Assuming DID is the first element in each tuple
+        logger.debug("Last processed DID: " + str(last_processed_did))
+        await update_temporary_table(last_processed_did, table)
 
-                cumulative_processed_count += len(batch_dids)
+        cumulative_processed_count += len(batch_dids)
 
-                # Pause every 100 DID requests
-                if processed_count % pause_interval == 0:
-                    await asyncio.sleep(30)  # Pause for 30 seconds
-                    logger.info(f"Pausing after {i + 1} DID requests...")
+        # Pause every 100 DID requests
+        if processed_count % pause_interval == 0:
+            await asyncio.sleep(30)  # Pause for 30 seconds
+            logger.info(f"Pausing after {i + 1} DID requests...")
 
-                    # Log information for each batch
-                    logger.info(f"Processing batch {i // batch_size + 1}/{total_dids // batch_size + 1}...")
-                    logger.info(f"Processing {cumulative_processed_count}/{total_dids} DIDs...")
-
-                break  # Break the loop if the request is successful
-            except asyncpg.ConnectionDoesNotExistError:
-                logger.warning("Connection error. Retrying after 30 seconds...")
-                await asyncio.sleep(30)  # Retry after 30 seconds
-            except IndexError:
-                logger.warning("Reached end of DID list to update...")
-                await delete_temporary_table()
-                logger.info("Crawler Update finished.")
-                sys.exit()
-            except Exception as e:
-                if "429 Too Many Requests" in str(e):
-                    logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
-                    await asyncio.sleep(60)  # Retry after 60 seconds
-                else:
-                    logger.error("None excepted error, sleeping..." + str(e))
-                    await asyncio.sleep(60)
-                    # raise e
+            # Log information for each batch
+            logger.info(f"Processing batch {i // batch_size + 1}/{total_dids // batch_size + 1}...")
+            logger.info(f"Processing {cumulative_processed_count}/{total_dids} DIDs...")
 
         processed_count += batch_size
 
-    await asyncio.gather(*tasks)
     logger.info(f"Block lists updated: {total_blocks_updated}/{total_dids}")
 
 
-async def crawler_batch(batch_dids, batch_size, forced=False):
+async def crawler_batch(batch_dids, forced=False):
     total_blocks_updated = 0
     mute_lists = 0
     mute_users_list = 0
     total_mutes_updated = [mute_lists, mute_users_list]
-    table = "temporary_table"
 
     batch_handles_and_dids = await utils.fetch_handles_batch(batch_dids, True)
-    logger.info("Batch resolved.")
 
-    # Split the batch of handles into smaller batches
-    handle_batches = [batch_handles_and_dids[i:i + batch_size] for i in
-                      range(0, len(batch_handles_and_dids), batch_size)]
+    logger.info("Batch resolved.")
 
     # Update the database with the batch of handles
     total_handles_updated = 0
-    for handle_batch in handle_batches:
-        # Collect handles that need to be updated in this batch
-        handles_to_update = []
-        logger.debug(str(handle_batch))
-        for did, handle in handle_batch:
-            # Check if the DID and handle combination already exists in the database
-            logger.debug("Did: " + str(did) + " | handle: " + str(handle))
-            if await does_did_and_handle_exist_in_database(did, handle):
-                logger.debug(f"DID {did} with handle {handle} already exists in the database. Skipping...")
-            else:
-                handles_to_update.append((did, handle))
+    handles_to_update = []
+    for did, handle in batch_handles_and_dids:
+        # Check if the DID and handle combination already exists in the database
+        logger.debug("Did: " + str(did) + " | handle: " + str(handle))
 
-        if handles_to_update:
-            only_handles = []
-            while True:
-                try:
-                    # Update the database with the batch of handles
-                    logger.info("committing batch.")
-                    async with connection_pool.acquire() as connection:
-                        async with connection.transaction():
-                            await update_user_handles(handles_to_update)
-                            total_handles_updated += len(handles_to_update)
-
-                    for did, handle in handles_to_update:
-                        only_handles.append(handle)
-
-                    logger.info("Adding new prefixes.")
-                    await add_new_prefixes(only_handles)
-
-                    # Update the temporary table with the last processed DID
-                    last_processed_did = handle_batch[-1][0]  # Assuming DID is the first element in each tuple
-                    logger.debug("Last processed DID: " + str(last_processed_did))
-                    await update_temporary_table(last_processed_did, table)
-
-                    break
-                except asyncpg.ConnectionDoesNotExistError as e:
-                    logger.warning("Connection error, retrying in 30 seconds...")
-                    await asyncio.sleep(30)  # Retry after 60 seconds
-                except Exception as e:
-                    # Handle other exceptions as needed
-                    logger.error(f"Error during batch update: {e}")
-                    break  # Break the loop on other exceptions
+        if await does_did_and_handle_exist_in_database(did, handle):
+            logger.debug(f"DID {did} with handle {handle} already exists in the database. Skipping...")
         else:
-            logger.info("No handles to update in this batch.")
+            handles_to_update.append((did, handle))
+
+    if handles_to_update:
+        only_handles = []
+        while True:
+            try:
+                # Update the database with the batch of handles
+                logger.info("committing batch.")
+                async with connection_pool.acquire() as connection:
+                    async with connection.transaction():
+                        await update_user_handles(handles_to_update)
+                        total_handles_updated += len(handles_to_update)
+
+                for did, handle in handles_to_update:
+                    only_handles.append(handle)
+
+                logger.info("Adding new prefixes.")
+                await add_new_prefixes(only_handles)
+
+                break
+            except asyncpg.ConnectionDoesNotExistError as e:
+                logger.warning("Connection error, retrying in 30 seconds...")
+                await asyncio.sleep(30)  # Retry after 60 seconds
+            except Exception as e:
+                # Handle other exceptions as needed
+                logger.error(f"Error during batch update: {e}")
+                break  # Break the loop on other exceptions
+    else:
+        logger.info("No handles to update in this batch.")
 
     for did in batch_dids:
         try:
@@ -496,7 +460,7 @@ async def crawler_batch(batch_dids, batch_size, forced=False):
         except Exception as e:
             logger.error(f"Error updating for DID {did}: {e}")
 
-    logger.info(f"Updated in batch: blocks: {total_blocks_updated} mute lists: {total_mutes_updated[0]} mute lists users: {total_mutes_updated[1]}")
+    logger.info(f"Updated in batch: blocks: {total_blocks_updated} | mute lists: {total_mutes_updated[0]} | mute lists users: {total_mutes_updated[1]}")
 
     total_items_updated = total_blocks_updated + total_mutes_updated[0] + total_mutes_updated[1]
 
