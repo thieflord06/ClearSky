@@ -411,6 +411,9 @@ async def crawl_all(forced=False):
 
 async def crawler_batch(batch_dids, batch_size, forced=False):
     total_blocks_updated = 0
+    mute_lists = 0
+    mute_users_list = 0
+    total_mutes_updated = [mute_lists, mute_users_list]
     table = "temporary_table"
 
     batch_handles_and_dids = await utils.fetch_handles_batch(batch_dids)
@@ -485,7 +488,7 @@ async def crawler_batch(batch_dids, batch_size, forced=False):
                 mutelists_users_data = await utils.get_mutelist_users(did)
 
                 # Update the mutelist tables in the database with the retrieved data
-                await update_mutelist_tables(did, mutelists_data, mutelists_users_data)
+                total_mutes_updated += await update_mutelist_tables(did, mutelists_data, mutelists_users_data)
 
                 logger.debug(f"Updated mute lists for DID: {did}")
             else:
@@ -493,9 +496,11 @@ async def crawler_batch(batch_dids, batch_size, forced=False):
         except Exception as e:
             logger.error(f"Error updating for DID {did}: {e}")
 
-    logger.info(f"Updated in batch: {total_blocks_updated}")
+    logger.info(f"Updated in batch: blocks: {total_blocks_updated} mute lists: {total_mutes_updated[0]} mute lists users: {total_mutes_updated[1]}")
 
-    return total_blocks_updated
+    total_items_updated = total_blocks_updated + total_mutes_updated[0] + total_mutes_updated[1]
+
+    return total_items_updated
 
 
 async def get_all_users_db(run_update=False, get_dids=False, get_count=False, init_db_run=False):
@@ -622,10 +627,18 @@ async def update_blocklist_table(ident, blocked_data, forced=False):
 
 
 async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, forced=False):
+    list_counter = 0
+    user_counter = 0
+
     if not forced:
         touched_actor = "crawler"
     else:
         touched_actor = "forced_crawler"
+
+    if not mutelists_data:
+        counter = [list_counter, user_counter]
+
+        return counter
 
     async with connection_pool.acquire() as connection:
         async with connection.transaction():
@@ -669,6 +682,8 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, fo
 
                 logger.info("Mutelist transaction[created] updated.")
                 logger.info(f"Mute list(s) added for: {ident}")
+
+                list_counter += 1
             else:
                 logger.debug("Mutelist not updated; already exists.")
 
@@ -717,8 +732,18 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, fo
 
                     logger.info("Mutelist users transaction[created] updated.")
                     logger.info(f"Mute list user(s) added for: {ident}")
+
+                    user_counter += 1
                 else:
                     logger.debug("Mutelist not updated; already exists.")
+
+                    counter = [list_counter, user_counter]
+
+                    return counter
+            else:
+                counter = [list_counter, user_counter]
+
+                return counter
 
 
 async def does_did_and_handle_exist_in_database(did, handle):
