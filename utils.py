@@ -735,47 +735,29 @@ async def get_mutelists(ident):
                 value = record.get("value", {})
                 subject = value.get("name")
                 created_at_value = value.get("createdAt")
+                timestamp = datetime.fromisoformat(created_at_value)
                 description = value.get("description")
                 uri = record.get("uri")
 
-                if created_at_value:
-                    try:  # Have to check for different time formats in blocklists :/
-                        if '.' in created_at_value and 'Z' in created_at_value:
-                            # If the value contains fractional seconds and 'Z' (UTC time)
-                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S.%fZ").date()
-                        elif '.' in created_at_value:
-                            # If the value contains fractional seconds (but no 'Z' indicating time zone)
-                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S.%f").date()
-                        elif 'Z' in created_at_value:
-                            # If the value has 'Z' indicating UTC time (but no fractional seconds)
-                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%SZ").date()
-                        else:
-                            # If the value has no fractional seconds and no 'Z' indicating time zone
-                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S").date()
-                    except ValueError as ve:
-                        logger.warning("No date in blocklist for: " + str(ident) + " | " + str(full_url))
-                        logger.error("error: " + str(ve))
-                        continue
+                parts = uri.split('/')
+                list_id = parts[-1]
 
-                    parts = uri.split('/')
-                    list_id = parts[-1]
+                list_base_url = "https://bsky.app/profile"
+                list_full_url = f"""{list_base_url}/{ident}/lists/{list_id}"""
 
-                    list_base_url = "https://bsky.app/profile"
-                    list_full_url = f"""{list_base_url}/{ident}/lists/{list_id}"""
+                # Create a dictionary to store this record's data
+                record_data = {
+                    "url": list_full_url,
+                    "uri": uri,
+                    "did": ident,
+                    "cid": cid,
+                    "name": subject,
+                    "created_at": timestamp,
+                    "description": description
+                }
 
-                    # Create a dictionary to store this record's data
-                    record_data = {
-                        "url": list_full_url,
-                        "uri": uri,
-                        "did": ident,
-                        "cid": cid,
-                        "name": subject,
-                        "created_at": created_date,
-                        "description": description
-                    }
-
-                    # Add this record's data to the list
-                    mutelists_data.append(record_data)
+                # Add this record's data to the list
+                mutelists_data.append(record_data)
 
             cursor = response_json.get("cursor")
             if not cursor:
@@ -859,37 +841,21 @@ async def get_mutelist_users(ident):
                 value = record.get("value", {})
                 subject = value.get("subject")
                 created_at_value = value.get("createdAt")
-                uri = value.get("list")
+                timestamp = datetime.fromisoformat(created_at_value)
+                listitem_uri = record.get("uri")
+                list_uri = value.get("list")
 
-                if created_at_value:
-                    try:  # Have to check for different time formats in blocklists :/
-                        if '.' in created_at_value and 'Z' in created_at_value:
-                            # If the value contains fractional seconds and 'Z' (UTC time)
-                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S.%fZ").date()
-                        elif '.' in created_at_value:
-                            # If the value contains fractional seconds (but no 'Z' indicating time zone)
-                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S.%f").date()
-                        elif 'Z' in created_at_value:
-                            # If the value has 'Z' indicating UTC time (but no fractional seconds)
-                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%SZ").date()
-                        else:
-                            # If the value has no fractional seconds and no 'Z' indicating time zone
-                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S").date()
-                    except ValueError as ve:
-                        logger.warning("No date in blocklist for: " + str(ident) + " | " + str(full_url))
-                        logger.error("error: " + str(ve))
-                        continue
+                # Create a dictionary to store this record's data
+                user_record_data = {
+                    "list_uri": list_uri,
+                    "cid": cid,
+                    "subject": subject,
+                    "created_at": timestamp,
+                    "listitem_uri": listitem_uri
+                }
 
-                    # Create a dictionary to store this record's data
-                    user_record_data = {
-                        "uri": uri,
-                        "cid": cid,
-                        "subject": subject,
-                        "created_at": created_date
-                    }
-
-                    # Add this record's data to the list
-                    mutelists_users_data.append(user_record_data)
+                # Add this record's data to the list
+                mutelists_users_data.append(user_record_data)
             cursor = response_json.get("cursor")
             if not cursor:
                 break

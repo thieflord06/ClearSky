@@ -9,22 +9,18 @@ import asyncio
 import app
 import utils
 
-# python update_manager.py --update-users-handles // update handles that have changed (initial or re-initialize)
-# python update_manager.py --update-users-did-only-db // command to update users db
-# python update_manager.py --fetch-users-count // command to get current count in db
-# python update_manager.py --update-blocklists-db // command to update all users blocklists
-# python update_manager.py --retrieve-blocklists-db // initial/update get for blocklists database
-# python update_manager.py --retrieve-blocklists-forced-db // force re-initialize get blocklists
+# python update_manager.py --crawler // Update all info
+# python update_manager.py --crawler-forced // Force update all info
 # python update_manager.py --update-users-dids // update db with new dids and handles
-# python update_manager.py --update-redis-cache // update handles in redis
-# python update_manager.py --retrieve-mutelists-db // initial/re-initialize get for mutelists database
 # python update_manager.py --update-all-did-pds-service-info // get past dids and service info
+# python update_manager.py --fetch-users-count // command to get current count in db
+# python update_manager.py --update-redis-cache // update handles in redis
 
 
 async def main():
     parser = argparse.ArgumentParser(description='ClearSky Update Manager: ' + app.version)
     parser.add_argument('--crawler', action='store_true', help='Update all info')
-    parser.add_argument('--crawler-forced', action='store_true', help='force update all info')
+    parser.add_argument('--crawler-forced', action='store_true', help='Force update all info')
     parser.add_argument('--update-users-dids', action='store_true', help='update db with new dids and handles')
     parser.add_argument('--update-all-did-pds-service-info', action='store_true', help='get past dids and service info')
     parser.add_argument('--fetch-users-count', action='store_true', help='Fetch the count of users')

@@ -593,6 +593,13 @@ async def update_blocklist_table(ident, blocked_data, forced=False):
             if existing_blocklist_entries != new_blocklist_entries or forced:
                 await connection.execute('DELETE FROM blocklists WHERE user_did = $1', ident)
 
+                for uri in existing_blocklist_entries:
+                    touched = datetime.now(pytz.utc)
+
+                    await connection.execute('INSERT INTO blocklists_transaction (uri, block_date, touched, touched_actor) VALUES ($1, $2, $3, $4)', uri, touched, touched, touched_actor)
+
+                logger.info("Blocklist transaction[deleted] updated.")
+
                 # Insert the new blocklist entries
                 await connection.executemany(
                     'INSERT INTO blocklists (user_did, blocked_did, block_date, cid, uri, touched, touched_actor) VALUES ($1, $2, $3, $5, $4, $6, $7)', data
@@ -602,6 +609,7 @@ async def update_blocklist_table(ident, blocked_data, forced=False):
                     'INSERT INTO blocklists_transaction (user_did, blocked_did, block_date, cid, uri, touched, touched_actor) VALUES ($1, $2, $3, $5, $4, $6, $7)', data
                 )
 
+                logger.info("Blocklist transaction[created] updated.")
                 logger.info(f"Blocks added for: {ident}")
 
                 counter += 1
@@ -613,77 +621,102 @@ async def update_blocklist_table(ident, blocked_data, forced=False):
                 return counter
 
 
-async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data):
+async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, forced=False):
+    if not forced:
+        touched_actor = "crawler"
+    else:
+        touched_actor = "forced_crawler"
+
     async with connection_pool.acquire() as connection:
         async with connection.transaction():
 
             # Retrieve the existing blocklist entries for the specified ident
             existing_records = await connection.fetch(
-                'SELECT did, cid FROM {} WHERE did = $1'.format(setup.mute_lists_table), ident
+                'SELECT uri FROM {} WHERE did = $1'.format(setup.mute_lists_table), ident
             )
 
-            existing_mutelist_entries = {(record['did'], record['cid']) for record in existing_records}
+            existing_mutelist_entries = {(record['uri']) for record in existing_records}
             logger.debug("Existing entires " + ident + ": " + str(existing_mutelist_entries))
 
             # Create a list of tuples containing the data to be inserted
-            records_to_insert = [
-                (record["url"], record["uri"], record["did"], record["cid"], record["name"], record["created_at"].strftime('%Y-%m-%d'), record["description"])
+            mutelist_records_to_insert = [
+                (record["url"], record["uri"], record["did"], record["cid"], record["name"], record["created_at"], record["description"], datetime.now(pytz.utc), touched_actor)
                 for record in mutelists_data]
 
             # Convert the new mutelist entries to a set for comparison
-            new_mutelist_entries = {(record[1], record[2]) for record in records_to_insert}
+            new_mutelist_entries = {(record[1]) for record in mutelist_records_to_insert}
             logger.debug("New mutelist entries for " + ident + ": " + str(new_mutelist_entries))
 
             # Check if there are differences between the existing and new mutelist entries
-            if existing_mutelist_entries != new_mutelist_entries:
+            if existing_mutelist_entries != new_mutelist_entries or forced:
                 # Delete existing mutelist entries for the specified ident
-                await connection.execute('DELETE FROM {} WHERE did = $1'.format(setup.mute_lists_table), ident).format(setup.mute_lists_table)
+                await connection.execute('DELETE FROM mutelists WHERE did = $1', ident)
+
+                for uri in existing_mutelist_entries:
+                    touched = datetime.now(pytz.utc)
+
+                    await connection.execute(
+                        'INSERT INTO mutelists_transaction (uri, created_date, touched, touched_actor) VALUES ($1, $2, $3, $4)', uri, touched, touched, touched_actor)
+
+                logger.info("Mutelist transaction[deleted] updated.")
 
                 # Insert the new mutelist entries
                 await connection.executemany(
                     """INSERT INTO {} (url, uri, did, cid, name, created_date, description) VALUES ($1, $2, $3, $4, $5, $6, $7)""".format(setup.mute_lists_table),
-                    records_to_insert
+                    mutelist_records_to_insert
                 )
+                await connection.executemany("""INSERT INTO mutelists_transaction (url, uri, did, cid, name, created_date, description, touched, touched_actor) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)""", mutelist_records_to_insert)
+
+                logger.info("Mutelist transaction[created] updated.")
+                logger.info(f"Mute list(s) added for: {ident}")
             else:
                 logger.debug("Mutelist not updated; already exists.")
 
             if mutelists_users_data:
-                # Retrieve the existing blocklist entries for the specified ident
+                # Retrieve the existing mutelist entries for the specified ident
                 existing_users_records = await connection.fetch(
-                    """SELECT mu.did, mu.cid
+                    """SELECT mu.list_uri
                         FROM mutelists_users as mu
                         JOIN mutelists AS ml
-                        ON mu.cid = ml.cid
+                        ON mu.list_uri = ml.uri
                         WHERE ml.did = $1""", ident
                 )
 
-                existing_mutelist_users_entries = {(record['uri'], record['did']) for record in existing_users_records}
+                existing_mutelist_users_entries = {(record['list_uri']) for record in existing_users_records}
                 logger.debug("Existing entires " + ident + ": " + str(existing_mutelist_users_entries))
 
                 # Create a list of tuples containing the data to be inserted
-                records_to_insert = [
-                    (record["uri"], record["cid"], record["subject"], record["created_at"].strftime('%Y-%m-%d'))
+                mutelistusers_records_to_insert = [
+                    (record['list_uri'], record["cid"], record['subject'], record["created_at"], touched, touched_actor, record['listitem_uri'])
                     for record in mutelists_users_data]
 
                 # Convert the new mutelist entries to a set for comparison
-                new_mutelist_users_entries = {(record[0], record[1]) for record in records_to_insert}
+                new_mutelist_users_entries = {(record[0]) for record in mutelistusers_records_to_insert}
                 logger.debug("New mutelist users entries for " + ident + ": " + str(new_mutelist_users_entries))
 
                 # Check if there are differences between the existing and new mutelist entries
-                if existing_mutelist_users_entries != new_mutelist_users_entries:
-                    # Delete existing mutelist entries for the specified ident
-                    await connection.execute("""DELETE FROM mutelists_users
-                                                WHERE list IN (
-                                                    SELECT uri
-                                                    FROM mutelists
-                                                    WHERE did = $1)""", ident)
+                if existing_mutelist_users_entries != new_mutelist_users_entries or forced:
+                    for uri in existing_mutelist_users_entries:
+                        touched = datetime.now(pytz.utc)
+                        # Delete existing mutelist entries for the specified ident
+                        await connection.execute("""DELETE FROM mutelists_users WHERE  list_uri = $1)""", uri)
 
+                        await connection.execute('INSERT INTO mutelists_users_transaction (uri, date_added, touched, touched_actor) VALUES ($1, $2, $3, $4)', uri, touched, touched, touched_actor)
+
+                    logger.info("Mutelist users transaction[deleted] updated.")
                     # Insert the new mutelist entries
                     await connection.executemany(
-                        """INSERT INTO {} (uri, cid, did, date_added) VALUES ($1, $2, $3, $4)""".format(
+                        """INSERT INTO {} (list_uri, cid, did, date_added, touched, touched_actor, listitem_uri) VALUES ($1, $2, $3, $4, $5, $6, $7)""".format(
                             setup.mute_lists_users_table),
-                        records_to_insert
+                        mutelistusers_records_to_insert
                     )
+
+                    await connection.executemany(
+                        """INSERT INTO mutelists_users_transaction (url, uri, did, cid, name, created_date, description) VALUES ($1, $2, $3, $4, $5, $6, $7)""",
+                        mutelistusers_records_to_insert)
+
+                    logger.info("Mutelist users transaction[created] updated.")
+                    logger.info(f"Mute list user(s) added for: {ident}")
                 else:
                     logger.debug("Mutelist not updated; already exists.")
 
