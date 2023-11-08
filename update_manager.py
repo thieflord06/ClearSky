@@ -23,88 +23,17 @@ import utils
 
 async def main():
     parser = argparse.ArgumentParser(description='ClearSky Update Manager: ' + app.version)
-    parser.add_argument('--update-users-handles', action='store_true', help='update handles that have changed')
-    parser.add_argument('--update-users-did-only-db', action='store_true', help='Update the database with all users')
-    parser.add_argument('--fetch-users-count', action='store_true', help='Fetch the count of users')
-    parser.add_argument('--update-blocklists-db', action='store_true', help='Update the blocklists table')
-    parser.add_argument('--retrieve-blocklists-db', action='store_true', help='Initial/re-initialize get for blocklists database')
-    parser.add_argument('--retrieve-blocklists-forced-db', action='store_true', help='force re-initialize get blocklists')
+    parser.add_argument('--crawler', action='store_true', help='Update all info')
+    parser.add_argument('--crawler-forced', action='store_true', help='force update all info')
     parser.add_argument('--update-users-dids', action='store_true', help='update db with new dids and handles')
-    parser.add_argument('--update-redis-cache', action='store_true', help='Update the redis cache')
-    parser.add_argument('--retrieve-mutelists-db', action='store_true', help='Initial/re-initialize get for mutelists database')
     parser.add_argument('--update-all-did-pds-service-info', action='store_true', help='get past dids and service info')
+    parser.add_argument('--fetch-users-count', action='store_true', help='Fetch the count of users')
+    parser.add_argument('--update-redis-cache', action='store_true', help='Update the redis cache')
     args = parser.parse_args()
 
     await database_handler.create_connection_pool()  # Creates connection pool for db
 
-    if args.update_users_handles:
-        # Call the function to update the database with all users
-        logger.info("Users db update requested.")
-        all_dids = await database_handler.get_all_users_db(False, True)
-        logger.info("Users db updated dids.")
-        logger.info("Update users handles requested.")
-        batch_size = 1000
-        total_dids = len(all_dids)
-        total_handles_updated = 0
-        table = "temporary_table"
-        processed = 0
-        # Check if there is a last processed DID in the temporary table
-        async with database_handler.connection_pool.acquire() as connection:
-            async with connection.transaction():
-                try:
-                    query = "SELECT last_processed_did FROM temporary_table"
-                    last_processed_did = await connection.fetchval(query)
-                except asyncpg.UndefinedTableError:
-                    logger.warning("Temporary table doesn't exist.")
-                    last_processed_did = None
-                except Exception as e:
-                    last_processed_did = None
-                    logger.error(f"Exception getting from db: {str(e)}")
-
-        if not last_processed_did:
-            await database_handler.create_temporary_table()
-
-        if last_processed_did:
-            # Find the index of the last processed DID in the list
-            start_index = next((i for i, (did) in enumerate(all_dids) if did == last_processed_did), None)
-            if start_index is None:
-                logger.warning(
-                    f"Last processed DID '{last_processed_did}' not found in the list. Starting from the beginning.")
-            else:
-                logger.info(f"Resuming processing from DID: {last_processed_did}")
-                all_dids = all_dids[start_index:]
-
-        async with database_handler.connection_pool.acquire() as connection:
-            async with connection.transaction():
-                # Concurrently process batches and update the handles
-                for i in range(0, total_dids, batch_size):
-                    logger.info("Getting batch to resolve.")
-                    batch_dids = all_dids[i:i + batch_size]
-
-                    # Process the batch asynchronously
-                    batch_handles_updated = await database_handler.process_batch(batch_dids, True, table, batch_size)
-                    total_handles_updated += batch_handles_updated
-                    processed += len(batch_dids)
-
-                    # Log progress for the current batch
-                    logger.info(f"Handles updated: {total_handles_updated}/{total_dids}")
-                    logger.info(f"Handles processed: {processed}")
-                    logger.info(f"First few DIDs in the batch: {batch_dids[:5]}")
-
-                    # Pause after each batch of handles resolved
-                    logger.info("Pausing...")
-                    await asyncio.sleep(60)  # Pause for 60 seconds
-
-                logger.info("Users db update finished.")
-                await database_handler.delete_temporary_table()
-                sys.exit()
-    elif args.update_users_did_only_db:
-        # Call the function to update the database with all users dids
-        logger.info("Users db update did only requested.")
-        await database_handler.get_all_users_db(True, False, init_db_run=True)
-        logger.info("Users db updated dids finished.")
-        sys.exit()
-    elif args.fetch_users_count:
+    if args.fetch_users_count:
         # Call the function to fetch the count of users
         count = await database_handler.count_users_table()
         logger.info(f"Total users in the database: {count}")
@@ -172,29 +101,17 @@ async def main():
         logger.info("Users db update finished.")
         await database_handler.delete_new_users_temporary_table()
         sys.exit()
-    elif args.retrieve_blocklists_db:
-        logger.info("Get Blocklists db requested.")
-        await database_handler.update_all_blocklists()
-        await database_handler.delete_blocklist_temporary_table()
-        logger.info("Blocklist db fetch finished.")
+    elif args.crawler:
+        logger.info("Crawler requested.")
+        await database_handler.crawl_all()
+        await database_handler.delete_temporary_table()
+        logger.info("Crawl fetch finished.")
         sys.exit()
-    elif args.retrieve_blocklists_forced_db:
-        logger.info("Get Blocklists db requested.")
-        await database_handler.update_all_blocklists(forced=True)
-        await database_handler.delete_blocklist_temporary_table()
-        logger.info("Blocklist db fetch finished.")
-        sys.exit()
-    elif args.retrieve_mutelists_db:
-        logger.info("Get Mutelists db requested.")
-        await database_handler.update_all_mutelists()
-        await database_handler.delete_mutelist_temporary_table()
-        logger.info("Mutelists db fetch finished.")
-        sys.exit()
-    elif args.update_blocklists_db:
-        logger.info("Update Blocklists db requested.")
-        await database_handler.update_all_blocklists(True)
-        await database_handler.delete_blocklist_temporary_table()
-        logger.info("Update Blocklists db finished.")
+    elif args.crawler_forced:
+        logger.info("Crawler forced requested.")
+        await database_handler.crawl_all(forced=True)
+        await database_handler.delete_temporary_table()
+        logger.info("Crawl forced fetch finished.")
         sys.exit()
     elif args.update_redis_cache:
         logger.info("Cache update requested.")
