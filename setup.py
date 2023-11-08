@@ -54,7 +54,7 @@ async def create_db():
                     blocked_did text,
                     block_date timestamptz,
                     cid text,
-                    uri text,
+                    uri text not null,
                     touched timestamptz,
                     touched_actor text
                 )
@@ -94,7 +94,7 @@ async def create_db():
                 CREATE TABLE IF NOT EXISTS {} (
                     serial_id BIGSERIAL primary key,
                     url text,
-                    uri text,
+                    uri text not null,
                     did text,
                     cid text,
                     name text,
@@ -122,7 +122,7 @@ async def create_db():
                 CREATE TABLE IF NOT EXISTS {} (
                     serial_id BIGSERIAL primary key,
                     list_uri text,
-                    listitem_uri,
+                    listitem_uri text not null,
                     cid text,
                     did text,
                     date_added timestamptz,
