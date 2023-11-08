@@ -363,7 +363,7 @@ async def crawl_all(forced=False):
         current_batch_size = min(batch_size, remaining_dids)
 
         batch_dids = all_dids[i:i + current_batch_size]
-        # Use the limiter to rate-limit the function calls
+
         while True:
             try:
                 task = asyncio.create_task(crawler_batch(batch_dids, batch_size, forced=forced))
@@ -416,7 +416,7 @@ async def crawler_batch(batch_dids, batch_size, forced=False):
     total_mutes_updated = [mute_lists, mute_users_list]
     table = "temporary_table"
 
-    batch_handles_and_dids = await utils.fetch_handles_batch(batch_dids)
+    batch_handles_and_dids = await utils.fetch_handles_batch(batch_dids, True)
     logger.info("Batch resolved.")
 
     # Split the batch of handles into smaller batches
