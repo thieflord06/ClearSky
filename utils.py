@@ -888,6 +888,112 @@ async def get_mutelist_users(ident):
     return mutelists_users_data
 
 
+async def get_blocklist_lists(ident):
+    base_url = "https://bsky.social/xrpc/"
+    mute_lists_collection = "app.bsky.graph.listBlock"
+    limit = 100
+    subscribedblocklists_data = []
+    cursor = None
+    retry_count = 0
+    max_retries = 5
+
+    while retry_count < max_retries:
+        url = urllib.parse.urljoin(base_url, "com.atproto.repo.listRecords")
+        params = {
+            "repo": ident,
+            "limit": limit,
+            "collection": mute_lists_collection,
+        }
+
+        if cursor:
+            params["cursor"] = cursor
+
+        encoded_params = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
+        full_url = f"{url}?{encoded_params}"
+        logger.debug(full_url)
+
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
+        except httpx.ReadTimeout:
+            logger.warning("Request timed out. Retrying... Retry count: %d", retry_count)
+            retry_count += 1
+            await asyncio.sleep(10)
+            continue
+        except httpx.RequestError as e:
+            logger.warning("Error during API call: %s", e)
+            retry_count += 1
+            logger.info("sleeping 5")
+            await asyncio.sleep(5)
+            continue
+
+        if response.status_code == 200:
+            response_json = response.json()
+            list_records = response_json.get("records", [])
+
+            for record in list_records:
+                cid = record.get("cid")  # List ID
+                value = record.get("value")
+                list_uri = value.get("subject")
+                created_at_value = value.get("createdAt")
+                timestamp = datetime.fromisoformat(created_at_value)
+                record_type = value.get("type")
+                uri = record.get("uri")
+
+                # parts = uri.split('/')
+                # list_id = parts[-1]
+                #
+                # list_base_url = "https://bsky.app/profile"
+                # list_full_url = f"""{list_base_url}/{ident}/lists/{list_id}"""
+
+                # Create a dictionary to store this record's data
+                record_data = {
+                    "did": ident,
+                    "uri": uri,
+                    "cid": cid,
+                    "list_uri": list_uri,
+                    "created_at": timestamp,
+                    "record_type": record_type
+                }
+
+                # Add this record's data to the list
+                subscribedblocklists_data.append(record_data)
+
+            cursor = response_json.get("cursor")
+            if not cursor:
+                break
+        elif response.status_code == 429:
+            logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
+            await asyncio.sleep(60)  # Retry after 60 seconds
+        elif response.status_code == 400:
+            try:
+                error_message = response.json()["error"]
+                message = response.json()["message"]
+                if error_message == "InvalidRequest" and "Could not find repo" in message:
+                    logger.warning("Could not find repo: " + str(ident))
+
+                    return []
+            except KeyError:
+                pass
+        else:
+            retry_count += 1
+            logger.warning("Error during API call. Status code: %s", response.status_code)
+            await asyncio.sleep(5)
+            continue
+
+    if retry_count == max_retries:
+        logger.warning("Could not get mute lists for: " + ident)
+
+        return []
+    if not subscribedblocklists_data and retry_count >= max_retries:
+
+        return []
+
+    logger.debug(subscribedblocklists_data)
+
+    return subscribedblocklists_data
+
+
 def fetch_data_with_after_parameter(url, after_value):
     response = requests.get(url, params={'after': after_value})
     if response.status_code == 200:
