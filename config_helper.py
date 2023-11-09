@@ -10,25 +10,25 @@ ini_file = "config.ini"
 
 
 def remove_file_handler_from_config(config_file_path):
-    config = configparser.ConfigParser()
-    config.read(config_file_path)
+    configure = configparser.ConfigParser()
+    configure.read(config_file_path)
 
     # Check if 'fileHandler' exists in the [handlers] section
-    if 'fileHandler' in config['handlers']['keys']:
+    if 'fileHandler' in configure['handlers']['keys']:
         # Remove 'fileHandler' from the list of handlers
-        handlers = config['handlers']['keys'].split(',')
+        handlers = configure['handlers']['keys'].split(',')
         handlers.remove('fileHandler')
-        config['handlers']['keys'] = ','.join(handlers)
+        configure['handlers']['keys'] = ','.join(handlers)
 
-    if 'fileHandler' in config['logger_root']['handlers']:
+    if 'fileHandler' in configure['logger_root']['handlers']:
         # Remove 'fileHandler' from the list of handlers
-        handlers = config['logger_root']['handlers'].split(',')
+        handlers = configure['logger_root']['handlers'].split(',')
         handlers.remove('fileHandler')
-        config['logger_root']['handlers'] = ','.join(handlers)
+        configure['logger_root']['handlers'] = ','.join(handlers)
 
     # Save the modified config to the same file
     with open(config_file_path, 'w') as config_file:
-        config.write(config_file)
+        configure.write(config_file)
 
     print("removed file handler.")
     print("Console logging only.")
