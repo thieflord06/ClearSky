@@ -9,6 +9,31 @@ import sys
 ini_file = "config.ini"
 
 
+def remove_file_handler_from_config(config_file_path):
+    config = configparser.ConfigParser()
+    config.read(config_file_path)
+
+    # Check if 'fileHandler' exists in the [handlers] section
+    if 'fileHandler' in config['handlers']['keys']:
+        # Remove 'fileHandler' from the list of handlers
+        handlers = config['handlers']['keys'].split(',')
+        handlers.remove('fileHandler')
+        config['handlers']['keys'] = ','.join(handlers)
+
+    if 'fileHandler' in config['logger_root']['handlers']:
+        # Remove 'fileHandler' from the list of handlers
+        handlers = config['logger_root']['handlers'].split(',')
+        handlers.remove('fileHandler')
+        config['logger_root']['handlers'] = ','.join(handlers)
+
+    # Save the modified config to the same file
+    with open(config_file_path, 'w') as config_file:
+        config.write(config_file)
+
+    print("removed file handler.")
+    print("Console logging only.")
+
+
 def read_config():
     config = configparser.ConfigParser()
 
@@ -106,7 +131,11 @@ def configure_logging():
 # Set up log files and directories for entire project from config.ini
 config = read_config()
 log_dir = update_config_based_on_os(config)
-create_log_directory(log_dir, config)
+
+if "True" in read_config().get("log_option", "console_only"):
+    remove_file_handler_from_config(ini_file)
+else:
+    create_log_directory(log_dir, config)
 
 # Create and configure the logger instance
 logger = configure_logging()
