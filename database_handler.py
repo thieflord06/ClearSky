@@ -1144,6 +1144,7 @@ async def get_top_blocks():
 
 
 async def update_did_service(data):
+    logger.info("Updating services information for batch.")
     try:
         async with connection_pool.acquire() as connection:
             async with connection.transaction():
