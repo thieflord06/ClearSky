@@ -1195,6 +1195,8 @@ async def check_last_created_did_date():
     except Exception as e:
         logger.error("Error retrieving data", e)
 
+        return None
+
 
 async def get_block_stats():
     try:
