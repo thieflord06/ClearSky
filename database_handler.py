@@ -764,9 +764,9 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, fo
 
                     try:
                         # Insert the new mutelist entries
-                        await connection.executemany("""INSERT INTO {} (list_uri, cid, subject_did, author_did, date_added, touched, touched_actor, listitem_uri) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)""".format(setup.mute_lists_users_table), mutelistusers_records_to_insert)
+                        await connection.executemany("""INSERT INTO {} (list_uri, cid, subject_did, owner_did, date_added, touched, touched_actor, listitem_uri) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)""".format(setup.mute_lists_users_table), mutelistusers_records_to_insert)
 
-                        await connection.executemany("""INSERT INTO mutelists_users_transaction (list_uri, cid, subject_did, author_did, date_added, touched, touched_actor, listitem_uri) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)""", mutelistusers_records_to_insert)
+                        await connection.executemany("""INSERT INTO mutelists_users_transaction (list_uri, cid, subject_did, owner_did, date_added, touched, touched_actor, listitem_uri) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)""", mutelistusers_records_to_insert)
                     except Exception as e:
                         logger.error(f"Error updating mutelists_users or mutelists_users_transaction on create: {e}")
 
