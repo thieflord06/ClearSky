@@ -460,7 +460,7 @@ async def crawler_batch(batch_dids, forced=False):
             else:
                 logger.debug(f"didn't update no blocks: {did}")
 
-            if mutelists_data:
+            if mutelists_data or mutelists_users_data:
                 # Update the mutelist tables in the database with the retrieved data
                 total_mutes_updated += await update_mutelist_tables(did, mutelists_data, mutelists_users_data, forced=forced)
 
@@ -731,11 +731,9 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, fo
             if mutelists_users_data:
                 # Retrieve the existing mutelist entries for the specified ident
                 existing_users_records = await connection.fetch(
-                    """SELECT mu.listitem_uri
-                        FROM mutelists_users as mu
-                        JOIN mutelists AS ml
-                        ON mu.list_uri = ml.uri
-                        WHERE ml.did = $1""", ident
+                    """SELECT listitem_uri
+                        FROM mutelists_users
+                        WHERE owner_did = $1""", ident
                 )
 
                 existing_mutelist_users_entries = {(record['listitem_uri']) for record in existing_users_records}
@@ -744,11 +742,11 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, fo
 
                 # Create a list of tuples containing the data to be inserted
                 mutelistusers_records_to_insert = [
-                    (record['list_uri'], record["cid"], record['subject'], record["created_at"], datetime.now(pytz.utc), touched_actor, record['listitem_uri'])
+                    (record['list_uri'], record["cid"], record['subject'], record['author'], record["created_at"], datetime.now(pytz.utc), touched_actor, record['listitem_uri'])
                     for record in mutelists_users_data]
 
                 # Convert the new mutelist entries to a set for comparison
-                new_mutelist_users_entries = {(record[6]) for record in mutelistusers_records_to_insert}
+                new_mutelist_users_entries = {(record[7]) for record in mutelistusers_records_to_insert}
 
                 logger.debug("New mutelist users entries for " + ident + ": " + str(new_mutelist_users_entries))
 
@@ -766,9 +764,9 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, fo
 
                     try:
                         # Insert the new mutelist entries
-                        await connection.executemany("""INSERT INTO {} (list_uri, cid, did, date_added, touched, touched_actor, listitem_uri) VALUES ($1, $2, $3, $4, $5, $6, $7)""".format(setup.mute_lists_users_table), mutelistusers_records_to_insert)
+                        await connection.executemany("""INSERT INTO {} (list_uri, cid, subject_did, author_did, date_added, touched, touched_actor, listitem_uri) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)""".format(setup.mute_lists_users_table), mutelistusers_records_to_insert)
 
-                        await connection.executemany("""INSERT INTO mutelists_users_transaction (list_uri, cid, did, date_added, touched, touched_actor, listitem_uri) VALUES ($1, $2, $3, $4, $5, $6, $7)""", mutelistusers_records_to_insert)
+                        await connection.executemany("""INSERT INTO mutelists_users_transaction (list_uri, cid, subject_did, author_did, date_added, touched, touched_actor, listitem_uri) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)""", mutelistusers_records_to_insert)
                     except Exception as e:
                         logger.error(f"Error updating mutelists_users or mutelists_users_transaction on create: {e}")
 

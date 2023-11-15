@@ -112,11 +112,12 @@ async def create_db():
                     list_uri text,
                     listitem_uri text,
                     cid text,
-                    did text,
+                    subject_did text,
+                    owner_did text,
                     date_added timestamptz,
                     touched timestamptz,
                     touched_actor text,
-                    PRIMARY KEY (listitem_uri, did)
+                    PRIMARY KEY (listitem_uri, subject_did)
                 )
                 """.format(mute_lists_users_table)
 

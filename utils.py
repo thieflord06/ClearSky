@@ -850,6 +850,7 @@ async def get_mutelist_users(ident):
                     "list_uri": list_uri,
                     "cid": cid,
                     "subject": subject,
+                    "author": ident,
                     "created_at": timestamp,
                     "listitem_uri": listitem_uri
                 }
