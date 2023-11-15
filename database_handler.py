@@ -1614,8 +1614,8 @@ async def get_mutelists(ident):
             SELECT ml.url, u.handle, u.status, ml.name, ml.description, ml.created_date, mu.date_added
             FROM mutelists AS ml
             INNER JOIN mutelists_users AS mu ON ml.uri = mu.list_uri
-            INNER JOIN users AS u ON ml.did = u.subject_did -- Join the users table to get the handle
-            WHERE mu.did = $1
+            INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle
+            WHERE mu.subject_did = $1
             """
             try:
                 mute_lists = await connection.fetch(query, ident)
