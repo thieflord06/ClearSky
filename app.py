@@ -263,7 +263,7 @@ async def selection_handle():
 
                         return await render_template('not_blocking.html', user=identifier, message=message)
 
-                    more_data_available = len(blocklist) == items_per_page
+                    more_data_available = count > items_per_page
 
                     return await render_template('blocklist.html', blocklist=blocklist, user=identifier,
                                                  count=formatted_count, identifier=did_identifier, page=page, more_data_available=more_data_available)
@@ -298,7 +298,7 @@ async def selection_handle():
                         *session.values()) + " | " + "Single Blocklist Request Result: " + identifier + " | " + "Blocked by: " + str(
                         blocklist) + " :: " + "Total count: " + str(formatted_count))
 
-                    more_data_available = len(blocklist) == items_per_page
+                    more_data_available = count > items_per_page
 
                     return await render_template('single_blocklist.html', user=identifier, blocklist=blocklist,
                                                  count=formatted_count, identifier=did_identifier, page=page, more_data_available=more_data_available)
@@ -1082,9 +1082,9 @@ async def first_run():
             tables = await database_handler.tables_exists()
 
             if tables:
-                await database_handler.blocklists_updater()
-                await database_handler.top_24blocklists_updater()
-                await utils.update_block_statistics()
+                # await database_handler.blocklists_updater()
+                # await database_handler.top_24blocklists_updater()
+                # await utils.update_block_statistics()
 
                 break
             else:
