@@ -13,6 +13,7 @@ from redis import asyncio as aioredis
 from datetime import datetime
 from collections import defaultdict
 import pytz
+from aiolimiter import AsyncLimiter
 
 # ======================================================================================================================
 # ===================================================  global variables ================================================
@@ -391,6 +392,10 @@ async def crawler_batch(batch_dids, forced=False):
     total_subscribed_updated = 0
     total_mutes_updated = [mute_lists, mute_users_list]
 
+    rate_limit = 2700  # Requests per minute
+    time_interval = 300  # 60 seconds = 1 minute
+    limiter = AsyncLimiter(rate_limit, time_interval)
+
     batch_handles_and_dids = await utils.fetch_handles_batch(batch_dids, True)
 
     logger.info("Batch resolved.")
@@ -437,8 +442,17 @@ async def crawler_batch(batch_dids, forced=False):
 
     for did in batch_dids:
         try:
-            # Logic to retrieve block list and mutelists for the current DID
-            blocked_data = await utils.get_user_block_list(did)
+            async with limiter:
+                # Logic to retrieve block list and mutelists for the current DID
+                blocked_data = await utils.get_user_block_list(did)
+
+                # Logic to retrieve block list and mutelists for the current DID
+                mutelists_data = await utils.get_mutelists(did)
+
+                mutelists_users_data = await utils.get_mutelist_users(did)
+
+                # Logic to retrieve subscribe list
+                subscribe_data = await utils.get_subscribelists(did)
 
             if blocked_data:
                 # Update the blocklists table in the database with the retrieved data
@@ -446,21 +460,13 @@ async def crawler_batch(batch_dids, forced=False):
             else:
                 logger.debug(f"didn't update no blocks: {did}")
 
-            # Logic to retrieve block list and mutelists for the current DID
-            mutelists_data = await utils.get_mutelists(did)
-
             if mutelists_data:
-                mutelists_users_data = await utils.get_mutelist_users(did)
-
                 # Update the mutelist tables in the database with the retrieved data
                 total_mutes_updated += await update_mutelist_tables(did, mutelists_data, mutelists_users_data)
 
                 logger.debug(f"Updated mute lists for DID: {did}")
             else:
                 logger.debug(f"didn't update no mutelists: {did}")
-
-            # Logic to retrieve subscribe list
-            subscribe_data = await utils.get_subscribelists(did)
 
             if subscribe_data:
                 total_subscribed_updated += await update_subscribe_table(did, subscribe_data, forced=forced)
