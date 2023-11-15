@@ -372,12 +372,12 @@ async def crawl_all(forced=False):
 
         # Pause every 100 DID requests
         if processed_count % pause_interval == 0:
-            await asyncio.sleep(30)  # Pause for 30 seconds
             logger.info(f"Pausing after {i + 1} DID requests...")
 
             # Log information for each batch
             logger.info(f"Processing batch {i // batch_size + 1}/{total_dids // batch_size + 1}...")
             logger.info(f"Processing {cumulative_processed_count}/{total_dids} DIDs...")
+            await asyncio.sleep(30)  # Pause for 30 secondsx
 
         processed_count += batch_size
 
@@ -656,7 +656,7 @@ async def update_subscribe_table(ident, subscribelists_data, forced=False):
                 )
 
                 logger.info("Subscribe Blocklist transaction[created] updated.")
-                logger.info(f"Blocks added for: {ident}")
+                logger.info(f"Subscribe blocklist added for: {ident}")
 
                 subscribe_list_counter += 1
 
