@@ -616,7 +616,7 @@ async def update_subscribe_table(ident, subscribelists_data, forced=False):
         touched_actor = "forced_crawler"
 
     if not subscribelists_data:
-        counter = [subscribe_list_counter]
+        counter = subscribe_list_counter
 
         return counter
 
@@ -630,12 +630,12 @@ async def update_subscribe_table(ident, subscribelists_data, forced=False):
             logger.debug("Existing entires " + ident + ": " + str(existing_blocklist_entries))
 
             # Prepare the data to be inserted into the database
-            data = [(uri, list_uri, did, cid, created_at, record_type, datetime.now(pytz.utc), touched_actor) for
+            data = [(did, uri, list_uri, cid, created_at, record_type, datetime.now(pytz.utc), touched_actor) for
                     uri, list_uri, did, cid, created_at, record_type in subscribelists_data]
             logger.debug("Data to be inserted: " + str(data))
 
             # Convert the new blocklist entries to a set for comparison
-            new_blocklist_entries = {record[0] for record in data}
+            new_blocklist_entries = {record[1] for record in data}
             logger.debug("new blocklist entry " + ident + " : " + str(new_blocklist_entries))
 
             if existing_blocklist_entries != new_blocklist_entries or forced:
@@ -737,7 +737,7 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, fo
             if mutelists_users_data:
                 # Retrieve the existing mutelist entries for the specified ident
                 existing_users_records = await connection.fetch(
-                    """SELECT ml.listitem_uri
+                    """SELECT ml.uri
                         FROM mutelists_users as mu
                         JOIN mutelists AS ml
                         ON mu.list_uri = ml.uri

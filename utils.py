@@ -942,9 +942,9 @@ async def get_subscribelists(ident):
 
                 # Create a dictionary to store this record's data
                 record_data = {
+                    "did": ident,
                     "uri": uri,
                     "list_uri": list_uri,
-                    "did": ident,
                     "cid": cid,
                     "created_at": timestamp,
                     "record_type": record_type
