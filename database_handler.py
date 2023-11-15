@@ -914,7 +914,8 @@ async def create_temporary_table():
             async with connection.transaction():
                 query = """
                 CREATE TABLE IF NOT EXISTS temporary_table (
-                    last_processed_did text PRIMARY KEY
+                    last_processed_did text PRIMARY KEY,
+                    touched timestamptz
                 )
                 """
                 await connection.execute(query)
@@ -1048,10 +1049,10 @@ async def update_temporary_table(last_processed_did, table):
                 # Delete the existing row if it exists
                 delete_query = f"TRUNCATE {table}"
                 await connection.execute(delete_query)
-
+                touched = datetime.now(pytz.utc)
                 # Insert the new row with the given last_processed_did
-                insert_query = f"INSERT INTO {table} (last_processed_did) VALUES ($1)"
-                await connection.execute(insert_query, last_processed_did)
+                insert_query = f"INSERT INTO {table} (last_processed_did, touched) VALUES ($1, $2)"
+                await connection.execute(insert_query, last_processed_did, touched)
     except Exception as e:
         logger.error("Error updating temporary table: %s", e)
 
