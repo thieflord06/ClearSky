@@ -888,11 +888,11 @@ async def get_mutelist_users(ident):
     return mutelists_users_data
 
 
-async def get_blocklist_lists(ident):
+async def get_subscribelists(ident):
     base_url = "https://bsky.social/xrpc/"
-    mute_lists_collection = "app.bsky.graph.listBlock"
+    subscribe_lists_collection = "app.bsky.graph.listblock"
     limit = 100
-    subscribedblocklists_data = []
+    subscribe_data = []
     cursor = None
     retry_count = 0
     max_retries = 5
@@ -902,7 +902,7 @@ async def get_blocklist_lists(ident):
         params = {
             "repo": ident,
             "limit": limit,
-            "collection": mute_lists_collection,
+            "collection": subscribe_lists_collection,
         }
 
         if cursor:
@@ -932,32 +932,26 @@ async def get_blocklist_lists(ident):
             list_records = response_json.get("records", [])
 
             for record in list_records:
-                cid = record.get("cid")  # List ID
-                value = record.get("value")
+                uri = record.get("uri")
+                cid = record.get("cid", {})  # List ID
+                value = record.get("value", {})
                 list_uri = value.get("subject")
+                record_type = value.get("$type")
                 created_at_value = value.get("createdAt")
                 timestamp = datetime.fromisoformat(created_at_value)
-                record_type = value.get("type")
-                uri = record.get("uri")
-
-                # parts = uri.split('/')
-                # list_id = parts[-1]
-                #
-                # list_base_url = "https://bsky.app/profile"
-                # list_full_url = f"""{list_base_url}/{ident}/lists/{list_id}"""
 
                 # Create a dictionary to store this record's data
                 record_data = {
-                    "did": ident,
                     "uri": uri,
-                    "cid": cid,
                     "list_uri": list_uri,
+                    "did": ident,
+                    "cid": cid,
                     "created_at": timestamp,
                     "record_type": record_type
                 }
 
                 # Add this record's data to the list
-                subscribedblocklists_data.append(record_data)
+                subscribe_data.append(record_data)
 
             cursor = response_json.get("cursor")
             if not cursor:
@@ -985,13 +979,13 @@ async def get_blocklist_lists(ident):
         logger.warning("Could not get mute lists for: " + ident)
 
         return []
-    if not subscribedblocklists_data and retry_count >= max_retries:
+    if not subscribe_data and retry_count >= max_retries:
 
         return []
 
-    logger.debug(subscribedblocklists_data)
+    logger.debug(subscribe_data)
 
-    return subscribedblocklists_data
+    return subscribe_data
 
 
 def fetch_data_with_after_parameter(url, after_value):

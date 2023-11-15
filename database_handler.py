@@ -388,6 +388,7 @@ async def crawler_batch(batch_dids, forced=False):
     total_blocks_updated = 0
     mute_lists = 0
     mute_users_list = 0
+    total_subscribed_updated = 0
     total_mutes_updated = [mute_lists, mute_users_list]
 
     batch_handles_and_dids = await utils.fetch_handles_batch(batch_dids, True)
@@ -457,12 +458,22 @@ async def crawler_batch(batch_dids, forced=False):
                 logger.debug(f"Updated mute lists for DID: {did}")
             else:
                 logger.debug(f"didn't update no mutelists: {did}")
+
+            # Logic to retrieve subscribe list
+            subscribe_data = await utils.get_subscribelists(did)
+
+            if subscribe_data:
+                total_subscribed_updated += await update_subscribe_table(did, subscribe_data, forced=forced)
+
+                logger.debug(f"Updated subscribe lists for DID: {did}")
+            else:
+                logger.debug(f"didn't update not subscribed to any lists: {did}")
         except Exception as e:
             logger.error(f"Error updating for DID {did}: {e}")
 
-    logger.info(f"Updated in batch: blocks: {total_blocks_updated} | mute lists: {total_mutes_updated[0]} | mute lists users: {total_mutes_updated[1]}")
+    logger.info(f"Updated in batch: blocks: {total_blocks_updated} | mute lists: {total_mutes_updated[0]} | mute lists users: {total_mutes_updated[1]} | subscribe lists: {total_subscribed_updated}")
 
-    total_items_updated = total_blocks_updated + total_mutes_updated[0] + total_mutes_updated[1]
+    total_items_updated = total_blocks_updated + total_mutes_updated[0] + total_mutes_updated[1] + total_subscribed_updated
 
     return total_items_updated
 
@@ -588,6 +599,72 @@ async def update_blocklist_table(ident, blocked_data, forced=False):
                 logger.info("Blocklist not updated already exists.")
 
                 return counter
+
+
+async def update_subscribe_table(ident, subscribelists_data, forced=False):
+    subscribe_list_counter = 0
+
+    if not forced:
+        touched_actor = "crawler"
+    else:
+        touched_actor = "forced_crawler"
+
+    if not subscribelists_data:
+        counter = [subscribe_list_counter]
+
+        return counter
+
+    async with connection_pool.acquire() as connection:
+        async with connection.transaction():
+            # Retrieve the existing blocklist entries for the specified ident
+            existing_records = await connection.fetch(
+                'SELECT uri FROM subscribe_blocklists WHERE did = $1', ident
+            )
+            existing_blocklist_entries = {record['uri'] for record in existing_records}
+            logger.debug("Existing entires " + ident + ": " + str(existing_blocklist_entries))
+
+            # Prepare the data to be inserted into the database
+            data = [(uri, list_uri, did, cid, created_at, record_type, datetime.now(pytz.utc), touched_actor) for
+                    uri, list_uri, did, cid, created_at, record_type in subscribelists_data]
+            logger.debug("Data to be inserted: " + str(data))
+
+            # Convert the new blocklist entries to a set for comparison
+            new_blocklist_entries = {record[0] for record in data}
+            logger.debug("new blocklist entry " + ident + " : " + str(new_blocklist_entries))
+
+            if existing_blocklist_entries != new_blocklist_entries or forced:
+                await connection.execute('DELETE FROM subscribe_blocklists WHERE did = $1', ident)
+
+                for uri in existing_blocklist_entries:
+                    touched = datetime.now(pytz.utc)
+
+                    await connection.execute(
+                        'INSERT INTO subscribe_blocklists_transaction (uri, date_added, touched, touched_actor) VALUES ($1, $2, $3, $4)',
+                        uri, touched, touched, touched_actor)
+
+                logger.info("subscribe Blocklist transaction[deleted] updated.")
+
+                # Insert the new blocklist entries
+                await connection.executemany(
+                    'INSERT INTO subscribe_blocklists (did, uri, list_uri, cid, date_added, record_type, touched, touched_actor) VALUES ($1, $2, $3, $5, $4, $6, $7)',
+                    data
+                )
+
+                await connection.executemany(
+                    'INSERT INTO subscribe_blocklists_transaction (did, uri, list_uri, cid, date_added, record_type, touched, touched_actor) VALUES ($1, $2, $3, $5, $4, $6, $7)',
+                    data
+                )
+
+                logger.info("Subscribe Blocklist transaction[created] updated.")
+                logger.info(f"Blocks added for: {ident}")
+
+                subscribe_list_counter += 1
+
+                return subscribe_list_counter
+            else:
+                logger.info("Blocklist not updated already exists.")
+
+                return subscribe_list_counter
 
 
 async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, forced=False):
