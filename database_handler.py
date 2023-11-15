@@ -628,8 +628,7 @@ async def update_subscribe_table(ident, subscribelists_data, forced=False):
             logger.debug("Existing subscribe entires " + ident + ": " + str(existing_blocklist_entries))
 
             # Prepare the data to be inserted into the database
-            data = [(did, uri, list_uri, cid, date_added, record_type, datetime.now(pytz.utc), touched_actor) for
-                    uri, list_uri, did, cid, date_added, record_type in subscribelists_data]
+            data = [(record_type['did'], record_type['uri'], record_type['list_uri'], record_type['cid'], record_type['date_added'], record_type['record_type'], datetime.now(pytz.utc), touched_actor) for record_type in subscribelists_data]
             logger.debug("Data to be inserted: " + str(data))
 
             # Convert the new blocklist entries to a set for comparison
