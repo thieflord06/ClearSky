@@ -645,7 +645,7 @@ async def update_subscribe_table(ident, subscribelists_data, forced=False):
                             'INSERT INTO subscribe_blocklists_transaction (uri, date_added, touched, touched_actor) VALUES ($1, $2, $3, $4)',
                             uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor)
                     except Exception as e:
-                        logger.error(f"Error updating subscribe_blocklists_transaction : {e}")
+                        logger.error(f"Error updating subscribe_blocklists_transaction on delete : {e}")
 
                 logger.info("subscribe Blocklist transaction[deleted] updated.")
 
@@ -661,7 +661,7 @@ async def update_subscribe_table(ident, subscribelists_data, forced=False):
                         data
                     )
                 except Exception as e:
-                    logger.error(f"Error updating subscribe_blocklists or subscribe_blocklists_transaction : {e}")
+                    logger.error(f"Error updating subscribe_blocklists or subscribe_blocklists_transaction on create: {e}")
 
                 logger.info("Subscribe Blocklist transaction[created] updated.")
                 logger.info(f"Subscribe blocklist added for: {ident}")
