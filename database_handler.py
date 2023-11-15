@@ -648,12 +648,12 @@ async def update_subscribe_table(ident, subscribelists_data, forced=False):
 
                 # Insert the new blocklist entries
                 await connection.executemany(
-                    'INSERT INTO subscribe_blocklists (did, uri, list_uri, cid, date_added, record_type, touched, touched_actor) VALUES ($1, $2, $3, $5, $4, $6, $7, $8)',
+                    'INSERT INTO subscribe_blocklists (did, uri, list_uri, cid, date_added, record_type, touched, touched_actor) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
                     data
                 )
 
                 await connection.executemany(
-                    'INSERT INTO subscribe_blocklists_transaction (did, uri, list_uri, cid, date_added, record_type, touched, touched_actor) VALUES ($1, $2, $3, $5, $4, $6, $7, $8)',
+                    'INSERT INTO subscribe_blocklists_transaction (did, uri, list_uri, cid, date_added, record_type, touched, touched_actor) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
                     data
                 )
 
@@ -767,7 +767,7 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, fo
                     )
 
                     await connection.executemany(
-                        """INSERT INTO mutelists_users_transaction (url, uri, did, cid, name, created_date, description) VALUES ($1, $2, $3, $4, $5, $6, $7)""",
+                        """INSERT INTO mutelists_users_transaction (list_uri, cid, did, date_added, touched, touched_actor, listitem_uri) VALUES ($1, $2, $3, $4, $5, $6, $7)""",
                         mutelistusers_records_to_insert)
 
                     logger.info("Mutelist users transaction[created] updated.")
