@@ -716,7 +716,7 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, fo
 
                 # Insert the new mutelist entries
                 await connection.executemany(
-                    """INSERT INTO {} (url, uri, did, cid, name, created_date, description) VALUES ($1, $2, $3, $4, $5, $6, $7)""".format(setup.mute_lists_table),
+                    """INSERT INTO {} (url, uri, did, cid, name, created_date, description, touched, touched_actor) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)""".format(setup.mute_lists_table),
                     mutelist_records_to_insert
                 )
                 await connection.executemany("""INSERT INTO mutelists_transaction (url, uri, did, cid, name, created_date, description, touched, touched_actor) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)""", mutelist_records_to_insert)
