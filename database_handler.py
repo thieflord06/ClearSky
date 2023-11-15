@@ -652,12 +652,12 @@ async def update_subscribe_table(ident, subscribelists_data, forced=False):
 
                 # Insert the new blocklist entries
                 await connection.executemany(
-                    'INSERT INTO subscribe_blocklists (did, uri, list_uri, cid, date_added, record_type, touched, touched_actor) VALUES ($1, $2, $3, $5, $4, $6, $7)',
+                    'INSERT INTO subscribe_blocklists (did, uri, list_uri, cid, date_added, record_type, touched, touched_actor) VALUES ($1, $2, $3, $5, $4, $6, $7, $8)',
                     data
                 )
 
                 await connection.executemany(
-                    'INSERT INTO subscribe_blocklists_transaction (did, uri, list_uri, cid, date_added, record_type, touched, touched_actor) VALUES ($1, $2, $3, $5, $4, $6, $7)',
+                    'INSERT INTO subscribe_blocklists_transaction (did, uri, list_uri, cid, date_added, record_type, touched, touched_actor) VALUES ($1, $2, $3, $5, $4, $6, $7, $8)',
                     data
                 )
 
