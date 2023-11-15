@@ -639,11 +639,8 @@ async def update_subscribe_table(ident, subscribelists_data, forced=False):
                 await connection.execute('DELETE FROM subscribe_blocklists WHERE did = $1', ident)
 
                 for uri in existing_blocklist_entries:
-                    insert_data = [(uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor)]
-                    logger.debug(insert_data)
                     try:
-                        await connection.execute(
-                            'INSERT INTO subscribe_blocklists_transaction (uri, date_added, touched, touched_actor) VALUES ($1, $2, $3, $4)', insert_data)
+                        await connection.execute('INSERT INTO subscribe_blocklists_transaction (uri, date_added, touched, touched_actor) VALUES ($1, $2, $3, $4)', uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor)
                     except Exception as e:
                         logger.error(f"Error updating subscribe_blocklists_transaction on delete : {e}")
 
@@ -652,14 +649,10 @@ async def update_subscribe_table(ident, subscribelists_data, forced=False):
                 try:
                     # Insert the new blocklist entries
                     await connection.executemany(
-                        'INSERT INTO subscribe_blocklists (did, uri, list_uri, cid, date_added, record_type, touched, touched_actor) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
-                        data
-                    )
+                        'INSERT INTO subscribe_blocklists (did, uri, list_uri, cid, date_added, record_type, touched, touched_actor) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)', data)
 
                     await connection.executemany(
-                        'INSERT INTO subscribe_blocklists_transaction (did, uri, list_uri, cid, date_added, record_type, touched, touched_actor) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
-                        data
-                    )
+                        'INSERT INTO subscribe_blocklists_transaction (did, uri, list_uri, cid, date_added, record_type, touched, touched_actor) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)', data)
                 except Exception as e:
                     logger.error(f"Error updating subscribe_blocklists or subscribe_blocklists_transaction on create: {e}")
 
@@ -715,13 +708,9 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, fo
                 await connection.execute('DELETE FROM mutelists WHERE did = $1', ident)
 
                 for uri in existing_mutelist_entries:
-
-                    insert_data = [(uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor)]
-                    logger.debug(insert_data)
-
                     try:
                         await connection.execute(
-                            'INSERT INTO mutelists_transaction (uri, created_date, touched, touched_actor) VALUES ($1, $2, $3, $4) ON CONFLICT (uri) DO NOTHING', insert_data)
+                            'INSERT INTO mutelists_transaction (uri, created_date, touched, touched_actor) VALUES ($1, $2, $3, $4) ON CONFLICT (uri, created_date) DO NOTHING', uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor)
                     except Exception as e:
                         logger.error(f"Error updating mutelists_transaction on delete: {e}")
                 logger.info("Mutelist transaction[deleted] updated.")
@@ -765,14 +754,11 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, fo
                 # Check if there are differences between the existing and new mutelist entries
                 if existing_mutelist_users_entries != new_mutelist_users_entries or forced:
                     for uri in existing_mutelist_users_entries:
-                        users_insert_data = [(uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor)]
-                        logger.debug(users_insert_data)
-
                         try:
                             # Delete existing mutelist entries for the specified ident
                             await connection.execute("""DELETE FROM mutelists_users WHERE  list_uri = $1)""", uri)
 
-                            await connection.execute('INSERT INTO mutelists_users_transaction (listitem_uri, date_added, touched, touched_actor) VALUES ($1, $2, $3, $4) ON CONFLICT (listitem_uri) DO NOTHING', users_insert_data)
+                            await connection.execute('INSERT INTO mutelists_users_transaction (listitem_uri, date_added, touched, touched_actor) VALUES ($1, $2, $3, $4) ON CONFLICT (listitem_uri, date_added) DO NOTHING', uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor)
                         except Exception as e:
                             logger.error(f"Error updating mutelists_users or mutelists_users_transaction on delete: {e}")
                     logger.info("Mutelist users transaction[deleted] updated.")
