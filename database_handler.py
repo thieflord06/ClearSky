@@ -462,7 +462,7 @@ async def crawler_batch(batch_dids, forced=False):
 
             if mutelists_data:
                 # Update the mutelist tables in the database with the retrieved data
-                total_mutes_updated += await update_mutelist_tables(did, mutelists_data, mutelists_users_data)
+                total_mutes_updated += await update_mutelist_tables(did, mutelists_data, mutelists_users_data, forced=forced)
 
                 logger.debug(f"Updated mute lists for DID: {did}")
             else:
@@ -628,8 +628,8 @@ async def update_subscribe_table(ident, subscribelists_data, forced=False):
             logger.debug("Existing entires " + ident + ": " + str(existing_blocklist_entries))
 
             # Prepare the data to be inserted into the database
-            data = [(did, uri, list_uri, cid, created_at, record_type, datetime.now(pytz.utc), touched_actor) for
-                    uri, list_uri, did, cid, created_at, record_type in subscribelists_data]
+            data = [(did, uri, list_uri, cid, date_added, record_type, datetime.now(pytz.utc), touched_actor) for
+                    uri, list_uri, did, cid, date_added, record_type in subscribelists_data]
             logger.debug("Data to be inserted: " + str(data))
 
             # Convert the new blocklist entries to a set for comparison

@@ -946,7 +946,7 @@ async def get_subscribelists(ident):
                     "uri": uri,
                     "list_uri": list_uri,
                     "cid": cid,
-                    "created_at": timestamp,
+                    "date_added": timestamp,
                     "record_type": record_type
                 }
 
