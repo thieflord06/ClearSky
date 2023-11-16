@@ -588,9 +588,9 @@ async def block_stats():
 
     logger.info(f"Requesting block statistics.")
 
-    # if True:
-    #
-    #     return await render_template('known_issue.html')
+    if True:
+
+        return await render_template('feature_not_available.html')
 
     if not db_connected:
         logger.error("Database connection is not live.")
