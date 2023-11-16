@@ -94,6 +94,10 @@ async def resolve_did(did):  # Take DID and get handle
                         logger.warning("User not found. Skipping...")
 
                         return None
+                    elif "DID not available" in error_message.lower():
+                        logger.warning("User not found. Skipping...")
+
+                        return None
                     else:
                         retry_count += 1
                         logger.warning("Error:" + str(response.status_code))
