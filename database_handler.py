@@ -39,6 +39,10 @@ top_24_blocks_start_time = None
 top_blocks_process_time = None
 top_24_blocks_process_time = None
 
+rate_limit = 2700  # Requests per minute
+time_interval = 300  # 60 seconds = 1 minute
+limiter = AsyncLimiter(rate_limit, time_interval)
+
 
 # ======================================================================================================================
 # ========================================= database handling functions ================================================
@@ -392,10 +396,6 @@ async def crawler_batch(batch_dids, forced=False):
     total_subscribed_updated = 0
     total_mutes_updated = [mute_lists, mute_users_list]
 
-    rate_limit = 2700  # Requests per minute
-    time_interval = 300  # 60 seconds = 1 minute
-    limiter = AsyncLimiter(rate_limit, time_interval)
-
     batch_handles_and_dids = await utils.fetch_handles_batch(batch_dids, True)
 
     logger.info("Batch resolved.")
@@ -443,15 +443,9 @@ async def crawler_batch(batch_dids, forced=False):
     for did in batch_dids:
         try:
             async with limiter:
-                # Logic to retrieve block list and mutelists for the current DID
                 blocked_data = await utils.get_user_block_list(did)
-
-                # Logic to retrieve block list and mutelists for the current DID
                 mutelists_data = await utils.get_mutelists(did)
-
                 mutelists_users_data = await utils.get_mutelist_users(did)
-
-                # Logic to retrieve subscribe list
                 subscribe_data = await utils.get_subscribelists(did)
 
             if blocked_data:
