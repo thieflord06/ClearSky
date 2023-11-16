@@ -757,9 +757,10 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, fo
                             # Delete existing mutelist entries for the specified ident
                             await connection.execute("""DELETE FROM mutelists_users WHERE  list_uri = $1)""", uri)
 
-                            await connection.execute('INSERT INTO mutelists_users_transaction (listitem_uri, date_added, touched, touched_actor) VALUES ($1, $2, $3, $4)', uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor)
+                            await connection.execute("""INSERT INTO mutelists_users_transaction (listitem_uri, date_added, touched, touched_actor) VALUES ($1, $2, $3, $4)""", uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor)
                         except Exception as e:
                             logger.error(f"Error updating mutelists_users or mutelists_users_transaction on delete: {e}")
+
                     logger.info("Mutelist users transaction[deleted] updated.")
 
                     try:
