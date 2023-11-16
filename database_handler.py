@@ -774,6 +774,10 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, fo
                     logger.info(f"Mute list user(s) added for: {ident}")
 
                     user_counter += 1
+
+                    counter = [list_counter, user_counter]
+
+                    return counter
                 else:
                     logger.debug("Mutelist not updated; already exists.")
 
