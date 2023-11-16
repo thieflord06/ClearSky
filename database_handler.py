@@ -749,7 +749,7 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, fo
                     for uri in existing_mutelist_users_entries:
                         try:
                             # Delete existing mutelist entries for the specified ident
-                            await connection.execute("""DELETE FROM mutelists_users WHERE  list_uri = $1""", uri)
+                            await connection.execute("""DELETE FROM mutelists_users WHERE listitem_uri = $1""", uri)
 
                             await connection.execute("""INSERT INTO mutelists_users_transaction (listitem_uri, date_added, touched, touched_actor) VALUES ($1, $2, $3, $4)""", uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor)
                         except Exception as e:
