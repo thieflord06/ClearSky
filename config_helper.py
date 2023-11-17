@@ -9,7 +9,7 @@ from aiolimiter import AsyncLimiter
 
 ini_file = "config.ini"
 
-rate_limit = 2000  # Requests per minute
+rate_limit = 2500  # Requests per minute
 time_interval = 300  # 60 seconds = 1 minute
 limiter = AsyncLimiter(rate_limit, time_interval)
 
