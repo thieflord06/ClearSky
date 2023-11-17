@@ -390,6 +390,7 @@ async def crawler_batch(batch_dids, forced=False):
     mute_users_list = 0
     total_subscribed_updated = 0
     total_handles_updated = 0
+    handle_count = 0
     total_mutes_updated = [mute_lists, mute_users_list]
     handles_to_update = []
 
@@ -404,6 +405,7 @@ async def crawler_batch(batch_dids, forced=False):
                 logger.debug(f"DID {did} with handle {handle} already exists in the database. Skipping...")
             else:
                 handles_to_update.append((did, handle))
+                handle_count += 1
         else:
             logger.warning(f"DID: {did} not resolved.")
             continue
@@ -468,9 +470,9 @@ async def crawler_batch(batch_dids, forced=False):
     else:
         logger.info("No handles to update in this batch.")
 
-    logger.info(f"Updated in batch: blocks: {total_blocks_updated} | mute lists: {total_mutes_updated[0]} | mute lists users: {total_mutes_updated[1]} | subscribe lists: {total_subscribed_updated}")
+    logger.info(f"Updated in batch: handles: {handle_count} blocks: {total_blocks_updated} | mute lists: {total_mutes_updated[0]} | mute lists users: {total_mutes_updated[1]} | subscribe lists: {total_subscribed_updated}")
 
-    total_items_updated = total_blocks_updated + total_mutes_updated[0] + total_mutes_updated[1] + total_subscribed_updated
+    total_items_updated = total_blocks_updated + total_mutes_updated[0] + total_mutes_updated[1] + total_subscribed_updated + handle_count
 
     return total_items_updated
 
