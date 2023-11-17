@@ -87,7 +87,7 @@ async def resolve_did(did):  # Take DID and get handle
                     logger.warning("Too many requests, pausing.")
                     await asyncio.sleep(60)
                 elif response.status_code == 404:
-                    logger.warning("404 not found.")
+                    logger.warning(f"404 not found: {did}")
 
                     return None
                 else:
