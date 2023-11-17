@@ -2,11 +2,11 @@
 
 import httpx
 import urllib.parse
-from datetime import datetime
+from datetime import datetime, time
 import asyncio
 import database_handler
 import requests
-from config_helper import logger
+from config_helper import logger, limiter
 import on_wire
 import re
 from cachetools import TTLCache
@@ -450,7 +450,20 @@ async def get_user_block_list(ident):
 
         try:
             async with httpx.AsyncClient() as client:
-                response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
+                async with limiter:
+                    response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
+
+                ratelimit_limit = int(response.headers.get('Ratelimit-Limit', 0))
+                ratelimit_remaining = int(response.headers.get('Ratelimit-Remaining', 0))
+                ratelimit_reset = int(response.headers.get('Ratelimit-Reset', 0))
+                if ratelimit_remaining < 100:
+                    logger.warning(f"Blocklist Rate limit low: {ratelimit_remaining} \n Rate limit: {ratelimit_limit} Rate limit reset: {ratelimit_reset}")
+                # # Check if we are about to hit the rate limit
+                # if ratelimit_remaining <= 100:
+                #     # Sleep until the rate limit resets
+                #     sleep_time = max(0, ratelimit_reset - int(time()))
+                #     logger.warning(f"Rate limit reached waiting for")
+                #     await asyncio.sleep(sleep_time)
         except httpx.ReadTimeout:
             logger.warning("Request timed out. Retrying... Retry count: %d", retry_count)
             retry_count += 1
@@ -714,7 +727,15 @@ async def get_mutelists(ident):
 
         try:
             async with httpx.AsyncClient() as client:
-                response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
+                async with limiter:
+                    response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
+
+                ratelimit_limit = int(response.headers.get('Ratelimit-Limit', 0))
+                ratelimit_remaining = int(response.headers.get('Ratelimit-Remaining', 0))
+                ratelimit_reset = int(response.headers.get('Ratelimit-Reset', 0))
+                if ratelimit_remaining < 100:
+                    logger.warning(f"Mutelist Rate limit low: {ratelimit_remaining} \n Rate limit: {ratelimit_limit} Rate limit reset: {ratelimit_reset}")
+
         except httpx.ReadTimeout:
             logger.warning("Request timed out. Retrying... Retry count: %d", retry_count)
             retry_count += 1
@@ -821,7 +842,15 @@ async def get_mutelist_users(ident):
 
         try:
             async with httpx.AsyncClient() as client:
-                response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
+                async with limiter:
+                    response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
+
+                ratelimit_limit = int(response.headers.get('Ratelimit-Limit', 0))
+                ratelimit_remaining = int(response.headers.get('Ratelimit-Remaining', 0))
+                ratelimit_reset = int(response.headers.get('Ratelimit-Reset', 0))
+
+                if ratelimit_remaining < 100:
+                    logger.warning(f"Mutelist users Rate limit low: {ratelimit_remaining} \n Rate limit: {ratelimit_limit} Rate limit reset: {ratelimit_reset}")
         except httpx.ReadTimeout:
             logger.warning("Request timed out. Retrying... Retry count: %d", retry_count)
             retry_count += 1
@@ -918,7 +947,15 @@ async def get_subscribelists(ident):
 
         try:
             async with httpx.AsyncClient() as client:
-                response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
+                async with limiter:
+                    response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
+
+                ratelimit_limit = int(response.headers.get('Ratelimit-Limit', 0))
+                ratelimit_remaining = int(response.headers.get('Ratelimit-Remaining', 0))
+                ratelimit_reset = int(response.headers.get('Ratelimit-Reset', 0))
+
+                if ratelimit_remaining < 100:
+                    logger.warning(f"Subscribe Rate limit low: {ratelimit_remaining} \n Rate limit: {ratelimit_limit} Rate limit reset: {ratelimit_reset}")
         except httpx.ReadTimeout:
             logger.warning("Request timed out. Retrying... Retry count: %d", retry_count)
             retry_count += 1

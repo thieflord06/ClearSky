@@ -4,7 +4,7 @@ import urllib.parse
 import asyncio
 import httpx
 from httpx import HTTPStatusError
-from config_helper import logger
+from config_helper import logger, limiter
 
 
 # ======================================================================================================================
@@ -67,7 +67,16 @@ async def resolve_did(did):  # Take DID and get handle
     while retry_count < max_retries:
         try:
             async with httpx.AsyncClient() as client:
-                response = await client.get(url)
+                async with limiter:
+                    response = await client.get(url)
+
+                ratelimit_limit = int(response.headers.get('Ratelimit-Limit', 0))
+                ratelimit_remaining = int(response.headers.get('Ratelimit-Remaining', 0))
+                ratelimit_reset = int(response.headers.get('Ratelimit-Reset', 0))
+
+                if ratelimit_remaining < 100:
+                    logger.warning(f"Resolve Rate limit low: {ratelimit_remaining} \n Rate limit: {ratelimit_limit} Rate limit reset: {ratelimit_reset}")
+
                 response_json = response.json()
                 logger.debug("response: " + str(response_json))
 
