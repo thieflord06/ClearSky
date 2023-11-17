@@ -95,6 +95,8 @@ async def resolve_did(did):  # Take DID and get handle
                         sleep_time = 15
 
                         logger.warning(f"Approaching Rate limit waiting for {sleep_time} seconds")
+
+                        await asyncio.sleep(sleep_time)
                         # stripped_record = did
                         #
                         # return stripped_record
