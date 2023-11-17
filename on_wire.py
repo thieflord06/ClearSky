@@ -66,8 +66,8 @@ async def resolve_did(did):  # Take DID and get handle
 
     while retry_count < max_retries:
         try:
-            async with httpx.AsyncClient() as client:
-                async with limiter:
+            async with limiter:
+                async with httpx.AsyncClient() as client:
                     response = await client.get(url)
 
                 ratelimit_limit = int(response.headers.get('Ratelimit-Limit', 0))

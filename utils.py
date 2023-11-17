@@ -449,8 +449,8 @@ async def get_user_block_list(ident):
         logger.debug(full_url)
 
         try:
-            async with httpx.AsyncClient() as client:
-                async with limiter:
+            async with limiter:
+                async with httpx.AsyncClient() as client:
                     response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
 
                 ratelimit_limit = int(response.headers.get('Ratelimit-Limit', 0))
@@ -726,8 +726,8 @@ async def get_mutelists(ident):
         logger.debug(full_url)
 
         try:
-            async with httpx.AsyncClient() as client:
-                async with limiter:
+            async with limiter:
+                async with httpx.AsyncClient() as client:
                     response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
 
                 ratelimit_limit = int(response.headers.get('Ratelimit-Limit', 0))
@@ -841,8 +841,8 @@ async def get_mutelist_users(ident):
         logger.debug(full_url)
 
         try:
-            async with httpx.AsyncClient() as client:
-                async with limiter:
+            async with limiter:
+                async with httpx.AsyncClient() as client:
                     response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
 
                 ratelimit_limit = int(response.headers.get('Ratelimit-Limit', 0))
@@ -946,8 +946,8 @@ async def get_subscribelists(ident):
         logger.debug(full_url)
 
         try:
-            async with httpx.AsyncClient() as client:
-                async with limiter:
+            async with limiter:
+                async with httpx.AsyncClient() as client:
                     response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
 
                 ratelimit_limit = int(response.headers.get('Ratelimit-Limit', 0))
