@@ -78,9 +78,14 @@ async def resolve_did(did):  # Take DID and get handle
                     stripped_record = stripped_record.strip("[]").replace("'", "")
 
                     if "RateLimit Exceeded" in stripped_record:
-                        stripped_record = did
+                        # stripped_record = did
+                        retry_count += 1
+                        sleep_time = 15
 
-                        return stripped_record
+                        logger.warning(f"Exceeded Rate limit waiting for {sleep_time} seconds")
+
+                        await asyncio.sleep(sleep_time)
+                        # return stripped_record
 
                     return stripped_record
                 elif response.status_code == 429:
