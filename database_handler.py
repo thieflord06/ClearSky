@@ -444,8 +444,11 @@ async def crawler_batch(batch_dids, forced=False):
         try:
             async with limiter:
                 blocked_data = await utils.get_user_block_list(did)
+            async with limiter:
                 mutelists_data = await utils.get_mutelists(did)
+            async with limiter:
                 mutelists_users_data = await utils.get_mutelist_users(did)
+            async with limiter:
                 subscribe_data = await utils.get_subscribelists(did)
 
             if blocked_data:
