@@ -39,7 +39,7 @@ top_24_blocks_start_time = None
 top_blocks_process_time = None
 top_24_blocks_process_time = None
 
-rate_limit = 2700  # Requests per minute
+rate_limit = 2000  # Requests per minute
 time_interval = 300  # 60 seconds = 1 minute
 limiter = AsyncLimiter(rate_limit, time_interval)
 
