@@ -5,7 +5,6 @@ import asyncio
 import httpx
 from httpx import HTTPStatusError
 from config_helper import logger
-from database_handler import limiter
 
 
 # ======================================================================================================================
@@ -68,8 +67,7 @@ async def resolve_did(did):  # Take DID and get handle
     while retry_count < max_retries:
         try:
             async with httpx.AsyncClient() as client:
-                async with limiter:
-                    response = await client.get(url)
+                response = await client.get(url)
                 response_json = response.json()
                 logger.debug("response: " + str(response_json))
 

@@ -396,7 +396,8 @@ async def crawler_batch(batch_dids, forced=False):
     total_subscribed_updated = 0
     total_mutes_updated = [mute_lists, mute_users_list]
 
-    batch_handles_and_dids = await utils.fetch_handles_batch(batch_dids, True)
+    async with limiter:
+        batch_handles_and_dids = await utils.fetch_handles_batch(batch_dids, True)
 
     logger.info("Batch resolved.")
 
