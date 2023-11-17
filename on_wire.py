@@ -70,16 +70,16 @@ async def resolve_did(did):  # Take DID and get handle
                 async with httpx.AsyncClient() as client:
                     response = await client.get(url)
 
-                ratelimit_limit = int(response.headers.get('Ratelimit-Limit', 0))
-                ratelimit_remaining = int(response.headers.get('Ratelimit-Remaining', 0))
-                ratelimit_reset = int(response.headers.get('Ratelimit-Reset', 0))
-
-                if ratelimit_remaining < 100:
-                    logger.warning(f"Resolve Rate limit low: {ratelimit_remaining} \n Rate limit: {ratelimit_limit} Rate limit reset: {ratelimit_reset}")
-                    # Sleep until the rate limit resets
-                    sleep_time = 15
-                    logger.warning(f"Approaching Rate limit waiting for {sleep_time} seconds")
-                    await asyncio.sleep(sleep_time)
+                # ratelimit_limit = int(response.headers.get('Ratelimit-Limit', 0))
+                # ratelimit_remaining = int(response.headers.get('Ratelimit-Remaining', 0))
+                # ratelimit_reset = int(response.headers.get('Ratelimit-Reset', 0))
+                #
+                # if ratelimit_remaining < 100:
+                #     logger.warning(f"Resolve Rate limit low: {ratelimit_remaining} \n Rate limit: {ratelimit_limit} Rate limit reset: {ratelimit_reset}")
+                #     # Sleep until the rate limit resets
+                #     sleep_time = 15
+                #     logger.warning(f"Approaching Rate limit waiting for {sleep_time} seconds")
+                #     await asyncio.sleep(sleep_time)
 
                 response_json = response.json()
                 logger.debug("response: " + str(response_json))
@@ -91,9 +91,13 @@ async def resolve_did(did):  # Take DID and get handle
                     stripped_record = stripped_record.strip("[]").replace("'", "")
 
                     if "RateLimit Exceeded" in stripped_record:
-                        stripped_record = did
+                        retry_count += 1
+                        sleep_time = 15
 
-                        return stripped_record
+                        logger.warning(f"Approaching Rate limit waiting for {sleep_time} seconds")
+                        # stripped_record = did
+                        #
+                        # return stripped_record
 
                     return stripped_record
                 elif response.status_code == 429:
