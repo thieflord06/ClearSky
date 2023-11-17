@@ -76,6 +76,10 @@ async def resolve_did(did):  # Take DID and get handle
 
                 if ratelimit_remaining < 100:
                     logger.warning(f"Resolve Rate limit low: {ratelimit_remaining} \n Rate limit: {ratelimit_limit} Rate limit reset: {ratelimit_reset}")
+                    # Sleep until the rate limit resets
+                    sleep_time = 15
+                    logger.warning(f"Approaching Rate limit waiting for {sleep_time} seconds")
+                    await asyncio.sleep(sleep_time)
 
                 response_json = response.json()
                 logger.debug("response: " + str(response_json))

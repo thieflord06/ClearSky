@@ -46,6 +46,8 @@ block_stats_process_time = None
 block_stats_last_update = None
 block_stats_start_time = None
 
+sleep_time = 15
+
 
 # ======================================================================================================================
 # ============================================= Features functions =====================================================
@@ -458,12 +460,9 @@ async def get_user_block_list(ident):
                 ratelimit_reset = int(response.headers.get('Ratelimit-Reset', 0))
                 if ratelimit_remaining < 100:
                     logger.warning(f"Blocklist Rate limit low: {ratelimit_remaining} \n Rate limit: {ratelimit_limit} Rate limit reset: {ratelimit_reset}")
-                # # Check if we are about to hit the rate limit
-                # if ratelimit_remaining <= 100:
-                #     # Sleep until the rate limit resets
-                #     sleep_time = max(0, ratelimit_reset - int(time()))
-                #     logger.warning(f"Rate limit reached waiting for")
-                #     await asyncio.sleep(sleep_time)
+                    # Sleep until the rate limit resets
+                    logger.warning(f"Approaching Rate limit waiting for {sleep_time} seconds")
+                    await asyncio.sleep(sleep_time)
         except httpx.ReadTimeout:
             logger.warning("Request timed out. Retrying... Retry count: %d", retry_count)
             retry_count += 1
@@ -735,6 +734,9 @@ async def get_mutelists(ident):
                 ratelimit_reset = int(response.headers.get('Ratelimit-Reset', 0))
                 if ratelimit_remaining < 100:
                     logger.warning(f"Mutelist Rate limit low: {ratelimit_remaining} \n Rate limit: {ratelimit_limit} Rate limit reset: {ratelimit_reset}")
+                    # Sleep until the rate limit resets
+                    logger.warning(f"Approaching Rate limit waiting for {sleep_time} seconds")
+                    await asyncio.sleep(sleep_time)
 
         except httpx.ReadTimeout:
             logger.warning("Request timed out. Retrying... Retry count: %d", retry_count)
@@ -851,6 +853,9 @@ async def get_mutelist_users(ident):
 
                 if ratelimit_remaining < 100:
                     logger.warning(f"Mutelist users Rate limit low: {ratelimit_remaining} \n Rate limit: {ratelimit_limit} Rate limit reset: {ratelimit_reset}")
+                    # Sleep until the rate limit resets
+                    logger.warning(f"Approaching Rate limit waiting for {sleep_time} seconds")
+                    await asyncio.sleep(sleep_time)
         except httpx.ReadTimeout:
             logger.warning("Request timed out. Retrying... Retry count: %d", retry_count)
             retry_count += 1
@@ -956,6 +961,9 @@ async def get_subscribelists(ident):
 
                 if ratelimit_remaining < 100:
                     logger.warning(f"Subscribe Rate limit low: {ratelimit_remaining} \n Rate limit: {ratelimit_limit} Rate limit reset: {ratelimit_reset}")
+                    # Sleep until the rate limit resets
+                    logger.warning(f"Approaching Rate limit waiting for {sleep_time} seconds")
+                    await asyncio.sleep(sleep_time)
         except httpx.ReadTimeout:
             logger.warning("Request timed out. Retrying... Retry count: %d", retry_count)
             retry_count += 1
