@@ -2,7 +2,6 @@
 
 import asyncio
 import os
-import sys
 import asyncpg
 import config_helper
 import setup
@@ -13,7 +12,7 @@ from redis import asyncio as aioredis
 from datetime import datetime
 from collections import defaultdict
 import pytz
-from aiolimiter import AsyncLimiter
+import on_wire
 
 # ======================================================================================================================
 # ===================================================  global variables ================================================
@@ -390,53 +389,25 @@ async def crawler_batch(batch_dids, forced=False):
     mute_lists = 0
     mute_users_list = 0
     total_subscribed_updated = 0
-    total_mutes_updated = [mute_lists, mute_users_list]
-
-    batch_handles_and_dids = await utils.fetch_handles_batch(batch_dids, True)
-
-    logger.info("Batch resolved.")
-
-    # Update the database with the batch of handles
     total_handles_updated = 0
+    total_mutes_updated = [mute_lists, mute_users_list]
     handles_to_update = []
-    for did, handle in batch_handles_and_dids:
-        # Check if the DID and handle combination already exists in the database
-        logger.debug("Did: " + str(did) + " | handle: " + str(handle))
-
-        if await does_did_and_handle_exist_in_database(did, handle):
-            logger.debug(f"DID {did} with handle {handle} already exists in the database. Skipping...")
-        else:
-            handles_to_update.append((did, handle))
-
-    if handles_to_update:
-        only_handles = []
-        while True:
-            try:
-                # Update the database with the batch of handles
-                logger.info("committing batch.")
-                async with connection_pool.acquire() as connection:
-                    async with connection.transaction():
-                        await update_user_handles(handles_to_update)
-                        total_handles_updated += len(handles_to_update)
-
-                for did, handle in handles_to_update:
-                    only_handles.append(handle)
-
-                logger.info("Adding new prefixes.")
-                await add_new_prefixes(only_handles)
-
-                break
-            except asyncpg.ConnectionDoesNotExistError as e:
-                logger.warning("Connection error, retrying in 30 seconds...")
-                await asyncio.sleep(30)  # Retry after 60 seconds
-            except Exception as e:
-                # Handle other exceptions as needed
-                logger.error(f"Error during batch update: {e}")
-                break  # Break the loop on other exceptions
-    else:
-        logger.info("No handles to update in this batch.")
 
     for did in batch_dids:
+        handle = await on_wire.resolve_did(did)
+
+        if handle is not None:
+            # Check if the DID and handle combination already exists in the database
+            logger.debug("Did: " + str(did) + " | handle: " + str(handle))
+
+            if await does_did_and_handle_exist_in_database(did, handle):
+                logger.debug(f"DID {did} with handle {handle} already exists in the database. Skipping...")
+            else:
+                handles_to_update.append((did, handle))
+        else:
+            logger.warning(f"DID: {did} not resolved.")
+            continue
+
         try:
             blocked_data = await utils.get_user_block_list(did)
             mutelists_data = await utils.get_mutelists(did)
@@ -465,6 +436,37 @@ async def crawler_batch(batch_dids, forced=False):
                 logger.debug(f"didn't update not subscribed to any lists: {did}")
         except Exception as e:
             logger.error(f"Error updating for DID {did}: {e}")
+
+    # Update the database with the batch of handles
+    if handles_to_update:
+        only_handles = []
+        while True:
+            try:
+                # Update the database with the batch of handles
+                logger.info("committing batch.")
+                async with connection_pool.acquire() as connection:
+                    async with connection.transaction():
+                        await update_user_handles(handles_to_update)
+                        total_handles_updated += len(handles_to_update)
+
+                for did, handle in handles_to_update:
+                    only_handles.append(handle)
+
+                logger.info("Adding new prefixes.")
+                await add_new_prefixes(only_handles)
+
+                break
+            except asyncpg.ConnectionDoesNotExistError as e:
+                logger.warning("Connection error, retrying in 30 seconds...")
+                await asyncio.sleep(30)  # Retry after 60 seconds
+            except Exception as e:
+                # Handle other exceptions as needed
+                logger.error(f"Error during batch update: {e}")
+                break  # Break the loop on other exceptions
+
+        logger.info("Batch resolved.")
+    else:
+        logger.info("No handles to update in this batch.")
 
     logger.info(f"Updated in batch: blocks: {total_blocks_updated} | mute lists: {total_mutes_updated[0]} | mute lists users: {total_mutes_updated[1]} | subscribe lists: {total_subscribed_updated}")
 
