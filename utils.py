@@ -503,6 +503,7 @@ async def get_user_block_list(ident):
             logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
             await asyncio.sleep(60)  # Retry after 60 seconds
         elif response.status_code == 400:
+            retry_count += 1
             try:
                 error_message = response.json()["error"]
                 message = response.json()["message"]
@@ -511,7 +512,7 @@ async def get_user_block_list(ident):
 
                     return None
             except KeyError:
-                pass
+                return None
         else:
             retry_count += 1
             logger.warning("Error during API call. Status code: %s", response.status_code)
@@ -766,15 +767,16 @@ async def get_mutelists(ident):
             logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
             await asyncio.sleep(60)  # Retry after 60 seconds
         elif response.status_code == 400:
+            retry_count += 1
             try:
                 error_message = response.json()["error"]
                 message = response.json()["message"]
                 if error_message == "InvalidRequest" and "Could not find repo" in message:
                     logger.warning("Could not find repo: " + str(ident))
 
-                    return []
+                    return None
             except KeyError:
-                pass
+                return None
         else:
             retry_count += 1
             logger.warning("Error during API call. Status code: %s", response.status_code)
@@ -784,10 +786,10 @@ async def get_mutelists(ident):
     if retry_count == max_retries:
         logger.warning("Could not get mute lists for: " + ident)
 
-        return []
+        return None
     if not mutelists_data and retry_count >= max_retries:
 
-        return []
+        return None
 
     logger.debug(mutelists_data)
     return mutelists_data
@@ -864,12 +866,13 @@ async def get_mutelist_users(ident):
             logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
             await asyncio.sleep(60)  # Retry after 60 seconds
         elif response.status_code == 400:
+            retry_count += 1
             try:
                 error_message = response.json()["error"]
                 message = response.json()["message"]
                 if error_message == "InvalidRequest" and "Could not find repo" in message:
                     logger.warning("Could not find repo: " + str(ident))
-                    return []
+                    return None
             except KeyError:
                 pass
         else:
@@ -880,10 +883,10 @@ async def get_mutelist_users(ident):
 
     if retry_count == max_retries:
         logger.warning("Could not get mute list for: " + ident)
-        pass
+        return None
     if not mutelists_users_data and retry_count != max_retries:
 
-        return []
+        return None
 
     logger.debug(mutelists_users_data)
     return mutelists_users_data
@@ -961,15 +964,16 @@ async def get_subscribelists(ident):
             logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
             await asyncio.sleep(60)  # Retry after 60 seconds
         elif response.status_code == 400:
+            retry_count += 1
             try:
                 error_message = response.json()["error"]
                 message = response.json()["message"]
                 if error_message == "InvalidRequest" and "Could not find repo" in message:
                     logger.warning("Could not find repo: " + str(ident))
 
-                    return []
+                    return None
             except KeyError:
-                pass
+                return None
         else:
             retry_count += 1
             logger.warning("Error during API call. Status code: %s", response.status_code)
@@ -979,10 +983,10 @@ async def get_subscribelists(ident):
     if retry_count == max_retries:
         logger.warning("Could not get mute lists for: " + ident)
 
-        return []
+        return None
     if not subscribe_data and retry_count >= max_retries:
 
-        return []
+        return None
 
     logger.debug(subscribe_data)
 
