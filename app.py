@@ -716,7 +716,7 @@ async def get_blocking_search(client_identifier, search_identifier):
     return jsonify(data)
 
 
-@app.route('/api/v1/fun-facts')
+@app.route('/api/v1/lists/fun-facts')
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def fun_facts():
@@ -845,7 +845,7 @@ async def fun_facts():
     return jsonify(data)
 
 
-@app.route('/api/v1/funer-facts')
+@app.route('/api/v1/lists/funer-facts')
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def funer_facts():
@@ -974,7 +974,7 @@ async def funer_facts():
     return jsonify(data)
 
 
-@app.route('/api/v1/block-stats')
+@app.route('/api/v1/lists/block-stats')
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def block_stats():
