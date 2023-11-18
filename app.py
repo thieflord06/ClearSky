@@ -1105,8 +1105,6 @@ async def block_stats():
 
         return jsonify(data)
 
-    # total_users = await utils.get_user_count(get_active=False)
-
     percent_users_blocked = (int(number_of_unique_users_blocked) / int(total_users)) * 100
     percent_users_blocking = (int(number_of_unique_users_blocking) / int(total_users)) * 100
 
