@@ -19,6 +19,8 @@ last_created_table = "last_did_created_date"
 blocklist_transaction_table = "blocklists_transaction"
 mute_lists_transaction_table = "mutelists_transaction"
 mute_lists_users_transaction_table = "mutelists_users_transaction"
+subscribe_block_list_table = "subscribe_blocklists"
+subscribe_block_list_transaction_table = "subscribe_blocklists_transaction"
 
 
 async def create_db():
@@ -54,7 +56,7 @@ async def create_db():
                     blocked_did text,
                     block_date timestamptz,
                     cid text,
-                    uri text,
+                    uri text not null,
                     touched timestamptz,
                     touched_actor text
                 )
@@ -94,7 +96,7 @@ async def create_db():
                 CREATE TABLE IF NOT EXISTS {} (
                     serial_id BIGSERIAL primary key,
                     url text,
-                    uri text,
+                    uri text not null,
                     did text,
                     cid text,
                     name text,
@@ -110,11 +112,12 @@ async def create_db():
                     list_uri text,
                     listitem_uri text,
                     cid text,
-                    did text,
+                    subject_did text,
+                    owner_did text,
                     date_added timestamptz,
                     touched timestamptz,
                     touched_actor text,
-                    PRIMARY KEY (listitem_uri, did)
+                    PRIMARY KEY (listitem_uri, subject_did)
                 )
                 """.format(mute_lists_users_table)
 
@@ -122,7 +125,7 @@ async def create_db():
                 CREATE TABLE IF NOT EXISTS {} (
                     serial_id BIGSERIAL primary key,
                     list_uri text,
-                    listitem_uri,
+                    listitem_uri text not null,
                     cid text,
                     did text,
                     date_added timestamptz,
@@ -130,6 +133,31 @@ async def create_db():
                     touched_actor text,
                 )
                 """.format(mute_lists_users_transaction_table)
+
+                create_subscribe_block_list_table = """
+                CREATE TABLE IF NOT EXISTS {} (
+                    did text,
+                    uri text primary key,
+                    list_uri text,
+                    cid text,
+                    date_added timestamptz,
+                    touched timestamptz,
+                    touched_actor text,
+                )
+                """.format(subscribe_block_list_table)
+
+                create_subscribe_block_list_transaction_table = """
+                CREATE TABLE IF NOT EXISTS {} (
+                    serial_id BIGSERIAL primary key,
+                    did text,
+                    uri text,
+                    list_uri text,
+                    cid text,
+                    date_added timestamptz,
+                    touched timestamptz,
+                    touched_actor text,
+                )
+                """.format(subscribe_block_list_transaction_table)
 
                 create_user_prefixes = """CREATE TABLE IF NOT EXISTS {} (
                 handle TEXT PRIMARY KEY,
@@ -158,6 +186,8 @@ async def create_db():
                 await connection.execute(create_blocklists_transaction_table)
                 await connection.execute(create_mute_lists_transaction_table)
                 await connection.execute(create_mute_list_users_transaction_table)
+                await connection.execute(create_subscribe_block_list_table)
+                await connection.execute(create_subscribe_block_list_transaction_table)
 
                 await connection.execute(index_1)
                 await connection.execute(index_2)
