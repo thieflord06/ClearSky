@@ -1123,6 +1123,7 @@ async def get_top_blocks():
 
 
 async def update_did_service(data):
+    logger.info("Updating services information for batch.")
     try:
         async with connection_pool.acquire() as connection:
             async with connection.transaction():
@@ -1173,6 +1174,8 @@ async def check_last_created_did_date():
                 return value
     except Exception as e:
         logger.error("Error retrieving data", e)
+
+        return None
 
 
 async def get_block_stats():
@@ -1591,7 +1594,7 @@ async def get_mutelists(ident):
             FROM mutelists AS ml
             INNER JOIN mutelists_users AS mu ON ml.uri = mu.list_uri
             INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle
-            WHERE mu.did = $1
+            WHERE mu.subject_did = $1
             """
             try:
                 mute_lists = await connection.fetch(query, ident)

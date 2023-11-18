@@ -1059,10 +1059,13 @@ def fetch_data_with_after_parameter(url, after_value):
         for line in response.iter_lines():
             try:
                 record = json.loads(line)
+                logger.debug(record)
                 did = record.get("did")
                 in_record = record.get("operation")
                 service = in_record.get("service")
                 handle = in_record.get("handle")
+                if "plc_tombstone" in in_record.get("type"):
+                    continue
                 if not service or handle is None:
                     # logger.info(record)
                     in_endpoint = in_record.get("services")
