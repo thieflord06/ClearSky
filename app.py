@@ -856,10 +856,6 @@ async def funer_facts():
 
     logger.info(f"<< Funer facts requested: {session_ip} - {api_key}")
 
-    # if True:
-    #
-    #     return await render_template('known_issue.html')
-
     if not db_connected:
         logger.error("Database connection is not live.")
 
@@ -984,10 +980,6 @@ async def block_stats():
     api_key = request.headers.get('X-API-Key')
 
     logger.info(f"<< Requesting block statistics: {session_ip} - {api_key}")
-
-    # if True:
-    #
-    #     return await render_template('known_issue.html')
 
     if not db_connected:
         logger.error("Database connection is not live.")

@@ -5,8 +5,38 @@ import platform
 import configparser
 import logging.config
 import sys
+from aiolimiter import AsyncLimiter
 
 ini_file = "config.ini"
+
+rate_limit = 2500  # Requests per minute
+time_interval = 300  # 60 seconds = 1 minute
+limiter = AsyncLimiter(rate_limit, time_interval)
+
+
+def remove_file_handler_from_config(config_file_path):
+    configure = configparser.ConfigParser()
+    configure.read(config_file_path)
+
+    # Check if 'fileHandler' exists in the [handlers] section
+    if 'fileHandler' in configure['handlers']['keys']:
+        # Remove 'fileHandler' from the list of handlers
+        handlers = configure['handlers']['keys'].split(',')
+        handlers.remove('fileHandler')
+        configure['handlers']['keys'] = ','.join(handlers)
+
+    if 'fileHandler' in configure['logger_root']['handlers']:
+        # Remove 'fileHandler' from the list of handlers
+        handlers = configure['logger_root']['handlers'].split(',')
+        handlers.remove('fileHandler')
+        configure['logger_root']['handlers'] = ','.join(handlers)
+
+    # Save the modified config to the same file
+    with open(config_file_path, 'w') as config_file:
+        configure.write(config_file)
+
+    print("removed file handler.")
+    print("Console logging only.")
 
 
 def read_config():
@@ -106,7 +136,11 @@ def configure_logging():
 # Set up log files and directories for entire project from config.ini
 config = read_config()
 log_dir = update_config_based_on_os(config)
-create_log_directory(log_dir, config)
+
+if "True" in read_config().get("log_option", "console_only"):
+    remove_file_handler_from_config(ini_file)
+else:
+    create_log_directory(log_dir, config)
 
 # Create and configure the logger instance
 logger = configure_logging()

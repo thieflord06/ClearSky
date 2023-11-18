@@ -7,10 +7,28 @@
         <h1>Previous Handles</h1>
         <h2>{{ identity }}</h2>
         <ul class="handle_history_list">
-            {% for handle in handle_history %}
+            {% for handle, date in handle_history %}
                 <li>{{ handle }}</li>
+                <li class="date" data-utc-timestamp="{{ date.timestamp() }}">{{ date }}</li>
             {% endfor %}
         </ul>
         <a href="/" class="btn btn-primary">Go Back</a>
     </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Get all elements with the data-utc-timestamp attribute
+            const utcTimestampElements = document.querySelectorAll("[data-utc-timestamp]");
+
+            utcTimestampElements.forEach(function (element) {
+                const utcTimestamp = parseFloat(element.getAttribute("data-utc-timestamp") * 1000); // Convert to milliseconds
+                const localDate = new Date(utcTimestamp);
+
+                // Format the local date as desired (e.g., 'YYYY-MM-DD hh:mm:ss a')
+                const localDateString = localDate.toLocaleString();
+
+                // Update the content of the element with the local date
+                element.textContent = localDateString;
+            });
+        });
+    </script>
 {% endblock %}

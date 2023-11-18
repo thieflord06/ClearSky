@@ -2,14 +2,15 @@
 import math
 import httpx
 import urllib.parse
-from datetime import datetime
+from datetime import datetime, time
 import asyncio
 import database_handler
 import requests
-from config_helper import logger
+from config_helper import logger, limiter
 import on_wire
 import re
 from cachetools import TTLCache
+import json
 # ======================================================================================================================
 # ================================================ cache/global variables ==============================================
 resolved_blocked_cache = TTLCache(maxsize=100, ttl=3600)
@@ -44,6 +45,8 @@ block_stats_status = asyncio.Event()
 block_stats_process_time = None
 block_stats_last_update = None
 block_stats_start_time = None
+
+sleep_time = 15
 
 
 # ======================================================================================================================
@@ -446,8 +449,18 @@ async def get_user_block_list(ident):
         logger.debug(full_url)
 
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
+            async with limiter:
+                async with httpx.AsyncClient() as client:
+                    response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
+
+                ratelimit_limit = int(response.headers.get('Ratelimit-Limit', 0))
+                ratelimit_remaining = int(response.headers.get('Ratelimit-Remaining', 0))
+                ratelimit_reset = int(response.headers.get('Ratelimit-Reset', 0))
+                if ratelimit_remaining < 100:
+                    logger.warning(f"Blocklist Rate limit low: {ratelimit_remaining} \n Rate limit: {ratelimit_limit} Rate limit reset: {ratelimit_reset}")
+                    # Sleep until the rate limit resets
+                    logger.warning(f"Approaching Rate limit waiting for {sleep_time} seconds")
+                    await asyncio.sleep(sleep_time)
         except httpx.ReadTimeout:
             logger.warning("Request timed out. Retrying... Retry count: %d", retry_count)
             retry_count += 1
@@ -478,13 +491,19 @@ async def get_user_block_list(ident):
                     blocked_data.append((subject, timestamp, uri, cid))
                 else:
                     if not timestamp:
+                        timestamp = None
+                        blocked_data.append((subject, timestamp, uri, cid))
                         logger.warning("missing timestamp")
                     elif not uri:
+                        uri = None
+                        blocked_data.append((subject, timestamp, uri, cid))
                         logger.warning("Missing uri")
                     elif not cid:
+                        cid = None
+                        blocked_data.append((subject, timestamp, uri, cid))
                         logger.warning("missing cid")
-
-                    return None
+                    else:
+                        return None
 
             cursor = response_json.get("cursor")
 
@@ -494,6 +513,7 @@ async def get_user_block_list(ident):
             logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
             await asyncio.sleep(60)  # Retry after 60 seconds
         elif response.status_code == 400:
+            retry_count += 1
             try:
                 error_message = response.json()["error"]
                 message = response.json()["message"]
@@ -502,7 +522,7 @@ async def get_user_block_list(ident):
 
                     return None
             except KeyError:
-                pass
+                return None
         else:
             retry_count += 1
             logger.warning("Error during API call. Status code: %s", response.status_code)
@@ -510,11 +530,13 @@ async def get_user_block_list(ident):
             continue
 
         logger.debug(blocked_data)
+
         return blocked_data
 
     if retry_count == max_retries:
         logger.warning("Could not get block list for: " + ident)
-        pass
+
+        return None
     if not blocked_data and retry_count != max_retries:
 
         return None
@@ -553,16 +575,29 @@ async def process_user_block_list(ident, limit, offset):
 
 
 async def fetch_handles_batch(batch_dids, ad_hoc=False):
-    if not ad_hoc:
-        tasks = [on_wire.resolve_did(did[0].strip()) for did in batch_dids]
-    else:
-        tasks = [on_wire.resolve_did(did.strip()) for did in batch_dids]
-    resolved_handles = await asyncio.gather(*tasks)
+    handles = []
 
     if not ad_hoc:
-        handles = [(did[0], handle) for did, handle in zip(batch_dids, resolved_handles) if handle is not None]
+        for did in batch_dids:
+            handle = await on_wire.resolve_did(did[0].strip())
+            if handle is not None:
+                handles.append((did[0].strip(), handle))
     else:
-        handles = [(did, handle) for did, handle in zip(batch_dids, resolved_handles) if handle is not None]
+        for did in batch_dids:
+            handle = await on_wire.resolve_did(did.strip())
+            if handle is not None:
+                handles.append((did.strip(), handle))
+
+    # if not ad_hoc:
+    #     tasks = [on_wire.resolve_did(did[0].strip()) for did in batch_dids]
+    # else:
+    #     tasks = [on_wire.resolve_did(did.strip()) for did in batch_dids]
+    # resolved_handles = await asyncio.gather(*tasks)
+    #
+    # if not ad_hoc:
+    #     handles = [(did[0], handle) for did, handle in zip(batch_dids, resolved_handles) if handle is not None]
+    # else:
+    #     handles = [(did, handle) for did, handle in zip(batch_dids, resolved_handles) if handle is not None]
 
     return handles
 
@@ -601,7 +636,7 @@ async def use_did(identifier):
 
 async def get_handle_history(identifier):
     base_url = "https://plc.directory/"
-    collection = "log"
+    collection = "log/audit"
     retry_count = 0
     max_retries = 5
     also_known_as_list = []
@@ -628,22 +663,25 @@ async def get_handle_history(identifier):
             response_json = response.json()
 
             for record in response_json:
-                if "alsoKnownAs" in record:
-                    also_known_as = record["alsoKnownAs"]
-                    cleaned_also_known_as = [item.replace("at://", "") for item in also_known_as]
-                    also_known_as_list.extend(cleaned_also_known_as)
+                also_known_as = record["operation"]["alsoKnownAs"]
+                created_at_value = record["createdAt"]
+                created_at = datetime.fromisoformat(created_at_value)
+                cleaned_also_known_as = [(item.replace("at://", ""), created_at) for item in also_known_as]
+                also_known_as_list.extend(cleaned_also_known_as)
 
             # Remove adjacent duplicates while preserving non-adjacent duplicates
-            cleaned_also_known_as_list = []
-            prev_item = None
-            for item in also_known_as_list:
-                if item != prev_item:
-                    cleaned_also_known_as_list.append(item)
-                prev_item = item
+            # cleaned_also_known_as_list = []
+            # prev_item = None
+            # for item in also_known_as_list:
+            #     if item != prev_item:
+            #         cleaned_also_known_as_list.append(item)
+            #     prev_item = item
 
-            cleaned_also_known_as_list.reverse()
+            also_known_as_list.reverse()
+            # cleaned_also_known_as_list.reverse()
 
-            return cleaned_also_known_as_list
+            return also_known_as_list
+            # return cleaned_also_known_as_list
         elif response.status_code == 429:
             logger.warning("Received 429 Too Many Requests. Retrying after 30 seconds...")
             await asyncio.sleep(30)  # Retry after 60 seconds
@@ -653,9 +691,10 @@ async def get_handle_history(identifier):
                 message = response.json()["message"]
                 if error_message == "InvalidRequest" and "Could not find repo" in message:
                     logger.warning("Could not find repo: " + str(identifier))
+
                     return ["no repo"]
             except KeyError:
-                pass
+                return None
         else:
             retry_count += 1
             logger.warning("Error during API call. Status code: %s", response.status_code)
@@ -693,8 +732,19 @@ async def get_mutelists(ident):
         logger.debug(full_url)
 
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
+            async with limiter:
+                async with httpx.AsyncClient() as client:
+                    response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
+
+                ratelimit_limit = int(response.headers.get('Ratelimit-Limit', 0))
+                ratelimit_remaining = int(response.headers.get('Ratelimit-Remaining', 0))
+                ratelimit_reset = int(response.headers.get('Ratelimit-Reset', 0))
+                if ratelimit_remaining < 100:
+                    logger.warning(f"Mutelist Rate limit low: {ratelimit_remaining} \n Rate limit: {ratelimit_limit} Rate limit reset: {ratelimit_reset}")
+                    # Sleep until the rate limit resets
+                    logger.warning(f"Approaching Rate limit waiting for {sleep_time} seconds")
+                    await asyncio.sleep(sleep_time)
+
         except httpx.ReadTimeout:
             logger.warning("Request timed out. Retrying... Retry count: %d", retry_count)
             retry_count += 1
@@ -716,47 +766,29 @@ async def get_mutelists(ident):
                 value = record.get("value", {})
                 subject = value.get("name")
                 created_at_value = value.get("createdAt")
+                timestamp = datetime.fromisoformat(created_at_value)
                 description = value.get("description")
                 uri = record.get("uri")
 
-                if created_at_value:
-                    try:  # Have to check for different time formats in blocklists :/
-                        if '.' in created_at_value and 'Z' in created_at_value:
-                            # If the value contains fractional seconds and 'Z' (UTC time)
-                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S.%fZ").date()
-                        elif '.' in created_at_value:
-                            # If the value contains fractional seconds (but no 'Z' indicating time zone)
-                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S.%f").date()
-                        elif 'Z' in created_at_value:
-                            # If the value has 'Z' indicating UTC time (but no fractional seconds)
-                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%SZ").date()
-                        else:
-                            # If the value has no fractional seconds and no 'Z' indicating time zone
-                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S").date()
-                    except ValueError as ve:
-                        logger.warning("No date in blocklist for: " + str(ident) + " | " + str(full_url))
-                        logger.error("error: " + str(ve))
-                        continue
+                parts = uri.split('/')
+                list_id = parts[-1]
 
-                    parts = uri.split('/')
-                    list_id = parts[-1]
+                list_base_url = "https://bsky.app/profile"
+                list_full_url = f"""{list_base_url}/{ident}/lists/{list_id}"""
 
-                    list_base_url = "https://bsky.app/profile"
-                    list_full_url = f"""{list_base_url}/{ident}/lists/{list_id}"""
+                # Create a dictionary to store this record's data
+                record_data = {
+                    "url": list_full_url,
+                    "uri": uri,
+                    "did": ident,
+                    "cid": cid,
+                    "name": subject,
+                    "created_at": timestamp,
+                    "description": description
+                }
 
-                    # Create a dictionary to store this record's data
-                    record_data = {
-                        "url": list_full_url,
-                        "uri": uri,
-                        "did": ident,
-                        "cid": cid,
-                        "name": subject,
-                        "created_at": created_date,
-                        "description": description
-                    }
-
-                    # Add this record's data to the list
-                    mutelists_data.append(record_data)
+                # Add this record's data to the list
+                mutelists_data.append(record_data)
 
             cursor = response_json.get("cursor")
             if not cursor:
@@ -765,15 +797,16 @@ async def get_mutelists(ident):
             logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
             await asyncio.sleep(60)  # Retry after 60 seconds
         elif response.status_code == 400:
+            retry_count += 1
             try:
                 error_message = response.json()["error"]
                 message = response.json()["message"]
                 if error_message == "InvalidRequest" and "Could not find repo" in message:
                     logger.warning("Could not find repo: " + str(ident))
 
-                    return []
+                    return None
             except KeyError:
-                pass
+                return None
         else:
             retry_count += 1
             logger.warning("Error during API call. Status code: %s", response.status_code)
@@ -783,10 +816,10 @@ async def get_mutelists(ident):
     if retry_count == max_retries:
         logger.warning("Could not get mute lists for: " + ident)
 
-        return []
+        return None
     if not mutelists_data and retry_count >= max_retries:
 
-        return []
+        return None
 
     logger.debug(mutelists_data)
     return mutelists_data
@@ -817,8 +850,19 @@ async def get_mutelist_users(ident):
         logger.debug(full_url)
 
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
+            async with limiter:
+                async with httpx.AsyncClient() as client:
+                    response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
+
+                ratelimit_limit = int(response.headers.get('Ratelimit-Limit', 0))
+                ratelimit_remaining = int(response.headers.get('Ratelimit-Remaining', 0))
+                ratelimit_reset = int(response.headers.get('Ratelimit-Reset', 0))
+
+                if ratelimit_remaining < 100:
+                    logger.warning(f"Mutelist users Rate limit low: {ratelimit_remaining} \n Rate limit: {ratelimit_limit} Rate limit reset: {ratelimit_reset}")
+                    # Sleep until the rate limit resets
+                    logger.warning(f"Approaching Rate limit waiting for {sleep_time} seconds")
+                    await asyncio.sleep(sleep_time)
         except httpx.ReadTimeout:
             logger.warning("Request timed out. Retrying... Retry count: %d", retry_count)
             retry_count += 1
@@ -840,37 +884,22 @@ async def get_mutelist_users(ident):
                 value = record.get("value", {})
                 subject = value.get("subject")
                 created_at_value = value.get("createdAt")
-                list = value.get("list")
+                timestamp = datetime.fromisoformat(created_at_value)
+                listitem_uri = record.get("uri")
+                list_uri = value.get("list")
 
-                if created_at_value:
-                    try:  # Have to check for different time formats in blocklists :/
-                        if '.' in created_at_value and 'Z' in created_at_value:
-                            # If the value contains fractional seconds and 'Z' (UTC time)
-                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S.%fZ").date()
-                        elif '.' in created_at_value:
-                            # If the value contains fractional seconds (but no 'Z' indicating time zone)
-                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S.%f").date()
-                        elif 'Z' in created_at_value:
-                            # If the value has 'Z' indicating UTC time (but no fractional seconds)
-                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%SZ").date()
-                        else:
-                            # If the value has no fractional seconds and no 'Z' indicating time zone
-                            created_date = datetime.strptime(created_at_value, "%Y-%m-%dT%H:%M:%S").date()
-                    except ValueError as ve:
-                        logger.warning("No date in blocklist for: " + str(ident) + " | " + str(full_url))
-                        logger.error("error: " + str(ve))
-                        continue
+                # Create a dictionary to store this record's data
+                user_record_data = {
+                    "list_uri": list_uri,
+                    "cid": cid,
+                    "subject": subject,
+                    "author": ident,
+                    "created_at": timestamp,
+                    "listitem_uri": listitem_uri
+                }
 
-                    # Create a dictionary to store this record's data
-                    user_record_data = {
-                        "list": list,
-                        "cid": cid,
-                        "subject": subject,
-                        "created_at": created_date
-                    }
-
-                    # Add this record's data to the list
-                    mutelists_users_data.append(user_record_data)
+                # Add this record's data to the list
+                mutelists_users_data.append(user_record_data)
             cursor = response_json.get("cursor")
             if not cursor:
                 break
@@ -878,12 +907,13 @@ async def get_mutelist_users(ident):
             logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
             await asyncio.sleep(60)  # Retry after 60 seconds
         elif response.status_code == 400:
+            retry_count += 1
             try:
                 error_message = response.json()["error"]
                 message = response.json()["message"]
                 if error_message == "InvalidRequest" and "Could not find repo" in message:
                     logger.warning("Could not find repo: " + str(ident))
-                    return []
+                    return None
             except KeyError:
                 pass
         else:
@@ -894,10 +924,203 @@ async def get_mutelist_users(ident):
 
     if retry_count == max_retries:
         logger.warning("Could not get mute list for: " + ident)
-        pass
+        return None
     if not mutelists_users_data and retry_count != max_retries:
 
-        return []
+        return None
 
     logger.debug(mutelists_users_data)
     return mutelists_users_data
+
+
+async def get_subscribelists(ident):
+    base_url = "https://bsky.social/xrpc/"
+    subscribe_lists_collection = "app.bsky.graph.listblock"
+    limit = 100
+    subscribe_data = []
+    cursor = None
+    retry_count = 0
+    max_retries = 5
+
+    while retry_count < max_retries:
+        url = urllib.parse.urljoin(base_url, "com.atproto.repo.listRecords")
+        params = {
+            "repo": ident,
+            "limit": limit,
+            "collection": subscribe_lists_collection,
+        }
+
+        if cursor:
+            params["cursor"] = cursor
+
+        encoded_params = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
+        full_url = f"{url}?{encoded_params}"
+        logger.debug(full_url)
+
+        try:
+            async with limiter:
+                async with httpx.AsyncClient() as client:
+                    response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
+
+                ratelimit_limit = int(response.headers.get('Ratelimit-Limit', 0))
+                ratelimit_remaining = int(response.headers.get('Ratelimit-Remaining', 0))
+                ratelimit_reset = int(response.headers.get('Ratelimit-Reset', 0))
+
+                if ratelimit_remaining < 100:
+                    logger.warning(f"Subscribe Rate limit low: {ratelimit_remaining} \n Rate limit: {ratelimit_limit} Rate limit reset: {ratelimit_reset}")
+                    # Sleep until the rate limit resets
+                    logger.warning(f"Approaching Rate limit waiting for {sleep_time} seconds")
+                    await asyncio.sleep(sleep_time)
+        except httpx.ReadTimeout:
+            logger.warning("Request timed out. Retrying... Retry count: %d", retry_count)
+            retry_count += 1
+            await asyncio.sleep(10)
+            continue
+        except httpx.RequestError as e:
+            logger.warning("Error during API call: %s", e)
+            retry_count += 1
+            logger.info("sleeping 5")
+            await asyncio.sleep(5)
+            continue
+
+        if response.status_code == 200:
+            response_json = response.json()
+            list_records = response_json.get("records", [])
+
+            for record in list_records:
+                uri = record.get("uri")
+                cid = record.get("cid", {})  # List ID
+                value = record.get("value", {})
+                list_uri = value.get("subject")
+                record_type = value.get("$type")
+                created_at_value = value.get("createdAt")
+                timestamp = datetime.fromisoformat(created_at_value)
+
+                # Create a dictionary to store this record's data
+                record_data = {
+                    "did": ident,
+                    "uri": uri,
+                    "list_uri": list_uri,
+                    "cid": cid,
+                    "date_added": timestamp,
+                    "record_type": record_type
+                }
+
+                # Add this record's data to the list
+                subscribe_data.append(record_data)
+
+            cursor = response_json.get("cursor")
+            if not cursor:
+                break
+        elif response.status_code == 429:
+            logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
+            await asyncio.sleep(60)  # Retry after 60 seconds
+        elif response.status_code == 400:
+            retry_count += 1
+            try:
+                error_message = response.json()["error"]
+                message = response.json()["message"]
+                if error_message == "InvalidRequest" and "Could not find repo" in message:
+                    logger.warning("Could not find repo: " + str(ident))
+
+                    return None
+            except KeyError:
+                return None
+        else:
+            retry_count += 1
+            logger.warning("Error during API call. Status code: %s", response.status_code)
+            await asyncio.sleep(5)
+            continue
+
+    if retry_count == max_retries:
+        logger.warning("Could not get mute lists for: " + ident)
+
+        return None
+    if not subscribe_data and retry_count >= max_retries:
+
+        return None
+
+    logger.debug(subscribe_data)
+
+    return subscribe_data
+
+
+def fetch_data_with_after_parameter(url, after_value):
+    response = requests.get(url, params={'after': after_value})
+    if response.status_code == 200:
+        db_data = []
+
+        for line in response.iter_lines():
+            try:
+                record = json.loads(line)
+                logger.debug(record)
+                did = record.get("did")
+                in_record = record.get("operation")
+                service = in_record.get("service")
+                handle = in_record.get("handle")
+                if "plc_tombstone" in in_record.get("type"):
+                    continue
+                if not service or handle is None:
+                    # logger.info(record)
+                    in_endpoint = in_record.get("services")
+                    in_services = in_endpoint.get("atproto_pds")
+                    preprocessed_handle = in_record.get("alsoKnownAs")
+                    try:
+                        handle = [item.replace("at://", "") for item in preprocessed_handle]
+                        handle = handle[0]
+                    except Exception as e:
+                        logger.warning(f"There was an issue retrieving the handle: {record}")
+                        logger.error(f"Error: {e}")
+                        handle = None
+                    try:
+                        service = in_services.get("endpoint")
+                    except AttributeError:
+                        logger.warning(f"There was an issue retrieving the pds: {record}")
+                        service = None
+
+                created_date = record.get("createdAt")
+                created_date = datetime.fromisoformat(created_date)
+
+                db_data.append([did, created_date, service, handle])
+            except json.JSONDecodeError:
+                logger.error(f"Failed to parse JSON line: {line}")
+                continue
+
+        # Check if there's any data in the list before getting the last created_date
+        if db_data:
+            last_created_date = db_data[-1][1]  # Access the last element and the created_date (index 1)
+        else:
+            last_created_date = None
+
+        return db_data, last_created_date
+    else:
+        # Handle any errors or exceptions here
+        logger.error(f"Error fetching data. Status code: {response.status_code}")
+
+        return None, None
+
+
+async def get_all_did_records(last_cursor=None):
+    url = 'https://plc.directory/export'
+    after_value = last_cursor
+
+    while True:
+        data, last_created = fetch_data_with_after_parameter(url, after_value)
+
+        logger.info("data batch fetched.")
+        if data is None:
+            break
+        else:
+            # print(data)
+            await database_handler.update_did_service(data)
+
+        if last_created:
+            logger.info(f"Data fetched until createdAt: {last_created}")
+
+            await database_handler.update_last_created_did_date(last_created)
+
+            # Update the after_value for the next request
+            after_value = last_created
+        else:
+            logger.warning("Exiting.")
+            break
