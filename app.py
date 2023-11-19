@@ -258,9 +258,9 @@ async def first_run():
             tables = await database_handler.tables_exists()
 
             if tables:
-                await database_handler.blocklists_updater()
-                await database_handler.top_24blocklists_updater()
-                await utils.update_block_statistics()
+                # await database_handler.blocklists_updater()
+                # await database_handler.top_24blocklists_updater()
+                # await utils.update_block_statistics()
 
                 break
             else:
@@ -462,6 +462,8 @@ async def get_in_common_blocklist(client_identifier):
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def get_in_common_blocked(client_identifier):
+    not_implemented = True
+
     session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
 
@@ -472,18 +474,22 @@ async def get_in_common_blocked(client_identifier):
 
     logger.info(f"<< {session_ip} - {api_key} - in-common blocked request: {identifier}")
 
-    if did_identifier and handle_identifier and status:
+    if not not_implemented:
+        if did_identifier and handle_identifier and status:
 
-        blocklist_data = await database_handler.get_similar_blocked_by(did_identifier)
-        # formatted_count = '{:,}'.format(count)
+            blocklist_data = await database_handler.get_similar_blocked_by(did_identifier)
+            # formatted_count = '{:,}'.format(count)
 
+        else:
+            blocklist_data = None
+
+        common_list = {"inCommonList": blocklist_data}
+
+    if not_implemented:
+        data = {"error": "API not Implemented."}
     else:
-        blocklist_data = None
-
-    common_list = {"inCommonList": blocklist_data}
-
-    data = {"identity": identifier,
-            "data": common_list}
+        data = {"identity": identifier,
+                "data": common_list}
 
     logger.info(f">> {session_ip} - {api_key} - in-common blocked result returned: {identifier}")
 
