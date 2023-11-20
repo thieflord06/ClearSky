@@ -119,6 +119,8 @@ async def main():
         last_value = await database_handler.check_last_created_did_date()
         if last_value:
             logger.info(f"last value retrieved, starting from: {last_value}")
+        else:
+            last_value = None
         await utils.get_all_did_records(last_value)
         logger.info("Finished processing data.")
 

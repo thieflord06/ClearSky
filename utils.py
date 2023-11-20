@@ -1110,6 +1110,7 @@ def fetch_data_with_after_parameter(url, after_value):
 async def get_all_did_records(last_cursor=None):
     url = 'https://plc.directory/export'
     after_value = last_cursor
+    old_last_created = None
 
     while True:
         data, last_created = fetch_data_with_after_parameter(url, after_value)
@@ -1121,13 +1122,14 @@ async def get_all_did_records(last_cursor=None):
             # print(data)
             await database_handler.update_did_service(data)
 
-        if last_created:
+        if last_created != old_last_created:
             logger.info(f"Data fetched until createdAt: {last_created}")
 
             await database_handler.update_last_created_did_date(last_created)
 
             # Update the after_value for the next request
             after_value = last_created
+            old_last_created = last_created
         else:
-            logger.warning("Exiting.")
+            logger.warning("DIDs up to date. Exiting.")
             break
