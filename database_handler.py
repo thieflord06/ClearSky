@@ -517,7 +517,7 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
             for pds in pdses:
                 new_records = await utils.get_all_users(pds)
                 logger.info(f"{len(new_records)} users in {pds}")
-                all_records.add(new_records)
+                all_records.update(new_records)
 
             logger.info(f"Total DIDs: {len(all_records)}")
 
