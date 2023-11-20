@@ -1154,9 +1154,13 @@ async def update_did_service(data):
 
                     if did_exists:
                         if not did_exists[0]["pds"] or not did_exists[0]["created_date"]:
-                            insert_pds_query = """UPDATE users SET created_date = $2,  pds = $3 WHERE did = $1"""
+                            insert_pds_query = """UPDATE users SET created_date = $2, pds = $3 WHERE did = $1"""
 
                             await connection.execute(insert_pds_query, record[0], record[1], record[2])
+                        elif did_exists[0]["pds"] != record[2]:
+                            update_query = """UPDATE users SET pds = $2 WHERE did = $1"""
+
+                            await connection.execute(update_query, record[0], record[2])
                         else:
                             logger.debug("Up to date.")
                             continue
