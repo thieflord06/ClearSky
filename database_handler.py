@@ -325,7 +325,7 @@ async def get_pdses():
     try:
         async with connection_pool.acquire() as connection:
             async with connection.transaction():
-                query = "SELECT DISCTINCT(pds) from users"
+                query = "SELECT pds from pds where status is TRUE"
                 results = await connection.fetch(query)
 
                 result = [pds["pds"] for pds in results]
