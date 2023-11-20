@@ -1162,9 +1162,9 @@ async def update_did_service(data):
                             logger.debug("Up to date.")
                             continue
                     else:
-                        insert_query = """INSERT INTO users (did, created_date, pds, handle) VALUES ($1, $2, $3, $4)"""
+                        insert_query = """INSERT INTO users (did, created_date, pds, handle, status) VALUES ($1, $2, $3, $4, $5)"""
 
-                        await connection.execute(insert_query, record[0], record[1], record[2], record[3])
+                        await connection.execute(insert_query, record[0], record[1], record[2], record[3], True)
     except Exception as e:
         logger.error("Error retrieving/inserting data to db", e)
 
