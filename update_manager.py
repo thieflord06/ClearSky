@@ -120,8 +120,8 @@ async def main():
         if last_value:
             logger.info(f"last value retrieved, starting from: {last_value}")
         else:
-            logger.info(f"No last value retrieved, starting from beginning.")
             last_value = None
+            logger.info(f"No last value retrieved, starting from beginning.")
         await utils.get_all_did_records(last_value)
         logger.info("Finished processing data.")
 
