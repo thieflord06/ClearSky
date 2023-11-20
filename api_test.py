@@ -7,9 +7,14 @@ import requests
 def main():
     api_key = "CLEARSKYtest121ascmkdneaorSDno32"
 
-    api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/base/internal/status/process-status"
+    # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/base/internal/status/process-status"
     # api_endpoint = "http://localhost/api/v1/base/internal/status/process-status"
     # api_endpoint = "http://localhost/api/v1/blocklist-search-blocking/test.tennis.thieflord.dev/alechiaval.bsky.social"
+    # api_endpoint = "http://localhost/api/v1/lists/block-stats"
+    # api_endpoint = "http://localhost/api/v1/lists/fun-facts"
+    # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/blocklist-search-blocking/test.tennis.thieflord.dev/alechiaval.bsky.social"
+    api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/lists/fun-facts"
+    # api_endpoint = "https://staging.bsky.thieflord.dev"
 
     # Define the headers with the API key
     headers = {'X-API-Key': f'{api_key}'}
