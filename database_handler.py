@@ -321,6 +321,22 @@ async def get_dids_without_handles():
         return []
 
 
+async def get_pdses():
+    try:
+        async with connection_pool.acquire() as connection:
+            async with connection.transaction():
+                query = "SELECT DISCTINCT(pds) from users"
+                results = await connection.fetch(query)
+
+                result = [pds["pds"] for pds in results]
+
+                return result
+    except Exception as e:
+        logger.error(f"Error retrieving DIDs without handles: {e}")
+
+        return None
+
+
 async def crawl_all(forced=False):
     all_dids = await get_all_users_db(False, True)
     total_dids = len(all_dids)
@@ -479,6 +495,8 @@ async def crawler_batch(batch_dids, forced=False):
 
 async def get_all_users_db(run_update=False, get_dids=False, get_count=False, init_db_run=False):
     batch_size = 10000
+    all_records = set()
+
     async with connection_pool.acquire() as connection:
         if get_count:
             # Fetch the total count of users in the "users" table
@@ -493,12 +511,14 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
 
                 return dids
         else:
+            pdses = await get_pdses()
+
             # Get all DIDs
-            records = await utils.get_all_users()
+            for pds in pdses:
+                new_records = await utils.get_all_users(pds)
+                all_records.add(new_records)
 
-            logger.info(f"Total DIDs: {len(records)}")
-
-            records = set(records)
+            logger.info(f"Total DIDs: {len(all_records)}")
 
             current_true_records = await connection.fetch('SELECT did FROM users WHERE status = TRUE')
 
@@ -507,10 +527,10 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
                 current_true_set.add(record["did"])
 
             logger.info("Getting DIDs to deactivate.")
-            dids_deactivated = current_true_set - records
+            dids_deactivated = current_true_set - all_records
 
             logger.info("Getting new DIDs.")
-            new_dids = records - current_true_set
+            new_dids = all_records - current_true_set
 
             logger.info(f"Total new DIDs: {len(new_dids)}")
 

@@ -310,8 +310,8 @@ async def update_block_statistics():
             number_blocked_greater_than_1000, average_number_of_blocked, total_users)
 
 
-async def get_all_users():
-    base_url = "https://bsky.social/xrpc/"
+async def get_all_users(pds):
+    base_url = f"{pds}/xrpc/"
     limit = 1000
     cursor = None
     records = set()
@@ -354,7 +354,8 @@ async def get_all_users():
             await asyncio.sleep(60)  # Retry after 60 seconds
         else:
             logger.warning("Response status code: " + str(response.status_code))
-            await asyncio.sleep(60)  # Retry after 60 seconds
+            await asyncio.sleep(10)
+            continue
 
     return records
 
