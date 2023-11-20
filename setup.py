@@ -21,6 +21,7 @@ mute_lists_transaction_table = "mutelists_transaction"
 mute_lists_users_transaction_table = "mutelists_users_transaction"
 subscribe_block_list_table = "subscribe_blocklists"
 subscribe_block_list_transaction_table = "subscribe_blocklists_transaction"
+pds_table = "pds"
 
 
 async def create_db():
@@ -166,6 +167,10 @@ async def create_db():
                 prefix3 TEXT NOT NULL
                 )""".format(user_prefixes_table)
 
+                create_pds_table = """CREATE TABLE IF NOT EXISTS {} (
+                pds TEXT PRIMARY KEY,
+                status BOOL""".format(pds_table)
+
                 create_last_created_table = """CREATE TABLE IF NOT EXISTS {} (
                 last_created timestamptz PRIMARY KEY""".format(last_created_table)
 
@@ -188,6 +193,7 @@ async def create_db():
                 await connection.execute(create_mute_list_users_transaction_table)
                 await connection.execute(create_subscribe_block_list_table)
                 await connection.execute(create_subscribe_block_list_transaction_table)
+                await connection.execute(create_pds_table)
 
                 await connection.execute(index_1)
                 await connection.execute(index_2)
