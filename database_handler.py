@@ -1161,6 +1161,8 @@ async def update_did_service(data):
                             update_query = """UPDATE users SET pds = $2 WHERE did = $1"""
 
                             await connection.execute(update_query, record[0], record[2])
+
+                            logger.info(f"Updated pds for: {record[0]} | to {record[2]}")
                         else:
                             logger.debug("Up to date.")
                             continue
