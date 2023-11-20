@@ -27,3 +27,5 @@ CREATE INDEX idx_mutelists_users_did ON mutelists_users (did);
 CREATE INDEX idx_user_prefixes_prefix1 ON user_prefixes(prefix1);
 CREATE INDEX idx_user_prefixes_prefix2 ON user_prefixes(prefix2);
 CREATE INDEX idx_user_prefixes_prefix3 ON user_prefixes(prefix3);
+
+CREATE INDEX users_pds_index ON users (pds);
