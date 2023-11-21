@@ -341,7 +341,7 @@ async def get_pdses():
 
 
 async def blocklist_search(search_list, lookup, switch):
-    async with connection_pool.acquire() as connection:
+    async with connection_pools["write"].acquire() as connection:
         async with connection.transaction():
             try:
                 blocking = """SELECT 1
