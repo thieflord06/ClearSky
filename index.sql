@@ -6,6 +6,7 @@ CREATE INDEX idx_user_did_blocked_did ON blocklists (user_did, blocked_did);
 
 CREATE INDEX idx_block_date ON blocklists (block_date);
 
+CREATE EXTENSION pg_trgm;
 CREATE INDEX idx_users_handle_fulltext ON users USING gin (handle gin_trgm_ops);
 
 CREATE INDEX idx_users_did ON users (did);
