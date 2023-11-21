@@ -1024,6 +1024,8 @@ async def initialize():
             write_db_connected = await database_handler.create_connection_pool("write")
 
             if read_db_connected and write_db_connected:
+
+                db_connected = True
                 # await database_handler.create_connection_pool()  # Creates connection pool for db
                 db_pool_acquired.set()
 
@@ -1043,6 +1045,8 @@ async def initialize():
 
                 logger.info("Waiting for db connection.")
                 await asyncio.sleep(30)
+    else:
+        db_connected = True
 
 
 async def get_ip_address():
