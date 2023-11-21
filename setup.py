@@ -26,7 +26,7 @@ pds_table = "pds"
 
 async def create_db():
     try:
-        async with database_handler.connection_pool.acquire() as connection:
+        async with database_handler.connection_pools["write"].acquire() as connection:
             async with connection.transaction():
                 create_users_table = """
                 CREATE TABLE IF NOT EXISTS {} (
@@ -219,7 +219,7 @@ async def main():
     parser.add_argument('--start-test', action='store_true', help='create data and start application')
     args = parser.parse_args()
 
-    await database_handler.create_connection_pool()
+    await database_handler.create_connection_pool("local")
 
     if args.generate_test_data:
         user_data_list = await test.generate_random_user_data()

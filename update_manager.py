@@ -27,7 +27,8 @@ async def main():
     parser.add_argument('--update-redis-cache', action='store_true', help='Update the redis cache')
     args = parser.parse_args()
 
-    await database_handler.create_connection_pool()  # Creates connection pool for db
+    await database_handler.create_connection_pool("read")  # Creates connection pool for db
+    await database_handler.create_connection_pool("write")
 
     if args.fetch_users_count:
         # Call the function to fetch the count of users
@@ -50,7 +51,7 @@ async def main():
         table = "new_users_temporary_table"
 
         # Check if there is a last processed DID in the temporary table
-        async with database_handler.connection_pool.acquire() as connection:
+        async with database_handler.connection_pools["write"].acquire() as connection:
             async with connection.transaction():
                 try:
                     query = "SELECT last_processed_did FROM new_users_temporary_table"
@@ -75,7 +76,7 @@ async def main():
                 logger.info(f"Resuming processing from DID: {last_processed_did}")
                 all_dids = all_dids[start_index:]
 
-        async with database_handler.connection_pool.acquire() as connection:
+        async with database_handler.connection_pools["write"].acquire() as connection:
             async with connection.transaction():
                 # Concurrently process batches and update the handles
                 for i in range(0, total_dids, batch_size):

@@ -17,7 +17,7 @@ import on_wire
 # ======================================================================================================================
 # ===================================================  global variables ================================================
 
-connection_pool = None
+connection_pools = {}
 db_lock = asyncio.Lock()
 redis_connection = None
 once = None
@@ -41,18 +41,20 @@ top_24_blocks_process_time = None
 
 # ======================================================================================================================
 # ========================================= database handling functions ================================================
-async def create_connection_pool():
-    global connection_pool
+async def create_connection_pool(db):
+    global connection_pools
 
-    if await local_db():
+    if "local" in db:
         async with db_lock:
-            if connection_pool is None:
+            if db not in connection_pools:
                 try:
                     connection_pool = await asyncpg.create_pool(
-                        user=pg_user,
-                        password=pg_password,
-                        database=pg_database
+                        user=write_pg_user,
+                        password=write_pg_password,
+                        database=database_config["local_db"]
                     )
+
+                    connection_pools[db] = connection_pool
 
                     return True
                 except OSError:
@@ -65,17 +67,19 @@ async def create_connection_pool():
                     logger.error("db connection issue.")
 
                     return False
-    else:
+    elif "write" in db:
         # Acquire the lock before creating the connection pool
         async with db_lock:
-            if connection_pool is None:
+            if db not in connection_pools:
                 try:
                     connection_pool = await asyncpg.create_pool(
-                        user=pg_user,
-                        password=pg_password,
-                        host=pg_host,
-                        database=pg_database
+                        user=write_pg_user,
+                        password=write_pg_password,
+                        host=write_pg_host,
+                        database=write_pg_database
                     )
+
+                    connection_pools[db] = connection_pool
 
                     return True
                 except OSError:
@@ -91,14 +95,46 @@ async def create_connection_pool():
                     logger.error("db connection issue.")
 
                     return False
+    elif "read" in db:
+        # Acquire the lock before creating the connection pool
+        async with db_lock:
+            if db not in connection_pools:
+                try:
+                    connection_pool = await asyncpg.create_pool(
+                        user=read_pg_user,
+                        password=read_pg_password,
+                        host=read_pg_host,
+                        database=read_pg_database
+                    )
+
+                    connection_pools[db] = connection_pool
+
+                    return True
+                except OSError:
+                    logger.error("Network connection issue. db connection not established.")
+
+                    return False
+                except (asyncpg.exceptions.InvalidAuthorizationSpecificationError,
+                        asyncpg.exceptions.CannotConnectNowError):
+                    logger.error("db connection issue.")
+
+                    return False
+                except asyncpg.InvalidAuthorizationSpecificationError:
+                    logger.error("db connection issue.")
+
+                    return False
+    else:
+        logger.error("No db connection made.")
+        return False
 
 
 # Function to close the connection pool
 async def close_connection_pool():
-    global connection_pool
+    global connection_pools
 
-    if connection_pool:
-        await connection_pool.close()
+    if connection_pools:
+        for db in connection_pools:
+            await db.close()
 
 
 async def populate_redis_with_handles():
@@ -109,7 +145,7 @@ async def populate_redis_with_handles():
             offset = 0
             batch_count = 0
             while True:
-                async with connection_pool.acquire() as connection:
+                async with connection_pools["read"].acquire() as connection:
                     async with connection.transaction():
                         logger.info("Transferring handles to cache.")
                         # Query all handles from the database
@@ -215,7 +251,7 @@ async def retrieve_autocomplete_handles(query):
 
 async def find_handles(value):
     try:
-        async with connection_pool.acquire() as connection:
+        async with connection_pools["read"].acquire() as connection:
             async with connection.transaction():
                 logger.debug(f"{value}")
 
@@ -263,14 +299,14 @@ async def find_handles(value):
 
 
 async def count_users_table():
-    async with connection_pool.acquire() as connection:
+    async with connection_pools["read"].acquire() as connection:
         # Execute the SQL query to count the rows in the "users" table
         return await connection.fetchval('SELECT COUNT(*) FROM users WHERE status is TRUE')
 
 
 async def get_blocklist(ident, limit=100, offset=0):
     try:
-        async with connection_pool.acquire() as connection:
+        async with connection_pools["read"].acquire() as connection:
             async with connection.transaction():
                 query = "SELECT b.blocked_did, b.block_date, u.handle, u.status FROM blocklists AS b JOIN users AS u ON b.blocked_did = u.did WHERE b.user_did = $1 ORDER BY block_date DESC LIMIT $2 OFFSET $3"
                 blocklist_rows = await connection.fetch(query, ident, limit, offset)
@@ -291,25 +327,9 @@ async def get_blocklist(ident, limit=100, offset=0):
         return None, None
 
 
-async def get_dids_with_blocks():
-    try:
-        async with connection_pool.acquire() as connection:
-            async with connection.transaction():
-                query = "SELECT DISTINCT user_did FROM blocklists"
-                rows = await connection.fetch(query)
-                logger.info("Fetched DIDs with blocks.")
-                logger.info("Processing results...")
-                dids_with_blocks = [row['user_did'] for row in rows]
-                return dids_with_blocks
-    except Exception as e:
-        logger.error(f"Error retrieving DIDs with blocks: {e}")
-
-        return []
-
-
 async def get_dids_without_handles():
     try:
-        async with connection_pool.acquire() as connection:
+        async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
                 query = "SELECT did FROM users WHERE handle IS NULL"
                 rows = await connection.fetch(query)
@@ -323,7 +343,7 @@ async def get_dids_without_handles():
 
 async def get_pdses():
     try:
-        async with connection_pool.acquire() as connection:
+        async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
                 query = "SELECT pds from pds where status is TRUE"
                 results = await connection.fetch(query)
@@ -348,7 +368,7 @@ async def crawl_all(forced=False):
     table = "temporary_table"
 
     # Check if there is a last processed DID in the temporary table
-    async with connection_pool.acquire() as connection:
+    async with connection_pools["write"].acquire() as connection:
         async with connection.transaction():
             try:
                 query = "SELECT last_processed_did FROM temporary_table"
@@ -462,7 +482,7 @@ async def crawler_batch(batch_dids, forced=False):
             try:
                 # Update the database with the batch of handles
                 logger.info("committing batch.")
-                async with connection_pool.acquire() as connection:
+                async with connection_pools["write"].acquire() as connection:
                     async with connection.transaction():
                         await update_user_handles(handles_to_update)
                         total_handles_updated += len(handles_to_update)
@@ -497,7 +517,7 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
     batch_size = 10000
     all_records = set()
 
-    async with connection_pool.acquire() as connection:
+    async with connection_pools["write"].acquire() as connection:
         if get_count:
             # Fetch the total count of users in the "users" table
             count = await connection.fetchval('SELECT COUNT(*) FROM users')
@@ -580,7 +600,7 @@ async def update_blocklist_table(ident, blocked_data, forced=False):
     if not blocked_data:
         return counter
 
-    async with connection_pool.acquire() as connection:
+    async with connection_pools["write"].acquire() as connection:
         async with connection.transaction():
             # Retrieve the existing blocklist entries for the specified ident
             existing_records = await connection.fetch(
@@ -646,7 +666,7 @@ async def update_subscribe_table(ident, subscribelists_data, forced=False):
 
         return counter
 
-    async with connection_pool.acquire() as connection:
+    async with connection_pools["write"].acquire() as connection:
         async with connection.transaction():
             # Retrieve the existing blocklist entries for the specified ident
             existing_records = await connection.fetch(
@@ -710,7 +730,7 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, fo
 
         return counter
 
-    async with connection_pool.acquire() as connection:
+    async with connection_pools["write"].acquire() as connection:
         async with connection.transaction():
 
             # Retrieve the existing blocklist entries for the specified ident
@@ -826,7 +846,7 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, fo
 
 
 async def does_did_and_handle_exist_in_database(did, handle):
-    async with connection_pool.acquire() as connection:
+    async with connection_pools["write"].acquire() as connection:
         # Execute the SQL query to check if the given DID exists in the "users" table
         exists = await connection.fetchval('SELECT EXISTS(SELECT 1 FROM users WHERE did = $1 AND handle = $2)', did, handle)
 
@@ -834,7 +854,7 @@ async def does_did_and_handle_exist_in_database(did, handle):
 
 
 async def update_user_handles(handles_to_update):
-    async with connection_pool.acquire() as connection:
+    async with connection_pools["write"].acquire() as connection:
         async with connection.transaction():
             # Drop the temporary table if it exists
             await connection.execute('DROP TABLE IF EXISTS temp_handles')
@@ -868,7 +888,7 @@ async def update_user_handles(handles_to_update):
 
 async def add_new_prefixes(handles):
     for handle in handles:
-        async with connection_pool.acquire() as connection:
+        async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
                 try:
                     query = """INSERT INTO user_prefixes(handle, prefix1, prefix2, prefix3)
@@ -911,7 +931,7 @@ async def process_batch(batch_dids, ad_hoc, table, batch_size):
                 try:
                     # Update the database with the batch of handles
                     logger.info("committing batch.")
-                    async with connection_pool.acquire() as connection:
+                    async with connection_pools["write"].acquire() as connection:
                         async with connection.transaction():
                             await update_user_handles(handles_to_update)
                             total_handles_updated += len(handles_to_update)
@@ -942,7 +962,7 @@ async def process_batch(batch_dids, ad_hoc, table, batch_size):
 async def create_temporary_table():
     try:
         logger.info("Creating temp table.")
-        async with connection_pool.acquire() as connection:
+        async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
                 query = """
                 CREATE TABLE IF NOT EXISTS temporary_table (
@@ -958,7 +978,7 @@ async def create_temporary_table():
 async def create_new_users_temporary_table():
     try:
         logger.info("Creating temp table.")
-        async with connection_pool.acquire() as connection:
+        async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
                 query = """
                 CREATE TABLE IF NOT EXISTS new_users_temporary_table (
@@ -972,7 +992,7 @@ async def create_new_users_temporary_table():
 
 async def update_24_hour_block_list_table(entries, list_type):
     try:
-        async with connection_pool.acquire() as connection:
+        async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
                 data = [(did, count, list_type) for did, count in entries]
                 # Insert the new row with the given last_processed_did
@@ -987,7 +1007,7 @@ async def update_24_hour_block_list_table(entries, list_type):
 
 async def truncate_top_blocks_table():
     try:
-        async with connection_pool.acquire() as connection:
+        async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
                 # Delete the existing rows if it exists
                 await connection.execute("TRUNCATE top_block")
@@ -998,7 +1018,7 @@ async def truncate_top_blocks_table():
 
 async def truncate_top24_blocks_table():
     try:
-        async with connection_pool.acquire() as connection:
+        async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
                 # Delete the existing row if it exists
                 await connection.execute("TRUNCATE top_twentyfour_hour_block")
@@ -1009,7 +1029,7 @@ async def truncate_top24_blocks_table():
 
 async def update_top_block_list_table(entries, list_type):
     try:
-        async with connection_pool.acquire() as connection:
+        async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
                 data = [(did, count, list_type) for did, count in entries]
                 # Insert the new row with the given last_processed_did
@@ -1024,7 +1044,7 @@ async def update_top_block_list_table(entries, list_type):
 
 async def get_top_blocks_list():
     try:
-        async with connection_pool.acquire() as connection:
+        async with connection_pools["read"].acquire() as connection:
             async with connection.transaction():
                 query1 = "SELECT distinct did, count FROM top_block WHERE list_type = 'blocked'"
                 query2 = "SELECT distinct did, count FROM top_block WHERE list_type = 'blocker'"
@@ -1040,7 +1060,7 @@ async def get_top_blocks_list():
 
 async def get_24_hour_block_list():
     try:
-        async with connection_pool.acquire() as connection:
+        async with connection_pools["read"].acquire() as connection:
             async with connection.transaction():
                 query1 = "SELECT distinct did, count FROM top_twentyfour_hour_block WHERE list_type = 'blocked'"
                 query2 = "SELECT distinct did, count FROM top_twentyfour_hour_block WHERE list_type = 'blocker'"
@@ -1056,7 +1076,7 @@ async def get_24_hour_block_list():
 
 async def delete_temporary_table():
     try:
-        async with connection_pool.acquire() as connection:
+        async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
                 query = "DROP TABLE IF EXISTS temporary_table"
                 await connection.execute(query)
@@ -1066,7 +1086,7 @@ async def delete_temporary_table():
 
 async def delete_new_users_temporary_table():
     try:
-        async with connection_pool.acquire() as connection:
+        async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
                 query = "DROP TABLE IF EXISTS new_users_temporary_table"
                 await connection.execute(query)
@@ -1076,7 +1096,7 @@ async def delete_new_users_temporary_table():
 
 async def update_temporary_table(last_processed_did, table):
     try:
-        async with connection_pool.acquire() as connection:
+        async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
                 # Delete the existing row if it exists
                 delete_query = f"TRUNCATE {table}"
@@ -1091,7 +1111,7 @@ async def update_temporary_table(last_processed_did, table):
 
 async def update_new_users_temporary_table(last_processed_did):
     try:
-        async with connection_pool.acquire() as connection:
+        async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
                 # Delete the existing row if it exists
                 await connection.execute("TRUNCATE new_users_temporary_table")
@@ -1109,7 +1129,7 @@ async def get_top_blocks():
 
     logger.info("Getting top blocks from db.")
     try:
-        async with connection_pool.acquire() as connection:
+        async with connection_pools["read"].acquire() as connection:
             async with connection.transaction():
 
                 # Insert the new row with the given last_processed_did
@@ -1153,7 +1173,7 @@ async def get_top_blocks():
 async def update_did_service(data):
     logger.info("Updating services information for batch.")
     try:
-        async with connection_pool.acquire() as connection:
+        async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
                 for record in data:
                     query = """SELECT did, pds, created_date FROM users where did = $1"""
@@ -1185,7 +1205,7 @@ async def update_did_service(data):
 
 async def update_last_created_did_date(last_created):
     try:
-        async with connection_pool.acquire() as connection:
+        async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
                 # Delete the existing row if it exists
                 delete_query = f"TRUNCATE {setup.last_created_table}"
@@ -1200,7 +1220,7 @@ async def update_last_created_did_date(last_created):
 
 async def check_last_created_did_date():
     try:
-        async with connection_pool.acquire() as connection:
+        async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
                 query = """SELECT * FROM last_did_created_date"""
 
@@ -1215,7 +1235,7 @@ async def check_last_created_did_date():
 
 async def get_block_stats():
     try:
-        async with connection_pool.acquire() as connection:
+        async with connection_pools["read"].acquire() as connection:
             async with connection.transaction():
                 logger.info("Getting block statistics.")
 
@@ -1340,7 +1360,7 @@ async def get_top24_blocks():
 
     logger.info("Getting top 24 blocks from db.")
     try:
-        async with connection_pool.acquire() as connection:
+        async with connection_pools["read"].acquire() as connection:
             async with connection.transaction():
 
                 # Insert the new row with the given last_processed_did
@@ -1378,7 +1398,7 @@ async def get_top24_blocks():
 async def get_similar_blocked_by(user_did):
     global all_blocks_cache
 
-    async with connection_pool.acquire() as connection:
+    async with connection_pools["read"].acquire() as connection:
         blocked_by_users = await connection.fetch(
             'SELECT user_did FROM blocklists WHERE blocked_did = $1', user_did)
 
@@ -1390,7 +1410,7 @@ async def get_similar_blocked_by(user_did):
 
         block_cache_status.set()
 
-        async with connection_pool.acquire() as connection:
+        async with connection_pools["read"].acquire() as connection:
             async with connection.transaction():
                 # Fetch all blocklists except for the specified user's blocklist
                 all_blocklists_rows = await connection.fetch(
@@ -1441,7 +1461,7 @@ async def get_similar_blocked_by(user_did):
     percentages = [percentage for user, percentage in top_similar_users]
     status_list = []
     for user, percentage in top_similar_users:
-        async with connection_pool.acquire() as connection:
+        async with connection_pools["read"].acquire() as connection:
             async with connection.transaction():
                 status = await connection.fetch(
                     'SELECT status FROM users WHERE did = $1', user)
@@ -1464,7 +1484,7 @@ async def get_similar_users(user_did):
 
         block_cache_status.set()
 
-        async with connection_pool.acquire() as connection:
+        async with connection_pools["read"].acquire() as connection:
             async with connection.transaction():
                 # Fetch all blocklists except for the specified user's blocklist
                 all_blocklists_rows = await connection.fetch(
@@ -1532,7 +1552,7 @@ async def get_similar_users(user_did):
     percentages = [percentage for user, percentage in top_similar_users]
     status_list = []
     for user, percentage in top_similar_users:
-        async with connection_pool.acquire() as connection:
+        async with connection_pools["read"].acquire() as connection:
             async with connection.transaction():
                 status = await connection.fetchval(
                     'SELECT status FROM users WHERE did = $1', user)
@@ -1622,7 +1642,7 @@ async def top_24blocklists_updater():
 
 
 async def get_mutelists(ident):
-    async with connection_pool.acquire() as connection:
+    async with connection_pools["read"].acquire() as connection:
         async with connection.transaction():
             query = """
             SELECT ml.url, u.handle, u.status, ml.name, ml.description, ml.created_date, mu.date_added
@@ -1676,7 +1696,7 @@ async def wait_for_redis():
 
 
 async def tables_exists():
-    async with connection_pool.acquire() as connection:
+    async with connection_pools["write"].acquire() as connection:
         async with connection.transaction():
             try:
                 query1 = """SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1)"""
@@ -1709,23 +1729,31 @@ def get_database_config():
     try:
         if not os.getenv('CLEAR_SKY'):
             logger.info("Database connection: Using config.ini.")
-            pg_user = config.get("database", "pg_user")
-            pg_password = config.get("database", "pg_password")
-            pg_host = config.get("database", "pg_host")
-            pg_database = config.get("database", "pg_database")
+            read_pg_user = config.get("database_read", "pg_user")
+            read_pg_password = config.get("database_read", "pg_password")
+            read_pg_host = config.get("database_read", "pg_host")
+            read_pg_database = config.get("database_read", "pg_database")
+            write_pg_user = config.get("database_write", "pg_user")
+            write_pg_password = config.get("database_write", "pg_password")
+            write_pg_host = config.get("database_write", "pg_host")
+            write_pg_database = config.get("databas_write", "pg_database")
             redis_host = config.get("redis", "host")
             redis_port = config.get("redis", "port")
             redis_username = config.get("redis", "username")
             redis_password = config.get("redis", "password")
             redis_key_name = config.get("redis", "autocomplete")
             use_local_db = config.get("database", "use_local")
-            local_db = config.get("database", "local_db_connection")
+            local_db = config.get("database_local", "local_db_connection")
         else:
             logger.info("Database connection: Using environment variables.")
-            pg_user = os.environ.get("PG_USER")
-            pg_password = os.environ.get("PG_PASSWORD")
-            pg_host = os.environ.get("PG_HOST")
-            pg_database = os.environ.get("PG_DATABASE")
+            read_pg_user = os.environ.get("READ_PG_USER")
+            read_pg_password = os.environ.get("READ_PG_PASSWORD")
+            read_pg_host = os.environ.get("READ_PG_HOST")
+            read_pg_database = os.environ.get("READ_PG_DATABASE")
+            write_pg_user = os.environ.get("WRITE_PG_USER")
+            write_pg_password = os.environ.get("WRITE_PG_PASSWORD")
+            write_pg_host = os.environ.get("WRITE_PG_HOST")
+            write_pg_database = os.environ.get("WRITE_PG_DATABASE")
             redis_host = os.environ.get("REDIS_HOST")
             redis_port = os.environ.get("REDIS_PORT")
             redis_username = os.environ.get("REDIS_USERNAME")
@@ -1735,10 +1763,14 @@ def get_database_config():
             local_db = os.environ.get("LOCAL_DB_CONNECTION")
 
         return {
-            "user": pg_user,
-            "password": pg_password,
-            "host": pg_host,
-            "database": pg_database,
+            "read_user": read_pg_user,
+            "read_password": read_pg_password,
+            "read_host": read_pg_host,
+            "read_database": read_pg_database,
+            "write_user": write_pg_user,
+            "write_password": write_pg_password,
+            "write_host": write_pg_host,
+            "write_database": write_pg_database,
             "redis_host": redis_host,
             "redis_port": redis_port,
             "redis_username": redis_username,
@@ -1757,10 +1789,14 @@ config = config_helper.read_config()
 database_config = get_database_config()
 
 # Now you can access the configuration values using dictionary keys
-pg_user = database_config["user"]
-pg_password = database_config["password"]
-pg_host = database_config["host"]
-pg_database = database_config["database"]
+read_pg_user = database_config["read_user"]
+read_pg_password = database_config["read_password"]
+read_pg_host = database_config["read_host"]
+read_pg_database = database_config["read_database"]
+write_pg_user = database_config["write_user"]
+write_pg_password = database_config["write_password"]
+write_pg_host = database_config["write_host"]
+write_pg_database = database_config["write_database"]
 redis_host = database_config["redis_host"]
 redis_port = database_config["redis_port"]
 redis_username = database_config["redis_username"]

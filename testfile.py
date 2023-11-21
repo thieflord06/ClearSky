@@ -75,7 +75,7 @@ async def get_all_did_records():
 
 
 async def main():
-    await database_handler.create_connection_pool()
+    await database_handler.create_connection_pool("write")
 
     logger.info("connedted to db.")
 

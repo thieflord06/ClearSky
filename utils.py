@@ -2,7 +2,7 @@
 
 import httpx
 import urllib.parse
-from datetime import datetime, time
+from datetime import datetime
 import asyncio
 import database_handler
 import requests
@@ -52,7 +52,7 @@ sleep_time = 15
 # ======================================================================================================================
 # ============================================= Features functions =====================================================
 async def identifier_exists_in_db(identifier):
-    async with database_handler.connection_pool.acquire() as connection:
+    async with database_handler.connection_pools["read"].acquire() as connection:
         if is_did(identifier):
             result = await connection.fetchrow('SELECT did, status FROM users WHERE did = $1', identifier)
 
@@ -361,21 +361,21 @@ async def get_all_users(pds):
 
 
 async def get_user_handle(did):
-    async with database_handler.connection_pool.acquire() as connection:
+    async with database_handler.connection_pools["read"].acquire() as connection:
         handle = await connection.fetchval('SELECT handle FROM users WHERE did = $1', did)
 
     return handle
 
 
 async def get_user_did(handle):
-    async with database_handler.connection_pool.acquire() as connection:
+    async with database_handler.connection_pools["read"].acquire() as connection:
         did = await connection.fetchval('SELECT did FROM users WHERE handle = $1', handle)
 
     return did
 
 
 async def get_user_count(get_active=True):
-    async with database_handler.connection_pool.acquire() as connection:
+    async with database_handler.connection_pools["read"].acquire() as connection:
         if get_active:
             count = await connection.fetchval("""SELECT COUNT(*) 
             FROM users 
@@ -387,7 +387,7 @@ async def get_user_count(get_active=True):
 
 
 async def get_deleted_users_count():
-    async with database_handler.connection_pool.acquire() as connection:
+    async with database_handler.connection_pools["read"].acquire() as connection:
         count = await connection.fetchval('SELECT COUNT(*) FROM USERS JOIN pds ON users.pds = pds.pds WHERE pds.status is TRUE AND users.status is FALSE')
 
         return count
@@ -396,7 +396,7 @@ async def get_deleted_users_count():
 async def get_single_user_blocks(ident, limit=100, offset=0):
     try:
         # Execute the SQL query to get all the user_dids that have the specified did/ident in their blocklist
-        async with database_handler.connection_pool.acquire() as connection:
+        async with database_handler.connection_pools["read"].acquire() as connection:
             result = await connection.fetch('SELECT b.user_did, b.block_date, u.handle, u.status FROM blocklists AS b JOIN users as u ON b.user_did = u.did WHERE b.blocked_did = $1 ORDER BY block_date DESC LIMIT $2 OFFSET $3', ident, limit, offset)
             count = await connection.fetchval('SELECT COUNT(user_did) FROM blocklists WHERE blocked_did = $1', ident)
 
