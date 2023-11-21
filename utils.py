@@ -377,15 +377,18 @@ async def get_user_did(handle):
 async def get_user_count(get_active=True):
     async with database_handler.connection_pool.acquire() as connection:
         if get_active:
-            count = await connection.fetchval('SELECT COUNT(*) FROM users WHERE status is TRUE')
+            count = await connection.fetchval("""SELECT COUNT(*) 
+            FROM users 
+            JOIN pds ON users.pds = pds.pds 
+            WHERE users.status IS TRUE AND pds.status IS TRUE""")
         else:
-            count = await connection.fetchval('SELECT COUNT(*) FROM users')
+            count = await connection.fetchval("""SELECT COUNT(*) FROM users JOIN pds ON users.pds = pds.pds WHERE pds.status is TRUE""")
         return count
 
 
 async def get_deleted_users_count():
     async with database_handler.connection_pool.acquire() as connection:
-        count = await connection.fetchval('SELECT COUNT(*) FROM USERS WHERE status is FALSE')
+        count = await connection.fetchval('SELECT COUNT(*) FROM USERS JOIN pds ON users.pds = pds.pds WHERE pds.status is TRUE AND users.status is FALSE')
 
         return count
 
