@@ -982,7 +982,8 @@ async def create_new_users_temporary_table():
             async with connection.transaction():
                 query = """
                 CREATE TABLE IF NOT EXISTS new_users_temporary_table (
-                    last_processed_did text PRIMARY KEY
+                    last_processed_did text PRIMARY KEY,
+                    touched timestamptz
                 )
                 """
                 await connection.execute(query)
