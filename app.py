@@ -200,7 +200,6 @@ async def initialize():
             write_db_connected = await database_handler.create_connection_pool("write")
 
             if read_db_connected and write_db_connected:
-                # await database_handler.create_connection_pool()  # Creates connection pool for db
                 db_pool_acquired.set()
 
                 if not log_warning_once:
