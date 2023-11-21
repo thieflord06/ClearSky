@@ -554,10 +554,14 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
         logger.info("Comparing status")
 
         if dids_deactivated:
+            count = 0
+
             logger.info(f"deactivating {len(dids_deactivated)} dids")
 
             for did in dids_deactivated:
                 await connection.execute("""UPDATE users SET status = FALSE WHERE did = $1""", did)
+                count += 1
+                logger.info(f"DIDs deactivated: {count}")
 
             logger.info(f"{str(len(dids_deactivated))} dids deactivated.")
 
