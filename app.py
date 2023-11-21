@@ -1,6 +1,5 @@
 # app.py
 
-import json
 import sys
 import quart
 from quart import Quart, render_template, request, session, redirect, jsonify
@@ -20,7 +19,7 @@ config = config_helper.read_config()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "3.9.39"
+version = "3.9.40"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
