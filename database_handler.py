@@ -48,13 +48,13 @@ async def create_connection_pool(db):
         async with db_lock:
             if db not in connection_pools:
                 try:
-                    connection_pool = await asyncpg.create_pool(
+                    local_connection_pool = await asyncpg.create_pool(
                         user=write_pg_user,
                         password=write_pg_password,
                         database=database_config["local_db"]
                     )
 
-                    connection_pools[db] = connection_pool
+                    connection_pools[db] = local_connection_pool
 
                     return True
                 except OSError:
@@ -72,14 +72,14 @@ async def create_connection_pool(db):
         async with db_lock:
             if db not in connection_pools:
                 try:
-                    connection_pool = await asyncpg.create_pool(
+                    write_connection_pool = await asyncpg.create_pool(
                         user=write_pg_user,
                         password=write_pg_password,
                         host=write_pg_host,
                         database=write_pg_database
                     )
 
-                    connection_pools[db] = connection_pool
+                    connection_pools[db] = write_connection_pool
 
                     return True
                 except OSError:
@@ -100,14 +100,14 @@ async def create_connection_pool(db):
         async with db_lock:
             if db not in connection_pools:
                 try:
-                    connection_pool = await asyncpg.create_pool(
+                    read_connection_pool = await asyncpg.create_pool(
                         user=read_pg_user,
                         password=read_pg_password,
                         host=read_pg_host,
                         database=read_pg_database
                     )
 
-                    connection_pools[db] = connection_pool
+                    connection_pools[db] = read_connection_pool
 
                     return True
                 except OSError:
