@@ -6,6 +6,7 @@ CREATE INDEX idx_user_did_blocked_did ON blocklists (user_did, blocked_did);
 
 CREATE INDEX idx_block_date ON blocklists (block_date);
 
+CREATE EXTENSION pg_trgm;
 CREATE INDEX idx_users_handle_fulltext ON users USING gin (handle gin_trgm_ops);
 
 CREATE INDEX idx_users_did ON users (did);
@@ -27,3 +28,5 @@ CREATE INDEX idx_mutelists_users_did ON mutelists_users (did);
 CREATE INDEX idx_user_prefixes_prefix1 ON user_prefixes(prefix1);
 CREATE INDEX idx_user_prefixes_prefix2 ON user_prefixes(prefix2);
 CREATE INDEX idx_user_prefixes_prefix3 ON user_prefixes(prefix3);
+
+CREATE INDEX users_pds_index ON users (pds);

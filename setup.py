@@ -22,11 +22,12 @@ mute_lists_users_transaction_table = "mutelists_users_transaction"
 subscribe_block_list_table = "subscribe_blocklists"
 subscribe_block_list_transaction_table = "subscribe_blocklists_transaction"
 api_table = "api"
+pds_table = "pds"
 
 
 async def create_db():
     try:
-        async with database_handler.connection_pool.acquire() as connection:
+        async with database_handler.connection_pools["write"].acquire() as connection:
             async with connection.transaction():
                 create_users_table = """
                 CREATE TABLE IF NOT EXISTS {} (
@@ -167,6 +168,10 @@ async def create_db():
                 prefix3 TEXT NOT NULL
                 )""".format(user_prefixes_table)
 
+                create_pds_table = """CREATE TABLE IF NOT EXISTS {} (
+                pds TEXT PRIMARY KEY,
+                status BOOL""".format(pds_table)
+
                 create_last_created_table = """CREATE TABLE IF NOT EXISTS {} (
                 last_created timestamptz PRIMARY KEY""".format(last_created_table)
 
@@ -198,6 +203,7 @@ async def create_db():
                 await connection.execute(create_mute_list_users_transaction_table)
                 await connection.execute(create_subscribe_block_list_table)
                 await connection.execute(create_subscribe_block_list_transaction_table)
+                await connection.execute(create_pds_table)
                 await connection.execute(create_api_table)
 
                 await connection.execute(index_1)
@@ -224,7 +230,7 @@ async def main():
     parser.add_argument('--start-test', action='store_true', help='create data and start application')
     args = parser.parse_args()
 
-    await database_handler.create_connection_pool()
+    await database_handler.create_connection_pool("local")
 
     if args.generate_test_data:
         user_data_list = await test.generate_random_user_data()
