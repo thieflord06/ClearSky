@@ -42,7 +42,8 @@ app.secret_key = 'your-secret-key'
 fun_start_time = None
 funer_start_time = None
 block_stats_app_start_time = None
-db_connected = None
+read_db_connected = None
+write_db_connected = None
 blocklist_24_failed = asyncio.Event()
 blocklist_failed = asyncio.Event()
 db_pool_acquired = asyncio.Event()
@@ -177,7 +178,7 @@ async def get_time_since(time):
 
 
 async def initialize():
-    global db_connected
+    global read_db_connected, write_db_connected
     global db_pool_acquired
 
     read_db_connected = await database_handler.create_connection_pool("read")  # Creates connection pool for db if connection made
@@ -253,7 +254,7 @@ async def first_run():
         await asyncio.sleep(5)
 
     while True:
-        if db_connected:
+        if read_db_connected and write_db_connected:
             blocklist_24_failed.clear()
             blocklist_failed.clear()
 
@@ -739,7 +740,7 @@ async def fun_facts():
     #
     #     return await render_template('known_issue.html')
 
-    if not db_connected:
+    if not read_db_connected and write_db_connected:
         logger.error("Database connection is not live.")
 
         message = "db not connected"
@@ -864,7 +865,7 @@ async def funer_facts():
 
     logger.info(f"<< Funer facts requested: {session_ip} - {api_key}")
 
-    if not db_connected:
+    if not read_db_connected and write_db_connected:
         logger.error("Database connection is not live.")
 
         message = "db not connected"
@@ -989,7 +990,7 @@ async def block_stats():
 
     logger.info(f"<< Requesting block statistics: {session_ip} - {api_key}")
 
-    if not db_connected:
+    if not read_db_connected and write_db_connected:
         logger.error("Database connection is not live.")
 
         message = "db not connected"
@@ -1212,7 +1213,7 @@ async def autocomplete(client_identifier):
         if database_handler.redis_connection:
             matching_handles = await database_handler.retrieve_autocomplete_handles(
                 query_without_at)  # Use redis, failover db
-        elif db_connected:
+        elif read_db_connected:
             matching_handles = await database_handler.find_handles(query_without_at)  # Only use db
         else:
             matching_handles = None
@@ -1243,7 +1244,7 @@ async def get_internal_status():
     if utils.block_stats_status.is_set():
         stats_status = "processing"
     else:
-        if not db_connected:
+        if not read_db_connected and write_db_connected:
             stats_status = "waiting"
         else:
             stats_status = "complete"
@@ -1278,7 +1279,7 @@ async def get_internal_status():
             block_cache_status = "not initialized"
         else:
             block_cache_status = "In memory"
-    if not db_connected:
+    if not read_db_connected and write_db_connected:
         db_status = "disconnected"
     else:
         db_status = "connected"
