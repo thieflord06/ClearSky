@@ -40,6 +40,8 @@ fun_start_time = None
 funer_start_time = None
 block_stats_app_start_time = None
 db_connected = None
+read_db_connected = None
+write_db_connected = None
 blocklist_24_failed = asyncio.Event()
 blocklist_failed = asyncio.Event()
 db_pool_acquired = asyncio.Event()
@@ -405,7 +407,7 @@ async def fun_facts():
 
         return await render_template('feature_not_available.html')
 
-    if not db_connected:
+    if not read_db_connected and write_db_connected:
         logger.error("Database connection is not live.")
 
         return await render_template('feature_not_available.html')
@@ -498,7 +500,7 @@ async def funer_facts():
 
         return await render_template('feature_not_available.html')
 
-    if not db_connected:
+    if not read_db_connected and write_db_connected:
         logger.error("Database connection is not live.")
 
         return await render_template('feature_not_available.html')
@@ -591,7 +593,7 @@ async def block_stats():
 
         return await render_template('feature_not_available.html')
 
-    if not db_connected:
+    if not read_db_connected:
         logger.error("Database connection is not live.")
 
         return await render_template('feature_not_available.html')
@@ -765,7 +767,7 @@ async def autocomplete():
     else:
         if database_handler.redis_connection:
             matching_handles = await database_handler.retrieve_autocomplete_handles(query_without_at)  # Use redis, failover db
-        elif db_connected:
+        elif read_db_connected:
             matching_handles = await database_handler.find_handles(query_without_at)  # Only use db
         else:
             matching_handles = None
@@ -878,7 +880,7 @@ async def update_block_stats():
     if utils.block_stats_status.is_set():
         stats_status = "processing"
     else:
-        if not db_connected:
+        if not read_db_connected and write_db_connected:
             stats_status = "waiting"
         else:
             stats_status = "complete"
@@ -913,10 +915,14 @@ async def update_block_stats():
             block_cache_status = "not initialized"
         else:
             block_cache_status = "In memory"
-    if not db_connected:
-        db_status = "disconnected"
+    if not read_db_connected:
+        read_db_status = "disconnected"
     else:
-        db_status = "connected"
+        read_db_status = "connected"
+    if not write_db_connected:
+        write_db_status = "disconnected"
+    else:
+        write_db_status = "connected"
 
     now = datetime.now()
     uptime = now - runtime
@@ -941,7 +947,8 @@ async def update_block_stats():
         "block cache last process time": str(database_handler.all_blocks_process_time),
         "block cache last update": str(all_blocks_last_update),
         "current time": str(datetime.now()),
-        "db status": db_status
+        "write db status": write_db_status,
+        "read db status": read_db_status
     }
 
     return jsonify(status)
@@ -1001,6 +1008,7 @@ async def get_time_since(time):
 
 async def initialize():
     global db_connected
+    global read_db_connected, write_db_connected
     global db_pool_acquired
 
     read_db_connected = await database_handler.create_connection_pool("read")  # Creates connection pool for db if connection made
@@ -1081,7 +1089,7 @@ async def first_run():
         await asyncio.sleep(5)
 
     while True:
-        if db_connected:
+        if read_db_connected and write_db_connected:
             blocklist_24_failed.clear()
             blocklist_failed.clear()
 
