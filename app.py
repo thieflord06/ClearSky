@@ -358,31 +358,37 @@ async def get_blocklist(client_identifier, page):
 
     logger.info(f"<< {session_ip} - {api_key} - blocklist request: {identifier}")
 
-    did_identifier, handle_identifier = await pre_process_identifier(identifier)
-    status = await preprocess_status(identifier)
+    if identifier:
+        did_identifier, handle_identifier = await pre_process_identifier(identifier)
+        status = await preprocess_status(identifier)
 
-    if did_identifier and handle_identifier and status:
+        if did_identifier and handle_identifier and status:
 
-        items_per_page = 100
-        offset = (page - 1) * items_per_page
+            items_per_page = 100
+            offset = (page - 1) * items_per_page
 
-        blocklist, count, pages = await utils.process_user_block_list(did_identifier, limit=items_per_page,
-                                                                      offset=offset)
-        formatted_count = '{:,}'.format(count)
+            blocklist, count, pages = await utils.process_user_block_list(did_identifier, limit=items_per_page,
+                                                                          offset=offset)
+            formatted_count = '{:,}'.format(count)
 
-        blocklist_data = {"blocklist": blocklist,
-                          "count": formatted_count,
-                          "pages": pages}
+            blocklist_data = {"blocklist": blocklist,
+                              "count": formatted_count,
+                              "pages": pages}
+        else:
+            blocklist = None
+            count = 0
+
+            blocklist_data = {"blocklist": blocklist,
+                              "count": count}
+
+        data = {"identity": identifier,
+                "status": status,
+                "data": blocklist_data}
     else:
-        blocklist = None
-        count = 0
-
-        blocklist_data = {"blocklist": blocklist,
-                          "count": count}
-
-    data = {"identity": identifier,
-            "status": status,
-            "data": blocklist_data}
+        identifier = "Missing parameter"
+        result = "Missing parameter"
+        block_data = {"error": result}
+        data = {"data": block_data}
 
     logger.info(f">> {session_ip} - {api_key} - blocklist result returned: {identifier}")
 
@@ -401,30 +407,36 @@ async def get_single_blocklist(client_identifier, page):
 
     logger.info(f"<< {session_ip} - {api_key} - single blocklist request: {identifier}")
 
-    did_identifier, handle_identifier = await pre_process_identifier(identifier)
-    status = await preprocess_status(identifier)
+    if identifier:
+        did_identifier, handle_identifier = await pre_process_identifier(identifier)
+        status = await preprocess_status(identifier)
 
-    if did_identifier and handle_identifier and status:
-        items_per_page = 100
-        offset = (page - 1) * items_per_page
+        if did_identifier and handle_identifier and status:
+            items_per_page = 100
+            offset = (page - 1) * items_per_page
 
-        blocklist, count, pages = await utils.get_single_user_blocks(did_identifier, limit=items_per_page,
-                                                                     offset=offset)
-        formatted_count = '{:,}'.format(count)
+            blocklist, count, pages = await utils.get_single_user_blocks(did_identifier, limit=items_per_page,
+                                                                         offset=offset)
+            formatted_count = '{:,}'.format(count)
 
-        blocklist_data = {"blocklist": blocklist,
-                          "count": formatted_count,
-                          "pages": pages}
+            blocklist_data = {"blocklist": blocklist,
+                              "count": formatted_count,
+                              "pages": pages}
+        else:
+            blocklist_data = None
+            count = 0
+
+            blocklist_data = {"blocklist": blocklist_data,
+                              "count": count}
+
+        data = {"identity": identifier,
+                "status": status,
+                "data": blocklist_data}
     else:
-        blocklist_data = None
-        count = 0
-
-        blocklist_data = {"blocklist": blocklist_data,
-                          "count": count}
-
-    data = {"identity": identifier,
-            "status": status,
-            "data": blocklist_data}
+        identifier = "Missing parameter"
+        result = "Missing parameter"
+        block_data = {"error": result}
+        data = {"data": block_data}
 
     logger.info(f">> {session_ip} - {api_key} - single blocklist result returned: {identifier}")
 
@@ -440,21 +452,27 @@ async def get_in_common_blocklist(client_identifier):
 
     identifier = await sanitization(client_identifier)
 
-    did_identifier, handle_identifier = await pre_process_identifier(identifier)
-    status = await preprocess_status(identifier)
-
     logger.info(f"<< {session_ip} - {api_key} - in-common blocklist request: {identifier}")
 
-    if did_identifier and handle_identifier and status:
+    if identifier:
+        did_identifier, handle_identifier = await pre_process_identifier(identifier)
+        status = await preprocess_status(identifier)
 
-        blocklist_data = await database_handler.get_similar_users(did_identifier)
+        if did_identifier and handle_identifier and status:
+
+            blocklist_data = await database_handler.get_similar_users(did_identifier)
+        else:
+            blocklist_data = None
+
+        common_list = {"inCommonList": blocklist_data}
+
+        data = {"identity": identifier,
+                "data": common_list}
     else:
-        blocklist_data = None
-
-    common_list = {"inCommonList": blocklist_data}
-
-    data = {"identity": identifier,
-            "data": common_list}
+        identifier = "Missing parameter"
+        result = "Missing parameter"
+        block_data = {"error": result}
+        data = {"data": block_data}
 
     logger.info(f">> {session_ip} - {api_key} - in-common blocklist result returned: {identifier}")
 
@@ -472,27 +490,33 @@ async def get_in_common_blocked(client_identifier):
 
     identifier = await sanitization(client_identifier)
 
-    did_identifier, handle_identifier = await pre_process_identifier(identifier)
-    status = await preprocess_status(identifier)
-
     logger.info(f"<< {session_ip} - {api_key} - in-common blocked request: {identifier}")
 
-    if not not_implemented:
-        if did_identifier and handle_identifier and status:
+    if identifier:
+        did_identifier, handle_identifier = await pre_process_identifier(identifier)
+        status = await preprocess_status(identifier)
 
-            blocklist_data = await database_handler.get_similar_blocked_by(did_identifier)
-            # formatted_count = '{:,}'.format(count)
+        if not not_implemented:
+            if did_identifier and handle_identifier and status:
 
+                blocklist_data = await database_handler.get_similar_blocked_by(did_identifier)
+                # formatted_count = '{:,}'.format(count)
+
+            else:
+                blocklist_data = None
+
+            common_list = {"inCommonList": blocklist_data}
+
+        if not_implemented:
+            data = {"error": "API not Implemented."}
         else:
-            blocklist_data = None
-
-        common_list = {"inCommonList": blocklist_data}
-
-    if not_implemented:
-        data = {"error": "API not Implemented."}
+            data = {"identity": identifier,
+                    "data": common_list}
     else:
-        data = {"identity": identifier,
-                "data": common_list}
+        identifier = "Missing parameter"
+        result = "Missing parameter"
+        block_data = {"error": result}
+        data = {"data": block_data}
 
     logger.info(f">> {session_ip} - {api_key} - in-common blocked result returned: {identifier}")
 
@@ -542,26 +566,32 @@ async def get_did_info(client_identifier):
 
     identifier = await sanitization(client_identifier)
 
-    did_identifier, handle_identifier = await pre_process_identifier(identifier)
-    status = await preprocess_status(identifier)
+    logger.info(f"<< {session_ip} - {api_key} - get did request: {identifier}")
 
-    logger.info(f"<< {session_ip} - {api_key} - get did request: {client_identifier}")
+    if identifier:
+        did_identifier, handle_identifier = await pre_process_identifier(identifier)
+        status = await preprocess_status(identifier)
 
-    if did_identifier and handle_identifier and status:
+        if did_identifier and handle_identifier and status:
 
-        avatar_id = await on_wire.get_avatar_id(did_identifier)
+            avatar_id = await on_wire.get_avatar_id(did_identifier)
 
-        did_data = {"identifier": identifier,
-                    "did_identifier": did_identifier,
-                    "user_url": f"https://bsky.app/profile/{did_identifier}",
-                    "avatar_url": f"https://av-cdn.bsky.app/img/avatar/plain/{avatar_id}"
-                    }
+            did_data = {"identifier": identifier,
+                        "did_identifier": did_identifier,
+                        "user_url": f"https://bsky.app/profile/{did_identifier}",
+                        "avatar_url": f"https://av-cdn.bsky.app/img/avatar/plain/{avatar_id}"
+                        }
+        else:
+            did_data = None
+
+        data = {"data": did_data}
     else:
-        did_data = None
+        identifier = "Missing parameter"
+        result = "Missing parameter"
+        block_data = {"error": result}
+        data = {"data": block_data}
 
-    data = {"data": did_data}
-
-    logger.info(f">> {session_ip} - {api_key} - did result returned: {client_identifier}")
+    logger.info(f">> {session_ip} - {api_key} - did result returned: {identifier}")
 
     return jsonify(data)
 
@@ -575,24 +605,30 @@ async def get_handle_info(client_identifier):
 
     identifier = await sanitization(client_identifier)
 
-    did_identifier, handle_identifier = await pre_process_identifier(identifier)
-    status = await preprocess_status(identifier)
-
     logger.info(f"<< {session_ip} - {api_key} - get handle request: {identifier}")
 
-    if did_identifier and handle_identifier and status:
+    if identifier:
+        did_identifier, handle_identifier = await pre_process_identifier(identifier)
+        status = await preprocess_status(identifier)
 
-        avatar_id = await on_wire.get_avatar_id(did_identifier)
+        if did_identifier and handle_identifier and status:
 
-        handle_data = {"identifier": identifier,
-                       "handle_identifier": handle_identifier,
-                       "user_url": f"https://bsky.app/profile/{did_identifier}",
-                       "avatar_url": f"https://av-cdn.bsky.app/img/avatar/plain/{avatar_id}"
-                       }
+            avatar_id = await on_wire.get_avatar_id(did_identifier)
+
+            handle_data = {"identifier": identifier,
+                           "handle_identifier": handle_identifier,
+                           "user_url": f"https://bsky.app/profile/{did_identifier}",
+                           "avatar_url": f"https://av-cdn.bsky.app/img/avatar/plain/{avatar_id}"
+                           }
+        else:
+            handle_data = None
+
+        data = {"data": handle_data}
     else:
-        handle_data = None
-
-    data = {"data": handle_data}
+        identifier = "Missing parameter"
+        result = "Missing parameter"
+        block_data = {"error": result}
+        data = {"data": block_data}
 
     logger.info(f">> {session_ip} - {api_key} - handle result returned: {identifier}")
 
@@ -608,22 +644,28 @@ async def get_handle_history_info(client_identifier):
 
     identifier = await sanitization(client_identifier)
 
-    did_identifier, handle_identifier = await pre_process_identifier(identifier)
-    status = await preprocess_status(identifier)
-
     logger.info(f"<< {session_ip} - {api_key} - get handle history request: {identifier}")
 
-    if did_identifier and handle_identifier and status:
+    if identifier:
+        did_identifier, handle_identifier = await pre_process_identifier(identifier)
+        status = await preprocess_status(identifier)
 
-        handle_history = await utils.get_handle_history(did_identifier)
+        if did_identifier and handle_identifier and status:
 
-        handle_history_data = {"identifier": identifier,
-                               "handle_history": handle_history
-                               }
+            handle_history = await utils.get_handle_history(did_identifier)
+
+            handle_history_data = {"identifier": identifier,
+                                   "handle_history": handle_history
+                                   }
+        else:
+            handle_history_data = None
+
+        data = {"data": handle_history_data}
     else:
-        handle_history_data = None
-
-    data = {"data": handle_history_data}
+        identifier = "Missing parameter"
+        result = "Missing parameter"
+        block_data = {"error": result}
+        data = {"data": block_data}
 
     logger.info(f">> {session_ip} - {api_key} - handle history result returned: {identifier}")
 
@@ -639,22 +681,28 @@ async def get_list_info(client_identifier):
 
     identifier = await sanitization(client_identifier)
 
-    did_identifier, handle_identifier = await pre_process_identifier(identifier)
-    status = await preprocess_status(identifier)
-
     logger.info(f"<< {session_ip} - {api_key} - get mute/block list request: {identifier}")
 
-    if did_identifier and handle_identifier and status:
+    if identifier:
+        did_identifier, handle_identifier = await pre_process_identifier(identifier)
+        status = await preprocess_status(identifier)
 
-        mute_lists = await database_handler.get_mutelists(did_identifier)
+        if did_identifier and handle_identifier and status:
 
-        list_data = {"identifier": identifier,
-                     "lists": mute_lists}
+            mute_lists = await database_handler.get_mutelists(did_identifier)
+
+            list_data = {"identifier": identifier,
+                         "lists": mute_lists}
+        else:
+            list_data = None
+
+        data = {"identifier": identifier,
+                "data": list_data}
     else:
-        list_data = None
-
-    data = {"identifier": identifier,
-            "data": list_data}
+        identifier = "Missing parameter"
+        result = "Missing parameter"
+        block_data = {"error": result}
+        data = {"data": block_data}
 
     logger.info(f">> {session_ip} - {api_key} - mute/block list result returned: {identifier}")
 
@@ -668,25 +716,34 @@ async def get_blocked_search(client_identifier, search_identifier):
     api_key = request.headers.get('X-API-Key')
     session_ip = await get_ip()
 
-    logger.info(f"<< {session_ip} - {api_key} - blocklist[blocked] search request: {client_identifier}:{search_identifier}")
-
     client_identifier = await sanitization(client_identifier)
     search_identifier = await sanitization(search_identifier)
 
-    client_is_handle = utils.is_handle(client_identifier)
-    search_is_handle = utils.is_handle(search_identifier)
+    logger.info(f"<< {session_ip} - {api_key} - blocklist[blocked] search request: {client_identifier}:{search_identifier}")
 
-    if client_is_handle and search_is_handle:
-        result = await database_handler.blocklist_search(client_identifier, search_identifier, switch="blocked")
+    if client_identifier and search_identifier:
+        client_is_handle = utils.is_handle(client_identifier)
+        search_is_handle = utils.is_handle(search_identifier)
+
+        if client_is_handle and search_is_handle:
+            result = await database_handler.blocklist_search(client_identifier, search_identifier, switch="blocked")
+        else:
+            result = None
+
+        if result:
+            block_data = {"result": result}
+        else:
+            block_data = None
+
+        data = {"data": block_data}
     else:
-        result = None
-
-    if result:
-        block_data = {"result": result}
-    else:
-        block_data = None
-
-    data = {"data": block_data}
+        if not client_identifier:
+            client_identifier = "Missing parameter"
+        if not search_identifier:
+            search_identifier = "Missing parameter"
+        result = "Missing parameter"
+        block_data = {"error": result}
+        data = {"data": block_data}
 
     logger.info(f">> {session_ip} - {api_key} - blocklist[blocked] search result returned: {client_identifier}:{search_identifier}")
 
@@ -700,25 +757,34 @@ async def get_blocking_search(client_identifier, search_identifier):
     api_key = request.headers.get('X-API-Key')
     session_ip = await get_ip()
 
-    logger.info(f"<< {session_ip} - {api_key} - blocklist[blocking] search request: {client_identifier}:{search_identifier}")
-
     client_identifier = await sanitization(client_identifier)
     search_identifier = await sanitization(search_identifier)
 
-    client_is_handle = utils.is_handle(client_identifier)
-    search_is_handle = utils.is_handle(search_identifier)
+    logger.info(f"<< {session_ip} - {api_key} - blocklist[blocking] search request: {client_identifier}:{search_identifier}")
 
-    if client_is_handle and search_is_handle:
-        result = await database_handler.blocklist_search(client_identifier, search_identifier, switch="blocking")
+    if client_identifier and search_identifier:
+        client_is_handle = utils.is_handle(client_identifier)
+        search_is_handle = utils.is_handle(search_identifier)
+
+        if client_is_handle and search_is_handle:
+            result = await database_handler.blocklist_search(client_identifier, search_identifier, switch="blocking")
+        else:
+            result = None
+
+        if result:
+            block_data = {"result": result}
+        else:
+            block_data = None
+
+        data = {"data": block_data}
     else:
-        result = None
-
-    if result:
-        block_data = {"result": result}
-    else:
-        block_data = None
-
-    data = {"data": block_data}
+        if not client_identifier:
+            client_identifier = "Missing parameter"
+        if not search_identifier:
+            search_identifier = "Missing parameter"
+        result = "Missing parameter"
+        block_data = {"error": result}
+        data = {"data": block_data}
 
     logger.info(f">> {session_ip} - {api_key} - blocklist[blocking] search result returned: {client_identifier}:{search_identifier}")
 
