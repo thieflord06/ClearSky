@@ -496,9 +496,9 @@ async def funer_facts():
 
     logger.info("Funer facts requested.")
 
-    if True:
-
-        return await render_template('feature_not_available.html')
+    # if True:
+    #
+    #     return await render_template('feature_not_available.html')
 
     if not read_db_connected and write_db_connected:
         logger.error("Database connection is not live.")
@@ -1097,7 +1097,7 @@ async def first_run():
 
             if tables:
                 # await database_handler.blocklists_updater()
-                # await database_handler.top_24blocklists_updater()
+                await database_handler.top_24blocklists_updater()
                 # await utils.update_block_statistics()
 
                 break
