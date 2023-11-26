@@ -461,7 +461,7 @@ async def crawler_batch(batch_dids, forced=False):
 
     # Update the database with the batch of handles
     if handles_to_update:
-        only_handles = []
+        # only_handles = []
         while True:
             try:
                 # Update the database with the batch of handles
@@ -471,15 +471,15 @@ async def crawler_batch(batch_dids, forced=False):
                         await update_user_handles(handles_to_update)
                         total_handles_updated += len(handles_to_update)
 
-                for did, handle in handles_to_update:
-                    only_handles.append(handle)
+                # for did, handle in handles_to_update:
+                #     only_handles.append(handle)
 
-                logger.info("Adding new prefixes.")
-                await add_new_prefixes(only_handles)
+                # logger.info("Adding new prefixes.")
+                # await add_new_prefixes(only_handles)
 
                 break
             except asyncpg.ConnectionDoesNotExistError as e:
-                logger.warning("Connection error, retrying in 30 seconds...")
+                logger.warning(f"Connection error: {e}, retrying in 30 seconds...")
                 await asyncio.sleep(30)  # Retry after 60 seconds
             except Exception as e:
                 # Handle other exceptions as needed
