@@ -210,12 +210,12 @@ async def resolve_top24_block_lists():
     if await database_handler.local_db():
         resolved_blocked = []
         for blocked_did, blocked_count in blocked:
-            blocked_resolution = await resolve_did(blocked_did, blocked_count)
+            blocked_resolution = await resolve_did(blocked_did, blocked_count, True)
             resolved_blocked.append(blocked_resolution)
 
         resolved_blockers = []
         for blocker_did, blocker_count in blockers:
-            blocker_resolution = await resolve_did(blocker_did, blocker_count)
+            blocker_resolution = await resolve_did(blocker_did, blocker_count, True)
             resolved_blockers.append(blocker_resolution)
     else:
         resolved_blocked = []
