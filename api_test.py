@@ -11,10 +11,10 @@ def main():
     # api_endpoint = "http://localhost/api/v1/base/internal/status/process-status"
     # api_endpoint = "http://staging.bsky.thieflord.dev/api/v1/blocklist-search-blocking/test.tennis.thieflord.dev"
     # api_endpoint = "http://localhost/api/v1/lists/block-stats"
-    api_endpoint = "http://staging.bsky.thieflord.dev/api/v1/lists/funer-facts"
+    # api_endpoint = "http://staging.bsky.thieflord.dev/api/v1/lists/funer-facts"
     # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/blocklist-search-blocking/test.tennis.thieflord.dev/alechiaval.bsky.social"
     # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/lists/block-stats"
-    # api_endpoint = "https://staging.bsky.thieflord.dev"
+    api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/single-blocklist/shortcovid.bsky.social"
 
     # Define the headers with the API key
     headers = {'X-API-Key': f'{api_key}'}
