@@ -128,17 +128,25 @@ async def resolve_top_block_lists():
         blocker_avatar_dict = {did: await on_wire.get_avatar_id(did) for did in blocker_dids}
 
     if await database_handler.local_db():
-        # Prepare tasks to resolve DIDs concurrently
-        blocked_tasks = [resolve_did(did, count, True) for did, count in blocked]
-        blocker_tasks = [resolve_did(did, count, True) for did, count in blockers]
-    else:
-        # Prepare tasks to resolve DIDs concurrently
-        blocked_tasks = [resolve_did(did, count) for did, count in blocked]
-        blocker_tasks = [resolve_did(did, count) for did, count in blockers]
+        resolved_blocked = []
+        for blocked_did, blocked_count in blocked:
+            blocked_resolution = await resolve_did(blocked_did, blocked_count, True)
+            resolved_blocked.append(blocked_resolution)
 
-    # Run the resolution tasks concurrently
-    resolved_blocked = await asyncio.gather(*blocked_tasks)
-    resolved_blockers = await asyncio.gather(*blocker_tasks)
+        resolved_blockers = []
+        for blocker_did, blocker_count in blockers:
+            blocker_resolution = await resolve_did(blocker_did, blocker_count, True)
+            resolved_blockers.append(blocker_resolution)
+    else:
+        resolved_blocked = []
+        for blocked_did, blocked_count in blocked:
+            blocked_resolution = await resolve_did(blocked_did, blocked_count)
+            resolved_blocked.append(blocked_resolution)
+
+        resolved_blockers = []
+        for blocker_did, blocker_count in blockers:
+            blocker_resolution = await resolve_did(blocker_did, blocker_count)
+            resolved_blockers.append(blocker_resolution)
 
     # Remove any None entries (failed resolutions)
     resolved_blocked = [entry for entry in resolved_blocked if entry is not None]
@@ -200,17 +208,25 @@ async def resolve_top24_block_lists():
         blocker_avatar_dict = {did: await on_wire.get_avatar_id(did) for did in blocker_dids}
 
     if await database_handler.local_db():
-        # Prepare tasks to resolve DIDs concurrently
-        blocked_tasks = [resolve_did(did, count, True) for did, count in blocked]
-        blocker_tasks = [resolve_did(did, count, True) for did, count in blockers]
-    else:
-        # Prepare tasks to resolve DIDs concurrently
-        blocked_tasks = [resolve_did(did, count) for did, count in blocked]
-        blocker_tasks = [resolve_did(did, count) for did, count in blockers]
+        resolved_blocked = []
+        for blocked_did, blocked_count in blocked:
+            blocked_resolution = await resolve_did(blocked_did, blocked_count, True)
+            resolved_blocked.append(blocked_resolution)
 
-    # Run the resolution tasks concurrently
-    resolved_blocked = await asyncio.gather(*blocked_tasks)
-    resolved_blockers = await asyncio.gather(*blocker_tasks)
+        resolved_blockers = []
+        for blocker_did, blocker_count in blockers:
+            blocker_resolution = await resolve_did(blocker_did, blocker_count, True)
+            resolved_blockers.append(blocker_resolution)
+    else:
+        resolved_blocked = []
+        for blocked_did, blocked_count in blocked:
+            blocked_resolution = await resolve_did(blocked_did, blocked_count)
+            resolved_blocked.append(blocked_resolution)
+
+        resolved_blockers = []
+        for blocker_did, blocker_count in blockers:
+            blocker_resolution = await resolve_did(blocker_did, blocker_count)
+            resolved_blockers.append(blocker_resolution)
 
     # Remove any None entries (failed resolutions)
     resolved_blocked = [entry for entry in resolved_blocked if entry is not None]
