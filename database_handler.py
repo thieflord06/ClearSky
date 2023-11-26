@@ -255,35 +255,19 @@ async def find_handles(value):
             async with connection.transaction():
                 logger.debug(f"{value}")
 
-                value_length = len(value)
+                query_text1 = """SELECT handle 
+                            FROM users
+                            WHERE handle LIKE $1 || '%'
+                            LIMIT 5"""
 
-                query_text1 = """SELECT handle FROM user_prefixes
-                                WHERE prefix1 = $1
-                                AND handle LIKE $2 || '%'
-                                LIMIT 5"""
-                query_text2 = """SELECT handle FROM user_prefixes
-                                WHERE prefix2 = $1
-                                AND handle LIKE $2 || '%'
-                                LIMIT 5"""
-                query_text3 = """SELECT handle FROM user_prefixes
-                                WHERE prefix3 = $1
-                                AND handle LIKE $2 || '%'
-                                LIMIT 5"""
-
-                if value_length == 1:
-                    prefix = value[0]
-                    result = await asyncio.wait_for(connection.fetch(query_text1, prefix, value), timeout=5.0)
-                elif value_length == 2:
-                    prefix = value[:2]
-                    result = await asyncio.wait_for(connection.fetch(query_text2, prefix, value), timeout=5.0)
-                elif value_length >= 3:
-                    prefix = value[:3]
-                    result = await asyncio.wait_for(connection.fetch(query_text3, prefix, value), timeout=5.0)
+                result = await asyncio.wait_for(connection.fetch(query_text1, value), timeout=5.0)
 
                 logger.debug("autocomplete fulfilled.")
+
                 if not result:
 
                     return None
+
                 # Extract matching handles from the database query result
                 matching_handles = [row['handle'] for row in result]
 
