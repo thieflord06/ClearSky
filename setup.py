@@ -23,6 +23,7 @@ subscribe_block_list_table = "subscribe_blocklists"
 subscribe_block_list_transaction_table = "subscribe_blocklists_transaction"
 api_table = "api"
 pds_table = "pds"
+users_transaction_table = "users_transaction"
 
 
 async def create_db():
@@ -184,6 +185,16 @@ async def create_db():
                     owner_id text
                 )""".format(api_table)
 
+                create_users_transaction_table = """
+                create table users_transaction (
+                    serial_id BIGSERIAL primary key,
+                    did text,
+                    handle text,
+                    timestamp timestamptz,
+                    touched timestamptz,
+                    touched_actor text
+                )""".format(users_transaction_table)
+
                 index_1 = """CREATE INDEX IF NOT EXISTS blocklist_user_did ON blocklists (user_did)"""
                 index_2 = """CREATE INDEX IF NOT EXISTS blocklist_blocked_did ON blocklists (blocked_did)"""
                 index_3 = """CREATE INDEX idx_user_prefixes_prefix1 ON user_prefixes(prefix1)"""
@@ -205,6 +216,7 @@ async def create_db():
                 await connection.execute(create_subscribe_block_list_transaction_table)
                 await connection.execute(create_pds_table)
                 await connection.execute(create_api_table)
+                await connection.execute(create_users_transaction_table)
 
                 await connection.execute(index_1)
                 await connection.execute(index_2)

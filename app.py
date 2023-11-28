@@ -44,6 +44,7 @@ funer_start_time = None
 block_stats_app_start_time = None
 read_db_connected = None
 write_db_connected = None
+db_connected = None
 blocklist_24_failed = asyncio.Event()
 blocklist_failed = asyncio.Event()
 db_pool_acquired = asyncio.Event()
@@ -1347,8 +1348,14 @@ async def get_internal_status():
             block_cache_status = "In memory"
     if not read_db_connected and write_db_connected:
         db_status = "disconnected"
+    if not read_db_connected:
+        read_db_status = "disconnected"
     else:
-        db_status = "connected"
+        read_db_status = "connected"
+    if not write_db_connected:
+        write_db_status = "disconnected"
+    else:
+        write_db_status = "connected"
 
     now = datetime.now()
     uptime = now - runtime
@@ -1373,6 +1380,8 @@ async def get_internal_status():
         "block cache last process time": str(database_handler.all_blocks_process_time),
         "block cache last update": str(all_blocks_last_update),
         "current time": str(datetime.now()),
+        "write db status": write_db_status,
+        "read db status": read_db_status,
         "db status": db_status
     }
 
