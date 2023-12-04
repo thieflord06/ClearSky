@@ -11,10 +11,17 @@ def main():
     # api_endpoint = "http://localhost/api/v1/base/internal/status/process-status"
     # api_endpoint = "http://staging.bsky.thieflord.dev/api/v1/blocklist-search-blocking/test.tennis.thieflord.dev"
     # api_endpoint = "http://localhost/api/v1/lists/block-stats"
-    # api_endpoint = "http://staging.bsky.thieflord.dev/api/v1/lists/funer-facts"
+    api_endpoint = "http://staging.bsky.thieflord.dev/api/v1/lists/fun-facts"
     # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/blocklist-search-blocking/test.tennis.thieflord.dev/alechiaval.bsky.social"
     # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/lists/block-stats"
-    api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/single-blocklist/shortcovid.bsky.social"
+    # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/blocklist/boykisser.expert"
+    # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/single-blocklist/thieflord.dev"
+    # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/total-users"
+    # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/get-did/thieflord.dev"
+    # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/get-handle/thieflford.dev"
+    # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/get-handle-history/thieflofgrd.dev"
+    # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/blocklist-search-blocking/rudyfraser.com"
+    # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/in-common-blocklist/thieflord.dev"
 
     # Define the headers with the API key
     headers = {'X-API-Key': f'{api_key}'}
