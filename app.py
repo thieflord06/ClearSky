@@ -9,6 +9,7 @@ import os
 import uuid
 import asyncio
 from quart_rate_limiter import RateLimiter, rate_limit
+from quart_cors import cors
 import database_handler
 import on_wire
 import utils
@@ -35,6 +36,7 @@ except OSError:
 
 app = Quart(__name__)
 rate_limiter = RateLimiter(app)
+app = cors(app, allow_origin="*")
 
 # Configure session secret key
 app.secret_key = 'your-secret-key'
