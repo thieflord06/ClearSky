@@ -13,32 +13,32 @@ from cachetools import TTLCache
 import json
 # ======================================================================================================================
 # ================================================ cache/global variables ==============================================
-resolved_blocked_cache = TTLCache(maxsize=100, ttl=3600)
-resolved_blockers_cache = TTLCache(maxsize=100, ttl=3600)
+resolved_blocked_cache = TTLCache(maxsize=100, ttl=86400)  # Every 24 hours
+resolved_blockers_cache = TTLCache(maxsize=100, ttl=86400)  # Every 24 hours
 
-resolved_24_blocked_cache = TTLCache(maxsize=100, ttl=3600)
-resolved_24blockers_cache = TTLCache(maxsize=100, ttl=3600)
+resolved_24_blocked_cache = TTLCache(maxsize=100, ttl=43200)  # Every 12 hours
+resolved_24blockers_cache = TTLCache(maxsize=100, ttl=43200)  # Every 12 hours
 
-blocked_avatar_ids_cache = TTLCache(maxsize=100, ttl=3600)
-blocker_avatar_ids_cache = TTLCache(maxsize=100, ttl=3600)
+blocked_avatar_ids_cache = TTLCache(maxsize=100, ttl=86400)  # Every 24 hours
+blocker_avatar_ids_cache = TTLCache(maxsize=100, ttl=86400)  # Every 24 hours
 
-blocked_24_avatar_ids_cache = TTLCache(maxsize=100, ttl=3600)
-blocker_24_avatar_ids_cache = TTLCache(maxsize=100, ttl=3600)
+blocked_24_avatar_ids_cache = TTLCache(maxsize=100, ttl=43200)  # Every 12 hours
+blocker_24_avatar_ids_cache = TTLCache(maxsize=100, ttl=43200)  # Every 12 hours
 
-number_of_total_blocks_cache = TTLCache(maxsize=2, ttl=14400)
-number_of_unique_users_blocked_cache = TTLCache(maxsize=2, ttl=14400)
-number_of_unique_users_blocking_cache = TTLCache(maxsize=2, ttl=14400)
-number_block_1_cache = TTLCache(maxsize=2, ttl=14400)
-number_blocking_2_and_100_cache = TTLCache(maxsize=2, ttl=14400)
-number_blocking_101_and_1000_cache = TTLCache(maxsize=2, ttl=14400)
-number_blocking_greater_than_1000_cache = TTLCache(maxsize=2, ttl=14400)
-average_number_of_blocking_cache = TTLCache(maxsize=2, ttl=14400)
-number_blocked_1_cache = TTLCache(maxsize=2, ttl=14400)
-number_blocked_2_and_100_cache = TTLCache(maxsize=2, ttl=14400)
-number_blocked_101_and_1000_cache = TTLCache(maxsize=2, ttl=14400)
-number_blocked_greater_than_1000_cache = TTLCache(maxsize=2, ttl=14400)
-average_number_of_blocked_cache = TTLCache(maxsize=2, ttl=14400)
-total_users_cache = TTLCache(maxsize=2, ttl=14400)
+number_of_total_blocks_cache = TTLCache(maxsize=2, ttl=86400)
+number_of_unique_users_blocked_cache = TTLCache(maxsize=2, ttl=86400)
+number_of_unique_users_blocking_cache = TTLCache(maxsize=2, ttl=86400)
+number_block_1_cache = TTLCache(maxsize=2, ttl=86400)
+number_blocking_2_and_100_cache = TTLCache(maxsize=2, ttl=86400)
+number_blocking_101_and_1000_cache = TTLCache(maxsize=2, ttl=86400)
+number_blocking_greater_than_1000_cache = TTLCache(maxsize=2, ttl=86400)
+average_number_of_blocking_cache = TTLCache(maxsize=2, ttl=86400)
+number_blocked_1_cache = TTLCache(maxsize=2, ttl=86400)
+number_blocked_2_and_100_cache = TTLCache(maxsize=2, ttl=86400)
+number_blocked_101_and_1000_cache = TTLCache(maxsize=2, ttl=86400)
+number_blocked_greater_than_1000_cache = TTLCache(maxsize=2, ttl=86400)
+average_number_of_blocked_cache = TTLCache(maxsize=2, ttl=86400)
+total_users_cache = TTLCache(maxsize=2, ttl=86400)
 
 block_stats_status = asyncio.Event()
 
