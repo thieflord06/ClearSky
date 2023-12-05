@@ -1088,7 +1088,7 @@ async def update_top_block_list_table(entries, list_type):
 
 async def get_top_blocks_list():
     try:
-        async with connection_pools["read"].acquire() as connection:
+        async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
                 query1 = "SELECT distinct did, count FROM top_block WHERE list_type = 'blocked'"
                 query2 = "SELECT distinct did, count FROM top_block WHERE list_type = 'blocker'"
@@ -1104,7 +1104,7 @@ async def get_top_blocks_list():
 
 async def get_24_hour_block_list():
     try:
-        async with connection_pools["read"].acquire() as connection:
+        async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
                 query1 = "SELECT distinct did, count FROM top_twentyfour_hour_block WHERE list_type = 'blocked'"
                 query2 = "SELECT distinct did, count FROM top_twentyfour_hour_block WHERE list_type = 'blocker'"
