@@ -141,13 +141,13 @@ Implemented:
                     Valid false response:
                         {"data":null}
                     Valid true Response:
-                        {"data":{"result":true}}
+                        {"data":{"blocked_date":"Mon, 23 Oct 2023 22:17:42 GMT","handle":"desir.ee","status":true}}
             /api/v1/blocklist-search-blocked/<handle1>/<handle2> (is handle 1 blocked by handle 2)
                 Response:
                     Valid false response:
                         {"data":null}
                     Valid true Response:
-                        {"data":{"result":true}}
+                        {"data":{"blocked_date":"Mon, 23 Oct 2023 22:17:42 GMT","handle":"desir.ee","status":true}}
     component:
         /api/v1/base/autocomplete/<handle(partial/complete)>
             Responses:

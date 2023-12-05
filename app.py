@@ -264,9 +264,9 @@ async def first_run():
             tables = await database_handler.tables_exists()
 
             if tables:
-                await database_handler.blocklists_updater()
-                await database_handler.top_24blocklists_updater()
-                await utils.update_block_statistics()
+                # await database_handler.blocklists_updater()
+                # await database_handler.top_24blocklists_updater()
+                # await utils.update_block_statistics()
 
                 break
             else:
@@ -734,7 +734,7 @@ async def get_blocked_search(client_identifier, search_identifier):
             result = None
 
         if result:
-            block_data = {"result": result}
+            block_data = result
         else:
             block_data = None
 
@@ -775,7 +775,7 @@ async def get_blocking_search(client_identifier, search_identifier):
             result = None
 
         if result:
-            block_data = {"result": result}
+            block_data = result
         else:
             block_data = None
 
