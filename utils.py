@@ -19,11 +19,11 @@ resolved_blockers_cache = TTLCache(maxsize=100, ttl=86400)  # Every 24 hours
 resolved_24_blocked_cache = TTLCache(maxsize=100, ttl=43200)  # Every 12 hours
 resolved_24blockers_cache = TTLCache(maxsize=100, ttl=43200)  # Every 12 hours
 
-blocked_avatar_ids_cache = TTLCache(maxsize=100, ttl=86400)
-blocker_avatar_ids_cache = TTLCache(maxsize=100, ttl=86400)
+blocked_avatar_ids_cache = TTLCache(maxsize=100, ttl=86400)  # Every 24 hours
+blocker_avatar_ids_cache = TTLCache(maxsize=100, ttl=86400)  # Every 24 hours
 
-blocked_24_avatar_ids_cache = TTLCache(maxsize=100, ttl=3600)
-blocker_24_avatar_ids_cache = TTLCache(maxsize=100, ttl=3600)
+blocked_24_avatar_ids_cache = TTLCache(maxsize=100, ttl=43200)  # Every 12 hours
+blocker_24_avatar_ids_cache = TTLCache(maxsize=100, ttl=43200)  # Every 12 hours
 
 number_of_total_blocks_cache = TTLCache(maxsize=2, ttl=86400)
 number_of_unique_users_blocked_cache = TTLCache(maxsize=2, ttl=86400)
