@@ -403,9 +403,9 @@ async def fun_facts():
 
     logger.info("Fun facts requested.")
 
-    if True:
-
-        return await render_template('feature_not_available.html')
+    # if True:
+    #
+    #     return await render_template('feature_not_available.html')
 
     if not read_db_connected and write_db_connected:
         logger.error("Database connection is not live.")
@@ -1096,7 +1096,7 @@ async def first_run():
             tables = await database_handler.tables_exists()
 
             if tables:
-                # await database_handler.blocklists_updater()
+                await database_handler.blocklists_updater()
                 await database_handler.top_24blocklists_updater()
                 # await utils.update_block_statistics()
 
