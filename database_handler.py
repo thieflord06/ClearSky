@@ -384,9 +384,18 @@ async def crawl_all(forced=False):
         await crawler_batch(batch_dids, forced=forced)
 
         # Update the temporary table with the last processed DID
-        last_processed_did = batch_dids[-1]  # Assuming DID is the first element in each tuple
-        logger.debug("Last processed DID: " + str(last_processed_did))
-        await update_temporary_table(last_processed_did, table)
+        if batch_dids:
+            try:
+                last_processed_did = batch_dids[-1]  # Assuming DID is the first element in each tuple
+            except IndexError:
+                logger.error(f"Batch of DIDs is empty: {batch_dids}")
+
+            logger.debug("Last processed DID: " + str(last_processed_did))
+
+            await update_temporary_table(last_processed_did, table)
+        else:
+            logger.warning("Batch of DIDs is empty. Skipping update of the temporary table.")
+            logger.error(f"Batch_dids that caused issue: {batch_dids}")
 
         cumulative_processed_count += len(batch_dids)
 
