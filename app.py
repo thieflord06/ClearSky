@@ -36,7 +36,7 @@ except OSError:
 
 app = Quart(__name__)
 rate_limiter = RateLimiter(app)
-app = cors(app, allow_origin="*")
+cors(app, allow_origin="*")
 
 # Configure session secret key
 app.secret_key = 'your-secret-key'
@@ -301,7 +301,7 @@ def ratelimit_error(e):
 
 # ======================================================================================================================
 # ================================================== HTML Pages ========================================================
-@app.route('/')
+@app.route('/', methods=['GET'])
 async def index():
     # Generate a new session number and store it in the session
     if 'session_number' not in session:
@@ -310,12 +310,12 @@ async def index():
     return await render_template('index.html')
 
 
-@app.route('/images/favicon.png')
+@app.route('/images/favicon.png', methods=['GET'])
 async def favicon():
     return await quart.send_from_directory('images', 'favicon.png')
 
 
-@app.route('/frequently_asked')
+@app.route('/frequently_asked', methods=['GET'])
 async def faq():
     session_ip = await get_ip()
 
@@ -324,7 +324,7 @@ async def faq():
     return await render_template('coming_soon.html')
 
 
-@app.route('/coming_soon')
+@app.route('/coming_soon', methods=['GET'])
 async def coming_soon():
     session_ip = await get_ip()
 
@@ -333,12 +333,12 @@ async def coming_soon():
     return await render_template('coming_soon.html')
 
 
-@app.route('/status')
+@app.route('/status', methods=['GET'])
 async def always_200():
     return "OK", 200
 
 
-@app.route('/contact')
+@app.route('/contact', methods=['GET'])
 async def contact():
     session_ip = await get_ip()
 
@@ -349,8 +349,8 @@ async def contact():
 
 # ======================================================================================================================
 # ============================================= API Endpoints ==========================================================
-@app.route('/api/v1/blocklist/<client_identifier>', defaults={'page': 1})
-@app.route('/api/v1/blocklist/<client_identifier>/<int:page>')
+@app.route('/api/v1/blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
+@app.route('/api/v1/blocklist/<client_identifier>/<int:page>', methods=['GET'])
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def get_blocklist(client_identifier, page):
@@ -398,8 +398,8 @@ async def get_blocklist(client_identifier, page):
     return jsonify(data)
 
 
-@app.route('/api/v1/single-blocklist/<client_identifier>', defaults={'page': 1})
-@app.route('/api/v1/single-blocklist/<client_identifier>/<int:page>')
+@app.route('/api/v1/single-blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
+@app.route('/api/v1/single-blocklist/<client_identifier>/<int:page>', methods=['GET'])
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def get_single_blocklist(client_identifier, page):
@@ -446,7 +446,7 @@ async def get_single_blocklist(client_identifier, page):
     return jsonify(data)
 
 
-@app.route('/api/v1/in-common-blocklist/<client_identifier>')
+@app.route('/api/v1/in-common-blocklist/<client_identifier>', methods=['GET'])
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def get_in_common_blocklist(client_identifier):
@@ -482,7 +482,7 @@ async def get_in_common_blocklist(client_identifier):
     return jsonify(data)
 
 
-@app.route('/api/v1/in-common-blocked-by/<client_identifier>')
+@app.route('/api/v1/in-common-blocked-by/<client_identifier>', methods=['GET'])
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def get_in_common_blocked(client_identifier):
@@ -526,7 +526,7 @@ async def get_in_common_blocked(client_identifier):
     return jsonify(data)
 
 
-@app.route('/api/v1/total-users')
+@app.route('/api/v1/total-users', methods=['GET'])
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def get_total_users():
@@ -560,7 +560,7 @@ async def get_total_users():
     return jsonify(data)
 
 
-@app.route('/api/v1/get-did/<client_identifier>')
+@app.route('/api/v1/get-did/<client_identifier>', methods=['GET'])
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def get_did_info(client_identifier):
@@ -599,7 +599,7 @@ async def get_did_info(client_identifier):
     return jsonify(data)
 
 
-@app.route('/api/v1/get-handle/<client_identifier>')
+@app.route('/api/v1/get-handle/<client_identifier>', methods=['GET'])
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def get_handle_info(client_identifier):
@@ -638,7 +638,7 @@ async def get_handle_info(client_identifier):
     return jsonify(data)
 
 
-@app.route('/api/v1/get-handle-history/<client_identifier>')
+@app.route('/api/v1/get-handle-history/<client_identifier>', methods=['GET'])
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def get_handle_history_info(client_identifier):
@@ -675,7 +675,7 @@ async def get_handle_history_info(client_identifier):
     return jsonify(data)
 
 
-@app.route('/api/v1/get-list/<client_identifier>')
+@app.route('/api/v1/get-list/<client_identifier>', methods=['GET'])
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def get_list_info(client_identifier):
@@ -712,7 +712,7 @@ async def get_list_info(client_identifier):
     return jsonify(data)
 
 
-@app.route('/api/v1/blocklist-search-blocked/<client_identifier>/<search_identifier>')
+@app.route('/api/v1/blocklist-search-blocked/<client_identifier>/<search_identifier>', methods=['GET'])
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def get_blocked_search(client_identifier, search_identifier):
@@ -753,7 +753,7 @@ async def get_blocked_search(client_identifier, search_identifier):
     return jsonify(data)
 
 
-@app.route('/api/v1/blocklist-search-blocking/<client_identifier>/<search_identifier>')
+@app.route('/api/v1/blocklist-search-blocking/<client_identifier>/<search_identifier>', methods=['GET'])
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def get_blocking_search(client_identifier, search_identifier):
@@ -794,7 +794,7 @@ async def get_blocking_search(client_identifier, search_identifier):
     return jsonify(data)
 
 
-@app.route('/api/v1/lists/fun-facts')
+@app.route('/api/v1/lists/fun-facts', methods=['GET'])
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def fun_facts():
@@ -923,7 +923,7 @@ async def fun_facts():
     return jsonify(data)
 
 
-@app.route('/api/v1/lists/funer-facts')
+@app.route('/api/v1/lists/funer-facts', methods=['GET'])
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def funer_facts():
@@ -1048,7 +1048,7 @@ async def funer_facts():
     return jsonify(data)
 
 
-@app.route('/api/v1/lists/block-stats')
+@app.route('/api/v1/lists/block-stats', methods=['GET'])
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def block_stats():
@@ -1254,7 +1254,7 @@ async def block_stats():
     return jsonify(data)
 
 
-@app.route('/api/v1/base/autocomplete/<client_identifier>')
+@app.route('/api/v1/base/autocomplete/<client_identifier>', methods=['GET'])
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def autocomplete(client_identifier):
