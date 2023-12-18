@@ -23,7 +23,9 @@ def main():
     # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/blocklist-search-blocking/desir.ee/thieflord.dev"
     # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/in-common-blocklist/"
     # api_endpoint = "http://localhost/api/v1/blocklist-search-blocking/desir.ee/thieflord.dev"
-    api_endpoint = "http://localhost/api/v1/blocklist-search-blocked/thieflord.dev/desir.ee"
+    # api_endpoint = "http://localhost/api/v1/blocklist-search-blocked/thieflord.dev/desir.ee"
+    # api_endpoint = "http://staging.bsky.thieflord.dev/api/v1/lists/fun-facts"
+    api_endpoint = "http://localhost/api/v1/single-blocklist/thieflord.dev"
 
     # Define the headers with the API key
     headers = {'X-API-Key': f'{api_key}'}
@@ -34,6 +36,19 @@ def main():
         # Print the response headers
         for key, value in response.headers.items():
             logger.info(f"Header: {key} = {value}")
+
+        # Check if the 'Access-Control-Allow-Origin' header is present
+        if 'Access-Control-Allow-Origin' in response.headers:
+            # Print the allowed origin(s)
+            logger.info(f"Access-Control-Allow-Origin: {response.headers['Access-Control-Allow-Origin']}")
+
+            # Check if it allows the origin of your request
+            if response.headers['Access-Control-Allow-Origin'] == '*':
+                logger.info("CORS is configured to allow all origins.")
+            else:
+                logger.info("CORS is configured to allow specific origins.")
+        else:
+            logger.info("Access-Control-Allow-Origin header not found. CORS might not be configured.")
 
         # Check if the request was successful (status code 200)
         if response.status_code == 200:
