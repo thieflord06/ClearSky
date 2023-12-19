@@ -9,7 +9,7 @@ import requests
 from config_helper import logger, limiter
 import on_wire
 import re
-from cachetools import TTLCache
+from cachetools import TTLCache, Cache
 import json
 # ======================================================================================================================
 # ================================================ cache/global variables ==============================================
@@ -24,6 +24,18 @@ blocker_avatar_ids_cache = TTLCache(maxsize=100, ttl=86400)  # Every 24 hours
 
 blocked_24_avatar_ids_cache = TTLCache(maxsize=100, ttl=43200)  # Every 12 hours
 blocker_24_avatar_ids_cache = TTLCache(maxsize=100, ttl=43200)  # Every 12 hours
+
+memory_resolved_blocked_cache = Cache(maxsize=100)
+memory_resolved_blockers_cache = Cache(maxsize=100)
+
+memory_blocked_avatar_ids_cache = Cache(maxsize=100)
+memory_blocker_avatar_ids_cache = Cache(maxsize=100)
+
+memory_resolved_24_blocked_cache = Cache(maxsize=100)
+memory_resolved_24blockers_cache = Cache(maxsize=100)
+
+memory_blocked_24_avatar_ids_cache = Cache(maxsize=100)
+memory_blocker_24_avatar_ids_cache = Cache(maxsize=100)
 
 number_of_total_blocks_cache = TTLCache(maxsize=2, ttl=86400)
 number_of_unique_users_blocked_cache = TTLCache(maxsize=2, ttl=86400)
@@ -181,12 +193,24 @@ async def resolve_top_block_lists():
     blocked_avatar_ids = dict(list(sorted_resolved_blocked_avatar_dict.items())[:20])
     blocker_avatar_ids = dict(list(sorted_resolved_blockers_avatar_dict.items())[:20])
 
+    # Clear the caches before writing to them
+    memory_resolved_blocked_cache.clear()
+    memory_resolved_blockers_cache.clear()
+    memory_blocked_avatar_ids_cache.clear()
+    memory_blocker_avatar_ids_cache.clear()
+
     # Cache the resolved lists
     resolved_blocked_cache["resolved_blocked"] = top_resolved_blocked
     resolved_blockers_cache["resolved_blockers"] = top_resolved_blockers
 
+    memory_resolved_blocked_cache["resolved_blocked"] = top_resolved_blocked
+    memory_resolved_blockers_cache["resolved_blockers"] = top_resolved_blockers
+
     blocked_avatar_ids_cache["blocked_aid"] = blocked_avatar_ids
     blocker_avatar_ids_cache["blocker_aid"] = blocker_avatar_ids
+
+    memory_blocked_avatar_ids_cache["blocked_aid"] = blocked_avatar_ids
+    memory_blocker_avatar_ids_cache["blocker_aid"] = blocker_avatar_ids
 
     return top_resolved_blocked, top_resolved_blockers, blocked_avatar_ids, blocker_avatar_ids
 
@@ -261,12 +285,24 @@ async def resolve_top24_block_lists():
     blocked_avatar_ids = dict(list(sorted_resolved_blocked_avatar_dict.items())[:20])
     blocker_avatar_ids = dict(list(sorted_resolved_blockers_avatar_dict.items())[:20])
 
+    # Clear the caches before writing to them
+    memory_resolved_24_blocked_cache.clear()
+    memory_resolved_24blockers_cache.clear()
+    memory_blocked_24_avatar_ids_cache.clear()
+    memory_blocker_24_avatar_ids_cache.clear()
+
     # Cache the resolved lists
     resolved_24_blocked_cache["resolved_blocked"] = top_resolved_blocked
     resolved_24blockers_cache["resolved_blockers"] = top_resolved_blockers
 
+    memory_resolved_24_blocked_cache["resolved_blocked"] = top_resolved_blocked
+    memory_resolved_24blockers_cache["resolved_blockers"] = top_resolved_blockers
+
     blocked_24_avatar_ids_cache["blocked_aid"] = blocked_avatar_ids
     blocker_24_avatar_ids_cache["blocker_aid"] = blocker_avatar_ids
+
+    memory_blocked_24_avatar_ids_cache["blocked_aid"] = blocked_avatar_ids
+    memory_blocker_24_avatar_ids_cache["blocker_aid"] = blocker_avatar_ids
 
     return top_resolved_blocked, top_resolved_blockers, blocked_avatar_ids, blocker_avatar_ids
 

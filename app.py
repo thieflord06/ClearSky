@@ -822,39 +822,55 @@ async def fun_facts():
         return jsonify(data)
 
     if database_handler.blocklist_updater_status.is_set():
-        remaining_time = "not yet determined"
+        resolved_blocked = utils.memory_resolved_blocked_cache.get('resolved_blocked')
+        resolved_blockers = utils.memory_resolved_blockers_cache.get('resolved_blockers')
 
-        logger.info("Updating top blocks.")
+        blocked_aid = utils.memory_blocked_avatar_ids_cache.get('blocked_aid')
+        blocker_aid = utils.memory_blocker_avatar_ids_cache.get('blocker_aid')
 
-        process_time = database_handler.top_blocks_process_time
+        data_lists = {"blocked": resolved_blocked,
+                      "blockers": resolved_blockers,
+                      "blocked_aid": blocked_aid,
+                      "blockers_aid": blocker_aid
+                      }
 
-        if database_handler.top_blocks_start_time is None:
-            start_time = fun_start_time
-        else:
-            start_time = database_handler.top_blocks_start_time
+        data = {"data": data_lists}
 
-        if process_time is None:
+        if resolved_blocked is None or resolved_blockers is None or blocker_aid is None or blocker_aid is None:
+
             remaining_time = "not yet determined"
-        else:
-            time_elapsed = datetime.now() - start_time
 
-            if time_elapsed < process_time:
-                # Calculate hours and minutes left
-                time_difference = process_time - time_elapsed
-                seconds_left = time_difference.total_seconds()
-                minutes_left = seconds_left / 60
-                # hours = minutes // 60
-                remaining_seconds = seconds_left % 60
+            logger.info("Updating top blocks.")
 
-                if minutes_left > 1:
-                    remaining_time = f"{round(minutes_left)} mins {round(remaining_seconds)} seconds"
-                elif seconds_left > 0:
-                    remaining_time = f"{round(seconds_left)} seconds"
+            process_time = database_handler.top_blocks_process_time
+
+            if database_handler.top_blocks_start_time is None:
+                start_time = fun_start_time
             else:
-                remaining_time = "just finished"
+                start_time = database_handler.top_blocks_start_time
 
-        timing = {"timeLeft": remaining_time}
-        data = {"data": timing}
+            if process_time is None:
+                remaining_time = "not yet determined"
+            else:
+                time_elapsed = datetime.now() - start_time
+
+                if time_elapsed < process_time:
+                    # Calculate hours and minutes left
+                    time_difference = process_time - time_elapsed
+                    seconds_left = time_difference.total_seconds()
+                    minutes_left = seconds_left / 60
+                    # hours = minutes // 60
+                    remaining_seconds = seconds_left % 60
+
+                    if minutes_left > 1:
+                        remaining_time = f"{round(minutes_left)} mins {round(remaining_seconds)} seconds"
+                    elif seconds_left > 0:
+                        remaining_time = f"{round(seconds_left)} seconds"
+                else:
+                    remaining_time = "just finished"
+
+            timing = {"timeLeft": remaining_time}
+            data = {"data": timing}
 
         logger.info(f">> Fun facts result returned: {session_ip} - {api_key}")
 
@@ -868,41 +884,58 @@ async def fun_facts():
 
     # Check if both lists are empty
     if resolved_blocked is None or resolved_blockers is None or blocker_aid is None or blocker_aid is None:
-        remaining_time = "not yet determined"
-
-        logger.info("Getting new cache.")
-
-        process_time = database_handler.top_blocks_process_time
-
-        if database_handler.top_blocks_start_time is None:
-            start_time = datetime.now()
-        else:
-            start_time = datetime.now()
-
-        if process_time is None:
-            remaining_time = "not yet determined"
-        else:
-            time_elapsed = datetime.now() - start_time
-
-            if time_elapsed < process_time:
-                # Calculate hours and minutes left
-                time_difference = process_time - time_elapsed
-                seconds_left = time_difference.total_seconds()
-                minutes_left = seconds_left / 60
-                # hours = minutes // 60
-                remaining_seconds = seconds_left % 60
-
-                if minutes_left > 1:
-                    remaining_time = f"{round(minutes_left)} mins {round(remaining_seconds)} seconds"
-                elif seconds_left > 0:
-                    remaining_time = f"{round(seconds_left)} seconds"
-            else:
-                remaining_time = "just finished"
-
         asyncio.create_task(database_handler.blocklists_updater())
 
-        timing = {"timeLeft": remaining_time}
-        data = {"data": timing}
+        resolved_blocked = utils.memory_resolved_blocked_cache.get('resolved_blocked')
+        resolved_blockers = utils.memory_resolved_blockers_cache.get('resolved_blockers')
+
+        blocked_aid = utils.memory_blocked_avatar_ids_cache.get('blocked_aid')
+        blocker_aid = utils.memory_blocker_avatar_ids_cache.get('blocker_aid')
+
+        data_lists = {"blocked": resolved_blocked,
+                      "blockers": resolved_blockers,
+                      "blocked_aid": blocked_aid,
+                      "blockers_aid": blocker_aid
+                      }
+
+        data = {"data": data_lists}
+
+        if resolved_blocked is None or resolved_blockers is None or blocker_aid is None or blocker_aid is None:
+            remaining_time = "not yet determined"
+
+            logger.info("Getting new cache.")
+
+            process_time = database_handler.top_blocks_process_time
+
+            if database_handler.top_blocks_start_time is None:
+                start_time = datetime.now()
+            else:
+                start_time = datetime.now()
+
+            if process_time is None:
+                remaining_time = "not yet determined"
+            else:
+                time_elapsed = datetime.now() - start_time
+
+                if time_elapsed < process_time:
+                    # Calculate hours and minutes left
+                    time_difference = process_time - time_elapsed
+                    seconds_left = time_difference.total_seconds()
+                    minutes_left = seconds_left / 60
+                    # hours = minutes // 60
+                    remaining_seconds = seconds_left % 60
+
+                    if minutes_left > 1:
+                        remaining_time = f"{round(minutes_left)} mins {round(remaining_seconds)} seconds"
+                    elif seconds_left > 0:
+                        remaining_time = f"{round(seconds_left)} seconds"
+                else:
+                    remaining_time = "just finished"
+
+            # asyncio.create_task(database_handler.blocklists_updater())
+
+            timing = {"timeLeft": remaining_time}
+            data = {"data": timing}
 
         logger.info(f">> Fun facts result returned: {session_ip} - {api_key}")
 
@@ -947,39 +980,54 @@ async def funer_facts():
         return jsonify(data)
 
     if database_handler.blocklist_24_updater_status.is_set():
-        remaining_time = "not yet determined"
+        resolved_blocked_24 = utils.memory_resolved_24_blocked_cache.get('resolved_blocked')
+        resolved_blockers_24 = utils.memory_resolved_24blockers_cache.get('resolved_blockers')
 
-        logger.info("Updating top 24 blocks.")
+        blocked_aid_24 = utils.memory_blocked_24_avatar_ids_cache.get('blocked_aid')
+        blocker_aid_24 = utils.memory_blocker_24_avatar_ids_cache.get('blocker_aid')
 
-        process_time = database_handler.top_24_blocks_process_time
+        data_lists = {"blocked24": resolved_blocked_24,
+                      "blockers24": resolved_blockers_24,
+                      "blocked_aid": blocked_aid_24,
+                      "blockers_aid": blocker_aid_24
+                      }
 
-        if database_handler.top_24_blocks_start_time is None:
-            start_time = funer_start_time
-        else:
-            start_time = database_handler.top_24_blocks_start_time
+        data = {"data": data_lists}
 
-        if process_time is None:
+        if resolved_blocked_24 is None or resolved_blockers_24 is None or blocker_aid_24 is None or blocker_aid_24 is None:
             remaining_time = "not yet determined"
-        else:
-            time_elapsed = datetime.now() - start_time
 
-            if time_elapsed < process_time:
-                # Calculate hours and minutes left
-                time_difference = process_time - time_elapsed
-                seconds_left = time_difference.total_seconds()
-                minutes_left = seconds_left / 60
-                # hours = minutes // 60
-                remaining_seconds = seconds_left % 60
+            logger.info("Updating top 24 blocks.")
 
-                if minutes_left > 1:
-                    remaining_time = f"{round(minutes_left)} mins {round(remaining_seconds)} seconds"
-                elif seconds_left > 0:
-                    remaining_time = f"{round(seconds_left)} seconds"
+            process_time = database_handler.top_24_blocks_process_time
+
+            if database_handler.top_24_blocks_start_time is None:
+                start_time = funer_start_time
             else:
-                remaining_time = "just finished"
+                start_time = database_handler.top_24_blocks_start_time
 
-        timing = {"timeLeft": remaining_time}
-        data = {"data": timing}
+            if process_time is None:
+                remaining_time = "not yet determined"
+            else:
+                time_elapsed = datetime.now() - start_time
+
+                if time_elapsed < process_time:
+                    # Calculate hours and minutes left
+                    time_difference = process_time - time_elapsed
+                    seconds_left = time_difference.total_seconds()
+                    minutes_left = seconds_left / 60
+                    # hours = minutes // 60
+                    remaining_seconds = seconds_left % 60
+
+                    if minutes_left > 1:
+                        remaining_time = f"{round(minutes_left)} mins {round(remaining_seconds)} seconds"
+                    elif seconds_left > 0:
+                        remaining_time = f"{round(seconds_left)} seconds"
+                else:
+                    remaining_time = "just finished"
+
+            timing = {"timeLeft": remaining_time}
+            data = {"data": timing}
 
         logger.info(f">> Funer facts result returned: {session_ip} - {api_key}")
 
@@ -993,41 +1041,58 @@ async def funer_facts():
 
     # Check if both lists are empty
     if resolved_blocked_24 is None or resolved_blockers_24 is None or blocker_aid_24 is None or blocker_aid_24 is None:
-        remaining_time = "not yet determined"
-
-        logger.info("Getting new cache.")
-
-        process_time = database_handler.top_24_blocks_process_time
-
-        if process_time is None:
-            funer_start_time = datetime.now()
-        else:
-            funer_start_time = datetime.now()
-
-        if process_time is None:
-            remaining_time = "not yet determined"
-        else:
-            time_elapsed = datetime.now() - funer_start_time
-
-            if time_elapsed < process_time:
-                # Calculate hours and minutes left
-                time_difference = process_time - time_elapsed
-                seconds_left = time_difference.total_seconds()
-                minutes_left = seconds_left / 60
-                # hours = minutes // 60
-                remaining_seconds = seconds_left % 60
-
-                if minutes_left > 1:
-                    remaining_time = f"{round(minutes_left)} mins {round(remaining_seconds)} seconds"
-                elif seconds_left > 0:
-                    remaining_time = f"{round(seconds_left)} seconds"
-            else:
-                remaining_time = "just finished"
-
         asyncio.create_task(database_handler.top_24blocklists_updater())
 
-        timing = {"timeLeft": remaining_time}
-        data = {"data": timing}
+        resolved_blocked_24 = utils.memory_resolved_24_blocked_cache.get('resolved_blocked')
+        resolved_blockers_24 = utils.memory_resolved_24blockers_cache.get('resolved_blockers')
+
+        blocked_aid_24 = utils.memory_blocked_24_avatar_ids_cache.get('blocked_aid')
+        blocker_aid_24 = utils.memory_blocker_24_avatar_ids_cache.get('blocker_aid')
+
+        data_lists = {"blocked24": resolved_blocked_24,
+                      "blockers24": resolved_blockers_24,
+                      "blocked_aid": blocked_aid_24,
+                      "blockers_aid": blocker_aid_24
+                      }
+
+        data = {"data": data_lists}
+
+        if resolved_blocked_24 is None or resolved_blockers_24 is None or blocker_aid_24 is None or blocker_aid_24 is None:
+            remaining_time = "not yet determined"
+
+            logger.info("Getting new cache.")
+
+            process_time = database_handler.top_24_blocks_process_time
+
+            if process_time is None:
+                funer_start_time = datetime.now()
+            else:
+                funer_start_time = datetime.now()
+
+            if process_time is None:
+                remaining_time = "not yet determined"
+            else:
+                time_elapsed = datetime.now() - funer_start_time
+
+                if time_elapsed < process_time:
+                    # Calculate hours and minutes left
+                    time_difference = process_time - time_elapsed
+                    seconds_left = time_difference.total_seconds()
+                    minutes_left = seconds_left / 60
+                    # hours = minutes // 60
+                    remaining_seconds = seconds_left % 60
+
+                    if minutes_left > 1:
+                        remaining_time = f"{round(minutes_left)} mins {round(remaining_seconds)} seconds"
+                    elif seconds_left > 0:
+                        remaining_time = f"{round(seconds_left)} seconds"
+                else:
+                    remaining_time = "just finished"
+
+            # asyncio.create_task(database_handler.top_24blocklists_updater())
+
+            timing = {"timeLeft": remaining_time}
+            data = {"data": timing}
 
         logger.info(f">> Funer facts result returned: {session_ip} - {api_key}")
 
