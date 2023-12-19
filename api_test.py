@@ -24,12 +24,18 @@ def main():
     # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/in-common-blocklist/"
     # api_endpoint = "http://localhost/api/v1/blocklist-search-blocking/desir.ee/thieflord.dev"
     # api_endpoint = "http://localhost/api/v1/blocklist-search-blocked/thieflord.dev/desir.ee"
-    # api_endpoint = "http://staging.bsky.thieflord.dev/api/v1/lists/fun-facts"
-    api_endpoint = "http://localhost/api/v1/single-blocklist/thieflord.dev"
+    api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/total-users"
+    # api_endpoint = "http://localhost/api/v1/single-blocklist/thieflord.dev"
 
     # Define the headers with the API key
     headers = {'X-API-Key': f'{api_key}'}
     try:
+        # Send an OPTIONS request to the API endpoint with the headers
+        options_response = requests.options(api_endpoint, headers=headers)
+
+        for key, value in options_response.headers.items():
+            logger.info(f"Header: {key} = {value}")
+
         # Send a GET request to the API endpoint with the headers
         response = requests.get(api_endpoint, headers=headers)
 
