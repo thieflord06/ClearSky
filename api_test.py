@@ -26,7 +26,7 @@ def main():
     # api_endpoint = "http://localhost/api/v1/blocklist-search-blocked/thieflord.dev/desir.ee"
     # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/total-users"
     # api_endpoint = "http://localhost/api/v1/single-blocklist/thieflord.dev"
-    api_endpoint = "http://localhost/api/v1/lists/funer-facts"
+    api_endpoint = "http://localhost/api/v1/at-uri/at://did:plc:smcanwhzsj5dqp4yew7y6ybx/app.bsky.graph.listblock/3kf2kfcic5od2u"
 
     # Define the headers with the API key
     headers = {'X-API-Key': f'{api_key}'}
