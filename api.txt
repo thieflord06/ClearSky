@@ -18,6 +18,15 @@ Implemented:
                     {"data":{"blocklist":[],"count":"0","pages":0},"identity":"thieflord.dev","status":true}
                 valid deactivated user  response:
                     {"data":{"blocklist":null,"count":0},"identity":"boykisser.expert","status":false}
+            /api/v1/at-uri/<uri>
+                Responses:
+                {"data": url_data}
+                invalid response:
+                    {"data":{"error":"Malformed parameter"}}
+                valid response:
+                     {"data":{"url":"https://bsky.app/profile/did:plc:tulukgm6whdikfqxjy5payxr/lists/3kdfttjj7go22"}}
+                valid null response:
+                    {"data":{"error":"Malformed parameter"}}
 
             /api/v1/single-blocklist/<handle/did>
             /api/v1/single-blocklist/<handle/did>/<int:page>

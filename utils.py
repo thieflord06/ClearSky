@@ -1182,3 +1182,16 @@ async def get_all_did_records(last_cursor=None):
         else:
             logger.warning("DIDs up to date. Exiting.")
             break
+
+
+async def list_uri_to_url(uri):
+    pattern = r'did:plc:[a-zA-Z0-9]+'
+    pattern2 = r'/([^/]+)$'
+    list_base_url = "https://bsky.app/profile"
+    match = re.search(pattern, uri)
+    match2 = re.search(pattern2, uri)
+    did = match.group(0)
+    commit_rev = match2.group(1)
+    list_full_url = f"""{list_base_url}/{did}/lists/{commit_rev}"""
+
+    return list_full_url

@@ -311,6 +311,50 @@ async def get_blocklist(ident, limit=100, offset=0):
         return None, None
 
 
+async def get_listitem_url(uri):
+    try:
+        async with connection_pools["read"].acquire() as connection:
+            async with connection.transaction():
+                query = "SELECT list_uri FROM mutelist_users WHERE listitem_uri = $1"
+                list_uri = await connection.fetchval(query, uri)
+
+                url = await utils.list_uri_to_url(list_uri)
+
+                return url
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+    except AttributeError:
+        logger.error(f"db connection issue.")
+    except Exception as e:
+        logger.error(f"Error retrieving URL {uri}: {e} {type(e)}")
+
+        return None
+
+
+async def get_listblock_url(uri):
+    try:
+        async with connection_pools["read"].acquire() as connection:
+            async with connection.transaction():
+                query = "SELECT list_uri FROM subscribe_blocklists WHERE uri = $1"
+                list_uri = await connection.fetchval(query, uri)
+
+                url = await utils.list_uri_to_url(list_uri)
+
+                return url
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+    except AttributeError:
+        logger.error(f"db connection issue.")
+    except Exception as e:
+        logger.error(f"Error retrieving URL {uri}: {e} {type(e)}")
+
+        return None
+
+
 async def get_dids_without_handles():
     try:
         async with connection_pools["write"].acquire() as connection:

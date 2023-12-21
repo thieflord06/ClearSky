@@ -62,6 +62,35 @@ async def sanitization(identifier):
     return identifier
 
 
+async def uri_sanitization(uri):
+    if uri:
+        if "at://" in uri:
+            if "app.bsky.graph.listitem" in uri:
+                url = await database_handler.get_listitem_url(uri)
+
+                return url
+            elif "app.bsky.graph.listblock" in uri:
+                url = await database_handler.get_listblock_url(uri)
+
+                return url
+            elif "app.bsky.graph.list" in uri:
+                url = await utils.list_uri_to_url(uri)
+
+                return url
+            else:
+                url = None
+
+                return url
+        else:
+            url = None
+
+            return url
+    else:
+        url = None
+
+        return url
+
+
 async def pre_process_identifier(identifier):
     did_identifier = None
     handle_identifier = None
@@ -522,6 +551,30 @@ async def get_in_common_blocked(client_identifier):
         data = {"data": block_data}
 
     logger.info(f">> {session_ip} - {api_key} - in-common blocked result returned: {identifier}")
+
+    return jsonify(data)
+
+
+@app.route('/api/v1/at-uri/<path:uri>', methods=['GET'])
+@api_key_required
+@rate_limit(100, timedelta(seconds=1))
+async def convert_uri_to_url(uri):
+    session_ip = await get_ip()
+    api_key = request.headers.get('X-API-Key')
+
+    url = await uri_sanitization(uri)
+
+    logger.info(f"<< {session_ip} - {api_key} - get at-uri conversion request: {uri}")
+
+    if url:
+        url_data = {"url": url}
+        data = {"data": url_data}
+    else:
+        result = "Malformed parameter"
+        url_data = {"error": result}
+        data = {"data": url_data}
+
+    logger.info(f">> {session_ip} - {api_key} - at-uri conversion result returned: {uri}")
 
     return jsonify(data)
 
