@@ -24,8 +24,9 @@ def main():
     # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/in-common-blocklist/"
     # api_endpoint = "http://localhost/api/v1/blocklist-search-blocking/desir.ee/thieflord.dev"
     # api_endpoint = "http://localhost/api/v1/blocklist-search-blocked/thieflord.dev/desir.ee"
-    api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/total-users"
+    # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/total-users"
     # api_endpoint = "http://localhost/api/v1/single-blocklist/thieflord.dev"
+    api_endpoint = "http://localhost/api/v1/lists/funer-facts"
 
     # Define the headers with the API key
     headers = {'X-API-Key': f'{api_key}'}
