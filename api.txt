@@ -129,7 +129,6 @@ Implemented:
                   "averageNumberOfBlocked": average_number_of_blocked_round}}
                 valid response:
                     {"data":{"averageNumberOfBlocked":6.05,"averageNumberOfBlocks":"11.01","numberBlock1":"108,044","numberBlocked1":"350,039","numberBlocked101and1000":"2,910","numberBlocked2and100":"143,243","numberBlockedGreaterThan1000":"359","numberBlocking101and1000":"4,704","numberBlocking2and100":"159,972","numberBlockingGreaterThan1000":"16","numberOfTotalBlocks":"3,007,014","numberOfUniqueUsersBlocked":"496,551","numberOfUniqueUsersBlocking":"272,736","percentNumberBlocked1":70.49,"percentNumberBlocked101and1000":0.59,"percentNumberBlocked2and100":28.85,"percentNumberBlockedGreaterThan1000":0.07,"percentNumberBlocking1":39.61,"percentNumberBlocking101and1000":1.72,"percentNumberBlocking2and100":58.65,"percentNumberBlockingGreaterThan1000":0.01,"percentUsersBlocked":22.51,"percentUsersBlocking":12.36,"totalUsers":"2,205,748"}}
-
             /api/v1/get-list/<handle/did>
                 Responses:
                     {"data":{"identifier": identifier,
@@ -157,6 +156,23 @@ Implemented:
                         {"data":null}
                     Valid true Response:
                         {"data":{"blocked_date":"Mon, 23 Oct 2023 22:17:42 GMT","handle":"desir.ee","status":true}}
+            /api/v1/get-moderation-list/<string:name> (based on list name and/or description)
+                Response:
+                    Valid false response:
+                        {"data":{"lists":null,"pages":0},"input":"gaminsdfvf"}
+                    Valid true response:
+                        {"data":{"lists":[{"created_date":"Fri, 08 Dec 2023 13:36:29 GMT","description":"","handle":"besseggen.bsky.social","name":"Gaming","status":true,"url":"https://bsky.app/
+                        profile/did:plc:tsmdt67vgvjuibcnqp7yyfwy/lists/3kfzypzgtol2c"},{"created_date":"Sun, 12 Nov 2023 22:18:27 GMT","description":"","handle":"leahbeex.bsky.social","name":"Gaming","status":true,"url":"https://bsky.app/profile/did:pl
+                        c:meognmv346c3xep4egx3x5ij/lists/3kdzjrgfjol2o"},{"created_date":"Sat, 30 Dec 2023 13:09:11 GMT","description":"","handle":"urbifactory.bsky.social","name":"JV / Gaming","status":true,"url":"https://bsky.app/profile/did:plc:asy6
+                        qxt3tmmozkpttrfm5f6l/lists/3khrbj3gtw72c"},{"created_date":"Thu, 16 Nov 2023 19:07:24 GMT","description":"For those with a knack for art (video games, anime, OCs mainly) *may contain NSFW posts*","handle":"chipscst.bsky.social",
+                        "name":"Digital artists [anime/gaming]","status":true,"url":"https://bsky.app/profile/did:plc:c3t7idrslwzwzzyhcrsfg2i4/lists/3khu5wnmnp52a"},{"created_date":"Sat, 23 Dec 2023 08:49:42 GMT","description":"","handle":"jforjamtasti
+                        c.bsky.social","name":"gaming","status":true,"url":"https://bsky.app/profile/did:plc:gwzkuglct34arsjvtctgyu6i/lists/3kh77ozmxzg2t"},{"created_date":"Mon, 01 Jan 2024 11:25:25 GMT","description":"","handle":"jaypee7.bsky.social",
+                        "name":"Gaming","status":true,"url":"https://bsky.app/profile/did:plc:sg56q43qncc72yudob7426xu/lists/3khw4lqjxwc2o"},{"created_date":"Tue, 02 Jan 2024 01:33:01 GMT","description":"","handle":"biginva.bsky.social","name":"Board G
+                        aming ","status":true,"url":"https://bsky.app/profile/did:plc:ovjol7pzcu4wkiixhfjni2vj/lists/3khxlxewxv62p"},{"created_date":"Tue, 02 Jan 2024 08:28:23 GMT","description":"","handle":"stefkrie.bsky.social","name":"Gaming","statu
+                        s":true,"url":"https://bsky.app/profile/did:plc:w6pgr4p3t27orkp6q2ccely2/lists/3khyd63ptko22"},{"created_date":"Sat, 18 Nov 2023 01:18:14 GMT","description":"","handle":"wrexverdi.bsky.social","name":"Gaming","status":true,"url"
+                        :"https://bsky.app/profile/did:plc:p6y2l2ge3xnmu7ucqij7db6l/lists/3kegg5jwcfl2p"},{"created_date":"Wed, 23 Aug 2023 17:15:09 GMT","description":"","handle":"zachtuttle.bsky.social","name":"Gaming","status":true,"url":"https://bs
+                        ky.app/profile/did:plc:376i725tutknjjbr6sgphgr3/lists/3khzlfqaayf2n"},{"created_date":"Tue, 02 Jan 2024 18:28:25 GMT","description":"","handle":"superaven.bsky.social","name":"Gaming","status":true,"url":"https://bsky.app/profil
+                        e/did:plc:c2zga23u5d7y75q25ffj2w7k/lists/3khzepenlly2d"},{"created_date":"Wed, 20 Sep 2023 12:19:54 GMT","description":null,"handle":"operatorrazz.com","name":"Gaming News","status":true,"url":"https://bsky.app/profile/did:plc:5oxnanmrdepjaw5idnt3ve74/lists/3k7t7mczcuv24"}],"pages":2},"input":"gaming"}
     component:
         /api/v1/base/autocomplete/<handle(partial/complete)>
             Responses:
