@@ -1,7 +1,7 @@
 Implemented:
     User_data:
         Ready to test:
-            /api/v1/blocklist/<handle/did>
+            /api/v1/blocklist/<handle/did> (limit 100/page)
             /api/v1/blocklist/<handle/did>/<int:page>
                 Responses:
                 {"identity": identifier,
@@ -28,7 +28,7 @@ Implemented:
                 valid null response:
                     {"data":{"error":"Malformed parameter"}}
 
-            /api/v1/single-blocklist/<handle/did>
+            /api/v1/single-blocklist/<handle/did> (limit 100/page)
             /api/v1/single-blocklist/<handle/did>/<int:page>
                 Responses:
                 {"identity": identifier,
@@ -156,7 +156,7 @@ Implemented:
                         {"data":null}
                     Valid true Response:
                         {"data":{"blocked_date":"Mon, 23 Oct 2023 22:17:42 GMT","handle":"desir.ee","status":true}}
-            /api/v1/get-moderation-list/<string:name> (based on list name and/or description)
+            /api/v1/get-moderation-list/<string:name> (based on list name and/or description) (limit 100/page)
                 Response:
                     Valid false response:
                         {"data":{"lists":null,"pages":0},"input":"gaminsdfvf"}
