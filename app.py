@@ -293,9 +293,9 @@ async def first_run():
             tables = await database_handler.tables_exists()
 
             if tables:
-                await database_handler.blocklists_updater()
-                await database_handler.top_24blocklists_updater()
-                await utils.update_block_statistics()
+                # await database_handler.blocklists_updater()
+                # await database_handler.top_24blocklists_updater()
+                # await utils.update_block_statistics()
 
                 break
             else:
@@ -765,8 +765,8 @@ async def get_list_info(client_identifier):
     return jsonify(data)
 
 
-@app.route('/api/v1/get-moderation-list/<string:name>', defaults={'page': 1}, methods=['GET'])
-@app.route('/api/v1/get-moderation-list/<string:name>/<int:page>', methods=['GET'])
+@app.route('/api/v1/get-moderation-list/<string:input_name>', defaults={'page': 1}, methods=['GET'])
+@app.route('/api/v1/get-moderation-list/<string:input_name>/<int:page>', methods=['GET'])
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
 async def get_moderation_lists(input_name, page):

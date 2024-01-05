@@ -372,9 +372,9 @@ async def get_moderation_list(name, limit=100, offset=0):
     except AttributeError:
         logger.error(f"db connection issue.")
     except Exception as e:
-        logger.error(f"Error retrieving URL {name}: {e} {type(e)}")
+        logger.error(f"Error retrieving results for {name}: {e} {type(e)}")
 
-        return None
+        return None, 0
 
     count = name_count + description_count
 
@@ -387,27 +387,30 @@ async def get_moderation_list(name, limit=100, offset=0):
 
     lists = []
 
-    for record in name_mod_lists:
-        data = {
-            "url": record['url'],
-            "handle": record['handle'],
-            "status": record['status'],
-            "name": record['name'],
-            "description": record['description'],
-            "created_date": record['created_date']
-        }
-        lists.append(data)
+    if name_mod_lists or description_mod_lists:
+        for record in name_mod_lists:
+            data = {
+                "url": record['url'],
+                "handle": record['handle'],
+                "status": record['status'],
+                "name": record['name'],
+                "description": record['description'],
+                "created_date": record['created_date']
+            }
+            lists.append(data)
 
-    for record in description_mod_lists:
-        data = {
-            "url": record['url'],
-            "handle": record['handle'],
-            "status": record['status'],
-            "name": record['name'],
-            "description": record['description'],
-            "created_date": record['created_date']
-        }
-        lists.append(data)
+        for record in description_mod_lists:
+            data = {
+                "url": record['url'],
+                "handle": record['handle'],
+                "status": record['status'],
+                "name": record['name'],
+                "description": record['description'],
+                "created_date": record['created_date']
+            }
+            lists.append(data)
+    else:
+        lists = None
 
     return lists, pages
 
