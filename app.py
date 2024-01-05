@@ -97,7 +97,6 @@ async def pre_process_identifier(identifier):
 
     if not identifier:  # If form is submitted without anything in the identifier return intentional error
 
-        # return await render_template('intentional_error.html')
         return None, None
 
     # Check if did or handle exists before processing
@@ -138,7 +137,6 @@ async def preprocess_status(identifier):
     except AttributeError:
         logger.error("db connection issue.")
 
-        # return await render_template('issue.html')
         return None
 
     if persona is True and status is True:
@@ -147,17 +145,14 @@ async def preprocess_status(identifier):
     elif persona is True and status is False:
         logger.info(f"Account: {identifier} deleted")
 
-        # return await render_template('account_deleted.html', account=identifier)
         return False
     elif status is False and persona is False:
         logger.info(f"{identifier}: does not exist.")
 
-        # return await render_template('error.html')
         return None
     else:
         logger.info(f"Error page loaded for resolution failure using: {identifier}")
 
-        # return await render_template('error.html', content_type='text/html')
         return False
 
 
@@ -340,8 +335,28 @@ async def index():
 
 
 @app.route('/images/favicon.png', methods=['GET'])
-async def favicon():
+async def favicon1():
     return await quart.send_from_directory('images', 'favicon.png')
+
+
+@app.route('/images/apple-touch-icon.png', methods=['GET'])
+async def favicon2():
+    return await quart.send_from_directory('images', 'apple-touch-icon.png')
+
+
+@app.route('/images/apple-touch-icon-120x120.png', methods=['GET'])
+async def favicon3():
+    return await quart.send_from_directory('images', 'apple-touch-icon-120x120.png')
+
+
+@app.route('/images/apple-touch-icon-152x152.png', methods=['GET'])
+async def favicon4():
+    return await quart.send_from_directory('images', 'apple-touch-icon-152x152.png')
+
+
+@app.route('/images/CleardayLarge.png', methods=['GET'])
+async def logo():
+    return await quart.send_from_directory('images', 'CleardayLarge.png')
 
 
 @app.route('/frequently_asked', methods=['GET'])
