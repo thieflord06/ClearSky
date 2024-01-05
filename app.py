@@ -293,9 +293,9 @@ async def first_run():
             tables = await database_handler.tables_exists()
 
             if tables:
-                # await database_handler.blocklists_updater()
-                # await database_handler.top_24blocklists_updater()
-                # await utils.update_block_statistics()
+                await database_handler.blocklists_updater()
+                await database_handler.top_24blocklists_updater()
+                await utils.update_block_statistics()
 
                 break
             else:
