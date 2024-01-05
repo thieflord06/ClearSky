@@ -27,7 +27,7 @@ def main():
     # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/total-users"
     # api_endpoint = "http://localhost/api/v1/single-blocklist/thieflord.dev"
     # api_endpoint = "http://localhost/api/v1/at-uri/at://did:plc:smcanwhzsj5dqp4yew7y6ybx/app.bsky.graph.listblock/3kf2kfcic5od2u"
-    api_endpoint = "http://localhost/api/v1/get-moderation-list/gaming/2"
+    api_endpoint = "http://localhost/api/v1/get-moderation-list/gaminsdfvf"
 
     # Define the headers with the API key
     headers = {'X-API-Key': f'{api_key}'}
