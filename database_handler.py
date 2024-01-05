@@ -13,6 +13,7 @@ from datetime import datetime
 from collections import defaultdict
 import pytz
 import on_wire
+import math
 
 # ======================================================================================================================
 # ===================================================  global variables ================================================
@@ -331,6 +332,84 @@ async def get_listitem_url(uri):
         logger.error(f"Error retrieving URL {uri}: {e} {type(e)}")
 
         return None
+
+
+async def get_moderation_list(name, limit=100, offset=0):
+    try:
+        async with connection_pools["read"].acquire() as connection:
+            async with connection.transaction():
+                search_string = f'%{name}%'
+
+                name_query = """SELECT ml.url, u.handle, u.status, ml.name, ml.description, ml.created_date
+                FROM mutelists AS ml 
+                INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle 
+                WHERE ml.name ILIKE $1
+                LIMIT $2
+                OFFSET $3"""
+
+                name_mod_lists = await connection.fetch(name_query, search_string, limit, offset)
+
+                description_query = """SELECT ml.url, u.handle, u.status, ml.name, ml.description, ml.created_date
+                FROM mutelists AS ml
+                INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle
+                WHERE ml.description ILIKE $1
+                LIMIT $2
+                OFFSET $3"""
+
+                description_mod_lists = await connection.fetch(description_query, search_string, limit, offset)
+
+                name_count_query = """SELECT COUNT(*) FROM mutelists WHERE name ILIKE $1"""
+
+                description_count_query = """SELECT COUNT(*) FROM mutelists WHERE description ILIKE $1"""
+
+                name_count = await connection.fetchval(name_count_query, search_string)
+
+                description_count = await connection.fetchval(description_count_query, search_string)
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+    except AttributeError:
+        logger.error(f"db connection issue.")
+    except Exception as e:
+        logger.error(f"Error retrieving URL {name}: {e} {type(e)}")
+
+        return None
+
+    count = name_count + description_count
+
+    if count > 0:
+        pages = count / 100
+
+        pages = math.ceil(pages)
+    else:
+        pages = 0
+
+    lists = []
+
+    for record in name_mod_lists:
+        data = {
+            "url": record['url'],
+            "handle": record['handle'],
+            "status": record['status'],
+            "name": record['name'],
+            "description": record['description'],
+            "created_date": record['created_date']
+        }
+        lists.append(data)
+
+    for record in description_mod_lists:
+        data = {
+            "url": record['url'],
+            "handle": record['handle'],
+            "status": record['status'],
+            "name": record['name'],
+            "description": record['description'],
+            "created_date": record['created_date']
+        }
+        lists.append(data)
+
+    return lists, pages
 
 
 async def get_listblock_url(uri):

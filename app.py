@@ -765,6 +765,40 @@ async def get_list_info(client_identifier):
     return jsonify(data)
 
 
+@app.route('/api/v1/get-moderation-list/<string:name>', defaults={'page': 1}, methods=['GET'])
+@app.route('/api/v1/get-moderation-list/<string:name>/<int:page>', methods=['GET'])
+@api_key_required
+@rate_limit(100, timedelta(seconds=1))
+async def get_moderation_lists(input_name, page):
+    session_ip = await get_ip()
+    api_key = request.headers.get('X-API-Key')
+
+    logger.info(f"<< {session_ip} - {api_key} - get moderation list request: {input_name}")
+
+    if input_name:
+        items_per_page = 100
+        offset = (page - 1) * items_per_page
+
+        name = input_name.lower()
+
+        list_data, pages = await database_handler.get_moderation_list(name, limit=items_per_page, offset=offset)
+
+        sub_data = {"lists": list_data,
+                    "pages": pages}
+
+        data = {"input": name,
+                "data": sub_data}
+    else:
+        input_name = "Missing parameter"
+        result = "Missing parameter"
+        block_data = {"error": result}
+        data = {"data": block_data}
+
+    logger.info(f">> {session_ip} - {api_key} - mute/block list result returned: {input_name}")
+
+    return jsonify(data)
+
+
 @app.route('/api/v1/blocklist-search-blocked/<client_identifier>/<search_identifier>', methods=['GET'])
 @api_key_required
 @rate_limit(100, timedelta(seconds=1))
