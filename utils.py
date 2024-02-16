@@ -738,6 +738,7 @@ async def get_handle_history(identifier):
 
             # Sort the list by the date in created_at
             also_known_as_list.sort(key=lambda x: x[1])
+            also_known_as_list.reverse()
 
             return also_known_as_list
         elif response.status_code == 429:
