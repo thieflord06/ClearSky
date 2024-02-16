@@ -728,7 +728,7 @@ async def get_handle_history(identifier):
 
                 if isinstance(also_known_as, str):  # Handle single string case
                     if "at://" not in also_known_as[0]:
-                        cleaned_also_known_as = [also_known_as, created_at]
+                        cleaned_also_known_as = [(also_known_as, created_at)]
                     else:
                         cleaned_also_known_as = [(item.replace("at://", ""), created_at) for item in also_known_as]
                 else:
