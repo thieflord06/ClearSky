@@ -725,7 +725,10 @@ async def get_handle_history(identifier):
                     also_known_as = record["operation"]["handle"]
                 created_at_value = record["createdAt"]
                 created_at = datetime.fromisoformat(created_at_value)
-                cleaned_also_known_as = [also_known_as] if "at://" not in also_known_as else [(item.replace("at://", ""), created_at) for item in also_known_as]
+                if "at://" not in also_known_as[0]:
+                    cleaned_also_known_as = [also_known_as, created_at]
+                else:
+                    cleaned_also_known_as = [(item.replace("at://", ""), created_at) for item in also_known_as]
                 also_known_as_list.extend(cleaned_also_known_as)
 
             # Remove adjacent duplicates while preserving non-adjacent duplicates
