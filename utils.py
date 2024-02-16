@@ -719,7 +719,10 @@ async def get_handle_history(identifier):
             response_json = response.json()
 
             for record in response_json:
-                also_known_as = record["operation"]["alsoKnownAs"]
+                try:
+                    also_known_as = record["operation"]["alsoKnownAs"]
+                except KeyError:
+                    also_known_as = record["operation"]["handle"]
                 created_at_value = record["createdAt"]
                 created_at = datetime.fromisoformat(created_at_value)
                 cleaned_also_known_as = [(item.replace("at://", ""), created_at) for item in also_known_as]
