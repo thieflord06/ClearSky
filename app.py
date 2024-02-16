@@ -1389,30 +1389,104 @@ async def block_stats():
     number_blocked_101_and_1000_formatted = '{:,}'.format(number_blocked_101_and_1000)
     number_blocked_greater_than_1000_formatted = '{:,}'.format(number_blocked_greater_than_1000)
 
-    stats_data = {"numberOfTotalBlocks": number_of_total_blocks_formatted,
-                  "numberOfUniqueUsersBlocked": number_of_unique_users_blocked_formatted,
-                  "numberOfUniqueUsersBlocking": number_of_unique_users_blocking_formatted,
-                  "totalUsers": total_users_formatted,
-                  "percentUsersBlocked": percent_users_blocked,
-                  "percentUsersBlocking": percent_users_blocking,
-                  "numberBlock1": number_block_1_formatted,
-                  "numberBlocking2and100": number_blocking_2_and_100_formatted,
-                  "numberBlocking101and1000": number_blocking_101_and_1000_formatted,
-                  "numberBlockingGreaterThan1000": number_blocking_greater_than_1000_formatted,
-                  "percentNumberBlocking1": percent_number_blocking_1,
-                  "percentNumberBlocking2and100": percent_number_blocking_2_and_100,
-                  "percentNumberBlocking101and1000": percent_number_blocking_101_and_1000,
-                  "percentNumberBlockingGreaterThan1000": percent_number_blocking_greater_than_1000,
-                  "averageNumberOfBlocks": average_number_of_blocks_formatted,
-                  "numberBlocked1": number_blocked_1_formatted,
-                  "numberBlocked2and100": number_blocked_2_and_100_formatted,
-                  "numberBlocked101and1000": number_blocked_101_and_1000_formatted,
-                  "numberBlockedGreaterThan1000": number_blocked_greater_than_1000_formatted,
-                  "percentNumberBlocked1": percent_number_blocked_1,
-                  "percentNumberBlocked2and100": percent_number_blocked_2_and_100,
-                  "percentNumberBlocked101and1000": percent_number_blocked_101_and_1000,
-                  "percentNumberBlockedGreaterThan1000": percent_number_blocked_greater_than_1000,
-                  "averageNumberOfBlocked": average_number_of_blocked_round}
+    stats_data = {
+        "numberOfTotalBlocks": {
+            "value": number_of_total_blocks_formatted,
+            "displayname": "Number of Total Blocks",
+        },
+        "numberOfUniqueUsersBlocked": {
+            "value": number_of_unique_users_blocked_formatted,
+            "displayname": "Number of Unique Users Blocked",
+        },
+        "numberOfUniqueUsersBlocking": {
+            "value": number_of_unique_users_blocking_formatted,
+            "displayname": "Number of Unique Users Blocking",
+        },
+        "totalUsers": {
+            "value": total_users_formatted,
+            "displayname": "Total Users",
+        },
+        "percentUsersBlocked": {
+            "value": percent_users_blocked,
+            "displayname": "Percent Users Blocked",
+        },
+        "percentUsersBlocking": {
+            "value": percent_users_blocking,
+            "displayname": "Percent Users Blocking",
+        },
+        "numberBlock1": {
+            "value": number_block_1_formatted,
+            "displayname": "Number of Users Blocking 1 User",
+        },
+        "numberBlocking2and100": {
+            "value": number_blocking_2_and_100_formatted,
+            "displayname": "Number of Users Blocking 2-100 Users",
+        },
+        "numberBlocking101and1000": {
+            "value": number_blocking_101_and_1000_formatted,
+            "displayname": "Number of Users Blocking 101-1000 Users",
+        },
+        "numberBlockingGreaterThan1000": {
+            "value": number_blocking_greater_than_1000_formatted,
+            "displayname": "Number of Users Blocking More than 1000 Users",
+        },
+        "percentNumberBlocking1": {
+            "value": percent_number_blocking_1,
+            "displayname": "Percent of Users Blocking 1 User",
+        },
+        "percentNumberBlocking2and100": {
+            "value": percent_number_blocking_2_and_100,
+            "displayname": "Percent of Users Blocking 2-100 Users",
+        },
+        "percentNumberBlocking101and1000": {
+            "value": percent_number_blocking_101_and_1000,
+            "displayname": "Percent of Users Blocking 101-1000 Users",
+        },
+        "percentNumberBlockingGreaterThan1000": {
+            "value": percent_number_blocking_greater_than_1000,
+            "displayname": "Percent of Users Blocking More than 1000 Users",
+        },
+        "averageNumberOfBlocks": {
+            "value": average_number_of_blocks_formatted,
+            "displayname": "Average Number of Blocks",
+        },
+        "numberBlocked1": {
+            "value": number_blocked_1_formatted,
+            "displayname": "Number of Users Blocked by 1 User",
+        },
+        "numberBlocked2and100": {
+            "value": number_blocked_2_and_100_formatted,
+            "displayname": "Number of Users Blocked by 2-100 Users",
+        },
+        "numberBlocked101and1000": {
+            "value": number_blocked_101_and_1000_formatted,
+            "displayname": "Number of Users Blocked by 101-1000 Users",
+        },
+        "numberBlockedGreaterThan1000": {
+            "value": number_blocked_greater_than_1000_formatted,
+            "displayname": "Number of Users Blocked by More than 1000 Users",
+        },
+        "percentNumberBlocked1": {
+            "value": percent_number_blocked_1,
+            "displayname": "Percent of Users Blocked by 1 User",
+        },
+        "percentNumberBlocked2and100": {
+            "value": percent_number_blocked_2_and_100,
+            "displayname": "Percent of Users Blocked by 2-100 Users",
+        },
+        "percentNumberBlocked101and1000": {
+            "value": percent_number_blocked_101_and_1000,
+            "displayname": "Percent of Users Blocked by 101-1000 Users",
+        },
+        "percentNumberBlockedGreaterThan1000": {
+            "value": percent_number_blocked_greater_than_1000,
+            "displayname": "Percent of Users Blocked by More than 1000 Users",
+        },
+        "averageNumberOfBlocked": {
+            "value": average_number_of_blocked_round,
+            "displayname": "Average Number of Users Blocked",
+        }
+    }
 
     data = {"data": stats_data}
 
