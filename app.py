@@ -617,9 +617,20 @@ async def get_total_users():
         formatted_total_count = None
         formatted_deleted_count = None
 
-    count_data = {"active_count": formatted_active_count,
-                  "total_count": formatted_total_count,
-                  "deleted_count": formatted_deleted_count}
+    count_data = {
+        "active_count": {
+            "value": formatted_active_count,
+            "displayname": "Active Users",
+        },
+        "total_count": {
+            "value": formatted_total_count,
+            "displayname": "Total Users",
+        },
+        "deleted_count": {
+            "value": formatted_deleted_count,
+            "displayname": "Deleted Users",
+        }
+    }
 
     data = {"data": count_data}
 
