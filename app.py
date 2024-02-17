@@ -19,7 +19,7 @@ config = config_helper.read_config()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "3.9.41"
+version = "3.9.42"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -589,9 +589,9 @@ async def block_stats():
 
     logger.info(f"Requesting block statistics.")
 
-    if True:
-
-        return await render_template('feature_not_available.html')
+    # if True:
+    #
+    #     return await render_template('feature_not_available.html')
 
     if not read_db_connected:
         logger.error("Database connection is not live.")
@@ -1098,7 +1098,7 @@ async def first_run():
             if tables:
                 await database_handler.blocklists_updater()
                 await database_handler.top_24blocklists_updater()
-                # await utils.update_block_statistics()
+                await utils.update_block_statistics()
 
                 break
             else:
