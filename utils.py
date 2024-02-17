@@ -464,7 +464,7 @@ async def get_single_user_blocks(ident, limit=100, offset=0):
             if result:
                 # Iterate over blocked_users and extract handle and status
                 for user_did, block_date, handle, status in result:
-                    block_list.append({"handle": handle, "status": status, "blocked_date": block_date})
+                    block_list.append({"handle": handle, "status": status, "blocked_date": block_date.isoformat()})
 
                 return block_list, count, pages
             else:
@@ -606,7 +606,7 @@ async def process_user_block_list(ident, limit, offset):
     if blocked_users:
         # Iterate over blocked_users and extract handle and status
         for user_did, block_date, handle, status in blocked_users:
-            block_list.append({"handle": handle, "status": status, "blocked_date": block_date})
+            block_list.append({"handle": handle, "status": status, "blocked_date": block_date.isoformat()})
 
     if count > 0:
         pages = count / 100
@@ -724,15 +724,15 @@ async def get_handle_history(identifier):
                 except KeyError:
                     also_known_as = record["operation"]["handle"]
                 created_at_value = record["createdAt"]
-                created_at = datetime.fromisoformat(created_at_value)
+                # created_at = datetime.fromisoformat(created_at_value)
 
                 if isinstance(also_known_as, str):  # Handle single string case
                     if "at://" not in also_known_as[0]:
-                        cleaned_also_known_as = [(also_known_as, created_at)]
+                        cleaned_also_known_as = [(also_known_as, created_at_value)]
                     else:
-                        cleaned_also_known_as = [(item.replace("at://", ""), created_at) for item in also_known_as]
+                        cleaned_also_known_as = [(item.replace("at://", ""), created_at_value) for item in also_known_as]
                 else:
-                    cleaned_also_known_as = [(item.replace("at://", ""), created_at) for item in also_known_as if "at://" in item]
+                    cleaned_also_known_as = [(item.replace("at://", ""), created_at_value) for item in also_known_as if "at://" in item]
 
                 also_known_as_list.extend(cleaned_also_known_as)
 

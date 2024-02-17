@@ -395,7 +395,7 @@ async def get_moderation_list(name, limit=100, offset=0):
                 "status": record['status'],
                 "name": record['name'],
                 "description": record['description'],
-                "created_date": record['created_date']
+                "created_date": record['created_date'].isoformat()
             }
             lists.append(data)
 
@@ -406,7 +406,7 @@ async def get_moderation_list(name, limit=100, offset=0):
                 "status": record['status'],
                 "name": record['name'],
                 "description": record['description'],
-                "created_date": record['created_date']
+                "created_date": record['created_date'].isoformat()
             }
             lists.append(data)
     else:
@@ -505,7 +505,7 @@ async def blocklist_search(search_list, lookup, switch):
                         status = record['status']
 
                     results = {
-                        "blocked_date": block_date,
+                        "blocked_date": block_date.isoformat(),
                         "handle": handle,
                         "status": status
                     }
@@ -1836,8 +1836,8 @@ async def get_mutelists(ident):
                     "status": record['status'],
                     "name": record['name'],
                     "description": record['description'],
-                    "created_date": record['created_date'],
-                    "date_added": record['date_added']
+                    "created_date": record['created_date'].isoformat(),
+                    "date_added": record['date_added'].isoformat()
                 }
                 lists.append(data)
 
