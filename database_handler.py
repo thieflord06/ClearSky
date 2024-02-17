@@ -919,7 +919,7 @@ async def process_batch(batch_dids, ad_hoc, table, batch_size):
                 handles_to_update.append((did, handle))
 
         if handles_to_update:
-            only_handles = []
+            # only_handles = []
             while True:
                 try:
                     # Update the database with the batch of handles
@@ -929,11 +929,11 @@ async def process_batch(batch_dids, ad_hoc, table, batch_size):
                             await update_user_handles(handles_to_update)
                             total_handles_updated += len(handles_to_update)
 
-                    for did, handle in handles_to_update:
-                        only_handles.append(handle)
+                    # for did, handle in handles_to_update:
+                    #     only_handles.append(handle)
 
-                    logger.info("Adding new prefixes.")
-                    await add_new_prefixes(only_handles)
+                    # logger.info("Adding new prefixes.")
+                    # await add_new_prefixes(only_handles)
 
                     # Update the temporary table with the last processed DID
                     last_processed_did = handle_batch[-1][0]  # Assuming DID is the first element in each tuple
