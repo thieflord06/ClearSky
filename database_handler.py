@@ -651,6 +651,7 @@ async def update_blocklist_table(ident, blocked_data, forced=False):
 
                 return counter
 
+
 async def update_subscribe_table(ident, subscribelists_data, forced=False):
     subscribe_list_counter = 0
 
