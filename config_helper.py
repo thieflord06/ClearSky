@@ -22,13 +22,15 @@ def remove_file_handler_from_config(config_file_path):
     if 'fileHandler' in configure['handlers']['keys']:
         # Remove 'fileHandler' from the list of handlers
         handlers = configure['handlers']['keys'].split(',')
-        handlers.remove('fileHandler')
+        if 'fileHandler' in handlers:
+            handlers.remove('fileHandler')
         configure['handlers']['keys'] = ','.join(handlers)
 
     if 'fileHandler' in configure['logger_root']['handlers']:
         # Remove 'fileHandler' from the list of handlers
         handlers = configure['logger_root']['handlers'].split(',')
-        handlers.remove('fileHandler')
+        if 'fileHandler' in handlers:
+            handlers.remove('fileHandler')
         configure['logger_root']['handlers'] = ','.join(handlers)
 
     # Save the modified config to the same file
