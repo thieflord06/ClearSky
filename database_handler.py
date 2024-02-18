@@ -396,6 +396,7 @@ async def crawl_all(forced=False):
         else:
             logger.warning("Batch of DIDs is empty. Skipping update of the temporary table.")
             logger.error(f"Batch_dids that caused issue: {batch_dids}")
+            continue
 
         cumulative_processed_count += len(batch_dids)
 
