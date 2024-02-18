@@ -787,9 +787,15 @@ async def update_blocklist_table(ident, blocked_data, forced=False):
             logger.debug("new blocklist entry " + ident + " : " + str(new_blocklist_entries))
 
             if existing_blocklist_entries != new_blocklist_entries or forced:
-                await connection.execute('DELETE FROM blocklists WHERE user_did = $1', ident)
+                try:
+                    await connection.execute('DELETE FROM blocklists WHERE user_did = $1', ident)
+                except Exception as e:
+                    logger.error(f"Error deleting blocklist for {ident} : {e}")
+                    logger.error(existing_blocklist_entries)
                 try:
                     for uri in existing_blocklist_entries:
+                        if uri is None:
+                            continue  # Skip processing when uri is None
                         await connection.execute('INSERT INTO blocklists_transaction (uri, block_date, touched, touched_actor) VALUES ($1, $2, $3, $4)', uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor)
                 except Exception as e:
                     logger.error(f"Error updating blocklists_transaction on delete : {e}")
@@ -808,7 +814,7 @@ async def update_blocklist_table(ident, blocked_data, forced=False):
                     )
                 except Exception as e:
                     logger.error(f"Error updating blocklists or blocklists_transaction on create : {e}")
-                    logger.error(new_blocklist_entries)
+                    logger.error(data)
 
                 logger.info("Blocklist transaction[created] updated.")
                 logger.info(f"Blocks added for: {ident}")
