@@ -375,6 +375,8 @@ async def crawl_all(forced=False):
             logger.info(f"Resuming processing from DID: {last_processed_did}")
             all_dids = all_dids[start_index:]
 
+    logger.info("Starting crawl.")
+
     for i in range(0, total_dids, batch_size):
         remaining_dids = total_dids - i
         current_batch_size = min(batch_size, remaining_dids)
@@ -480,12 +482,6 @@ async def crawler_batch(batch_dids, forced=False):
                     async with connection.transaction():
                         await update_user_handles(handles_to_update)
                         total_handles_updated += len(handles_to_update)
-
-                # for did, handle in handles_to_update:
-                #     only_handles.append(handle)
-
-                # logger.info("Adding new prefixes.")
-                # await add_new_prefixes(only_handles)
 
                 break
             except asyncpg.ConnectionDoesNotExistError as e:
