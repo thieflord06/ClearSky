@@ -603,6 +603,12 @@ async def update_blocklist_table(ident, blocked_data, forced=False):
             existing_blocklist_entries = {record['uri'] for record in existing_records}
             logger.debug("Existing entires " + ident + ": " + str(existing_blocklist_entries))
 
+            # Iterate through blocked_data and check for None values
+            for subject, created_date, uri, cid in blocked_data:
+                if any(value is None for value in (subject, created_date, uri, cid)):
+                    logger.error(f"Blocked data contains a None value skipping: {blocked_data}")
+
+                    return counter
             # Prepare the data to be inserted into the database
             data = [(ident, subject, created_date, uri, cid, datetime.now(pytz.utc), touched_actor) for subject, created_date, uri, cid in blocked_data]
             logger.debug("Data to be inserted: " + str(data))

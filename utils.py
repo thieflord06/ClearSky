@@ -515,16 +515,21 @@ async def get_user_block_list(ident):
                     if not timestamp:
                         timestamp = None
                         blocked_data.append((subject, timestamp, uri, cid))
-                        logger.warning("missing timestamp")
+                        logger.error(f"{full_url}: missing timestamp")
                     elif not uri:
                         uri = None
                         blocked_data.append((subject, timestamp, uri, cid))
-                        logger.warning("Missing uri")
+                        logger.error(f"{full_url}: Missing uri")
                     elif not cid:
                         cid = None
                         blocked_data.append((subject, timestamp, uri, cid))
-                        logger.warning("missing cid")
+                        logger.error(f"{full_url}: missing cid")
+                    elif not subject:
+                        subject = None
+                        blocked_data.append((subject, timestamp, uri, cid))
+                        logger.error(f"{full_url}: missing subject")
                     else:
+                        logger.error(f"{full_url}: missing data")
                         return None
 
             cursor = response_json.get("cursor")
