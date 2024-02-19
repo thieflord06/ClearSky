@@ -1850,6 +1850,16 @@ async def get_mutelists(ident):
             return lists
 
 
+async def check_api_key(api_environment, key_type, key_value):
+    async with connection_pools["read"].acquire() as connection:
+        async with connection.transaction():
+            query = """SELECT valid FROM API WHERE key = $3 environment = $1 AND access_type LIKE '%' || $2 || '%'"""
+
+            status = await connection.fetchval(query, api_environment, key_type, key_value)
+
+            return status
+
+
 async def wait_for_redis():
     while True:
         status = await redis_connected()

@@ -25,7 +25,7 @@ config = config_helper.read_config()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "3.15.0d"
+version = "3.15.1d"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -1714,6 +1714,48 @@ async def get_internal_status():
     }
 
     logger.info(f">> System status result returned: {session_ip} - {api_key}")
+
+    return jsonify(status)
+
+
+@app.route('/api/v1/base/internal/api-check', methods=['GET'])
+@api_key_required
+@rate_limit(1, timedelta(seconds=1))
+async def check_api_keys():
+    api_key = request.headers.get('X-API-Key')
+    session_ip = await get_ip()
+
+    api_environment = request.args.get('api_environment')
+    key_type = request.args.get('key_type')
+    key_value = request.args.get('key_value')
+
+    logger.info(f"<< API key check requested: {session_ip} - {api_key}: {api_environment} - {key_type} - {key_value}")
+
+    if not api_key:
+        api_key = "No API key provided"
+
+    if not api_environment:
+        logger.info("No environment provided")
+
+    if not key_type:
+        logger.info("No key type provided")
+
+    if not key_value:
+        logger.info("No key value provided")
+
+    api_check = await database_handler.check_api_key(api_environment, key_type, key_value)
+
+    if api_check:
+        api_key_status = "valid"
+    else:
+        api_key_status = "invalid"
+
+    status = {
+        "api_status": api_key_status,
+        "api key": key_value
+    }
+
+    logger.info(f">> API key check result returned: {session_ip} - auth key: {api_key} response: key: {key_value}- {api_key_status}")
 
     return jsonify(status)
 
