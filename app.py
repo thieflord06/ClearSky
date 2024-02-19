@@ -16,6 +16,8 @@ import utils
 import config_helper
 from config_helper import logger
 from environment import get_api_var
+import aiocron
+import aiohttp
 
 # ======================================================================================================================
 # ======================================== global variables // Set up logging ==========================================
@@ -23,7 +25,7 @@ config = config_helper.read_config()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "3.14.1d"
+version = "3.15.0d"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -50,6 +52,9 @@ db_connected = None
 blocklist_24_failed = asyncio.Event()
 blocklist_failed = asyncio.Event()
 db_pool_acquired = asyncio.Event()
+push_server = None
+default_push_server = "https://ui.staging.clearsky.app"
+api_key = None
 
 
 # ======================================================================================================================
@@ -207,9 +212,31 @@ async def get_time_since(time):
 async def initialize():
     global read_db_connected, write_db_connected
     global db_pool_acquired
+    global push_server
+    global api_key
 
     read_db_connected = await database_handler.create_connection_pool("read")  # Creates connection pool for db if connection made
     write_db_connected = await database_handler.create_connection_pool("write")
+
+    config_api_key = config.get("environment", "api_key")
+    environ_api_key = os.environ.get("CLEARSKY_API_KEY")
+
+    if not os.getenv('CLEAR_SKY'):
+        push_server = config.get("environment", "push_server")
+        api_key = config.get("environment", "api_key")
+    else:
+        push_server = os.environ.get("CLEARSKY_PUSH_SERVER")
+        api_key = os.environ.get("CLEARSKY_API_KEY")
+
+    if not environ_api_key:
+        api_key = config_api_key
+
+    if not push_server:
+        logger.error(f"No push server configured, using default push server: {default_push_server}")
+        push_server = default_push_server
+
+    if not api_key:
+        logger.error("No API key configured.")
 
     log_warning_once = True
 
@@ -389,6 +416,53 @@ async def contact():
     logger.info(f"{session_ip} - Contact requested.")
 
     return await render_template('contact.html')
+
+
+async def fetch_and_push_data():
+    if api_key:
+        try:
+            fetch_api = {
+                "top_blocked": 'http://localhost/api/v1/lists/fun-facts',
+                "top_24_blocked": 'http://localhost/api/v1/lists/funer-facts',
+                "block_stats": 'http://localhost/api/v1/lists/block-stats'
+            }
+            send_api = {
+                "top_blocked": f'{push_server}/api/v1/base/reporting/stats-cache/top-blocked',
+                "top_24_blocked": f'{push_server}/api/v1/base/reporting/stats-cache/top-24-blocked',
+                "block_stats": f'{push_server}/api/v1/base/reporting/stats-cache/block-stats'
+            }
+            headers = {'X-API-Key': f'{api_key}'}
+
+            async with aiohttp.ClientSession(headers=headers) as session:
+                for (fetch_name, fetch_api), (send_name, send_api) in zip(fetch_api.items(), send_api.items()):
+                    logger.info(f"Fetching data from {fetch_name} API")
+
+                    async with session.get(fetch_api) as internal_response:
+                        if internal_response.status == 200:
+                            internal_data = await internal_response.json()
+                            if "timeLeft" in internal_data['data']:
+                                logger.info(f"{fetch_name} Data not ready, skipping.")
+                            else:
+                                async with session.post(send_api, json=internal_data) as response:
+                                    if response.status == 200:
+                                        logger.info(f"Data successfully pushed to {send_api}")
+                                    else:
+                                        logger.error("Failed to push data to the destination server")
+                                        continue
+                        else:
+                            logger.error(f"Failed to fetch data from {fetch_api}")
+                            continue
+        except Exception as e:
+            logger.error(f"An error occurred: {e}")
+    else:
+        logger.error("PUSH not executed, no API key configured.")
+
+
+# Schedule the task to run every hour
+@aiocron.crontab('0 * * * *')
+async def schedule_data_push():
+    logger.info("Starting scheduled data push.")
+    await fetch_and_push_data()
 
 
 # ======================================================================================================================
@@ -1658,6 +1732,11 @@ async def main():
     run_web_server_task = asyncio.create_task(run_web_server())
 
     await initialize_task
+
+    # Fetch and push data immediately
+    await fetch_and_push_data()
+
+    aiocron.crontab('* * * * *', schedule_data_push)
 
     await asyncio.gather(run_web_server_task, first_run())
 
