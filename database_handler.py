@@ -1003,6 +1003,8 @@ async def update_24_hour_block_list_table(entries, list_type):
                 query = "INSERT INTO top_twentyfour_hour_block (did, count, list_type) VALUES ($1, $2, $3)"
                 await connection.executemany(query, data)
                 logger.info("Updated top 24 block table.")
+    except asyncpg.exceptions.UniqueViolationError:
+        logger.warning("Attempted to insert duplicate entry into top block table")
     except asyncpg.exceptions.UndefinedTableError:
         logger.warning("table doesn't exist")
     except Exception as e:
@@ -1040,6 +1042,8 @@ async def update_top_block_list_table(entries, list_type):
                 query = "INSERT INTO top_block (did, count, list_type) VALUES ($1, $2, $3)"
                 await connection.executemany(query, data)
                 logger.info("Updated top block table")
+    except asyncpg.exceptions.UniqueViolationError:
+        logger.warning("Attempted to insert duplicate entry into top block table")
     except asyncpg.exceptions.UndefinedTableError:
         logger.warning("table doesn't exist")
     except Exception as e:
@@ -1620,14 +1624,22 @@ async def top_24blocklists_updater():
     blocklist_24_updater_status.set()
 
     logger.info("Updating top 24 blocks lists requested.")
+
     await truncate_top24_blocks_table()
+
     blocked_results_24, blockers_results_24 = await get_top24_blocks()  # Get blocks for db
+
     logger.debug(f"blocked count: {len(blocked_results_24)} blockers count: {len(blockers_results_24)}")
+
     # Update blocked entries
     await update_24_hour_block_list_table(blocked_results_24, blocked_list_24)  # add blocked to top blocks table
+
     logger.info("Updated top blocked db.")
+
     await update_24_hour_block_list_table(blockers_results_24, blocker_list_24)  # add blocker to top blocks table
+
     logger.info("Updated top blockers db.")
+
     top_blocked_24, top_blockers_24, blocked_aid_24, blocker_aid_24 = await utils.resolve_top24_block_lists()
 
     logger.info("Top 24 hour blocks lists page updated.")
