@@ -18,6 +18,7 @@ from config_helper import logger
 from environment import get_api_var
 import aiocron
 import aiohttp
+import ssl
 
 # ======================================================================================================================
 # ======================================== global variables // Set up logging ==========================================
@@ -419,6 +420,9 @@ async def contact():
 
 
 async def fetch_and_push_data():
+    ssl_context = ssl.create_default_context()
+    ssl_context.options |= ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1  # Disable older SSL/TLS versions
+
     if api_key:
         try:
             fetch_api = {
@@ -433,7 +437,7 @@ async def fetch_and_push_data():
             }
             headers = {'X-API-Key': f'{api_key}'}
 
-            async with aiohttp.ClientSession(headers=headers) as session:
+            async with aiohttp.ClientSession(headers=headers, connector=aiohttp.TCPConnector(ssl=ssl_context)) as session:
                 for (fetch_name, fetch_api), (send_name, send_api) in zip(fetch_api.items(), send_api.items()):
                     logger.info(f"Fetching data from {fetch_name} API")
 
