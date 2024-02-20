@@ -221,8 +221,6 @@ async def initialize():
     write_db_connected = await database_handler.create_connection_pool("write")
 
     config_api_key = config.get("environment", "api_key")
-    environ_api_key = os.environ.get("CLEARSKY_API_KEY")
-    environ_self_server = os.environ.get("CLEARSKY_SELF_SERVER")
     config_self_server = config.get("environment", "self_server")
 
     if not os.getenv('CLEAR_SKY'):
@@ -234,17 +232,16 @@ async def initialize():
         api_key = os.environ.get("CLEARSKY_API_KEY")
         self_server = os.environ.get("CLEARSKY_SELF_SERVER")
 
-    if not environ_api_key:
+    if not api_key:
+        logger.error(f"No API key configured, attempting to use config file: {config_api_key}")
         api_key = config_api_key
 
     if not push_server:
         logger.error(f"No push server configured, using default push server: {default_push_server}")
         push_server = default_push_server
 
-    if not api_key:
-        logger.error("No API key configured.")
-
-    if not environ_self_server:
+    if not self_server:
+        logger.error(f"No self server configured, attempting to use config file: {config_self_server}")
         self_server = config_self_server
 
     log_warning_once = True
