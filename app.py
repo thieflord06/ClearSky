@@ -431,9 +431,9 @@ async def fetch_and_push_data():
     if api_key:
         try:
             fetch_api = {
-                "top_blocked": f'https://{self_server}/api/v1/lists/fun-facts',
-                "top_24_blocked": f'https://{self_server}/api/v1/lists/funer-facts',
-                "block_stats": f'https://{self_server}/api/v1/lists/block-stats'
+                "top_blocked": f'{self_server}/api/v1/lists/fun-facts',
+                "top_24_blocked": f'{self_server}/api/v1/lists/funer-facts',
+                "block_stats": f'{self_server}/api/v1/lists/block-stats'
             }
             send_api = {
                 "top_blocked": f'{push_server}/api/v1/base/reporting/stats-cache/top-blocked',
