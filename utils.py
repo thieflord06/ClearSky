@@ -723,16 +723,21 @@ async def get_handle_history(identifier):
                     also_known_as = record["operation"]["alsoKnownAs"]
                 except KeyError:
                     also_known_as = record["operation"]["handle"]
+                try:
+                    endpoint = record["operation"]["services"]["atproto_pds"]["endpoint"]
+                except KeyError:
+                    endpoint = record["operation"]["service"]
+
                 created_at_value = record["createdAt"]
                 # created_at = datetime.fromisoformat(created_at_value)
 
                 if isinstance(also_known_as, str):  # Handle single string case
                     if "at://" not in also_known_as[0]:
-                        cleaned_also_known_as = [(also_known_as, created_at_value)]
+                        cleaned_also_known_as = [(also_known_as, created_at_value, endpoint)]
                     else:
-                        cleaned_also_known_as = [(item.replace("at://", ""), created_at_value) for item in also_known_as]
+                        cleaned_also_known_as = [(item.replace("at://", ""), created_at_value, endpoint) for item in also_known_as]
                 else:
-                    cleaned_also_known_as = [(item.replace("at://", ""), created_at_value) for item in also_known_as if "at://" in item]
+                    cleaned_also_known_as = [(item.replace("at://", ""), created_at_value, endpoint) for item in also_known_as if "at://" in item]
 
                 also_known_as_list.extend(cleaned_also_known_as)
 
