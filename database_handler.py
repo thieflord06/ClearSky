@@ -849,11 +849,25 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, fo
 
 
 async def does_did_and_handle_exist_in_database(did, handle):
-    async with connection_pools["write"].acquire() as connection:
-        # Execute the SQL query to check if the given DID exists in the "users" table
-        exists = await connection.fetchval('SELECT EXISTS(SELECT 1 FROM users WHERE did = $1 AND handle = $2)', did, handle)
+    max_retries = 5
+    for retry in range(max_retries):
+        try:
+            async with connection_pools["write"].acquire() as connection:
+                # Execute the SQL query to check if the given DID exists in the "users" table
+                exists = await connection.fetchval('SELECT EXISTS(SELECT 1 FROM users WHERE did = $1 AND handle = $2)', did, handle)
 
-        return exists
+                return exists
+        except TimeoutError:
+            logger.error(f"Timeout error on attempt {retry + 1}. Retrying in 10 sec...")
+            await asyncio.sleep(10)
+            if retry == max_retries - 1:
+                logger.error("Max retries reached, failing to False.")
+
+                return False
+        except Exception as e:
+            logger.error(f"Error during does_did_and_handle_exist_in_database: {e}")
+
+            return False
 
 
 async def update_user_handles(handles_to_update):
