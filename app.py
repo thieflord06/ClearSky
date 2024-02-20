@@ -605,6 +605,7 @@ async def get_in_common_blocklist(client_identifier):
 @rate_limit(100, timedelta(seconds=1))
 async def get_in_common_blocked(client_identifier):
     not_implemented = True
+    common_list = None
 
     session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
@@ -1631,6 +1632,7 @@ async def autocomplete(client_identifier):
 @api_key_required
 @rate_limit(1, timedelta(seconds=1))
 async def get_internal_status():
+    db_status = None
     api_key = request.headers.get('X-API-Key')
     session_ip = await get_ip()
 
