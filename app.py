@@ -1143,7 +1143,8 @@ async def fun_facts():
 
     # profile_url = "https://av-cdn.bsky.app/img/avatar/plain/{{item.did}}/{{blocked_aid[item.did]}}"
 
-    data = {"data": data_lists}
+    data = {"data": data_lists,
+            "as of": datetime.now().isoformat()}
 
     logger.info(f">> Fun facts result returned: {session_ip} - {api_key}")
 
@@ -1300,7 +1301,8 @@ async def funer_facts():
 
     # profile_url = "https://av-cdn.bsky.app/img/avatar/plain/{{item.did}}/{{blocked_aid[item.did]}}"
 
-    data = {"data": data_lists}
+    data = {"data": data_lists,
+            "as of": datetime.now().isoformat()}
 
     logger.info(f">> Funer facts result returned: {session_ip} - {api_key}")
 
@@ -1580,7 +1582,9 @@ async def block_stats():
         }
     }
 
-    data = {"data": stats_data}
+    data = {"data": stats_data,
+            "as of": datetime.now().isoformat()
+            }
 
     logger.info(f">> block stats result returned: {session_ip} - {api_key}")
 
