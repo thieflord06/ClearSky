@@ -57,6 +57,7 @@ block_stats_status = asyncio.Event()
 block_stats_process_time = None
 block_stats_last_update = None
 block_stats_start_time = None
+block_stats_as_of_time = None
 
 sleep_time = 15
 
@@ -312,6 +313,7 @@ async def update_block_statistics():
     global block_stats_last_update
     global block_stats_status
     global block_stats_start_time
+    global block_stats_as_of_time
 
     logger.info("Updating block statsitics.")
 
@@ -355,6 +357,8 @@ async def update_block_statistics():
         block_stats_process_time = end_time - block_stats_start_time
     block_stats_last_update = end_time
     block_stats_start_time = None
+
+    block_stats_as_of_time = datetime.now().isoformat()
 
     return (number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking,
             number_block_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000,

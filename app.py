@@ -25,7 +25,7 @@ config = config_helper.read_config()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "3.16.0d"
+version = "3.17.0d"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -1144,7 +1144,7 @@ async def fun_facts():
     # profile_url = "https://av-cdn.bsky.app/img/avatar/plain/{{item.did}}/{{blocked_aid[item.did]}}"
 
     data = {"data": data_lists,
-            "as of": datetime.now().isoformat()}
+            "as of": database_handler.top_blocked_as_of_time}
 
     logger.info(f">> Fun facts result returned: {session_ip} - {api_key}")
 
@@ -1302,7 +1302,7 @@ async def funer_facts():
     # profile_url = "https://av-cdn.bsky.app/img/avatar/plain/{{item.did}}/{{blocked_aid[item.did]}}"
 
     data = {"data": data_lists,
-            "as of": datetime.now().isoformat()}
+            "as of": database_handler.top_24_blocked_as_of_time}
 
     logger.info(f">> Funer facts result returned: {session_ip} - {api_key}")
 
@@ -1583,7 +1583,7 @@ async def block_stats():
     }
 
     data = {"data": stats_data,
-            "as of": datetime.now().isoformat()
+            "as of": utils.block_stats_as_of_time
             }
 
     logger.info(f">> block stats result returned: {session_ip} - {api_key}")

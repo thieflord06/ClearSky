@@ -38,6 +38,8 @@ top_blocks_start_time = None
 top_24_blocks_start_time = None
 top_blocks_process_time = None
 top_24_blocks_process_time = None
+top_blocked_as_of_time = None
+top_24_blocked_as_of_time = None
 
 
 # ======================================================================================================================
@@ -1742,6 +1744,7 @@ async def blocklists_updater():
     global blocklist_updater_status
     global top_blocks_start_time
     global top_blocks_process_time
+    global top_blocked_as_of_time
 
     blocked_list = "blocked"
     blocker_list = "blocker"
@@ -1776,6 +1779,8 @@ async def blocklists_updater():
 
     top_blocks_start_time = None
 
+    top_blocked_as_of_time = datetime.now().isoformat()
+
     return top_blocked, top_blockers, blocked_aid, blocker_aid
 
 
@@ -1784,6 +1789,7 @@ async def top_24blocklists_updater():
     global blocklist_24_updater_status
     global top_24_blocks_start_time
     global top_24_blocks_process_time
+    global top_24_blocked_as_of_time
 
     blocked_list_24 = "blocked"
     blocker_list_24 = "blocker"
@@ -1813,6 +1819,8 @@ async def top_24blocklists_updater():
         top_24_blocks_process_time = end_time - top_24_blocks_start_time
 
     top_24_blocks_start_time = None
+
+    top_24_blocked_as_of_time = datetime.now().isoformat()
 
     return top_blocked_24, top_blockers_24, blocked_aid_24, blocker_aid_24
 
