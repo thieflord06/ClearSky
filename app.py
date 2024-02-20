@@ -356,6 +356,53 @@ def ratelimit_error(e):
     return jsonify(error="ratelimit exceeded", message=str(e.description)), 429
 
 
+async def fetch_and_push_data():
+    if api_key:
+        try:
+            fetch_api = {
+                "top_blocked": f'{self_server}/api/v1/lists/fun-facts',
+                "top_24_blocked": f'{self_server}/api/v1/lists/funer-facts',
+                "block_stats": f'{self_server}/api/v1/lists/block-stats'
+            }
+            send_api = {
+                "top_blocked": f'{push_server}/api/v1/base/reporting/stats-cache/top-blocked',
+                "top_24_blocked": f'{push_server}/api/v1/base/reporting/stats-cache/top-24-blocked',
+                "block_stats": f'{push_server}/api/v1/base/reporting/stats-cache/block-stats'
+            }
+            headers = {'X-API-Key': f'{api_key}'}
+
+            async with aiohttp.ClientSession(headers=headers) as session:
+                for (fetch_name, fetch_api), (send_name, send_api) in zip(fetch_api.items(), send_api.items()):
+                    logger.info(f"Fetching data from {fetch_name} API")
+
+                    async with session.get(fetch_api) as internal_response:
+                        if internal_response.status == 200:
+                            internal_data = await internal_response.json()
+                            if "timeLeft" in internal_data['data']:
+                                logger.info(f"{fetch_name} Data not ready, skipping.")
+                            else:
+                                async with session.post(send_api, json=internal_data) as response:
+                                    if response.status == 200:
+                                        logger.info(f"Data successfully pushed to {send_api}")
+                                    else:
+                                        logger.error("Failed to push data to the destination server")
+                                        continue
+                        else:
+                            logger.error(f"Failed to fetch data from {fetch_api}")
+                            continue
+        except Exception as e:
+            logger.error(f"An error occurred: {e}")
+    else:
+        logger.error("PUSH not executed, no API key configured.")
+
+
+# Schedule the task to run every hour
+@aiocron.crontab('0 * * * *')
+async def schedule_data_push():
+    logger.info("Starting scheduled data push.")
+    await fetch_and_push_data()
+
+
 # ======================================================================================================================
 # ================================================== HTML Pages ========================================================
 @app.route('/', methods=['GET'])
@@ -422,53 +469,6 @@ async def contact():
     logger.info(f"{session_ip} - Contact requested.")
 
     return await render_template('contact.html')
-
-
-async def fetch_and_push_data():
-    if api_key:
-        try:
-            fetch_api = {
-                "top_blocked": f'{self_server}/api/v1/lists/fun-facts',
-                "top_24_blocked": f'{self_server}/api/v1/lists/funer-facts',
-                "block_stats": f'{self_server}/api/v1/lists/block-stats'
-            }
-            send_api = {
-                "top_blocked": f'{push_server}/api/v1/base/reporting/stats-cache/top-blocked',
-                "top_24_blocked": f'{push_server}/api/v1/base/reporting/stats-cache/top-24-blocked',
-                "block_stats": f'{push_server}/api/v1/base/reporting/stats-cache/block-stats'
-            }
-            headers = {'X-API-Key': f'{api_key}'}
-
-            async with aiohttp.ClientSession(headers=headers) as session:
-                for (fetch_name, fetch_api), (send_name, send_api) in zip(fetch_api.items(), send_api.items()):
-                    logger.info(f"Fetching data from {fetch_name} API")
-
-                    async with session.get(fetch_api) as internal_response:
-                        if internal_response.status == 200:
-                            internal_data = await internal_response.json()
-                            if "timeLeft" in internal_data['data']:
-                                logger.info(f"{fetch_name} Data not ready, skipping.")
-                            else:
-                                async with session.post(send_api, json=internal_data) as response:
-                                    if response.status == 200:
-                                        logger.info(f"Data successfully pushed to {send_api}")
-                                    else:
-                                        logger.error("Failed to push data to the destination server")
-                                        continue
-                        else:
-                            logger.error(f"Failed to fetch data from {fetch_api}")
-                            continue
-        except Exception as e:
-            logger.error(f"An error occurred: {e}")
-    else:
-        logger.error("PUSH not executed, no API key configured.")
-
-
-# Schedule the task to run every hour
-@aiocron.crontab('0 * * * *')
-async def schedule_data_push():
-    logger.info("Starting scheduled data push.")
-    await fetch_and_push_data()
 
 
 # ======================================================================================================================
