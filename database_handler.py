@@ -1917,15 +1917,13 @@ async def tables_exists():
                 return False
 
 
-async def get_api_keys(environment, key_type):
+async def get_api_keys(environment, key_type, key):
     async with connection_pools["write"].acquire() as connection:
         async with connection.transaction():
             try:
-                query = """SELECT key, valid, access_type FROM API WHERE environment = $1 AND valid is True AND access_type LIKE '%' || $2 || '%'"""
+                query = """SELECT key, valid, access_type FROM API WHERE key = $3 AND environment = $1 AND valid is True AND access_type LIKE '%' || $2 || '%'"""
 
-                results = await connection.fetch(query, environment, key_type)
-
-                data_list = []
+                results = await connection.fetch(query, environment, key_type, key)
 
                 for item in results:
                     data = {
@@ -1934,14 +1932,12 @@ async def get_api_keys(environment, key_type):
                         "access_type": item['access_type']
                     }
 
-                    data_list.append(data)
-
-                return data_list
+                return data
             except Exception as e:
                 # Handle other exceptions as needed
                 logger.error(f"Error getting API keys: {e}")
 
-                return []
+                return None
 
 
 # ======================================================================================================================
