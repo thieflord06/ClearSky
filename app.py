@@ -1691,17 +1691,15 @@ async def check_api_keys():
 
     logger.info(f"<< API key check requested: {session_ip} - {api_key}: {api_environment} - {key_type} - {key_value}")
 
-    if not api_key:
-        api_key = "No API key provided"
+    if not api_key or not api_environment or not key_type or not key_value:
+        value = None
 
-    if not api_environment:
-        logger.info("No environment provided")
+        status = {
+            "api_status": "invalid",
+            "api key": value
+        }
 
-    if not key_type:
-        logger.info("No key type provided")
-
-    if not key_value:
-        logger.info("No key value provided")
+        return jsonify(status)
 
     api_check = await database_handler.check_api_key(api_environment, key_type, key_value)
 
@@ -1969,12 +1967,6 @@ async def anon_autocomplete(client_identifier):
 @rate_limit(30, timedelta(seconds=1))
 async def anon_get_internal_status():
     return await get_internal_status()
-
-
-@app.route('/api/v1/anon/base/internal/api-check', methods=['GET'])
-@rate_limit(30, timedelta(seconds=1))
-async def anon_check_api_keys():
-    return await check_api_keys()
 
 
 # ======================================================================================================================
