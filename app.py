@@ -339,11 +339,11 @@ def api_key_required(key_type):
         async def wrapper(*args, **kwargs):
             api_environment = get_api_var()
 
-            api_keys = await database_handler.get_api_keys(api_environment, key_type)
-
             provided_api_key = request.headers.get("X-API-Key")
 
-            if provided_api_key not in api_keys.get('key') or "valid" not in api_keys.get('valid'):
+            api_keys = await database_handler.get_api_keys(api_environment, key_type, provided_api_key)
+
+            if provided_api_key not in api_keys.get('key') or api_keys.get('valid') is False:
                 ip = await get_ip()
                 logger.warning(f"<< {ip}: given key:{provided_api_key} Unauthorized API access.")
                 session['authenticated'] = False
