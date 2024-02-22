@@ -25,7 +25,7 @@ config = config_helper.read_config()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "3.18.1d"
+version = "3.18.2d"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -368,9 +368,9 @@ async def fetch_and_push_data():
     if api_key:
         try:
             fetch_api = {
-                "top_blocked": f'{self_server}/api/v1/lists/fun-facts',
-                "top_24_blocked": f'{self_server}/api/v1/lists/funer-facts',
-                "block_stats": f'{self_server}/api/v1/lists/block-stats'
+                "top_blocked": f'{self_server}/api/v1/auth/lists/fun-facts',
+                "top_24_blocked": f'{self_server}/api/v1/auth/lists/funer-facts',
+                "block_stats": f'{self_server}/api/v1/auth/lists/block-stats'
             }
             send_api = {
                 "top_blocked": f'{push_server}/api/v1/base/reporting/stats-cache/top-blocked',
