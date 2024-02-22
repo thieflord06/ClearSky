@@ -305,29 +305,34 @@ async def selection_handle():
                                                  count=formatted_count, identifier=did_identifier, page=page, more_data_available=more_data_available)
                 elif selection == "6":
                     logger.info(f"Requesting in-common blocks for: {identifier}")
-                    in_common_list, percentages, status_list = await database_handler.get_similar_users(did_identifier)
 
-                    if "no blocks" in in_common_list:
-                        message = "No blocks to compare"
+                    logger.info("Returning known issue page.")
 
-                        return await render_template('no_result.html', user=identifier, message=message)
+                    return await render_template('known_issue.html')
 
-                    if not in_common_list:
-                        message = "No blocks in common with other users"
-
-                        return await render_template('no_result.html', user=identifier, message=message)
-
-                    in_common_handles = []
-                    rounded_percentages = [round(percent, 2) for percent in percentages]
-
-                    for did in in_common_list:
-                        handle = await utils.get_user_handle(did)
-                        in_common_handles.append(handle)
-                    logger.info(in_common_handles)
-
-                    in_common_data = zip(in_common_handles, rounded_percentages, status_list)
-
-                    return await render_template('in_common.html', data=in_common_data, user=handle_identifier)
+                    # in_common_list, percentages, status_list = await database_handler.get_similar_users(did_identifier)
+                    #
+                    # if "no blocks" in in_common_list:
+                    #     message = "No blocks to compare"
+                    #
+                    #     return await render_template('no_result.html', user=identifier, message=message)
+                    #
+                    # if not in_common_list:
+                    #     message = "No blocks in common with other users"
+                    #
+                    #     return await render_template('no_result.html', user=identifier, message=message)
+                    #
+                    # in_common_handles = []
+                    # rounded_percentages = [round(percent, 2) for percent in percentages]
+                    #
+                    # for did in in_common_list:
+                    #     handle = await utils.get_user_handle(did)
+                    #     in_common_handles.append(handle)
+                    # logger.info(in_common_handles)
+                    #
+                    # in_common_data = zip(in_common_handles, rounded_percentages, status_list)
+                    #
+                    # return await render_template('in_common.html', data=in_common_data, user=handle_identifier)
                 elif selection == "7":
                     logger.info(f"Requesting in-common blocked for: {await utils.get_user_handle(identifier)}")
 
