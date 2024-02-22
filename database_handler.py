@@ -1917,13 +1917,13 @@ async def tables_exists():
                 return False
 
 
-async def get_api_keys(environment):
+async def get_api_keys(environment, key_type):
     async with connection_pools["write"].acquire() as connection:
         async with connection.transaction():
             try:
-                query = """SELECT key FROM API WHERE environment = $1 AND valid is True"""
+                query = """SELECT key FROM API WHERE environment = $1 AND valid is True AND access_type LIKE '%' || $2 || '%'"""
 
-                results = await connection.fetch(query, environment)
+                results = await connection.fetch(query, environment, key_type)
 
                 key_list = [key['key'] for key in results]
 
