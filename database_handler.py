@@ -1921,13 +1921,22 @@ async def get_api_keys(environment, key_type):
     async with connection_pools["write"].acquire() as connection:
         async with connection.transaction():
             try:
-                query = """SELECT key FROM API WHERE environment = $1 AND valid is True AND access_type LIKE '%' || $2 || '%'"""
+                query = """SELECT key, valid, access_type FROM API WHERE environment = $1 AND valid is True AND access_type LIKE '%' || $2 || '%'"""
 
                 results = await connection.fetch(query, environment, key_type)
 
-                key_list = [key['key'] for key in results]
+                data_list = []
 
-                return key_list
+                for item in results:
+                    data = {
+                        "key": item['key'],
+                        "valid": item['valid'],
+                        "access_type": item['access_type']
+                    }
+
+                    data_list.append(data)
+
+                return data_list
             except Exception as e:
                 # Handle other exceptions as needed
                 logger.error(f"Error getting API keys: {e}")

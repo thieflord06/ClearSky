@@ -343,13 +343,15 @@ def api_key_required(key_type):
 
             provided_api_key = request.headers.get("X-API-Key")
 
-            if provided_api_key not in api_keys:
+            if provided_api_key not in api_keys.get('key') or "valid" not in api_keys.get('valid'):
                 ip = await get_ip()
-                logger.warning(f"<< {ip}: Unauthorized API access.")
+                logger.warning(f"<< {ip}: given key:{provided_api_key} Unauthorized API access.")
                 session['authenticated'] = False
 
                 return "Unauthorized", 401  # Return an error response if the API key is not valid
             else:
+                logger.info(f"Valid key {provided_api_key} for type: {key_type}")
+
                 session['authenticated'] = True  # Set to True if authenticated
 
             return await func(*args, **kwargs)
