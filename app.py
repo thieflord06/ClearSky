@@ -1862,117 +1862,117 @@ async def auth_check_api_keys():
 # ========================================== Unauthenticated API Endpoints =============================================
 @app.route('/api/v1/anon/blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
 @app.route('/api/v1/anon/blocklist/<client_identifier>/<int:page>', methods=['GET'])
-@rate_limit(1, timedelta(seconds=1))
+@rate_limit(30, timedelta(seconds=1))
 async def anon_get_blocklist(client_identifier, page):
     return await get_blocklist(client_identifier, page)
 
 
 @app.route('/api/v1/anon/single-blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
 @app.route('/api/v1/anon/single-blocklist/<client_identifier>/<int:page>', methods=['GET'])
-@rate_limit(1, timedelta(seconds=1))
+@rate_limit(30, timedelta(seconds=1))
 async def anon_get_single_blocklist(client_identifier, page):
     return await get_single_blocklist(client_identifier, page)
 
 
 @app.route('/api/v1/anon/in-common-blocklist/<client_identifier>', methods=['GET'])
-@rate_limit(1, timedelta(seconds=1))
+@rate_limit(30, timedelta(seconds=1))
 async def anon_get_in_common_blocklist(client_identifier):
     return await get_in_common_blocklist(client_identifier)
 
 
 @app.route('/api/v1/anon/in-common-blocked-by/<client_identifier>', methods=['GET'])
-@rate_limit(1, timedelta(seconds=1))
+@rate_limit(30, timedelta(seconds=1))
 async def anon_get_in_common_blocked_by(client_identifier):
     return await get_in_common_blocked(client_identifier)
 
 
 @app.route('/api/v1/anon/at-uri/<path:uri>', methods=['GET'])
-@rate_limit(1, timedelta(seconds=1))
+@rate_limit(30, timedelta(seconds=1))
 async def anon_convert_uri_to_url(uri):
     return await convert_uri_to_url(uri)
 
 
 @app.route('/api/v1/anon/total-users', methods=['GET'])
-@rate_limit(1, timedelta(seconds=1))
+@rate_limit(30, timedelta(seconds=1))
 async def anon_get_total_users():
     return await get_total_users()
 
 
 @app.route('/api/v1/anon/get-did/<client_identifier>', methods=['GET'])
-@rate_limit(1, timedelta(seconds=1))
+@rate_limit(30, timedelta(seconds=1))
 async def anon_get_did_info(client_identifier):
     return await get_did_info(client_identifier)
 
 
 @app.route('/api/v1/anon/get-handle/<client_identifier>', methods=['GET'])
-@rate_limit(1, timedelta(seconds=1))
+@rate_limit(30, timedelta(seconds=1))
 async def anon_get_handle_info(client_identifier):
     return await get_handle_info(client_identifier)
 
 
 @app.route('/api/v1/anon/get-handle-history/<client_identifier>', methods=['GET'])
-@rate_limit(1, timedelta(seconds=1))
+@rate_limit(30, timedelta(seconds=1))
 async def anon_get_handle_history_info(client_identifier):
     return await get_handle_history_info(client_identifier)
 
 
 @app.route('/api/v1/anon/get-list/<client_identifier>', methods=['GET'])
-@rate_limit(1, timedelta(seconds=1))
+@rate_limit(30, timedelta(seconds=1))
 async def anon_get_list_info(client_identifier):
     return await get_list_info(client_identifier)
 
 
 @app.route('/api/v1/anon/get-moderation-list/<string:input_name>', defaults={'page': 1}, methods=['GET'])
 @app.route('/api/v1/anon/get-moderation-list/<string:input_name>/<int:page>', methods=['GET'])
-@rate_limit(1, timedelta(seconds=1))
+@rate_limit(30, timedelta(seconds=1))
 async def anon_get_moderation_lists(input_name, page):
     return await get_moderation_lists(input_name, page)
 
 
 @app.route('/api/v1/anon/blocklist-search-blocked/<client_identifier>/<search_identifier>', methods=['GET'])
-@rate_limit(1, timedelta(seconds=1))
+@rate_limit(30, timedelta(seconds=1))
 async def anon_get_blocked_search(client_identifier, search_identifier):
     return await get_blocked_search(client_identifier, search_identifier)
 
 
 @app.route('/api/v1/anon/blocklist-search-blocking/<client_identifier>/<search_identifier>', methods=['GET'])
-@rate_limit(1, timedelta(seconds=1))
+@rate_limit(30, timedelta(seconds=1))
 async def anon_get_blocking_search(client_identifier, search_identifier):
     return await get_blocking_search(client_identifier, search_identifier)
 
 
 @app.route('/api/v1/anon/lists/fun-facts', methods=['GET'])
-@rate_limit(1, timedelta(seconds=1))
+@rate_limit(30, timedelta(seconds=1))
 async def anon_fun_facts():
     return await fun_facts()
 
 
 @app.route('/api/v1/anon/lists/funer-facts', methods=['GET'])
-@rate_limit(1, timedelta(seconds=1))
+@rate_limit(30, timedelta(seconds=1))
 async def anon_funer_facts():
     return await funer_facts()
 
 
 @app.route('/api/anon/v1/lists/block-stats', methods=['GET'])
-@rate_limit(1, timedelta(seconds=1))
+@rate_limit(30, timedelta(seconds=1))
 async def anon_block_stats():
     return await block_stats()
 
 
 @app.route('/api/v1/auth/base/autocomplete/<client_identifier>', methods=['GET'])
-@rate_limit(1, timedelta(seconds=1))
+@rate_limit(30, timedelta(seconds=1))
 async def anon_autocomplete(client_identifier):
     return await autocomplete(client_identifier)
 
 
 @app.route('/api/v1/anon/base/internal/status/process-status', methods=['GET'])
-@rate_limit(1, timedelta(seconds=1))
+@rate_limit(30, timedelta(seconds=1))
 async def anon_get_internal_status():
     return await get_internal_status()
 
 
 @app.route('/api/v1/anon/base/internal/api-check', methods=['GET'])
-@rate_limit(1, timedelta(seconds=1))
+@rate_limit(30, timedelta(seconds=1))
 async def anon_check_api_keys():
     return await check_api_keys()
 
