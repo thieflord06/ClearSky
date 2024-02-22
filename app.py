@@ -25,7 +25,7 @@ config = config_helper.read_config()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "3.17.0d"
+version = "3.18.0d"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
@@ -333,22 +333,30 @@ async def first_run():
         await asyncio.sleep(30)
 
 
-def api_key_required(func):
-    @functools.wraps(func)
-    async def wrapper(*args, **kwargs):
-        api_environment = get_api_var()
-        api_keys = await database_handler.get_api_keys(api_environment)
-        provided_api_key = request.headers.get("X-API-Key")
-        if provided_api_key not in api_keys:
-            ip = await get_ip()
-            logger.warning(f"<< {ip}: Unauthorized API access.")
+def api_key_required(key_type):
+    def decorator(func):
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            api_environment = get_api_var()
 
-            return "Unauthorized", 401  # Return an error response if the API key is not valid
+            api_keys = await database_handler.get_api_keys(api_environment, key_type)
 
-        else:
+            provided_api_key = request.headers.get("X-API-Key")
+
+            if provided_api_key not in api_keys:
+                ip = await get_ip()
+                logger.warning(f"<< {ip}: Unauthorized API access.")
+                session['authenticated'] = False
+
+                return "Unauthorized", 401  # Return an error response if the API key is not valid
+            else:
+                session['authenticated'] = True  # Set to True if authenticated
+
             return await func(*args, **kwargs)
 
-    return wrapper
+        return wrapper
+
+    return decorator
 
 
 @app.errorhandler(429)
@@ -472,11 +480,7 @@ async def contact():
 
 
 # ======================================================================================================================
-# ============================================= API Endpoints ==========================================================
-@app.route('/api/v1/blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
-@app.route('/api/v1/blocklist/<client_identifier>/<int:page>', methods=['GET'])
-@api_key_required
-@rate_limit(100, timedelta(seconds=1))
+# ================================================== API Services ======================================================
 async def get_blocklist(client_identifier, page):
     session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
@@ -522,10 +526,6 @@ async def get_blocklist(client_identifier, page):
     return jsonify(data)
 
 
-@app.route('/api/v1/single-blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
-@app.route('/api/v1/single-blocklist/<client_identifier>/<int:page>', methods=['GET'])
-@api_key_required
-@rate_limit(100, timedelta(seconds=1))
 async def get_single_blocklist(client_identifier, page):
     session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
@@ -570,9 +570,6 @@ async def get_single_blocklist(client_identifier, page):
     return jsonify(data)
 
 
-@app.route('/api/v1/in-common-blocklist/<client_identifier>', methods=['GET'])
-@api_key_required
-@rate_limit(100, timedelta(seconds=1))
 async def get_in_common_blocklist(client_identifier):
     session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
@@ -606,9 +603,6 @@ async def get_in_common_blocklist(client_identifier):
     return jsonify(data)
 
 
-@app.route('/api/v1/in-common-blocked-by/<client_identifier>', methods=['GET'])
-@api_key_required
-@rate_limit(100, timedelta(seconds=1))
 async def get_in_common_blocked(client_identifier):
     not_implemented = True
     common_list = None
@@ -651,9 +645,6 @@ async def get_in_common_blocked(client_identifier):
     return jsonify(data)
 
 
-@app.route('/api/v1/at-uri/<path:uri>', methods=['GET'])
-@api_key_required
-@rate_limit(100, timedelta(seconds=1))
 async def convert_uri_to_url(uri):
     session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
@@ -675,9 +666,6 @@ async def convert_uri_to_url(uri):
     return jsonify(data)
 
 
-@app.route('/api/v1/total-users', methods=['GET'])
-@api_key_required
-@rate_limit(100, timedelta(seconds=1))
 async def get_total_users():
     session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
@@ -720,9 +708,6 @@ async def get_total_users():
     return jsonify(data)
 
 
-@app.route('/api/v1/get-did/<client_identifier>', methods=['GET'])
-@api_key_required
-@rate_limit(100, timedelta(seconds=1))
 async def get_did_info(client_identifier):
     session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
@@ -759,9 +744,6 @@ async def get_did_info(client_identifier):
     return jsonify(data)
 
 
-@app.route('/api/v1/get-handle/<client_identifier>', methods=['GET'])
-@api_key_required
-@rate_limit(100, timedelta(seconds=1))
 async def get_handle_info(client_identifier):
     session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
@@ -798,9 +780,6 @@ async def get_handle_info(client_identifier):
     return jsonify(data)
 
 
-@app.route('/api/v1/get-handle-history/<client_identifier>', methods=['GET'])
-@api_key_required
-@rate_limit(100, timedelta(seconds=1))
 async def get_handle_history_info(client_identifier):
     session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
@@ -835,9 +814,6 @@ async def get_handle_history_info(client_identifier):
     return jsonify(data)
 
 
-@app.route('/api/v1/get-list/<client_identifier>', methods=['GET'])
-@api_key_required
-@rate_limit(100, timedelta(seconds=1))
 async def get_list_info(client_identifier):
     session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
@@ -872,10 +848,6 @@ async def get_list_info(client_identifier):
     return jsonify(data)
 
 
-@app.route('/api/v1/get-moderation-list/<string:input_name>', defaults={'page': 1}, methods=['GET'])
-@app.route('/api/v1/get-moderation-list/<string:input_name>/<int:page>', methods=['GET'])
-@api_key_required
-@rate_limit(100, timedelta(seconds=1))
 async def get_moderation_lists(input_name, page):
     session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
@@ -906,9 +878,6 @@ async def get_moderation_lists(input_name, page):
     return jsonify(data)
 
 
-@app.route('/api/v1/blocklist-search-blocked/<client_identifier>/<search_identifier>', methods=['GET'])
-@api_key_required
-@rate_limit(100, timedelta(seconds=1))
 async def get_blocked_search(client_identifier, search_identifier):
     api_key = request.headers.get('X-API-Key')
     session_ip = await get_ip()
@@ -947,9 +916,6 @@ async def get_blocked_search(client_identifier, search_identifier):
     return jsonify(data)
 
 
-@app.route('/api/v1/blocklist-search-blocking/<client_identifier>/<search_identifier>', methods=['GET'])
-@api_key_required
-@rate_limit(100, timedelta(seconds=1))
 async def get_blocking_search(client_identifier, search_identifier):
     api_key = request.headers.get('X-API-Key')
     session_ip = await get_ip()
@@ -988,9 +954,6 @@ async def get_blocking_search(client_identifier, search_identifier):
     return jsonify(data)
 
 
-@app.route('/api/v1/lists/fun-facts', methods=['GET'])
-@api_key_required
-@rate_limit(100, timedelta(seconds=1))
 async def fun_facts():
     global fun_start_time
 
@@ -1151,9 +1114,6 @@ async def fun_facts():
     return jsonify(data)
 
 
-@app.route('/api/v1/lists/funer-facts', methods=['GET'])
-@api_key_required
-@rate_limit(100, timedelta(seconds=1))
 async def funer_facts():
     global funer_start_time
 
@@ -1309,9 +1269,6 @@ async def funer_facts():
     return jsonify(data)
 
 
-@app.route('/api/v1/lists/block-stats', methods=['GET'])
-@api_key_required
-@rate_limit(100, timedelta(seconds=1))
 async def block_stats():
     global block_stats_app_start_time
 
@@ -1591,9 +1548,6 @@ async def block_stats():
     return jsonify(data)
 
 
-@app.route('/api/v1/base/autocomplete/<client_identifier>', methods=['GET'])
-@api_key_required
-@rate_limit(100, timedelta(seconds=1))
 async def autocomplete(client_identifier):
     session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
@@ -1638,9 +1592,6 @@ async def autocomplete(client_identifier):
             return jsonify({'suggestions': matching_handles})
 
 
-@app.route('/api/v1/base/internal/status/process-status', methods=['GET'])
-@api_key_required
-@rate_limit(1, timedelta(seconds=1))
 async def get_internal_status():
     db_status = None
     api_key = request.headers.get('X-API-Key')
@@ -1730,9 +1681,6 @@ async def get_internal_status():
     return jsonify(status)
 
 
-@app.route('/api/v1/base/internal/api-check', methods=['GET'])
-@api_key_required
-@rate_limit(1, timedelta(seconds=1))
 async def check_api_keys():
     api_key = request.headers.get('X-API-Key')
     session_ip = await get_ip()
@@ -1770,6 +1718,263 @@ async def check_api_keys():
     logger.info(f">> API key check result returned: {session_ip} - auth key: {api_key} response: key: {key_value}- {api_key_status}")
 
     return jsonify(status)
+
+
+# ======================================================================================================================
+# ============================================= Authenticated API Endpoints ============================================
+@app.route('/api/v1/auth/blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
+@app.route('/api/v1/auth/blocklist/<client_identifier>/<int:page>', methods=['GET'])
+@api_key_required("SERVER")
+@rate_limit(50, timedelta(seconds=1))
+async def auth_get_blocklist(client_identifier, page):
+    return await get_blocklist(client_identifier, page)
+
+
+@app.route('/api/v1/auth/single-blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
+@app.route('/api/v1/auth/single-blocklist/<client_identifier>/<int:page>', methods=['GET'])
+@api_key_required("SERVER")
+@rate_limit(50, timedelta(seconds=1))
+async def auth_get_single_blocklist(client_identifier, page):
+    return await get_single_blocklist(client_identifier, page)
+
+
+@app.route('/api/v1/auth/in-common-blocklist/<client_identifier>', methods=['GET'])
+@api_key_required("SERVER")
+@rate_limit(50, timedelta(seconds=1))
+async def auth_get_in_common_blocklist(client_identifier):
+    return await get_in_common_blocklist(client_identifier)
+
+
+@app.route('/api/v1/auth/in-common-blocked-by/<client_identifier>', methods=['GET'])
+@api_key_required("SERVER")
+@rate_limit(50, timedelta(seconds=1))
+async def auth_get_in_common_blocked_by(client_identifier):
+    return await get_in_common_blocked(client_identifier)
+
+
+@app.route('/api/v1/auth/at-uri/<path:uri>', methods=['GET'])
+@api_key_required("SERVER")
+@rate_limit(50, timedelta(seconds=1))
+async def auth_convert_uri_to_url(uri):
+    return await convert_uri_to_url(uri)
+
+
+@app.route('/api/v1/auth/total-users', methods=['GET'])
+@api_key_required("SERVER")
+@rate_limit(50, timedelta(seconds=1))
+async def auth_get_total_users():
+    return await get_total_users()
+
+
+@app.route('/api/v1/auth/get-did/<client_identifier>', methods=['GET'])
+@api_key_required("SERVER")
+@rate_limit(50, timedelta(seconds=1))
+async def auth_get_did_info(client_identifier):
+    return await get_did_info(client_identifier)
+
+
+@app.route('/api/v1/auth/get-handle/<client_identifier>', methods=['GET'])
+@api_key_required("SERVER")
+@rate_limit(50, timedelta(seconds=1))
+async def auth_get_handle_info(client_identifier):
+    return await get_handle_info(client_identifier)
+
+
+@app.route('/api/v1/auth/get-handle-history/<client_identifier>', methods=['GET'])
+@api_key_required("SERVER")
+@rate_limit(50, timedelta(seconds=1))
+async def auth_get_handle_history_info(client_identifier):
+    return await get_handle_history_info(client_identifier)
+
+
+@app.route('/api/v1/auth/get-list/<client_identifier>', methods=['GET'])
+@api_key_required("SERVER")
+@rate_limit(50, timedelta(seconds=1))
+async def auth_get_list_info(client_identifier):
+    return await get_list_info(client_identifier)
+
+
+@app.route('/api/v1/auth/get-moderation-list/<string:input_name>', defaults={'page': 1}, methods=['GET'])
+@app.route('/api/v1/auth/get-moderation-list/<string:input_name>/<int:page>', methods=['GET'])
+@api_key_required("SERVER")
+@rate_limit(50, timedelta(seconds=1))
+async def auth_get_moderation_lists(input_name, page):
+    return await get_moderation_lists(input_name, page)
+
+
+@app.route('/api/v1/auth/blocklist-search-blocked/<client_identifier>/<search_identifier>', methods=['GET'])
+@api_key_required("SERVER")
+@rate_limit(50, timedelta(seconds=1))
+async def auth_get_blocked_search(client_identifier, search_identifier):
+    return await get_blocked_search(client_identifier, search_identifier)
+
+
+@app.route('/api/v1/auth/blocklist-search-blocking/<client_identifier>/<search_identifier>', methods=['GET'])
+@api_key_required("SERVER")
+@rate_limit(50, timedelta(seconds=1))
+async def auth_get_blocking_search(client_identifier, search_identifier):
+    return await get_blocking_search(client_identifier, search_identifier)
+
+
+@app.route('/api/v1/auth/lists/fun-facts', methods=['GET'])
+@api_key_required("SERVER")
+@rate_limit(50, timedelta(seconds=1))
+async def auth_fun_facts():
+    return await fun_facts()
+
+
+@app.route('/api/v1/auth/lists/funer-facts', methods=['GET'])
+@api_key_required("SERVER")
+@rate_limit(50, timedelta(seconds=1))
+async def auth_funer_facts():
+    return await funer_facts()
+
+
+@app.route('/api/v1/auth/lists/block-stats', methods=['GET'])
+@api_key_required("SERVER")
+@rate_limit(50, timedelta(seconds=1))
+async def auth_block_stats():
+    return await block_stats()
+
+
+@app.route('/api/v1/auth/base/autocomplete/<client_identifier>', methods=['GET'])
+@api_key_required("SERVER")
+@rate_limit(50, timedelta(seconds=1))
+async def auth_autocomplete(client_identifier):
+    return await autocomplete(client_identifier)
+
+
+@app.route('/api/v1/auth/base/internal/status/process-status', methods=['GET'])
+@api_key_required("INTERNALSERVER")
+@rate_limit(50, timedelta(seconds=1))
+async def auth_get_internal_status():
+    return await get_internal_status()
+
+
+@app.route('/api/v1/auth/base/internal/api-check', methods=['GET'])
+@api_key_required("INTERNALSERVER")
+@rate_limit(50, timedelta(seconds=1))
+async def auth_check_api_keys():
+    return await check_api_keys()
+
+
+# ======================================================================================================================
+# ========================================== Unauthenticated API Endpoints =============================================
+@app.route('/api/v1/anon/blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
+@app.route('/api/v1/anon/blocklist/<client_identifier>/<int:page>', methods=['GET'])
+@rate_limit(1, timedelta(seconds=1))
+async def anon_get_blocklist(client_identifier, page):
+    return await get_blocklist(client_identifier, page)
+
+
+@app.route('/api/v1/anon/single-blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
+@app.route('/api/v1/anon/single-blocklist/<client_identifier>/<int:page>', methods=['GET'])
+@rate_limit(1, timedelta(seconds=1))
+async def anon_get_single_blocklist(client_identifier, page):
+    return await get_single_blocklist(client_identifier, page)
+
+
+@app.route('/api/v1/anon/in-common-blocklist/<client_identifier>', methods=['GET'])
+@rate_limit(1, timedelta(seconds=1))
+async def anon_get_in_common_blocklist(client_identifier):
+    return await get_in_common_blocklist(client_identifier)
+
+
+@app.route('/api/v1/anon/in-common-blocked-by/<client_identifier>', methods=['GET'])
+@rate_limit(1, timedelta(seconds=1))
+async def anon_get_in_common_blocked_by(client_identifier):
+    return await get_in_common_blocked(client_identifier)
+
+
+@app.route('/api/v1/anon/at-uri/<path:uri>', methods=['GET'])
+@rate_limit(1, timedelta(seconds=1))
+async def anon_convert_uri_to_url(uri):
+    return await convert_uri_to_url(uri)
+
+
+@app.route('/api/v1/anon/total-users', methods=['GET'])
+@rate_limit(1, timedelta(seconds=1))
+async def anon_get_total_users():
+    return await get_total_users()
+
+
+@app.route('/api/v1/anon/get-did/<client_identifier>', methods=['GET'])
+@rate_limit(1, timedelta(seconds=1))
+async def anon_get_did_info(client_identifier):
+    return await get_did_info(client_identifier)
+
+
+@app.route('/api/v1/anon/get-handle/<client_identifier>', methods=['GET'])
+@rate_limit(1, timedelta(seconds=1))
+async def anon_get_handle_info(client_identifier):
+    return await get_handle_info(client_identifier)
+
+
+@app.route('/api/v1/anon/get-handle-history/<client_identifier>', methods=['GET'])
+@rate_limit(1, timedelta(seconds=1))
+async def anon_get_handle_history_info(client_identifier):
+    return await get_handle_history_info(client_identifier)
+
+
+@app.route('/api/v1/anon/get-list/<client_identifier>', methods=['GET'])
+@rate_limit(1, timedelta(seconds=1))
+async def anon_get_list_info(client_identifier):
+    return await get_list_info(client_identifier)
+
+
+@app.route('/api/v1/anon/get-moderation-list/<string:input_name>', defaults={'page': 1}, methods=['GET'])
+@app.route('/api/v1/anon/get-moderation-list/<string:input_name>/<int:page>', methods=['GET'])
+@rate_limit(1, timedelta(seconds=1))
+async def anon_get_moderation_lists(input_name, page):
+    return await get_moderation_lists(input_name, page)
+
+
+@app.route('/api/v1/anon/blocklist-search-blocked/<client_identifier>/<search_identifier>', methods=['GET'])
+@rate_limit(1, timedelta(seconds=1))
+async def anon_get_blocked_search(client_identifier, search_identifier):
+    return await get_blocked_search(client_identifier, search_identifier)
+
+
+@app.route('/api/v1/anon/blocklist-search-blocking/<client_identifier>/<search_identifier>', methods=['GET'])
+@rate_limit(1, timedelta(seconds=1))
+async def anon_get_blocking_search(client_identifier, search_identifier):
+    return await get_blocking_search(client_identifier, search_identifier)
+
+
+@app.route('/api/v1/anon/lists/fun-facts', methods=['GET'])
+@rate_limit(1, timedelta(seconds=1))
+async def anon_fun_facts():
+    return await fun_facts()
+
+
+@app.route('/api/v1/anon/lists/funer-facts', methods=['GET'])
+@rate_limit(1, timedelta(seconds=1))
+async def anon_funer_facts():
+    return await funer_facts()
+
+
+@app.route('/api/anon/v1/lists/block-stats', methods=['GET'])
+@rate_limit(1, timedelta(seconds=1))
+async def anon_block_stats():
+    return await block_stats()
+
+
+@app.route('/api/v1/auth/base/autocomplete/<client_identifier>', methods=['GET'])
+@rate_limit(1, timedelta(seconds=1))
+async def anon_autocomplete(client_identifier):
+    return await autocomplete(client_identifier)
+
+
+@app.route('/api/v1/anon/base/internal/status/process-status', methods=['GET'])
+@rate_limit(1, timedelta(seconds=1))
+async def anon_get_internal_status():
+    return await get_internal_status()
+
+
+@app.route('/api/v1/anon/base/internal/api-check', methods=['GET'])
+@rate_limit(1, timedelta(seconds=1))
+async def anon_check_api_keys():
+    return await check_api_keys()
 
 
 # ======================================================================================================================
