@@ -1233,6 +1233,10 @@ async def get_federated_pdses():
             logger.warning(f"PDS: {pds} not valid.")
             not_active += 1
             await database_handler.update_pds_status(pds, False)
+        elif response.status_code == 500:
+            logger.warning(f"PDS: {pds} not valid.")
+            not_active += 1
+            await database_handler.update_pds_status(pds, False)
         else:
             logger.warning("Response status code: " + str(response.status_code) + f" for PDS: {pds} url: {full_url}")
 
