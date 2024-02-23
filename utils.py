@@ -1176,7 +1176,6 @@ async def get_federated_pdses():
                     logger.info(f"PDS: {pds} is valid.")
                     active += 1
                     await database_handler.update_pds_status(pds, True)
-                    break
             except AttributeError:
                 try:
                     error = response_json.get("error", [])
@@ -1185,10 +1184,8 @@ async def get_federated_pdses():
                         logger.warning(f"PDS: {pds} not valid.")
                         not_active += 1
                         await database_handler.update_pds_status(pds, False)
-                        break
                 except AttributeError:
                     logger.error(f"Error fetching data: {full_url}")
-                    continue
         elif response.status_code == 429:
             logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
             await asyncio.sleep(60)  # Retry after 60 seconds
