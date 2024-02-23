@@ -1767,6 +1767,36 @@ async def tables_exists():
                 return False
 
 
+async def get_unique_did_to_pds():
+    records = set()
+    try:
+        async with connection_pools["read"].acquire() as connection:
+            records_to_check = await connection.fetch("""SELECT DISTINCT ON (pds) did, pds
+                                                            FROM your_table
+                                                            WHERE pds IS NOT NULL
+                                                            ORDER BY pds, did
+            """)
+
+            for record in records_to_check:
+                records.add((records['did'], record['pds']))
+
+        return records
+    except Exception as e:
+        logger.error(f"Error fetching federated pdses: {e}")
+
+        return None
+
+
+async def update_pds_status(pds, status):
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                query = """UPDATE pds SET status = $2 WHERE pds = $1"""
+                await connection.execute(query, pds, status)
+    except Exception as e:
+        logger.error(f"Error updating pds status: {e}")
+
+
 # ======================================================================================================================
 # ============================================ get database credentials ================================================
 def get_database_config():

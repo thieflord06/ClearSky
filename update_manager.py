@@ -15,6 +15,7 @@ import utils
 # python update_manager.py --update-all-did-pds-service-info // get past dids and service info
 # python update_manager.py --fetch-users-count // command to get current count in db
 # python update_manager.py --update-redis-cache // update handles in redis
+# python update_manager.py --get-federated-pdses // validate PDSes
 
 
 async def main():
@@ -25,6 +26,7 @@ async def main():
     parser.add_argument('--update-all-did-pds-service-info', action='store_true', help='get past dids and service info')
     parser.add_argument('--fetch-users-count', action='store_true', help='Fetch the count of users')
     parser.add_argument('--update-redis-cache', action='store_true', help='Update the redis cache')
+    parser.add_argument('--get-federated-pdses', action='store_true', help='Validate PDSes')
     args = parser.parse_args()
 
     await database_handler.create_connection_pool("read")  # Creates connection pool for db
@@ -124,6 +126,10 @@ async def main():
             last_value = None
             logger.info(f"No last value retrieved, starting from beginning.")
         await utils.get_all_did_records(last_value)
+        logger.info("Finished processing data.")
+    elif args.get_federated_pdses:
+        logger.info("Get federated pdses requested.")
+        await utils.get_federated_pdses()
         logger.info("Finished processing data.")
 
 if __name__ == '__main__':
