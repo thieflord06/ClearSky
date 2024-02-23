@@ -678,19 +678,89 @@ async def get_total_users():
 
     logger.info(f"<< {session_ip} - {api_key} - total users request")
 
-    try:
-        active_count = await utils.get_user_count(get_active=True)
-        total_count = await utils.get_user_count(get_active=False)
-        deleted_count = await utils.get_deleted_users_count()
+    if utils.total_users_status.is_set():
+        logger.info("Total users count is being updated.")
 
-        formatted_active_count = '{:,}'.format(active_count)
-        formatted_total_count = '{:,}'.format(total_count)
-        formatted_deleted_count = '{:,}'.format(deleted_count)
-    except AttributeError:
-        logger.error("db connection issue.")
-        formatted_active_count = None
-        formatted_total_count = None
-        formatted_deleted_count = None
+        process_time = utils.total_users_process_time
+
+        if utils.total_users_start_time is None:
+            start_time = total_start_time
+        else:
+            start_time = utils.total_users_start_time
+
+        if process_time is None:
+            remaining_time = "not yet determined"
+        else:
+            time_elapsed = datetime.now() - start_time
+
+            if time_elapsed < process_time:
+                # Calculate hours and minutes left
+                time_difference = process_time - time_elapsed
+                seconds_left = time_difference.total_seconds()
+                minutes_left = seconds_left / 60
+                # hours = minutes // 60
+                remaining_seconds = seconds_left % 60
+
+                if minutes_left > 1:
+                    remaining_time = f"{round(minutes_left)} mins {round(remaining_seconds)} seconds"
+                elif seconds_left > 0:
+                    remaining_time = f"{round(seconds_left)} seconds"
+            else:
+                remaining_time = "just finished"
+
+        timing = {"timeLeft": remaining_time}
+        data = {"data": timing}
+
+        return jsonify(data)
+
+    total_count = utils.total_users_cache.get('total_users')
+    active_count = utils.total_active_users_cache.get('total_active_users')
+    deleted_count = utils.total_deleted_users_cache.get('total_deleted_users')
+
+    if total_count is None or active_count is None or deleted_count is None:
+        logger.info("Getting total users new cache.")
+
+        process_time = utils.total_users_process_time
+
+        if utils.total_users_start_time is None:
+            start_time = total_start_time
+        else:
+            start_time = utils.total_users_start_time
+
+        if process_time is None:
+            remaining_time = "not yet determined"
+        else:
+            time_elapsed = datetime.now() - start_time
+
+            if time_elapsed < process_time:
+                # Calculate hours and minutes left
+                time_difference = process_time - time_elapsed
+                seconds_left = time_difference.total_seconds()
+                minutes_left = seconds_left / 60
+                # hours = minutes // 60
+                remaining_seconds = seconds_left % 60
+
+                if minutes_left > 1:
+                    remaining_time = f"{round(minutes_left)} mins {round(remaining_seconds)} seconds"
+                elif seconds_left > 0:
+                    remaining_time = f"{round(seconds_left)} seconds"
+            else:
+                remaining_time = "just finished"
+
+        timing = {"timeLeft": remaining_time}
+        data = {"data": timing}
+
+        asyncio.create_task(utils.update_total_users())
+
+        return jsonify(data)
+
+    formatted_active_count = '{:,}'.format(active_count)
+    formatted_total_count = '{:,}'.format(total_count)
+    formatted_deleted_count = '{:,}'.format(deleted_count)
+
+    logger.info(f"{session_ip} > {str(*session.values())} | total users count: {formatted_total_count}")
+    logger.info(f"{session_ip} > {str(*session.values())} | total active users count: {formatted_active_count}")
+    logger.info(f"{session_ip} > {str(*session.values())} | total deleted users count: {formatted_deleted_count}")
 
     count_data = {
         "active_count": {
