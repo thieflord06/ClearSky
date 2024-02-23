@@ -1,6 +1,5 @@
 # app.py
 
-import functools
 import sys
 import quart
 from quart import Quart, render_template, request, session, jsonify
@@ -43,9 +42,12 @@ cors(app, allow_origin="*")
 # Configure session secret key
 app.secret_key = 'your-secret-key'
 
+session_ip = None
 fun_start_time = None
 funer_start_time = None
+total_start_time = None
 block_stats_app_start_time = None
+db_connected = None
 read_db_connected = None
 write_db_connected = None
 db_connected = None
@@ -324,6 +326,7 @@ async def first_run():
                 await database_handler.blocklists_updater()
                 await database_handler.top_24blocklists_updater()
                 await utils.update_block_statistics()
+                await utils.update_total_users()
 
                 break
             else:
@@ -1343,7 +1346,7 @@ async def block_stats():
     number_blocked_101_and_1000 = utils.number_blocked_101_and_1000_cache.get("blocked101to1000")
     number_blocked_greater_than_1000 = utils.number_blocked_greater_than_1000_cache.get("blockedmore1000")
     average_number_of_blocked = utils.average_number_of_blocked_cache.get("averageblocked")
-    total_users = utils.total_users_cache.get("total_users")
+    total_users = utils.block_stats_total_users_cache.get("total_users")
 
     values_to_check = (
         number_of_total_blocks,

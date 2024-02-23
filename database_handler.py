@@ -454,6 +454,19 @@ async def get_dids_without_handles():
 
 
 async def get_pdses():
+    # update PDS table with unique PDSes from users table
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                query = """INSERT INTO pds (pds) 
+                            SELECT DISTINCT pds
+                            FROM users
+                            WHERE pds IS NOT NULL
+                            ON CONFLICT (pds) DO NOTHING"""
+                await connection.execute(query)
+    except Exception as e:
+        logger.error(f"Error inserting PDSes: {e}")
+
     try:
         async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
@@ -562,6 +575,8 @@ async def crawl_all(forced=False):
             logger.info(f"Resuming processing from DID: {last_processed_did}")
             all_dids = all_dids[start_index:]
 
+    logger.info("Starting crawl.")
+
     for i in range(0, total_dids, batch_size):
         remaining_dids = total_dids - i
         current_batch_size = min(batch_size, remaining_dids)
@@ -571,9 +586,19 @@ async def crawl_all(forced=False):
         await crawler_batch(batch_dids, forced=forced)
 
         # Update the temporary table with the last processed DID
-        last_processed_did = batch_dids[-1]  # Assuming DID is the first element in each tuple
-        logger.debug("Last processed DID: " + str(last_processed_did))
-        await update_temporary_table(last_processed_did, table)
+        if batch_dids:
+            try:
+                last_processed_did = batch_dids[-1]  # Assuming DID is the first element in each tuple
+            except IndexError:
+                logger.error(f"Batch of DIDs is empty: {batch_dids}")
+
+            logger.debug("Last processed DID: " + str(last_processed_did))
+
+            await update_temporary_table(last_processed_did, table)
+        else:
+            logger.warning("Batch of DIDs is empty. Skipping update of the temporary table.")
+            logger.error(f"Batch_dids that caused issue: {batch_dids}")
+            continue
 
         cumulative_processed_count += len(batch_dids)
 
@@ -601,7 +626,7 @@ async def crawler_batch(batch_dids, forced=False):
     total_mutes_updated = [mute_lists, mute_users_list]
     handles_to_update = []
 
-    for did in batch_dids:
+    for did, pds in batch_dids:
         handle = await on_wire.resolve_did(did)
 
         if handle is not None:
@@ -618,10 +643,10 @@ async def crawler_batch(batch_dids, forced=False):
             continue
 
         try:
-            blocked_data = await utils.get_user_block_list(did)
-            mutelists_data = await utils.get_mutelists(did)
-            mutelists_users_data = await utils.get_mutelist_users(did)
-            subscribe_data = await utils.get_subscribelists(did)
+            blocked_data = await utils.get_user_block_list(did, pds)
+            mutelists_data = await utils.get_mutelists(did, pds)
+            mutelists_users_data = await utils.get_mutelist_users(did, pds)
+            subscribe_data = await utils.get_subscribelists(did, pds)
 
             if blocked_data:
                 # Update the blocklists table in the database with the retrieved data
@@ -658,12 +683,6 @@ async def crawler_batch(batch_dids, forced=False):
                         await update_user_handles(handles_to_update)
                         total_handles_updated += len(handles_to_update)
 
-                # for did, handle in handles_to_update:
-                #     only_handles.append(handle)
-
-                # logger.info("Adding new prefixes.")
-                # await add_new_prefixes(only_handles)
-
                 break
             except asyncpg.ConnectionDoesNotExistError as e:
                 logger.warning(f"Connection error: {e}, retrying in 30 seconds...")
@@ -687,7 +706,7 @@ async def crawler_batch(batch_dids, forced=False):
 async def get_all_users_db(run_update=False, get_dids=False, get_count=False, init_db_run=False):
     batch_size = 10000
     all_records = set()
-
+    dids = set()
     async with connection_pools["write"].acquire() as connection:
         if get_count:
             # Fetch the total count of users in the "users" table
@@ -697,8 +716,9 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
         if not run_update:
             if get_dids:
                 # Return the user_dids from the "users" table
-                records = await connection.fetch('SELECT did FROM users')
-                dids = [record['did'] for record in records]
+                records = await connection.fetch('SELECT did, pds FROM users')
+                for record in records:
+                    dids.add((record['did'], record['pds']))
 
                 return dids
         else:
@@ -780,6 +800,12 @@ async def update_blocklist_table(ident, blocked_data, forced=False):
             existing_blocklist_entries = {record['uri'] for record in existing_records}
             logger.debug("Existing entires " + ident + ": " + str(existing_blocklist_entries))
 
+            # Iterate through blocked_data and check for None values
+            for subject, created_date, uri, cid in blocked_data:
+                if any(value is None for value in (subject, created_date, uri, cid)):
+                    logger.error(f"Blocked data contains a None value skipping: {blocked_data}")
+
+                    return counter
             # Prepare the data to be inserted into the database
             data = [(ident, subject, created_date, uri, cid, datetime.now(pytz.utc), touched_actor) for subject, created_date, uri, cid in blocked_data]
             logger.debug("Data to be inserted: " + str(data))
@@ -797,6 +823,7 @@ async def update_blocklist_table(ident, blocked_data, forced=False):
                 try:
                     for uri in existing_blocklist_entries:
                         if uri is None:
+                            logger.error(f"a URI is None in: {ident}")
                             continue  # Skip processing when uri is None
                         await connection.execute('INSERT INTO blocklists_transaction (uri, block_date, touched, touched_actor) VALUES ($1, $2, $3, $4)', uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor)
                 except Exception as e:
@@ -1023,11 +1050,25 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, fo
 
 
 async def does_did_and_handle_exist_in_database(did, handle):
-    async with connection_pools["write"].acquire() as connection:
-        # Execute the SQL query to check if the given DID exists in the "users" table
-        exists = await connection.fetchval('SELECT EXISTS(SELECT 1 FROM users WHERE did = $1 AND handle = $2)', did, handle)
+    max_retries = 5
+    for retry in range(max_retries):
+        try:
+            async with connection_pools["write"].acquire() as connection:
+                # Execute the SQL query to check if the given DID exists in the "users" table
+                exists = await connection.fetchval('SELECT EXISTS(SELECT 1 FROM users WHERE did = $1 AND handle = $2)', did, handle)
 
-        return exists
+                return exists
+        except TimeoutError:
+            logger.error(f"Timeout error on attempt {retry + 1}. Retrying in 10 sec...")
+            await asyncio.sleep(10)
+            if retry == max_retries - 1:
+                logger.error("Max retries reached, failing to False.")
+
+                return False
+        except Exception as e:
+            logger.error(f"Error during does_did_and_handle_exist_in_database: {e}")
+
+            return False
 
 
 async def update_user_handles(handles_to_update):
@@ -1103,7 +1144,7 @@ async def process_batch(batch_dids, ad_hoc, table, batch_size):
                 handles_to_update.append((did, handle))
 
         if handles_to_update:
-            only_handles = []
+            # only_handles = []
             while True:
                 try:
                     # Update the database with the batch of handles
@@ -1113,11 +1154,11 @@ async def process_batch(batch_dids, ad_hoc, table, batch_size):
                             await update_user_handles(handles_to_update)
                             total_handles_updated += len(handles_to_update)
 
-                    for did, handle in handles_to_update:
-                        only_handles.append(handle)
+                    # for did, handle in handles_to_update:
+                    #     only_handles.append(handle)
 
-                    logger.info("Adding new prefixes.")
-                    await add_new_prefixes(only_handles)
+                    # logger.info("Adding new prefixes.")
+                    # await add_new_prefixes(only_handles)
 
                     # Update the temporary table with the last processed DID
                     last_processed_did = handle_batch[-1][0]  # Assuming DID is the first element in each tuple
@@ -1177,6 +1218,8 @@ async def update_24_hour_block_list_table(entries, list_type):
                 query = "INSERT INTO top_twentyfour_hour_block (did, count, list_type) VALUES ($1, $2, $3)"
                 await connection.executemany(query, data)
                 logger.info("Updated top 24 block table.")
+    except asyncpg.exceptions.UniqueViolationError:
+        logger.warning("Attempted to insert duplicate entry into top block table")
     except asyncpg.exceptions.UndefinedTableError:
         logger.warning("table doesn't exist")
     except Exception as e:
@@ -1214,6 +1257,8 @@ async def update_top_block_list_table(entries, list_type):
                 query = "INSERT INTO top_block (did, count, list_type) VALUES ($1, $2, $3)"
                 await connection.executemany(query, data)
                 logger.info("Updated top block table")
+    except asyncpg.exceptions.UniqueViolationError:
+        logger.warning("Attempted to insert duplicate entry into top block table")
     except asyncpg.exceptions.UndefinedTableError:
         logger.warning("table doesn't exist")
     except Exception as e:
@@ -1798,14 +1843,22 @@ async def top_24blocklists_updater():
     blocklist_24_updater_status.set()
 
     logger.info("Updating top 24 blocks lists requested.")
+
     await truncate_top24_blocks_table()
+
     blocked_results_24, blockers_results_24 = await get_top24_blocks()  # Get blocks for db
+
     logger.debug(f"blocked count: {len(blocked_results_24)} blockers count: {len(blockers_results_24)}")
+
     # Update blocked entries
     await update_24_hour_block_list_table(blocked_results_24, blocked_list_24)  # add blocked to top blocks table
+
     logger.info("Updated top blocked db.")
+
     await update_24_hour_block_list_table(blockers_results_24, blocker_list_24)  # add blocker to top blocks table
+
     logger.info("Updated top blockers db.")
+
     top_blocked_24, top_blockers_24, blocked_aid_24, blocker_aid_24 = await utils.resolve_top24_block_lists()
 
     logger.info("Top 24 hour blocks lists page updated.")
@@ -1915,6 +1968,43 @@ async def tables_exists():
                 logger.error("Error checking if schema exists, db not connected.")
 
                 return False
+
+
+async def get_unique_did_to_pds():
+    logger.info("Getting unique did to pds.")
+
+    records = set()
+
+    try:
+        async with connection_pools["read"].acquire() as connection:
+            async with connection.transaction():
+                records_to_check = await connection.fetch("""SELECT DISTINCT ON (pds) did, pds
+                                                                FROM users
+                                                                WHERE pds IS NOT NULL
+                                                                ORDER BY pds, did
+                """)
+
+                for record in records_to_check:
+                    records.add((record['did'], record['pds']))
+
+                logger.info("Retrieved data.")
+                logger.info(f"Processing {len(records)} records.")
+
+                return records
+    except Exception as e:
+        logger.error(f"Error fetching federated pdses: {e}")
+
+        return None
+
+
+async def update_pds_status(pds, status):
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                query = """UPDATE pds SET status = $2 WHERE pds = $1"""
+                await connection.execute(query, pds, status)
+    except Exception as e:
+        logger.error(f"Error updating pds status: {e}")
 
 
 async def get_api_keys(environment, key_type, key):

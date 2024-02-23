@@ -15,6 +15,7 @@ import utils
 # python update_manager.py --update-all-did-pds-service-info // get past dids and service info
 # python update_manager.py --fetch-users-count // command to get current count in db
 # python update_manager.py --update-redis-cache // update handles in redis
+# python update_manager.py --get-federated-pdses // validate PDSes
 
 
 async def main():
@@ -25,6 +26,7 @@ async def main():
     parser.add_argument('--update-all-did-pds-service-info', action='store_true', help='get past dids and service info')
     parser.add_argument('--fetch-users-count', action='store_true', help='Fetch the count of users')
     parser.add_argument('--update-redis-cache', action='store_true', help='Update the redis cache')
+    parser.add_argument('--get-federated-pdses', action='store_true', help='Validate PDSes')
     args = parser.parse_args()
 
     await database_handler.create_connection_pool("read")  # Creates connection pool for db
@@ -115,6 +117,7 @@ async def main():
         status = await database_handler.populate_redis_with_handles()
         if not status:
             logger.info("Cache update complete.")
+        sys.exit()
     elif args.update_all_did_pds_service_info:
         logger.info("Update did pds service information.")
         last_value = await database_handler.check_last_created_did_date()
@@ -125,6 +128,14 @@ async def main():
             logger.info(f"No last value retrieved, starting from beginning.")
         await utils.get_all_did_records(last_value)
         logger.info("Finished processing data.")
+        sys.exit()
+    elif args.get_federated_pdses:
+        logger.info("Get federated pdses requested.")
+        active, not_active = await utils.get_federated_pdses()
+        logger.info("Validated PDSes.")
+        logger.info(f"Active PDSes: {active}")
+        logger.info(f"Not active PDSes: {not_active}")
+        sys.exit()
 
 if __name__ == '__main__':
     asyncio.run(main())

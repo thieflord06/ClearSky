@@ -25,39 +25,35 @@ blocker_avatar_ids_cache = TTLCache(maxsize=100, ttl=86400)  # Every 24 hours
 blocked_24_avatar_ids_cache = TTLCache(maxsize=100, ttl=43200)  # Every 12 hours
 blocker_24_avatar_ids_cache = TTLCache(maxsize=100, ttl=43200)  # Every 12 hours
 
-memory_resolved_blocked_cache = Cache(maxsize=100)
-memory_resolved_blockers_cache = Cache(maxsize=100)
-
-memory_blocked_avatar_ids_cache = Cache(maxsize=100)
-memory_blocker_avatar_ids_cache = Cache(maxsize=100)
-
-memory_resolved_24_blocked_cache = Cache(maxsize=100)
-memory_resolved_24blockers_cache = Cache(maxsize=100)
-
-memory_blocked_24_avatar_ids_cache = Cache(maxsize=100)
-memory_blocker_24_avatar_ids_cache = Cache(maxsize=100)
-
-number_of_total_blocks_cache = TTLCache(maxsize=2, ttl=86400)
-number_of_unique_users_blocked_cache = TTLCache(maxsize=2, ttl=86400)
-number_of_unique_users_blocking_cache = TTLCache(maxsize=2, ttl=86400)
-number_block_1_cache = TTLCache(maxsize=2, ttl=86400)
-number_blocking_2_and_100_cache = TTLCache(maxsize=2, ttl=86400)
-number_blocking_101_and_1000_cache = TTLCache(maxsize=2, ttl=86400)
-number_blocking_greater_than_1000_cache = TTLCache(maxsize=2, ttl=86400)
-average_number_of_blocking_cache = TTLCache(maxsize=2, ttl=86400)
-number_blocked_1_cache = TTLCache(maxsize=2, ttl=86400)
-number_blocked_2_and_100_cache = TTLCache(maxsize=2, ttl=86400)
-number_blocked_101_and_1000_cache = TTLCache(maxsize=2, ttl=86400)
-number_blocked_greater_than_1000_cache = TTLCache(maxsize=2, ttl=86400)
-average_number_of_blocked_cache = TTLCache(maxsize=2, ttl=86400)
-total_users_cache = TTLCache(maxsize=2, ttl=86400)
+number_of_total_blocks_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
+number_of_unique_users_blocked_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
+number_of_unique_users_blocking_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
+number_block_1_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
+number_blocking_2_and_100_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
+number_blocking_101_and_1000_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
+number_blocking_greater_than_1000_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
+average_number_of_blocking_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
+number_blocked_1_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
+number_blocked_2_and_100_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
+number_blocked_101_and_1000_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
+number_blocked_greater_than_1000_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
+average_number_of_blocked_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
+block_stats_total_users_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
+total_users_cache = TTLCache(maxsize=2, ttl=3600)  # Every 1 hour
+total_active_users_cache = TTLCache(maxsize=2, ttl=3600) # Every 1 hour
+total_deleted_users_cache = TTLCache(maxsize=2, ttl=3600) # Every 1 hour
 
 block_stats_status = asyncio.Event()
+total_users_status = asyncio.Event()
 
 block_stats_process_time = None
 block_stats_last_update = None
 block_stats_start_time = None
 block_stats_as_of_time = None
+
+total_users_process_time = None
+total_users_last_update = None
+total_users_start_time = None
 
 sleep_time = 15
 
@@ -347,7 +343,7 @@ async def update_block_statistics():
     number_blocked_101_and_1000_cache["blocked101to1000"] = number_blocked_101_and_1000
     number_blocked_greater_than_1000_cache["blockedmore1000"] = number_blocked_greater_than_1000
     average_number_of_blocked_cache["averageblocked"] = average_number_of_blocked
-    total_users_cache["total_users"] = total_users
+    block_stats_total_users_cache["total_users"] = total_users
 
     block_stats_status.clear()
 
@@ -364,6 +360,38 @@ async def update_block_statistics():
             number_block_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000,
             average_number_of_blocks, number_blocked_1, number_blocked_2_and_100, number_blocked_101_and_1000,
             number_blocked_greater_than_1000, average_number_of_blocked, total_users)
+
+
+async def update_total_users():
+    global total_users_status
+    global total_users_process_time
+    global total_users_last_update
+    global total_users_start_time
+
+    total_users_start_time = datetime.now()
+
+    total_users_status.set()
+
+    active_count = await get_user_count(get_active=True)
+    total_count = await get_user_count(get_active=False)
+    deleted_count = await get_deleted_users_count()
+
+    total_users_cache["total_users"] = total_count
+    total_active_users_cache["total_active_users"] = active_count
+    total_deleted_users_cache["total_deleted_users"] = deleted_count
+
+    total_users_status.clear()
+
+    end_time = datetime.now()
+
+    if total_users_start_time is not None:
+        total_users_process_time = end_time - total_users_start_time
+
+    total_users_last_update = end_time
+
+    total_users_start_time = None
+
+    return active_count, total_count, deleted_count
 
 
 async def get_all_users(pds):
@@ -484,8 +512,8 @@ async def get_single_user_blocks(ident, limit=100, offset=0):
         return block_list, count, pages
 
 
-async def get_user_block_list(ident):
-    base_url = "https://bsky.social/xrpc/"
+async def get_user_block_list(ident, pds):
+    base_url = f"{pds}/xrpc/"
     collection = "app.bsky.graph.block"
     limit = 100
     blocked_data = []
@@ -553,16 +581,21 @@ async def get_user_block_list(ident):
                     if not timestamp:
                         timestamp = None
                         blocked_data.append((subject, timestamp, uri, cid))
-                        logger.warning("missing timestamp")
+                        logger.error(f"{full_url}: missing timestamp")
                     elif not uri:
                         uri = None
                         blocked_data.append((subject, timestamp, uri, cid))
-                        logger.warning("Missing uri")
+                        logger.error(f"{full_url}: Missing uri")
                     elif not cid:
                         cid = None
                         blocked_data.append((subject, timestamp, uri, cid))
-                        logger.warning("missing cid")
+                        logger.error(f"{full_url}: missing cid")
+                    elif not subject:
+                        subject = None
+                        blocked_data.append((subject, timestamp, uri, cid))
+                        logger.error(f"{full_url}: missing subject")
                     else:
+                        logger.error(f"{full_url}: missing data")
                         return None
 
             cursor = response_json.get("cursor")
@@ -775,8 +808,8 @@ async def get_handle_history(identifier):
         return None
 
 
-async def get_mutelists(ident):
-    base_url = "https://bsky.social/xrpc/"
+async def get_mutelists(ident, pds):
+    base_url = f"{pds}/xrpc/"
     mute_lists_collection = "app.bsky.graph.list"
     limit = 100
     mutelists_data = []
@@ -893,8 +926,8 @@ async def get_mutelists(ident):
     return mutelists_data
 
 
-async def get_mutelist_users(ident):
-    base_url = "https://bsky.social/xrpc/"
+async def get_mutelist_users(ident, pds):
+    base_url = f"{pds}/xrpc/"
     mute_users_collection = "app.bsky.graph.listitem"
     limit = 100
     mutelists_users_data = []
@@ -1001,8 +1034,8 @@ async def get_mutelist_users(ident):
     return mutelists_users_data
 
 
-async def get_subscribelists(ident):
-    base_url = "https://bsky.social/xrpc/"
+async def get_subscribelists(ident, pds):
+    base_url = f"{pds}/xrpc/"
     subscribe_lists_collection = "app.bsky.graph.listblock"
     limit = 100
     subscribe_data = []
@@ -1166,6 +1199,78 @@ def fetch_data_with_after_parameter(url, after_value):
         logger.error(f"Error fetching data. Status code: {response.status_code}")
 
         return None, None
+
+
+async def get_federated_pdses():
+    active = 0
+    not_active = 0
+
+    records = await database_handler.get_unique_did_to_pds()
+
+    if not records:
+        logger.error("No PDS records found.")
+
+        return None, None
+
+    for did, pds in records:
+        base_url = f"https://bsky.network/xrpc/"
+
+        url = urllib.parse.urljoin(base_url, "com.atproto.sync.getLatestCommit")
+        params = {
+            "did": did,
+        }
+
+        encoded_params = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
+        full_url = f"{url}?{encoded_params}"
+
+        logger.info(full_url)
+
+        try:
+            response = requests.get(full_url)
+        except httpx.RequestError as e:
+            response = None
+            logger.warning("Error during API call: %s", e)
+            await asyncio.sleep(60)  # Retry after 60 seconds
+        except Exception as e:
+            response = None
+            logger.warning("Error during API call: %s", str(e))
+            await asyncio.sleep(60)  # Retry after 60 seconds
+
+        if response.status_code == 200:
+            response_json = response.json()
+            try:
+                cid = response_json.get("cid", [])
+                rev = response_json.get("rev", [])
+
+                if cid and rev:
+                    logger.info(f"PDS: {pds} is valid.")
+                    active += 1
+                    await database_handler.update_pds_status(pds, True)
+            except AttributeError:
+                try:
+                    error = response_json.get("error", [])
+
+                    if "user not found" in error:
+                        logger.warning(f"PDS: {pds} not valid.")
+                        not_active += 1
+                        await database_handler.update_pds_status(pds, False)
+                except AttributeError:
+                    logger.error(f"Error fetching data: {full_url}")
+        elif response.status_code == 429:
+            logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
+            await asyncio.sleep(60)  # Retry after 60 seconds
+        elif response.status_code == 404:
+            logger.warning(f"PDS: {pds} not valid.")
+            not_active += 1
+            await database_handler.update_pds_status(pds, False)
+        elif response.status_code == 500:
+            logger.warning(f"PDS: {pds} not valid.")
+            not_active += 1
+            await database_handler.update_pds_status(pds, False)
+        else:
+            logger.warning("Response status code: " + str(response.status_code) + f" for PDS: {pds} url: {full_url}")
+
+    return active, not_active
 
 
 async def get_all_did_records(last_cursor=None):
