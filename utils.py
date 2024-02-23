@@ -25,26 +25,34 @@ blocker_avatar_ids_cache = TTLCache(maxsize=100, ttl=86400)  # Every 24 hours
 blocked_24_avatar_ids_cache = TTLCache(maxsize=100, ttl=43200)  # Every 12 hours
 blocker_24_avatar_ids_cache = TTLCache(maxsize=100, ttl=43200)  # Every 12 hours
 
-number_of_total_blocks_cache = TTLCache(maxsize=2, ttl=86400)
-number_of_unique_users_blocked_cache = TTLCache(maxsize=2, ttl=86400)
-number_of_unique_users_blocking_cache = TTLCache(maxsize=2, ttl=86400)
-number_block_1_cache = TTLCache(maxsize=2, ttl=86400)
-number_blocking_2_and_100_cache = TTLCache(maxsize=2, ttl=86400)
-number_blocking_101_and_1000_cache = TTLCache(maxsize=2, ttl=86400)
-number_blocking_greater_than_1000_cache = TTLCache(maxsize=2, ttl=86400)
-average_number_of_blocking_cache = TTLCache(maxsize=2, ttl=86400)
-number_blocked_1_cache = TTLCache(maxsize=2, ttl=86400)
-number_blocked_2_and_100_cache = TTLCache(maxsize=2, ttl=86400)
-number_blocked_101_and_1000_cache = TTLCache(maxsize=2, ttl=86400)
-number_blocked_greater_than_1000_cache = TTLCache(maxsize=2, ttl=86400)
-average_number_of_blocked_cache = TTLCache(maxsize=2, ttl=86400)
-total_users_cache = TTLCache(maxsize=2, ttl=86400)
+number_of_total_blocks_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
+number_of_unique_users_blocked_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
+number_of_unique_users_blocking_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
+number_block_1_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
+number_blocking_2_and_100_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
+number_blocking_101_and_1000_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
+number_blocking_greater_than_1000_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
+average_number_of_blocking_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
+number_blocked_1_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
+number_blocked_2_and_100_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
+number_blocked_101_and_1000_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
+number_blocked_greater_than_1000_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
+average_number_of_blocked_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
+block_stats_total_users_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
+total_users_cache = TTLCache(maxsize=2, ttl=3600)  # Every 1 hour
+total_active_users_cache = TTLCache(maxsize=2, ttl=3600) # Every 1 hour
+total_deleted_users_cache = TTLCache(maxsize=2, ttl=3600) # Every 1 hour
 
 block_stats_status = asyncio.Event()
+total_users_status = asyncio.Event()
 
 block_stats_process_time = None
 block_stats_last_update = None
 block_stats_start_time = None
+
+total_users_process_time = None
+total_users_last_update = None
+total_users_start_time = None
 
 sleep_time = 15
 
@@ -309,7 +317,7 @@ async def update_block_statistics():
     number_blocked_101_and_1000_cache["blocked101to1000"] = number_blocked_101_and_1000
     number_blocked_greater_than_1000_cache["blockedmore1000"] = number_blocked_greater_than_1000
     average_number_of_blocked_cache["averageblocked"] = average_number_of_blocked
-    total_users_cache["total_users"] = total_users
+    block_stats_total_users_cache["total_users"] = total_users
 
     block_stats_status.clear()
 
@@ -324,6 +332,38 @@ async def update_block_statistics():
             number_block_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000,
             average_number_of_blocks, number_blocked_1, number_blocked_2_and_100, number_blocked_101_and_1000,
             number_blocked_greater_than_1000, average_number_of_blocked, total_users)
+
+
+async def update_total_users():
+    global total_users_status
+    global total_users_process_time
+    global total_users_last_update
+    global total_users_start_time
+
+    total_users_start_time = datetime.now()
+
+    total_users_status.set()
+
+    active_count = await get_user_count(get_active=True)
+    total_count = await get_user_count(get_active=False)
+    deleted_count = await get_deleted_users_count()
+
+    total_users_cache["total_users"] = total_count
+    total_active_users_cache["total_active_users"] = active_count
+    total_deleted_users_cache["total_deleted_users"] = deleted_count
+
+    total_users_status.clear()
+
+    end_time = datetime.now()
+
+    if total_users_start_time is not None:
+        total_users_process_time = end_time - total_users_start_time
+
+    total_users_last_update = end_time
+
+    total_users_start_time = None
+
+    return active_count, total_count, deleted_count
 
 
 async def get_all_users(pds):
