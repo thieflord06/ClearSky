@@ -164,9 +164,9 @@ async def selection_handle():
                 process_time = utils.total_users_process_time
 
                 if utils.total_users_start_time is None:
-                    start_time = total_start_time
+                    start_time = datetime.now()
                 else:
-                    start_time = utils.total_users_start_time
+                    start_time = datetime.now()
 
                 if process_time is None:
                     remaining_time = "not yet determined"
