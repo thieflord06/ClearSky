@@ -1772,7 +1772,7 @@ async def get_unique_did_to_pds():
     try:
         async with connection_pools["read"].acquire() as connection:
             records_to_check = await connection.fetch("""SELECT DISTINCT ON (pds) did, pds
-                                                            FROM your_table
+                                                            FROM users
                                                             WHERE pds IS NOT NULL
                                                             ORDER BY pds, did
             """)
