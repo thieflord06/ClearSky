@@ -424,26 +424,29 @@ async def get_all_users(pds):
             logger.warning("Error during API call: %s", str(e))
             await asyncio.sleep(60)  # Retry after 60 seconds
 
-        if response.status_code == 200:
-            response_json = response.json()
-            repos = response_json.get("repos", [])
-            for repo in repos:
-                records.add(repo["did"])
+        try:
+            if response.status_code == 200:
+                response_json = response.json()
+                repos = response_json.get("repos", [])
+                for repo in repos:
+                    records.add(repo["did"])
 
-            cursor = response_json.get("cursor")
-            if not cursor:
+                cursor = response_json.get("cursor")
+                if not cursor:
+                    break
+            elif response.status_code == 429:
+                logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
+                await asyncio.sleep(60)  # Retry after 60 seconds
+            elif response.status_code == 522:
+                logger.warning("Received 522 Origin Connection Time-out, skipping.")
                 break
-        elif response.status_code == 429:
-            logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
-            await asyncio.sleep(60)  # Retry after 60 seconds
-        elif response.status_code == 522:
-            logger.warning("Received 522 Origin Connection Time-out, skipping.")
+            else:
+                logger.warning("Response status code: " + str(response.status_code))
+                await asyncio.sleep(10)
+                continue
+        except AttributeError:
+            logger.error(f"Error fetching user for: {pds} {full_url}")
             break
-        else:
-            logger.warning("Response status code: " + str(response.status_code))
-            await asyncio.sleep(10)
-            continue
-
     return records
 
 
