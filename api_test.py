@@ -12,7 +12,7 @@ def main():
         # api_endpoint = "http://localhost/api/v1/base/internal/status/process-status"
         # api_endpoint = "http://staging.bsky.thieflord.dev/api/v1/blocklist-search-blocking/test.tennis.thieflord.dev"
         # api_endpoint = "http://localhost/api/v1/lists/block-stats"
-        # api_endpoint = "http://api.staging.clearsky.services/api/v1/lists/fun-facts"
+        # api_endpoint = "http://api.staging.clearsky.services/api/v1/anon/lists/fun-facts"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/blocklist-search-blocking/test.tennis.thieflord.dev/alechiaval.bsky.social"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/lists/block-stats"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/blocklist/boykisser.expert"
@@ -29,10 +29,12 @@ def main():
         # api_endpoint = "http://localhost/api/v1/single-blocklist/thieflord.dev"
         # api_endpoint = "http://localhost/api/v1/at-uri/at://did:plc:smcanwhzsj5dqp4yew7y6ybx/app.bsky.graph.listblock/3kf2kfcic5od2u"
         # api_endpoint = "http://localhost/api/v1/get-moderation-list/gaminsdfvf"
-        api_endpoint = "http://localhost/api/v1/auth/blocklist/rudyfraser.com"
+        # api_endpoint = "http://localhost/api/v1/auth/blocklist/rudyfraser.com"
+        # api_endpoint = "http://localhost/api/v1/auth/base/internal/api-check?key_type="
 
         # Define the headers with the API key
         headers = {'X-API-Key': f'{api_key}'}
+
         try:
             # Send an OPTIONS request to the API endpoint with the headers
             options_response = requests.options(api_endpoint, headers=headers)
@@ -74,11 +76,11 @@ def main():
         # api_endpoint = "http://localhost/api/v1/base/internal/status/process-status"
         # api_endpoint = "http://staging.bsky.thieflord.dev/api/v1/blocklist-search-blocking/test.tennis.thieflord.dev"
         # api_endpoint = "http://localhost/api/v1/lists/block-stats"
-        # api_endpoint = "http://api.staging.clearsky.services/api/v1/lists/fun-facts"
+        api_endpoint = "https://api.staging.clearsky.services/api/v1/anon/lists/fun-facts"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/blocklist-search-blocking/test.tennis.thieflord.dev/alechiaval.bsky.social"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/lists/block-stats"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/blocklist/boykisser.expert"
-        # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/single-blocklist/thieflord.dev"
+        # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/anon/single-blocklist/thieflord.dev"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/total-users"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/get-did/thieflord.dev"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/get-handle/thieflford.dev"
@@ -91,7 +93,7 @@ def main():
         # api_endpoint = "http://localhost/api/v1/single-blocklist/thieflord.dev"
         # api_endpoint = "http://localhost/api/v1/at-uri/at://did:plc:smcanwhzsj5dqp4yew7y6ybx/app.bsky.graph.listblock/3kf2kfcic5od2u"
         # api_endpoint = "http://localhost/api/v1/get-moderation-list/gaminsdfvf"
-        api_endpoint = "http://localhost/api/v1/auth/blocklist/rudyfraser.com"
+        # api_endpoint = "http://localhost/api/v1/auth/blocklist/rudyfraser.com"
 
         try:
             # Send an OPTIONS request to the API endpoint with the headers
