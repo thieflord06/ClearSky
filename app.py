@@ -17,6 +17,7 @@ from config_helper import logger
 from environment import get_api_var
 import aiocron
 import aiohttp
+import functools
 
 # ======================================================================================================================
 # ======================================== global variables // Set up logging ==========================================
@@ -24,7 +25,7 @@ config = config_helper.read_config()
 
 title_name = "ClearSky"
 os.system("title " + title_name)
-version = "3.18.5d"
+version = "3.19.0d"
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
 runtime = datetime.now()
