@@ -336,39 +336,43 @@ async def selection_handle():
                 elif selection == "7":
                     logger.info(f"Requesting in-common blocked for: {await utils.get_user_handle(identifier)}")
 
-                    in_common_list, percentages = await database_handler.get_similar_blocked_by(did_identifier)
+                    logger.info("Returning known issue page.")
 
-                    if "no blocks" in in_common_list:
-                        in_common_list = ["No blocks to compare"]
-                        percentage = [0]
+                    return await render_template('known_issue.html')
 
-                        return await render_template('in_common.html', in_common_list=in_common_list,
-                                                     percentages=percentage, user=handle_identifier)
-
-                    if not in_common_list:
-                        in_common_list = ["No blocks in common with other users"]
-                        percentage = [0]
-
-                        return await render_template('in_common.html', in_common_list=in_common_list,
-                                                     percentages=percentage, user=handle_identifier)
-
-                    in_common_handles = []
-                    avatar_id_list = []
-                    did_list = []
-                    rounded_percentages = [round(percent, 2) for percent in percentages]
-
-                    for did in in_common_list:
-                        handle = await utils.get_user_handle(did)
-                        in_common_handles.append(handle)
-                        avatar_id = on_wire.get_avatar_id(did)
-                        avatar_id_list.append(avatar_id)
-                        did_list.append(did)
-
-                    logger.info(in_common_handles)
-
-                    return await render_template('in_common.html', in_common_list=in_common_list,
-                                                 percentages=rounded_percentages, user=handle_identifier,
-                                                 did_list=did_list, avatar_id=avatar_id_list)
+                    # in_common_list, percentages = await database_handler.get_similar_blocked_by(did_identifier)
+                    #
+                    # if "no blocks" in in_common_list:
+                    #     in_common_list = ["No blocks to compare"]
+                    #     percentage = [0]
+                    #
+                    #     return await render_template('in_common.html', in_common_list=in_common_list,
+                    #                                  percentages=percentage, user=handle_identifier)
+                    #
+                    # if not in_common_list:
+                    #     in_common_list = ["No blocks in common with other users"]
+                    #     percentage = [0]
+                    #
+                    #     return await render_template('in_common.html', in_common_list=in_common_list,
+                    #                                  percentages=percentage, user=handle_identifier)
+                    #
+                    # in_common_handles = []
+                    # avatar_id_list = []
+                    # did_list = []
+                    # rounded_percentages = [round(percent, 2) for percent in percentages]
+                    #
+                    # for did in in_common_list:
+                    #     handle = await utils.get_user_handle(did)
+                    #     in_common_handles.append(handle)
+                    #     avatar_id = on_wire.get_avatar_id(did)
+                    #     avatar_id_list.append(avatar_id)
+                    #     did_list.append(did)
+                    #
+                    # logger.info(in_common_handles)
+                    #
+                    # return await render_template('in_common.html', in_common_list=in_common_list,
+                    #                              percentages=rounded_percentages, user=handle_identifier,
+                    #                              did_list=did_list, avatar_id=avatar_id_list)
                 elif selection == "8":
                     logger.info(f"Requesting handle history for {identifier}")
 
