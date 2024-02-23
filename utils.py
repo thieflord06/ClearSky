@@ -436,6 +436,9 @@ async def get_all_users(pds):
         elif response.status_code == 429:
             logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
             await asyncio.sleep(60)  # Retry after 60 seconds
+        elif response.status_code == 522:
+            logger.warning("Received 522 Origin Connection Time-out, skipping.")
+            break
         else:
             logger.warning("Response status code: " + str(response.status_code))
             await asyncio.sleep(10)
