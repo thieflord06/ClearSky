@@ -129,8 +129,10 @@ async def main():
         logger.info("Finished processing data.")
     elif args.get_federated_pdses:
         logger.info("Get federated pdses requested.")
-        await utils.get_federated_pdses()
-        logger.info("Finished processing data.")
+        active, not_active = await utils.get_federated_pdses()
+        logger.info("Validated PDSes.")
+        logger.info(f"Active PDSes: {active}")
+        logger.info(f"Not active PDSes: {not_active}")
 
 if __name__ == '__main__':
     asyncio.run(main())

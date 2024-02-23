@@ -1132,6 +1132,9 @@ def fetch_data_with_after_parameter(url, after_value):
 
 
 async def get_federated_pdses():
+    active = 0
+    not_active = 0
+
     records = await database_handler.get_unique_did_to_pds()
 
     for did, pds in records:
@@ -1167,7 +1170,7 @@ async def get_federated_pdses():
 
                     if cid and rev:
                         logger.info(f"PDS: {pds} is valid.")
-
+                        active += 1
                         await database_handler.update_pds_status(pds, True)
                         break
                 except AttributeError:
@@ -1176,6 +1179,7 @@ async def get_federated_pdses():
 
                         if "user not found" in error:
                             logger.warning(f"PDS: {pds} not valid.")
+                            not_active += 1
                             await database_handler.update_pds_status(pds, False)
                             break
                     except AttributeError:
@@ -1188,6 +1192,8 @@ async def get_federated_pdses():
                 logger.warning("Response status code: " + str(response.status_code))
                 await asyncio.sleep(10)
                 continue
+
+    return active, not_active
 
 
 async def get_all_did_records(last_cursor=None):
