@@ -1778,7 +1778,7 @@ async def get_unique_did_to_pds():
             """)
 
             for record in records_to_check:
-                records.add((records['did'], record['pds']))
+                records.add((record['did'], record['pds']))
 
         return records
     except Exception as e:
