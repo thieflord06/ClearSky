@@ -377,7 +377,7 @@ async def fetch_and_push_data():
                 "top_blocked": f'{self_server}/api/v1/auth/lists/fun-facts',
                 "top_24_blocked": f'{self_server}/api/v1/auth/lists/funer-facts',
                 "block_stats": f'{self_server}/api/v1/auth/lists/block-stats',
-                "total_users": f'{self_server}/api/v1/auth/lists/total-users'
+                "total_users": f'{self_server}/api/v1/auth/total-users'
             }
             send_api = {
                 "top_blocked": f'{push_server}/api/v1/base/reporting/stats-cache/top-blocked',
