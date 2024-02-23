@@ -426,7 +426,7 @@ async def crawler_batch(batch_dids, forced=False):
     total_mutes_updated = [mute_lists, mute_users_list]
     handles_to_update = []
 
-    for did in batch_dids:
+    for did, pds in batch_dids:
         handle = await on_wire.resolve_did(did)
 
         if handle is not None:
@@ -443,10 +443,10 @@ async def crawler_batch(batch_dids, forced=False):
             continue
 
         try:
-            blocked_data = await utils.get_user_block_list(did)
-            mutelists_data = await utils.get_mutelists(did)
-            mutelists_users_data = await utils.get_mutelist_users(did)
-            subscribe_data = await utils.get_subscribelists(did)
+            blocked_data = await utils.get_user_block_list(did, pds)
+            mutelists_data = await utils.get_mutelists(did, pds)
+            mutelists_users_data = await utils.get_mutelist_users(did, pds)
+            subscribe_data = await utils.get_subscribelists(did, pds)
 
             if blocked_data:
                 # Update the blocklists table in the database with the retrieved data
@@ -506,7 +506,7 @@ async def crawler_batch(batch_dids, forced=False):
 async def get_all_users_db(run_update=False, get_dids=False, get_count=False, init_db_run=False):
     batch_size = 10000
     all_records = set()
-
+    dids = set()
     async with connection_pools["write"].acquire() as connection:
         if get_count:
             # Fetch the total count of users in the "users" table
@@ -516,8 +516,9 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
         if not run_update:
             if get_dids:
                 # Return the user_dids from the "users" table
-                records = await connection.fetch('SELECT did FROM users')
-                dids = [record['did'] for record in records]
+                records = await connection.fetch('SELECT did, pds FROM users')
+                for record in records:
+                    dids.add((record['did'], record['pds']))
 
                 return dids
         else:

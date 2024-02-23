@@ -446,8 +446,8 @@ async def get_single_user_blocks(ident, limit=100, offset=0):
         return block_list, count
 
 
-async def get_user_block_list(ident):
-    base_url = "https://bsky.social/xrpc/"
+async def get_user_block_list(ident, pds):
+    base_url = f"{pds}/xrpc/"
     collection = "app.bsky.graph.block"
     limit = 100
     blocked_data = []
@@ -738,8 +738,8 @@ async def get_handle_history(identifier):
         return None
 
 
-async def get_mutelists(ident):
-    base_url = "https://bsky.social/xrpc/"
+async def get_mutelists(ident, pds):
+    base_url = f"{pds}/xrpc/"
     mute_lists_collection = "app.bsky.graph.list"
     limit = 100
     mutelists_data = []
@@ -856,8 +856,8 @@ async def get_mutelists(ident):
     return mutelists_data
 
 
-async def get_mutelist_users(ident):
-    base_url = "https://bsky.social/xrpc/"
+async def get_mutelist_users(ident, pds):
+    base_url = f"{pds}/xrpc/"
     mute_users_collection = "app.bsky.graph.listitem"
     limit = 100
     mutelists_users_data = []
@@ -964,8 +964,8 @@ async def get_mutelist_users(ident):
     return mutelists_users_data
 
 
-async def get_subscribelists(ident):
-    base_url = "https://bsky.social/xrpc/"
+async def get_subscribelists(ident, pds):
+    base_url = f"{pds}/xrpc/"
     subscribe_lists_collection = "app.bsky.graph.listblock"
     limit = 100
     subscribe_data = []
