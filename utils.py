@@ -1145,58 +1145,59 @@ async def get_federated_pdses():
     for did, pds in records:
         base_url = f"https://bsky.network/xrpc/"
 
-        while True:
-            url = urllib.parse.urljoin(base_url, "com.atproto.sync.getLatestCommit")
-            params = {
-                "did": did,
-            }
+        url = urllib.parse.urljoin(base_url, "com.atproto.sync.getLatestCommit")
+        params = {
+            "did": did,
+        }
 
-            encoded_params = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
-            full_url = f"{url}?{encoded_params}"
+        encoded_params = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
+        full_url = f"{url}?{encoded_params}"
 
-            logger.debug(full_url)
+        logger.info(full_url)
 
+        try:
+            response = requests.get(full_url)
+        except httpx.RequestError as e:
+            response = None
+            logger.warning("Error during API call: %s", e)
+            await asyncio.sleep(60)  # Retry after 60 seconds
+        except Exception as e:
+            response = None
+            logger.warning("Error during API call: %s", str(e))
+            await asyncio.sleep(60)  # Retry after 60 seconds
+
+        if response.status_code == 200:
+            response_json = response.json()
             try:
-                response = requests.get(full_url)
-            except httpx.RequestError as e:
-                response = None
-                logger.warning("Error during API call: %s", e)
-                await asyncio.sleep(60)  # Retry after 60 seconds
-            except Exception as e:
-                response = None
-                logger.warning("Error during API call: %s", str(e))
-                await asyncio.sleep(60)  # Retry after 60 seconds
+                cid = response_json.get("cid", [])
+                rev = response_json.get("rev", [])
 
-            if response.status_code == 200:
-                response_json = response.json()
+                if cid and rev:
+                    logger.info(f"PDS: {pds} is valid.")
+                    active += 1
+                    await database_handler.update_pds_status(pds, True)
+                    break
+            except AttributeError:
                 try:
-                    cid = response_json.get("cid", [])
-                    rev = response_json.get("rev", [])
+                    error = response_json.get("error", [])
 
-                    if cid and rev:
-                        logger.info(f"PDS: {pds} is valid.")
-                        active += 1
-                        await database_handler.update_pds_status(pds, True)
+                    if "user not found" in error:
+                        logger.warning(f"PDS: {pds} not valid.")
+                        not_active += 1
+                        await database_handler.update_pds_status(pds, False)
                         break
                 except AttributeError:
-                    try:
-                        error = response_json.get("error", [])
-
-                        if "user not found" in error:
-                            logger.warning(f"PDS: {pds} not valid.")
-                            not_active += 1
-                            await database_handler.update_pds_status(pds, False)
-                            break
-                    except AttributeError:
-                        logger.error(f"Error fetching data: {full_url}")
-                        continue
-            elif response.status_code == 429:
-                logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
-                await asyncio.sleep(60)  # Retry after 60 seconds
-            else:
-                logger.warning("Response status code: " + str(response.status_code))
-                await asyncio.sleep(10)
-                continue
+                    logger.error(f"Error fetching data: {full_url}")
+                    continue
+        elif response.status_code == 429:
+            logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
+            await asyncio.sleep(60)  # Retry after 60 seconds
+        elif response.status_code == 404:
+            logger.warning(f"PDS: {pds} not valid.")
+            not_active += 1
+            await database_handler.update_pds_status(pds, False)
+        else:
+            logger.warning("Response status code: " + str(response.status_code) + f" for PDS: {pds} url: {full_url}")
 
     return active, not_active
 
