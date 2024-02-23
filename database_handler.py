@@ -326,6 +326,19 @@ async def get_dids_without_handles():
 
 
 async def get_pdses():
+    # update PDS table with unique PDSes from users table
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                query = """INSERT INTO pds (pds) 
+                            SELECT DISTINCT pds
+                            FROM users
+                            WHERE pds IS NOT NULL
+                            ON CONFLICT (pds) DO NOTHING"""
+                await connection.execute(query)
+    except Exception as e:
+        logger.error(f"Error inserting PDSes: {e}")
+
     try:
         async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
