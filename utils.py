@@ -1137,6 +1137,11 @@ async def get_federated_pdses():
 
     records = await database_handler.get_unique_did_to_pds()
 
+    if not records:
+        logger.error("No PDS records found.")
+
+        return None, None
+
     for did, pds in records:
         base_url = f"https://bsky.network/xrpc/"
 
