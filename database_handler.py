@@ -2031,7 +2031,7 @@ async def get_api_keys(environment, key_type, key):
 
 
 async def get_dids_per_pds():
-    data_list = []
+    data_dict = {}
 
     try:
         async with connection_pools["read"].acquire() as connection:
@@ -2045,14 +2045,9 @@ async def get_dids_per_pds():
 
                 results = await connection.fetch(query)
                 for record in results:
-                    data = {
-                        "pds": record['pds'],
-                        "count": record['did_count']
-                    }
+                    data_dict[record['pds']] = record['did_count']
 
-                    data_list.append(data)
-
-                return data_list
+                return data_dict
     except Exception as e:
         logger.error(f"Error getting dids per pds: {e}")
 

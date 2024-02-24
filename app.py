@@ -2062,7 +2062,6 @@ async def anon_get_internal_status():
 
 
 @app.route('/api/v1/anon/lists/dids-per-pds', methods=['GET'])
-@api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def anon_dids_per_pds():
     return await retrieve_dids_per_pds()
