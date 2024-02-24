@@ -323,10 +323,10 @@ async def first_run():
             tables = await database_handler.tables_exists()
 
             if tables:
-                await database_handler.blocklists_updater()
-                await database_handler.top_24blocklists_updater()
-                await utils.update_block_statistics()
-                await utils.update_total_users()
+                # await database_handler.blocklists_updater()
+                # await database_handler.top_24blocklists_updater()
+                # await utils.update_block_statistics()
+                # await utils.update_total_users()
 
                 break
             else:
@@ -1803,6 +1803,101 @@ async def retrieve_dids_per_pds():
     return jsonify(data)
 
 
+async def retrieve_subscribe_blocks_blocklist(client_identifier, page):
+    session_ip = await get_ip()
+    try:
+        api_key = request.headers.get('X-API-Key')
+    except AttributeError:
+        api_key = "anonymous"
+
+    identifier = await sanitization(client_identifier)
+
+    logger.info(f"<< {session_ip} - {api_key} - blocklist request: {identifier}")
+
+    if identifier:
+        did_identifier, handle_identifier = await pre_process_identifier(identifier)
+        status = await preprocess_status(identifier)
+
+        if did_identifier and handle_identifier and status:
+
+            items_per_page = 100
+            offset = (page - 1) * items_per_page
+
+            blocklist, count, pages = await utils.process_subscribe_blocks(did_identifier, limit=items_per_page,
+                                                                           offset=offset)
+
+            formatted_count = '{:,}'.format(count)
+
+            blocklist_data = {"blocklist": blocklist,
+                              "count": formatted_count,
+                              "pages": pages}
+        else:
+            blocklist = None
+            count = 0
+
+            blocklist_data = {"blocklist": blocklist,
+                              "count": count}
+
+        data = {"identity": identifier,
+                "status": status,
+                "data": blocklist_data}
+    else:
+        identifier = "Missing parameter"
+        result = "Missing parameter"
+        block_data = {"error": result}
+        data = {"data": block_data}
+
+    logger.info(f">> {session_ip} - {api_key} - blocklist result returned: {identifier}")
+
+    return jsonify(data)
+
+
+async def retrieve_subscribe_blocks_single_blocklist(client_identifier, page):
+    session_ip = await get_ip()
+    api_key = request.headers.get('X-API-Key')
+
+    identifier = await sanitization(client_identifier)
+
+    logger.info(f"<< {session_ip} - {api_key} - blocklist request: {identifier}")
+
+    if identifier:
+        did_identifier, handle_identifier = await pre_process_identifier(identifier)
+        status = await preprocess_status(identifier)
+
+        if did_identifier and handle_identifier and status:
+
+            items_per_page = 100
+            offset = (page - 1) * items_per_page
+
+            blocklist, count, pages = await database_handler.get_subscribe_blocks_single(did_identifier, limit=items_per_page,
+                                                                                         offset=offset)
+
+            formatted_count = '{:,}'.format(count)
+
+            blocklist_data = {"blocklist": blocklist,
+                              "count": formatted_count,
+                              "pages": pages}
+        else:
+            blocklist = None
+            count = 0
+
+            blocklist_data = {"blocklist": blocklist,
+                              "count": count}
+
+        data = {"identity": identifier,
+                "status": status,
+                "data": blocklist_data}
+    else:
+        identifier = "Missing parameter"
+        result = "Missing parameter"
+        block_data = {"error": result}
+        data = {"data": block_data}
+
+    logger.info(f">> {session_ip} - {api_key} - blocklist result returned: {identifier}")
+
+    return jsonify(data)
+
+
 # ======================================================================================================================
 # ============================================= Authenticated API Endpoints ============================================
 @app.route('/api/v1/auth/blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
@@ -1948,6 +2043,22 @@ async def auth_dids_per_pds():
     return await retrieve_dids_per_pds()
 
 
+@app.route('/api/v1/auth/subscribe-blocks-blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
+@app.route('/api/v1/auth/subscribe-blocks-blocklist/<client_identifier>/<int:page>', methods=['GET'])
+@api_key_required("SERVER")
+@rate_limit(50, timedelta(seconds=1))
+async def auth_subscribe_blocks_blocklist(client_identifier, page):
+    return await retrieve_subscribe_blocks_blocklist(client_identifier, page)
+
+
+@app.route('/api/v1/auth/subscribe-blocks-single-blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
+@app.route('/api/v1/auth/subscribe-blocks-single-blocklist/<client_identifier>/<int:page>', methods=['GET'])
+@api_key_required("SERVER")
+@rate_limit(50, timedelta(seconds=1))
+async def auth_subscribe_blocks_single_blocklist(client_identifier, page):
+    return await retrieve_subscribe_blocks_single_blocklist(client_identifier, page)
+
+
 # ======================================================================================================================
 # ========================================== Unauthenticated API Endpoints =============================================
 @app.route('/api/v1/anon/blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
@@ -2049,7 +2160,7 @@ async def anon_block_stats():
     return await block_stats()
 
 
-@app.route('/api/v1/auth/base/autocomplete/<client_identifier>', methods=['GET'])
+@app.route('/api/v1/anon/base/autocomplete/<client_identifier>', methods=['GET'])
 @rate_limit(30, timedelta(seconds=1))
 async def anon_autocomplete(client_identifier):
     return await autocomplete(client_identifier)
@@ -2065,6 +2176,20 @@ async def anon_get_internal_status():
 @rate_limit(30, timedelta(seconds=1))
 async def anon_dids_per_pds():
     return await retrieve_dids_per_pds()
+
+
+@app.route('/api/v1/anon/subscribe-blocks-blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
+@app.route('/api/v1/anon/subscribe-blocks-blocklist/<client_identifier>/<int:page>', methods=['GET'])
+@rate_limit(30, timedelta(seconds=1))
+async def anon_subscribe_blocks_blocklist(client_identifier, page):
+    return await retrieve_subscribe_blocks_blocklist(client_identifier, page)
+
+
+@app.route('/api/v1/anon/subscribe-blocks-single-blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
+@app.route('/api/v1/anon/subscribe-blocks-single-blocklist/<client_identifier>/<int:page>', methods=['GET'])
+@rate_limit(30, timedelta(seconds=1))
+async def anon_subscribe_blocks_single_blocklist(client_identifier, page):
+    return await retrieve_subscribe_blocks_single_blocklist(client_identifier, page)
 
 
 # ======================================================================================================================

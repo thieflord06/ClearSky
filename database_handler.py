@@ -314,6 +314,55 @@ async def get_blocklist(ident, limit=100, offset=0):
         return None, None
 
 
+async def get_subscribe_blocks(ident, limit=100, offset=0):
+    data_dict = {}
+
+    try:
+        async with connection_pools["read"].acquire() as connection:
+            async with connection.transaction():
+                query_1 = """SELECT list_uri
+                                FROM subscribe_blocklists
+                                WHERE did = $1
+                                LIMIT $2
+                                OFFSET $3"""
+
+                get_lists = await connection.fetch(query_1, ident, limit, offset)
+
+                lists = [record['list_uri'] for record in get_lists]
+
+                query_2 = """SELECT ml.url, ml.name, ml.did, u.handle, ml.description, ml.created_date
+                                FROM mutelists AS ml
+                                INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle
+                                WHERE ml.uri = $1"""
+
+                for list_uri in lists:
+                    mutelist = await connection.fetch(query_2, list_uri)
+
+                    list_dict = {
+                        "url": mutelist[0]['url'],
+                        "name": mutelist[0]['name'],
+                        "handle": mutelist[0]['handle'],
+                        "description": mutelist[0]['description'],
+                        "created_date": mutelist[0]['created_date'].isoformat()
+                    }
+
+                    data_dict[list_uri] = list_dict
+
+                total_blocked_count = len(lists)
+
+                return data_dict, total_blocked_count
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+    except AttributeError:
+        logger.error(f"db connection issue.")
+    except Exception as e:
+        logger.error(f"Error retrieving subscribe blocklist for {ident}: {e} {type(e)}")
+
+        return None, None
+
+
 async def get_listitem_url(uri):
     try:
         async with connection_pools["read"].acquire() as connection:

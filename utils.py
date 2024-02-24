@@ -662,6 +662,33 @@ async def process_user_block_list(ident, limit, offset):
         return block_list, count, pages
 
 
+async def process_subscribe_blocks(ident, limit, offset):
+    block_list = {}
+
+    blocked_users, count = await database_handler.get_subscribe_blocks(ident, limit=limit, offset=offset)
+
+    if count > 0:
+        pages = count / 100
+
+        pages = math.ceil(pages)
+    else:
+        pages = 0
+
+    if not blocked_users:
+        total_blocked = 0
+        logger.info(f"{ident} Hasn't subscribed blocked any lists.")
+
+        return block_list, total_blocked, pages
+    elif "no repo" in blocked_users:
+        total_blocked = 0
+        logger.info(f"{ident} doesn't exist.")
+
+        return block_list, total_blocked, pages
+    else:
+
+        return blocked_users, count, pages
+
+
 async def fetch_handles_batch(batch_dids, ad_hoc=False):
     handles = []
 
