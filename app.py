@@ -1056,11 +1056,11 @@ async def fun_facts():
         return jsonify(data)
 
     if database_handler.blocklist_updater_status.is_set():
-        resolved_blocked = utils.memory_resolved_blocked_cache.get('resolved_blocked')
-        resolved_blockers = utils.memory_resolved_blockers_cache.get('resolved_blockers')
+        resolved_blocked = utils.resolved_blocked_cache.get('resolved_blocked')
+        resolved_blockers = utils.resolved_blockers_cache.get('resolved_blockers')
 
-        blocked_aid = utils.memory_blocked_avatar_ids_cache.get('blocked_aid')
-        blocker_aid = utils.memory_blocker_avatar_ids_cache.get('blocker_aid')
+        blocked_aid = utils.blocked_avatar_ids_cache.get('blocked_aid')
+        blocker_aid = utils.blocker_avatar_ids_cache.get('blocker_aid')
 
         data_lists = {"blocked": resolved_blocked,
                       "blockers": resolved_blockers,
@@ -1120,11 +1120,11 @@ async def fun_facts():
     if resolved_blocked is None or resolved_blockers is None or blocker_aid is None or blocker_aid is None:
         asyncio.create_task(database_handler.blocklists_updater())
 
-        resolved_blocked = utils.memory_resolved_blocked_cache.get('resolved_blocked')
-        resolved_blockers = utils.memory_resolved_blockers_cache.get('resolved_blockers')
+        resolved_blocked = utils.resolved_blocked_cache.get('resolved_blocked')
+        resolved_blockers = utils.resolved_blockers_cache.get('resolved_blockers')
 
-        blocked_aid = utils.memory_blocked_avatar_ids_cache.get('blocked_aid')
-        blocker_aid = utils.memory_blocker_avatar_ids_cache.get('blocker_aid')
+        blocked_aid = utils.blocked_avatar_ids_cache.get('blocked_aid')
+        blocker_aid = utils.blocker_avatar_ids_cache.get('blocker_aid')
 
         data_lists = {"blocked": resolved_blocked,
                       "blockers": resolved_blockers,
@@ -1212,11 +1212,11 @@ async def funer_facts():
         return jsonify(data)
 
     if database_handler.blocklist_24_updater_status.is_set():
-        resolved_blocked_24 = utils.memory_resolved_24_blocked_cache.get('resolved_blocked')
-        resolved_blockers_24 = utils.memory_resolved_24blockers_cache.get('resolved_blockers')
+        resolved_blocked_24 = utils.resolved_24_blocked_cache.get('resolved_blocked')
+        resolved_blockers_24 = utils.resolved_24blockers_cache.get('resolved_blockers')
 
-        blocked_aid_24 = utils.memory_blocked_24_avatar_ids_cache.get('blocked_aid')
-        blocker_aid_24 = utils.memory_blocker_24_avatar_ids_cache.get('blocker_aid')
+        blocked_aid_24 = utils.blocked_24_avatar_ids_cache.get('blocked_aid')
+        blocker_aid_24 = utils.blocker_24_avatar_ids_cache.get('blocker_aid')
 
         data_lists = {"blocked24": resolved_blocked_24,
                       "blockers24": resolved_blockers_24,
@@ -1275,11 +1275,11 @@ async def funer_facts():
     if resolved_blocked_24 is None or resolved_blockers_24 is None or blocker_aid_24 is None or blocker_aid_24 is None:
         asyncio.create_task(database_handler.top_24blocklists_updater())
 
-        resolved_blocked_24 = utils.memory_resolved_24_blocked_cache.get('resolved_blocked')
-        resolved_blockers_24 = utils.memory_resolved_24blockers_cache.get('resolved_blockers')
+        resolved_blocked_24 = utils.resolved_24_blocked_cache.get('resolved_blocked')
+        resolved_blockers_24 = utils.resolved_24blockers_cache.get('resolved_blockers')
 
-        blocked_aid_24 = utils.memory_blocked_24_avatar_ids_cache.get('blocked_aid')
-        blocker_aid_24 = utils.memory_blocker_24_avatar_ids_cache.get('blocker_aid')
+        blocked_aid_24 = utils.blocked_24_avatar_ids_cache.get('blocked_aid')
+        blocker_aid_24 = utils.blocker_24_avatar_ids_cache.get('blocker_aid')
 
         data_lists = {"blocked24": resolved_blocked_24,
                       "blockers24": resolved_blockers_24,
