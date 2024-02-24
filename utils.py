@@ -411,15 +411,17 @@ async def get_all_users(pds):
                 if not cursor:
                     break
             elif response.status_code == 429:
-                logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
+                logger.warning(f"Received 429 Too Many Requests. Retrying after 60 seconds...{full_url}")
                 await asyncio.sleep(60)  # Retry after 60 seconds
             elif response.status_code == 522:
-                logger.warning("Received 522 Origin Connection Time-out, skipping.")
+                logger.warning(f"Received 522 Origin Connection Time-out, skipping. {full_url}")
+                break
+            elif response.status_code == 530:
+                logger.warning(f"Received 530 Origin DNS Error, skipping. {full_url}")
                 break
             else:
-                logger.warning("Response status code: " + str(response.status_code))
-                await asyncio.sleep(10)
-                continue
+                logger.warning("Response status code: " + str(response.status_code) + f" {full_url}")
+                break
         except AttributeError:
             logger.error(f"Error fetching user for: {pds} {full_url}")
             break
