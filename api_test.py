@@ -94,6 +94,7 @@ def main():
         # api_endpoint = "http://localhost/api/v1/at-uri/at://did:plc:smcanwhzsj5dqp4yew7y6ybx/app.bsky.graph.listblock/3kf2kfcic5od2u"
         # api_endpoint = "http://localhost/api/v1/get-moderation-list/gaminsdfvf"
         # api_endpoint = "http://localhost/api/v1/auth/blocklist/rudyfraser.com"
+        api_endpoint = "http://localhost/api/v1/anon/lists/dids-per-pds"
 
         try:
             # Send an OPTIONS request to the API endpoint with the headers
