@@ -15,7 +15,7 @@ def main():
         # api_endpoint = "http://api.staging.clearsky.services/api/v1/anon/lists/fun-facts"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/blocklist-search-blocking/test.tennis.thieflord.dev/alechiaval.bsky.social"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/lists/block-stats"
-        # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/blocklist/boykisser.expert"
+        api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/blocklist/boykisser.expert"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/single-blocklist/thieflord.dev"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/total-users"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/get-did/thieflord.dev"
