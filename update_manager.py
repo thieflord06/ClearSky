@@ -135,6 +135,7 @@ async def main():
         logger.info("Validated PDSes.")
         logger.info(f"Active PDSes: {active}")
         logger.info(f"Not active PDSes: {not_active}")
+        logger.info("Finished processing data. Exiting.")
         sys.exit()
 
 if __name__ == '__main__':

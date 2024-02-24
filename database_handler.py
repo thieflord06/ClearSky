@@ -1976,7 +1976,7 @@ async def get_unique_did_to_pds():
     records = set()
 
     try:
-        async with connection_pools["read"].acquire() as connection:
+        async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
                 records_to_check = await connection.fetch("""SELECT DISTINCT ON (pds) did, pds
                                                                 FROM users

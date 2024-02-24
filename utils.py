@@ -1263,7 +1263,8 @@ async def get_federated_pdses():
             not_active += 1
             await database_handler.update_pds_status(pds, False)
         else:
-            logger.warning("Response status code: " + str(response.status_code) + f" for PDS: {pds} url: {full_url}")
+            logger.warning("Response status code: " + str(response.status_code) + f" for PDS: {pds} url: {full_url} not valid.")
+            await database_handler.update_pds_status(pds, False)
 
     return active, not_active
 
