@@ -1795,6 +1795,14 @@ async def check_api_keys():
     return jsonify(status)
 
 
+async def retrieve_dids_per_pds():
+    result = await database_handler.get_dids_per_pds()
+
+    data = {"data": result}
+
+    return jsonify(data)
+
+
 # ======================================================================================================================
 # ============================================= Authenticated API Endpoints ============================================
 @app.route('/api/v1/auth/blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
@@ -1933,6 +1941,13 @@ async def auth_check_api_keys():
     return await check_api_keys()
 
 
+@app.route('/api/v1/auth/lists/dids-per-pds', methods=['GET'])
+@api_key_required("SERVER")
+@rate_limit(50, timedelta(seconds=1))
+async def auth_dids_per_pds():
+    return await retrieve_dids_per_pds()
+
+
 # ======================================================================================================================
 # ========================================== Unauthenticated API Endpoints =============================================
 @app.route('/api/v1/anon/blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
@@ -2044,6 +2059,13 @@ async def anon_autocomplete(client_identifier):
 @rate_limit(30, timedelta(seconds=1))
 async def anon_get_internal_status():
     return await get_internal_status()
+
+
+@app.route('/api/v1/anon/lists/dids-per-pds', methods=['GET'])
+@api_key_required("SERVER")
+@rate_limit(30, timedelta(seconds=1))
+async def anon_dids_per_pds():
+    return await retrieve_dids_per_pds()
 
 
 # ======================================================================================================================

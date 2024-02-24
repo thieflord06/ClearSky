@@ -2030,6 +2030,35 @@ async def get_api_keys(environment, key_type, key):
                 return None
 
 
+async def get_dids_per_pds():
+    data_list = []
+
+    try:
+        async with connection_pools["read"].acquire() as connection:
+            async with connection.transaction():
+                query = """SELECT users.pds, COUNT(did) AS did_count
+                            FROM users
+                            join pds on users.pds = pds.pds
+                            WHERE users.pds IS NOT NULL AND pds.status is TRUE
+                            GROUP BY users.pds
+                            ORDER BY did_count desc"""
+
+                results = await connection.fetch(query)
+                for record in results:
+                    data = {
+                        "pds": record['pds'],
+                        "count": record['did_count']
+                    }
+
+                    data_list.append(data)
+
+                return data_list
+    except Exception as e:
+        logger.error(f"Error getting dids per pds: {e}")
+
+        return None
+
+
 # ======================================================================================================================
 # ============================================ get database credentials ================================================
 def get_database_config():
