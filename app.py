@@ -48,7 +48,6 @@ fun_start_time = None
 funer_start_time = None
 total_start_time = None
 block_stats_app_start_time = None
-db_connected = None
 read_db_connected = None
 write_db_connected = None
 db_connected = None
