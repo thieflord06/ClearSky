@@ -9,7 +9,7 @@ import requests
 from config_helper import logger, limiter
 import on_wire
 import re
-from cachetools import TTLCache, Cache
+from cachetools import TTLCache
 import json
 # ======================================================================================================================
 # ================================================ cache/global variables ==============================================
@@ -190,24 +190,12 @@ async def resolve_top_block_lists():
     blocked_avatar_ids = dict(list(sorted_resolved_blocked_avatar_dict.items())[:20])
     blocker_avatar_ids = dict(list(sorted_resolved_blockers_avatar_dict.items())[:20])
 
-    # Clear the caches before writing to them
-    memory_resolved_blocked_cache.clear()
-    memory_resolved_blockers_cache.clear()
-    memory_blocked_avatar_ids_cache.clear()
-    memory_blocker_avatar_ids_cache.clear()
-
     # Cache the resolved lists
     resolved_blocked_cache["resolved_blocked"] = top_resolved_blocked
     resolved_blockers_cache["resolved_blockers"] = top_resolved_blockers
 
-    memory_resolved_blocked_cache["resolved_blocked"] = top_resolved_blocked
-    memory_resolved_blockers_cache["resolved_blockers"] = top_resolved_blockers
-
     blocked_avatar_ids_cache["blocked_aid"] = blocked_avatar_ids
     blocker_avatar_ids_cache["blocker_aid"] = blocker_avatar_ids
-
-    memory_blocked_avatar_ids_cache["blocked_aid"] = blocked_avatar_ids
-    memory_blocker_avatar_ids_cache["blocker_aid"] = blocker_avatar_ids
 
     return top_resolved_blocked, top_resolved_blockers, blocked_avatar_ids, blocker_avatar_ids
 
@@ -282,24 +270,12 @@ async def resolve_top24_block_lists():
     blocked_avatar_ids = dict(list(sorted_resolved_blocked_avatar_dict.items())[:20])
     blocker_avatar_ids = dict(list(sorted_resolved_blockers_avatar_dict.items())[:20])
 
-    # Clear the caches before writing to them
-    memory_resolved_24_blocked_cache.clear()
-    memory_resolved_24blockers_cache.clear()
-    memory_blocked_24_avatar_ids_cache.clear()
-    memory_blocker_24_avatar_ids_cache.clear()
-
     # Cache the resolved lists
     resolved_24_blocked_cache["resolved_blocked"] = top_resolved_blocked
     resolved_24blockers_cache["resolved_blockers"] = top_resolved_blockers
 
-    memory_resolved_24_blocked_cache["resolved_blocked"] = top_resolved_blocked
-    memory_resolved_24blockers_cache["resolved_blockers"] = top_resolved_blockers
-
     blocked_24_avatar_ids_cache["blocked_aid"] = blocked_avatar_ids
     blocker_24_avatar_ids_cache["blocker_aid"] = blocker_avatar_ids
-
-    memory_blocked_24_avatar_ids_cache["blocked_aid"] = blocked_avatar_ids
-    memory_blocker_24_avatar_ids_cache["blocker_aid"] = blocker_avatar_ids
 
     return top_resolved_blocked, top_resolved_blockers, blocked_avatar_ids, blocker_avatar_ids
 
