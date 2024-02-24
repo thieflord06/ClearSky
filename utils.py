@@ -395,11 +395,9 @@ async def get_all_users(pds):
         except httpx.RequestError as e:
             response = None
             logger.warning("Error during API call: %s", e)
-            await asyncio.sleep(60)  # Retry after 60 seconds
         except Exception as e:
             response = None
             logger.warning("Error during API call: %s", str(e))
-            await asyncio.sleep(60)  # Retry after 60 seconds
 
         try:
             if response.status_code == 200:
@@ -419,6 +417,18 @@ async def get_all_users(pds):
                 break
             elif response.status_code == 530:
                 logger.warning(f"Received 530 Origin DNS Error, skipping. {full_url}")
+                break
+            elif response.status_code == 504:
+                logger.warning(f"Received 504 Gateway Timeout, skipping. {full_url}")
+                break
+            elif response.status_code == 104:
+                logger.warning(f"Received 104 Connection Reset by Peer, skipping. {full_url}")
+                break
+            elif response.status_code == 403:
+                logger.warning(f"Received 403 Forbidden, skipping. {full_url}")
+                break
+            elif response.status_code == 502:
+                logger.warning(f"Received 502 Bad Gateway, skipping. {full_url}")
                 break
             else:
                 logger.warning("Response status code: " + str(response.status_code) + f" {full_url}")
