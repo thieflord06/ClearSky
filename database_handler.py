@@ -315,42 +315,44 @@ async def get_blocklist(ident, limit=100, offset=0):
 
 
 async def get_subscribe_blocks(ident, limit=100, offset=0):
-    data_dict = {}
+    data_list = []
 
     try:
         async with connection_pools["read"].acquire() as connection:
             async with connection.transaction():
-                query_1 = """SELECT list_uri
-                                FROM subscribe_blocklists
-                                WHERE did = $1
+                query_1 = """SELECT mu.subject_did, u.handle, s.date_added, u.status, s.list_uri
+                                FROM subscribe_blocklists AS s
+                                INNER JOIN mutelists_users AS mu ON s.list_uri = mu.list_uri
+                                INNER JOIN users AS u ON mu.subject_did = u.did
+                                WHERE s.did = $1
+                                ORDER BY s.date_added DESC
                                 LIMIT $2
                                 OFFSET $3"""
 
-                get_lists = await connection.fetch(query_1, ident, limit, offset)
+                query_2 = """SELECT COUNT(mu.subject_did)
+                                FROM subscribe_blocklists AS s
+                                INNER JOIN mutelists_users AS mu ON s.list_uri = mu.list_uri
+                                WHERE s.did = $1"""
 
-                lists = [record['list_uri'] for record in get_lists]
+                sub_list = await connection.fetch(query_1, ident, limit, offset)
 
-                query_2 = """SELECT ml.url, ml.name, ml.did, u.handle, ml.description, ml.created_date
-                                FROM mutelists AS ml
-                                INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle
-                                WHERE ml.uri = $1"""
+                total_blocked_count = await connection.fetchval(query_2, ident)
 
-                for list_uri in lists:
-                    mutelist = await connection.fetch(query_2, list_uri)
+                if not sub_list:
+                    return None, 0
 
+                for record in sub_list:
                     list_dict = {
-                        "url": mutelist[0]['url'],
-                        "name": mutelist[0]['name'],
-                        "handle": mutelist[0]['handle'],
-                        "description": mutelist[0]['description'],
-                        "created_date": mutelist[0]['created_date'].isoformat()
+                        "handle": record['handle'],
+                        "subject_did": record['subject_did'],
+                        "date_added": record['date_added'].isoformat(),
+                        "status": record['status'],
+                        "list_uri": record['list_uri']
                     }
 
-                    data_dict[list_uri] = list_dict
+                    data_list.append(list_dict)
 
-                total_blocked_count = len(lists)
-
-                return data_dict, total_blocked_count
+                return data_list, total_blocked_count
     except asyncpg.PostgresError as e:
         logger.error(f"Postgres error: {e}")
     except asyncpg.InterfaceError as e:
