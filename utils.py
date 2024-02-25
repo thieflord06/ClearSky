@@ -1261,6 +1261,7 @@ def fetch_data_with_after_parameter(url, after_value):
 async def get_federated_pdses():
     active = 0
     not_active = 0
+    attempt = 0
     processed_pds = {}
 
     records = await database_handler.get_unique_did_to_pds()
@@ -1315,22 +1316,35 @@ async def get_federated_pdses():
                         logger.warning(f"PDS: {pds} not valid.")
                         not_active += 1
                         await database_handler.update_pds_status(pds, False)
+                        attempt += 1
+                    else:
+                        logger.error(f"Unexpected error message: {error} {full_url}")
+                        attempt += 1
+                        not_active += 1
+                        await database_handler.update_pds_status(pds, False)
                 except AttributeError:
                     logger.error(f"Error fetching data: {full_url}")
+                    attempt += 1
         elif response.status_code == 429:
             logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
             await asyncio.sleep(60)  # Retry after 60 seconds
         elif response.status_code == 404:
             logger.warning(f"PDS: {pds} not valid.")
             not_active += 1
+            attempt += 1
             await database_handler.update_pds_status(pds, False)
         elif response.status_code == 500:
             logger.warning(f"PDS: {pds} not valid.")
             not_active += 1
+            attempt += 1
             await database_handler.update_pds_status(pds, False)
         else:
             logger.warning("Response status code: " + str(response.status_code) + f" for PDS: {pds} url: {full_url} not valid.")
             await database_handler.update_pds_status(pds, False)
+            attempt += 1
+
+        if attempt > 0:
+            logger.info(f"Attempt {attempt}/10 failed for {pds}.")
 
     return active, not_active
 
