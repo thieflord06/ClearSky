@@ -5,6 +5,7 @@ import requests
 import aiohttp
 import asyncio
 
+
 async def test_push():
     api_key = 'CLEARSKYtestJIWIR903Jjksrerkoti4'
     push_server = "https://ui.staging.clearsky.app"
