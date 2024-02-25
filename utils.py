@@ -377,7 +377,7 @@ async def get_all_users(pds):
     cursor = None
     records = set()
 
-    logger.info("Getting all dids.")
+    logger.info(f"Getting all dids from {pds}")
 
     while True:
         url = urllib.parse.urljoin(base_url, "com.atproto.sync.listRepos")
@@ -403,8 +403,9 @@ async def get_all_users(pds):
             if response.content:
                 try:
                     response_json = response.json()
-                except AttributeError:
+                except Exception as e:
                     logger.error(f"Error fetching users for: {pds} {full_url}")
+                    logger.error(f"Error: {e}")
                     break
                 repos = response_json.get("repos", [])
                 for repo in repos:

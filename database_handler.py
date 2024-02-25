@@ -818,16 +818,13 @@ async def crawler_batch(batch_dids, forced=False):
     return total_items_updated
 
 
-async def get_all_users_db(run_update=False, get_dids=False, get_count=False, init_db_run=False):
+async def get_all_users_db(run_update=False, get_dids=False, init_db_run=False):
     batch_size = 10000
-    all_records = set()
+    pds_records = set()
     dids = set()
-    async with connection_pools["write"].acquire() as connection:
-        if get_count:
-            # Fetch the total count of users in the "users" table
-            count = await connection.fetchval('SELECT COUNT(*) FROM users')
+    total_dids = 0
 
-            return count
+    async with connection_pools["write"].acquire() as connection:
         if not run_update:
             if get_dids:
                 # Return the user_dids from the "users" table
@@ -841,58 +838,57 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
 
             # Get all DIDs
             for pds in pdses:
-                new_records = await utils.get_all_users(pds)
-                logger.info(f"{len(new_records)} users in {pds}")
-                all_records.update(new_records)
+                pds_dids = await utils.get_all_users(pds)
+                if pds_dids:
+                    logger.info(f"{len(pds_dids)} users in {pds}")
 
-            logger.info(f"Total DIDs: {len(all_records)}")
+                    current_true_pds_records = await connection.fetch('SELECT did FROM users WHERE PDS = $1 AND status = TRUE', pds)
+                    current_true_pds_set = set(record["did"] for record in current_true_pds_records)
 
-            current_true_records = await connection.fetch('SELECT did FROM users WHERE status = TRUE')
+                    logger.info("Getting DIDs to deactivate.")
+                    dids_deactivated = current_true_pds_set - set(pds_dids)
 
-            current_true_set = set()
-            for record in current_true_records:
-                current_true_set.add(record["did"])
+                    logger.info("Getting new DIDs.")
+                    new_dids = set(pds_dids) - current_true_pds_set
 
-            logger.info("Getting DIDs to deactivate.")
-            dids_deactivated = current_true_set - all_records
+                    logger.info(f"Total new DIDs: {len(new_dids)}")
 
-            logger.info("Getting new DIDs.")
-            new_dids = all_records - current_true_set
+                    total_dids += len(pds_records)
 
-            logger.info(f"Total new DIDs: {len(new_dids)}")
+                    if dids_deactivated:
+                        count = 0
 
-            if init_db_run:
-                logger.info("Connected to db.")
+                        logger.info(f"deactivating {len(dids_deactivated)} dids in {pds}.")
 
-                records = list(new_dids)
+                        for did in dids_deactivated:
+                            await connection.execute("""UPDATE users SET status = FALSE WHERE did = $1""", did)
+                            count += 1
+                            logger.info(f"DIDs deactivated: {count}")
 
-                async with connection.transaction():
-                    # Insert data in batches
-                    for i in range(0, len(records), batch_size):
-                        batch_data = [(did, True) for did in records[i: i + batch_size]]
-                        try:
-                            await connection.executemany('INSERT INTO users (did, status) VALUES ($1, $2) ON CONFLICT (did) DO UPDATE SET status = TRUE WHERE users.status <> TRUE', batch_data)
+                        logger.info(f"{str(len(dids_deactivated))} dids deactivated in {pds}.")
 
-                            logger.info(f"Inserted batch {i // batch_size + 1} of {len(records) // batch_size + 1} batches.")
-                        except Exception as e:
-                            logger.error(f"Error inserting batch {i // batch_size + 1}: {str(e)}")
+                    if init_db_run:
+                        logger.info(f"Adding new DIDs {len(new_dids)} to the database.")
 
-        logger.info("Comparing status")
+                        records = list(new_dids)
 
-        if dids_deactivated:
-            count = 0
+                        async with connection.transaction():
+                            # Insert data in batches
+                            for i in range(0, len(records), batch_size):
+                                batch_data = [(did, True) for did in records[i: i + batch_size]]
+                                try:
+                                    await connection.executemany(
+                                        'INSERT INTO users (did, status) VALUES ($1, $2) ON CONFLICT (did) DO UPDATE SET status = TRUE WHERE users.status <> TRUE',
+                                        batch_data)
 
-            logger.info(f"deactivating {len(dids_deactivated)} dids")
+                                    logger.info(
+                                        f"Inserted batch {i // batch_size + 1} of {len(records) // batch_size + 1} batches.")
+                                except Exception as e:
+                                    logger.error(f"Error inserting batch {i // batch_size + 1}: {str(e)}")
+                else:
+                    logger.warning(f"No users in {pds} or could not get users.")
 
-            for did in dids_deactivated:
-                await connection.execute("""UPDATE users SET status = FALSE WHERE did = $1""", did)
-                count += 1
-                logger.info(f"DIDs deactivated: {count}")
-
-            logger.info(f"{str(len(dids_deactivated))} dids deactivated.")
-
-        # Return the records when run_update is false and get_count is called
-        return records
+            logger.info(f"Total DIDs: {total_dids}")
 
 
 async def update_blocklist_table(ident, blocked_data, forced=False):
