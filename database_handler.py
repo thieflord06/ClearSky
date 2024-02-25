@@ -868,23 +868,24 @@ async def get_all_users_db(run_update=False, get_dids=False, init_db_run=False):
                         logger.info(f"{str(len(dids_deactivated))} dids deactivated in {pds}.")
 
                     if init_db_run:
-                        logger.info(f"Adding new DIDs {len(new_dids)} to the database.")
+                        if new_dids:
+                            logger.info(f"Adding new DIDs {len(new_dids)} to the database.")
 
-                        records = list(new_dids)
+                            records = list(new_dids)
 
-                        async with connection.transaction():
-                            # Insert data in batches
-                            for i in range(0, len(records), batch_size):
-                                batch_data = [(did, True) for did in records[i: i + batch_size]]
-                                try:
-                                    await connection.executemany(
-                                        'INSERT INTO users (did, status) VALUES ($1, $2) ON CONFLICT (did) DO UPDATE SET status = TRUE WHERE users.status <> TRUE',
-                                        batch_data)
+                            async with connection.transaction():
+                                # Insert data in batches
+                                for i in range(0, len(records), batch_size):
+                                    batch_data = [(did, True) for did in records[i: i + batch_size]]
+                                    try:
+                                        await connection.executemany(
+                                            'INSERT INTO users (did, status) VALUES ($1, $2) ON CONFLICT (did) DO UPDATE SET status = TRUE WHERE users.status <> TRUE',
+                                            batch_data)
 
-                                    logger.info(
-                                        f"Inserted batch {i // batch_size + 1} of {len(records) // batch_size + 1} batches.")
-                                except Exception as e:
-                                    logger.error(f"Error inserting batch {i // batch_size + 1}: {str(e)}")
+                                        logger.info(
+                                            f"Inserted batch {i // batch_size + 1} of {len(records) // batch_size + 1} batches.")
+                                    except Exception as e:
+                                        logger.error(f"Error inserting batch {i // batch_size + 1}: {str(e)}")
                 else:
                     logger.warning(f"No users in {pds} or could not get users.")
 
