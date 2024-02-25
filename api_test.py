@@ -15,7 +15,7 @@ def main():
         # api_endpoint = "http://api.staging.clearsky.services/api/v1/anon/lists/fun-facts"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/blocklist-search-blocking/test.tennis.thieflord.dev/alechiaval.bsky.social"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/lists/block-stats"
-        api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/blocklist/boykisser.expert"
+        # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/blocklist/boykisser.expert"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/single-blocklist/thieflord.dev"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/total-users"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/get-did/thieflord.dev"
@@ -81,7 +81,7 @@ def main():
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/lists/block-stats"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/blocklist/boykisser.expert"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/anon/single-blocklist/thieflord.dev"
-        api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/anon/total-users"
+        # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/anon/total-users"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/get-did/thieflord.dev"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/get-handle/thieflford.dev"
         # api_endpoint = "https://api.staging.clearsky.services/api/v1/get-handle-history/thieflord.dev"
@@ -94,9 +94,12 @@ def main():
         # api_endpoint = "http://localhost/api/v1/at-uri/at://did:plc:smcanwhzsj5dqp4yew7y6ybx/app.bsky.graph.listblock/3kf2kfcic5od2u"
         # api_endpoint = "http://localhost/api/v1/get-moderation-list/gaminsdfvf"
         # api_endpoint = "http://localhost/api/v1/auth/blocklist/rudyfraser.com"
-        api_endpoint = "http://localhost/api/v1/anon/lists/dids-per-pds"
+        # api_endpoint = "http://localhost/api/v1/anon/lists/dids-per-pds"
+        # api_endpoint = "http://localhost/api/v1/anon/subscribe-blocks-blocklist/smolbeansprout.bsky.social"
+        api_endpoint = "http://localhost/api/v1/anon/subscribe-blocks-single-blocklist/did:plc:4e3wxro75sds7cc2yfgnbnrc"
 
         try:
+            logger.info(f"API endpoint: {api_endpoint}")
             # Send an OPTIONS request to the API endpoint with the headers
             options_response = requests.options(api_endpoint)
 
