@@ -1261,6 +1261,7 @@ def fetch_data_with_after_parameter(url, after_value):
 async def get_federated_pdses():
     active = 0
     not_active = 0
+    processed_pds = {}
 
     records = await database_handler.get_unique_did_to_pds()
 
@@ -1270,6 +1271,8 @@ async def get_federated_pdses():
         return None, None
 
     for did, pds in records:
+        if pds in processed_pds:
+            continue
         base_url = f"https://bsky.network/xrpc/"
 
         url = urllib.parse.urljoin(base_url, "com.atproto.sync.getLatestCommit")
@@ -1303,6 +1306,7 @@ async def get_federated_pdses():
                     logger.info(f"PDS: {pds} is valid.")
                     active += 1
                     await database_handler.update_pds_status(pds, True)
+                    processed_pds[pds] = True  # Mark PDS as processed
             except AttributeError:
                 try:
                     error = response_json.get("error", [])

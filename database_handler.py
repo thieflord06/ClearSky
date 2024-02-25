@@ -2091,10 +2091,14 @@ async def get_unique_did_to_pds():
     try:
         async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
-                records_to_check = await connection.fetch("""SELECT DISTINCT ON (pds) did, pds
-                                                                FROM users
-                                                                WHERE pds IS NOT NULL
-                                                                ORDER BY pds, did
+                records_to_check = await connection.fetch("""SELECT did, pds
+                                                                FROM (
+                                                                    SELECT did, pds, row_number() OVER (PARTITION BY pds ORDER BY random()) as rn
+                                                                    FROM users
+                                                                    WHERE pds IS NOT NULL
+                                                                ) sub
+                                                                WHERE rn <= 10
+                                                                ORDER BY pds, rn
                 """)
 
                 for record in records_to_check:
