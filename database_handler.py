@@ -863,7 +863,7 @@ async def get_all_users_db(run_update=False, get_dids=False, init_db_run=False):
                         for did in dids_deactivated:
                             await connection.execute("""UPDATE users SET status = FALSE WHERE did = $1""", did)
                             count += 1
-                            logger.info(f"DIDs deactivated: {count}")
+                            logger.debug(f"DIDs deactivated: {count}")
 
                         logger.info(f"{str(len(dids_deactivated))} dids deactivated in {pds}.")
 
