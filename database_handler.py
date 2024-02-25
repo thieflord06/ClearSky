@@ -890,6 +890,7 @@ async def get_all_users_db(run_update=False, get_dids=False, init_db_run=False):
                     logger.warning(f"No users in {pds} or could not get users.")
 
             logger.info(f"Total DIDs: {total_dids}")
+            logger.info(f"Total PDSes processed: {len(pdses)}")
 
 
 async def update_blocklist_table(ident, blocked_data, forced=False):
