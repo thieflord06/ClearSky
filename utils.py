@@ -401,13 +401,17 @@ async def get_all_users(pds):
 
         try:
             if response.status_code == 200:
-                response_json = response.json()
-                repos = response_json.get("repos", [])
-                for repo in repos:
-                    records.add(repo["did"])
+                if response.content:
+                    response_json = response.json()
+                    repos = response_json.get("repos", [])
+                    for repo in repos:
+                        records.add(repo["did"])
 
-                cursor = response_json.get("cursor")
-                if not cursor:
+                    cursor = response_json.get("cursor")
+                    if not cursor:
+                        break
+                else:
+                    logger.warning(f"Received empty response from the server: {full_url}")
                     break
             elif response.status_code == 429:
                 logger.warning(f"Received 429 Too Many Requests. Retrying after 60 seconds...{full_url}")
