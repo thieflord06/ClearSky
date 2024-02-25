@@ -1261,8 +1261,8 @@ def fetch_data_with_after_parameter(url, after_value):
 async def get_federated_pdses():
     active = 0
     not_active = 0
-    attempt = 0
     processed_pds = {}
+    attempt = 0
 
     records = await database_handler.get_unique_did_to_pds()
 
@@ -1308,6 +1308,7 @@ async def get_federated_pdses():
                     active += 1
                     await database_handler.update_pds_status(pds, True)
                     processed_pds[pds] = True  # Mark PDS as processed
+                    attempt = 0
             except AttributeError:
                 try:
                     error = response_json.get("error", [])
