@@ -2192,7 +2192,7 @@ async def anon_funer_facts():
     return await funer_facts()
 
 
-@app.route('/api/anon/v1/lists/block-stats', methods=['GET'])
+@app.route('/api/v1/anon/lists/block-stats', methods=['GET'])
 @rate_limit(30, timedelta(seconds=1))
 async def anon_block_stats():
     return await block_stats()
