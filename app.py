@@ -375,6 +375,10 @@ def ratelimit_error(e):
 
 
 async def fetch_and_push_data():
+    global api_key
+    global push_server
+    global self_server
+
     if api_key:
         try:
             fetch_api = {
