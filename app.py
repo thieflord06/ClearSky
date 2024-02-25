@@ -345,13 +345,18 @@ def api_key_required(key_type):
             provided_api_key = request.headers.get("X-API-Key")
 
             api_keys = await database_handler.get_api_keys(api_environment, key_type, provided_api_key)
+            try:
+                if provided_api_key not in api_keys.get('key') or api_keys.get('valid') is False or api_keys.get(key_type) is False:
+                    ip = await get_ip()
+                    logger.warning(f"<< {ip}: given key:{provided_api_key} Unauthorized API access.")
+                    session['authenticated'] = False
 
-            if provided_api_key not in api_keys.get('key') or api_keys.get('valid') is False:
-                ip = await get_ip()
-                logger.warning(f"<< {ip}: given key:{provided_api_key} Unauthorized API access.")
+                    return "Unauthorized", 401  # Return an error response if the API key is not valid
+            except AttributeError:
+                logger.error(f"API key not found for type: {key_type}")
                 session['authenticated'] = False
 
-                return "Unauthorized", 401  # Return an error response if the API key is not valid
+                return "Unauthorized", 401
             else:
                 logger.info(f"Valid key {provided_api_key} for type: {key_type}")
 
@@ -1853,12 +1858,17 @@ async def retrieve_subscribe_blocks_blocklist(client_identifier, page):
 
 
 async def retrieve_subscribe_blocks_single_blocklist(client_identifier, page):
+    global api_key
+    global self_server
+
     session_ip = await get_ip()
-    api_key = request.headers.get('X-API-Key')
+    received_api_key = request.headers.get('X-API-Key')
 
     identifier = await sanitization(client_identifier)
 
-    logger.info(f"<< {session_ip} - {api_key} - blocklist request: {identifier}")
+    logger.info(f"<< {session_ip} - {received_api_key} - blocklist request: {identifier}")
+
+    list_url = []
 
     if identifier:
         did_identifier, handle_identifier = await pre_process_identifier(identifier)
@@ -1869,8 +1879,32 @@ async def retrieve_subscribe_blocks_single_blocklist(client_identifier, page):
             items_per_page = 100
             offset = (page - 1) * items_per_page
 
-            blocklist, count, pages = await database_handler.get_subscribe_blocks_single(did_identifier, limit=items_per_page,
-                                                                                         offset=offset)
+            headers = {'X-API-Key': f'{api_key}'}
+            fetch_api = f"{self_server}/api/v1/auth/get-list/{did_identifier}"
+
+            try:
+                async with aiohttp.ClientSession(headers=headers) as session:
+                        async with session.get(fetch_api) as internal_response:
+                            if internal_response.status == 200:
+                                mod_list = await internal_response.json()
+                            else:
+                                mod_list = "error"
+            except Exception as e:
+                logger.error(f"Error retrieving mod list from internal API: {e}")
+                mod_list = None
+
+            if mod_list and 'data' in mod_list and 'lists' in mod_list['data']:
+                for item in mod_list['data']['lists']:
+                    url = item['url']
+
+                    list_url.append(url)
+
+                blocklist, count, pages = await utils.process_subscribe_blocks_single(did_identifier, list_url, limit=items_per_page,
+                                                                           offset=offset)
+            else:
+                blocklist = None
+                count = 0
+                pages = 0
 
             formatted_count = '{:,}'.format(count)
 
@@ -1893,7 +1927,7 @@ async def retrieve_subscribe_blocks_single_blocklist(client_identifier, page):
         block_data = {"error": result}
         data = {"data": block_data}
 
-    logger.info(f">> {session_ip} - {api_key} - blocklist result returned: {identifier}")
+    logger.info(f">> {session_ip} - {received_api_key} - blocklist result returned: {identifier}")
 
     return jsonify(data)
 

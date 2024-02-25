@@ -320,10 +320,11 @@ async def get_subscribe_blocks(ident, limit=100, offset=0):
     try:
         async with connection_pools["read"].acquire() as connection:
             async with connection.transaction():
-                query_1 = """SELECT mu.subject_did, u.handle, s.date_added, u.status, s.list_uri
+                query_1 = """SELECT mu.subject_did, u.handle, s.date_added, u.status, s.list_uri, m.url
                                 FROM subscribe_blocklists AS s
                                 INNER JOIN mutelists_users AS mu ON s.list_uri = mu.list_uri
                                 INNER JOIN users AS u ON mu.subject_did = u.did
+                                INNER JOIN mutelists AS m ON s.list_uri = m.uri
                                 WHERE s.did = $1
                                 ORDER BY s.date_added DESC
                                 LIMIT $2
@@ -347,12 +348,75 @@ async def get_subscribe_blocks(ident, limit=100, offset=0):
                         "subject_did": record['subject_did'],
                         "date_added": record['date_added'].isoformat(),
                         "status": record['status'],
-                        "list_uri": record['list_uri']
+                        "list_uri": record['list_uri'],
+                        "list_url": record['url']
                     }
 
                     data_list.append(list_dict)
 
                 return data_list, total_blocked_count
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+    except AttributeError:
+        logger.error(f"db connection issue.")
+    except Exception as e:
+        logger.error(f"Error retrieving subscribe blocklist for {ident}: {e} {type(e)}")
+
+        return None, None
+
+
+async def get_subscribe_blocks_single(ident, list_of_lists, limit=100, offset=0):
+    data_list = []
+    total_data = []
+    total_count = 0
+
+    try:
+        async with connection_pools["read"].acquire() as connection:
+            async with connection.transaction():
+                query_1 = """SELECT s.did, u.handle, s.date_added, u.status, s.list_uri, m.url
+                                FROM subscribe_blocklists AS s
+                                INNER JOIN users AS u ON s.did = u.did
+                                INNER JOIN mutelists AS m ON s.list_uri = m.uri
+                                WHERE m.url = $1
+                                ORDER BY s.date_added DESC
+                                LIMIT $2
+                                OFFSET $3"""
+
+                query_2 = """SELECT COUNT(s.did)
+                                FROM subscribe_blocklists AS s
+                                INNER JOIN mutelists AS m ON s.list_uri = m.uri
+                                WHERE m.url = $1"""
+
+                if not list_of_lists:
+                    return None, 0
+
+                for list_url in list_of_lists:
+                    count = await connection.fetchval(query_2, list_url)
+                    if count:
+                        data = await connection.fetch(query_1, list_url, limit, offset)
+
+                        total_data.append(data)
+                    total_count += count
+
+                if not total_data:
+                    return None, 0
+
+                for record in total_data:
+                    for data in record:
+                        list_dict = {
+                            "handle": data['handle'],
+                            "did": data['did'],
+                            "date_added": data['date_added'].isoformat(),
+                            "status": data['status'],
+                            "list_uri": data['list_uri'],
+                            "list_url": data['url']
+                        }
+
+                        data_list.append(list_dict)
+
+                return data_list, total_count
     except asyncpg.PostgresError as e:
         logger.error(f"Postgres error: {e}")
     except asyncpg.InterfaceError as e:
@@ -2062,17 +2126,19 @@ async def get_api_keys(environment, key_type, key):
     async with connection_pools["write"].acquire() as connection:
         async with connection.transaction():
             try:
-                query = """SELECT key, valid, access_type FROM API WHERE key = $3 AND environment = $1 AND valid is True AND access_type LIKE '%' || $2 || '%'"""
+                query = f"""SELECT a.key as key, a.valid, aa.*
+                            FROM api AS a
+                            INNER JOIN api_access AS aa ON a.key = aa.key
+                            WHERE a.key = $2 AND a.environment = $1 AND a.valid is TRUE"""
 
-                results = await connection.fetch(query, environment, key_type, key)
+                results = await connection.fetch(query, environment, key)
 
                 for item in results:
                     data = {
                         "key": item['key'],
                         "valid": item['valid'],
-                        "access_type": item['access_type']
+                        key_type: item[key_type.lower()]
                     }
-
                 return data
             except Exception as e:
                 # Handle other exceptions as needed
