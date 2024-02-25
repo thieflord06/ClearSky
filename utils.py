@@ -399,47 +399,48 @@ async def get_all_users(pds):
             response = None
             logger.warning("Error during API call: %s", str(e))
 
-        try:
-            if response.status_code == 200:
-                if response.content:
+        if response.status_code == 200:
+            if response.content:
+                try:
                     response_json = response.json()
-                    repos = response_json.get("repos", [])
-                    for repo in repos:
-                        records.add(repo["did"])
-
-                    cursor = response_json.get("cursor")
-                    if not cursor:
-                        break
-                else:
-                    logger.warning(f"Received empty response from the server: {full_url}")
+                except AttributeError:
+                    logger.error(f"Error fetching users for: {pds} {full_url}")
                     break
-            elif response.status_code == 429:
-                logger.warning(f"Received 429 Too Many Requests. Retrying after 60 seconds...{full_url}")
-                await asyncio.sleep(60)  # Retry after 60 seconds
-            elif response.status_code == 522:
-                logger.warning(f"Received 522 Origin Connection Time-out, skipping. {full_url}")
-                break
-            elif response.status_code == 530:
-                logger.warning(f"Received 530 Origin DNS Error, skipping. {full_url}")
-                break
-            elif response.status_code == 504:
-                logger.warning(f"Received 504 Gateway Timeout, skipping. {full_url}")
-                break
-            elif response.status_code == 104:
-                logger.warning(f"Received 104 Connection Reset by Peer, skipping. {full_url}")
-                break
-            elif response.status_code == 403:
-                logger.warning(f"Received 403 Forbidden, skipping. {full_url}")
-                break
-            elif response.status_code == 502:
-                logger.warning(f"Received 502 Bad Gateway, skipping. {full_url}")
-                break
+                repos = response_json.get("repos", [])
+                for repo in repos:
+                    records.add(repo["did"])
+
+                cursor = response_json.get("cursor")
+                if not cursor:
+                    break
             else:
-                logger.warning("Response status code: " + str(response.status_code) + f" {full_url}")
+                logger.warning(f"Received empty response from the server: {full_url}")
                 break
-        except AttributeError:
-            logger.error(f"Error fetching user for: {pds} {full_url}")
+        elif response.status_code == 429:
+            logger.warning(f"Received 429 Too Many Requests. Retrying after 60 seconds...{full_url}")
+            await asyncio.sleep(60)  # Retry after 60 seconds
+        elif response.status_code == 522:
+            logger.warning(f"Received 522 Origin Connection Time-out, skipping. {full_url}")
             break
+        elif response.status_code == 530:
+            logger.warning(f"Received 530 Origin DNS Error, skipping. {full_url}")
+            break
+        elif response.status_code == 504:
+            logger.warning(f"Received 504 Gateway Timeout, skipping. {full_url}")
+            break
+        elif response.status_code == 104:
+            logger.warning(f"Received 104 Connection Reset by Peer, skipping. {full_url}")
+            break
+        elif response.status_code == 403:
+            logger.warning(f"Received 403 Forbidden, skipping. {full_url}")
+            break
+        elif response.status_code == 502:
+            logger.warning(f"Received 502 Bad Gateway, skipping. {full_url}")
+            break
+        else:
+            logger.warning("Response status code: " + str(response.status_code) + f" {full_url}")
+            break
+
     return records
 
 
