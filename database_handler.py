@@ -656,8 +656,8 @@ async def blocklist_search(search_list, lookup, switch):
                 return resultslist
 
 
-async def crawl_all(forced=False):
-    all_dids = await get_all_users_db(False, True)
+async def crawl_all(forced=False, quarter=None):
+    all_dids = await get_all_users_db(False, True, quarter=quarter)
     total_dids = len(all_dids)
     batch_size = 500
     pause_interval = 500  # Pause every x DID requests
@@ -818,7 +818,22 @@ async def crawler_batch(batch_dids, forced=False):
     return total_items_updated
 
 
-async def get_all_users_db(run_update=False, get_dids=False, init_db_run=False):
+async def get_quarter_of_users_db(quarter_number):
+    async with connection_pools["write"].acquire() as connection:
+        quarter_number = int(quarter_number)
+        total_rows = await connection.fetchval('SELECT COUNT(*) FROM users')
+        quarter_size = total_rows / 4
+        offset = (quarter_number - 1) * quarter_size
+
+        # Fetch a quarter of the DIDs from the database based on the quarter number
+        records = await connection.fetch('SELECT did, pds FROM users ORDER BY did OFFSET $1 LIMIT $2', offset,
+                                         quarter_size)
+
+        # Return the fetched records
+        return records
+
+
+async def get_all_users_db(run_update=False, get_dids=False, init_db_run=False, quarter=None):
     batch_size = 10000
     pds_records = set()
     dids = set()
@@ -828,7 +843,8 @@ async def get_all_users_db(run_update=False, get_dids=False, init_db_run=False):
         if not run_update:
             if get_dids:
                 # Return the user_dids from the "users" table
-                records = await connection.fetch('SELECT did, pds FROM users')
+                # records = await connection.fetch('SELECT did, pds FROM users')
+                records = await get_quarter_of_users_db(quarter)
                 for record in records:
                     dids.add((record['did'], record['pds']))
 

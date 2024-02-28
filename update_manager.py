@@ -2,12 +2,13 @@
 
 import asyncpg
 import database_handler
-from config_helper import logger
+from config_helper import logger, config
 import sys
 import argparse
 import asyncio
 import app
 import utils
+import os
 
 # python update_manager.py --crawler // Update all info
 # python update_manager.py --crawler-forced // Force update all info
@@ -101,14 +102,40 @@ async def main():
         await database_handler.delete_new_users_temporary_table()
         sys.exit()
     elif args.crawler:
+        if not os.getenv('CLEAR_SKY'):
+            quarter_value = config.get("environment", "quarter")
+        else:
+            quarter_value = os.environ.get("CLEARSKY_CRAWLER_NUMBER")
+
+        if not quarter_value:
+            logger.warning("Using default quarter.")
+            quarter_value = "1"
+
         logger.info("Crawler requested.")
-        await database_handler.crawl_all()
+        logger.warning(f"This is crawler: {quarter_value}")
+
+        await asyncio.sleep(10)  # Pause for 10 seconds
+
+        await database_handler.crawl_all(quarter=quarter_value)
         await database_handler.delete_temporary_table()
         logger.info("Crawl fetch finished.")
         sys.exit()
     elif args.crawler_forced:
+        if not os.getenv('CLEAR_SKY'):
+            quarter_value = config.get("environment", "quarter")
+        else:
+            quarter_value = os.environ.get("CLEARSKY_CRAWLER_NUMBER")
+
+        if not quarter_value:
+            logger.warning("Using default quarter.")
+            quarter_value = "1"
+
         logger.info("Crawler forced requested.")
-        await database_handler.crawl_all(forced=True)
+        logger.warning(f"This is crawler: {quarter_value}")
+
+        await asyncio.sleep(10)  # Pause for 10 seconds
+
+        await database_handler.crawl_all(forced=True, quarter=quarter_value)
         await database_handler.delete_temporary_table()
         logger.info("Crawl forced fetch finished.")
         sys.exit()
