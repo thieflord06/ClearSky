@@ -1263,6 +1263,7 @@ async def get_federated_pdses():
     not_active = 0
     processed_pds = {}
     attempt = 0
+    last_pds = None
 
     records = await database_handler.get_unique_did_to_pds()
 
@@ -1272,6 +1273,9 @@ async def get_federated_pdses():
         return None, None
 
     for did, pds in records:
+        current_pds = pds
+        if current_pds != last_pds:
+            attempt = 0
         if pds in processed_pds:
             continue
         base_url = f"https://bsky.network/xrpc/"
@@ -1288,6 +1292,7 @@ async def get_federated_pdses():
 
         try:
             response = requests.get(full_url)
+            last_pds = current_pds
         except httpx.RequestError as e:
             response = None
             logger.warning("Error during API call: %s", e)
@@ -1316,15 +1321,20 @@ async def get_federated_pdses():
                     if "user not found" in error:
                         logger.warning(f"PDS: {pds} not valid.")
                         not_active += 1
-                        await database_handler.update_pds_status(pds, False)
+                        if attempt == 0:
+                            await database_handler.update_pds_status(pds, False)
                         attempt += 1
                     else:
                         logger.error(f"Unexpected error message: {error} {full_url}")
-                        attempt += 1
                         not_active += 1
-                        await database_handler.update_pds_status(pds, False)
+                        if attempt == 0:
+                            await database_handler.update_pds_status(pds, False)
+                        attempt += 1
                 except AttributeError:
                     logger.error(f"Error fetching data: {full_url}")
+                    not_active += 1
+                    if attempt == 0:
+                        await database_handler.update_pds_status(pds, False)
                     attempt += 1
         elif response.status_code == 429:
             logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
@@ -1332,20 +1342,25 @@ async def get_federated_pdses():
         elif response.status_code == 404:
             logger.warning(f"PDS: {pds} not valid.")
             not_active += 1
+            if attempt == 0:
+                await database_handler.update_pds_status(pds, False)
             attempt += 1
-            await database_handler.update_pds_status(pds, False)
         elif response.status_code == 500:
             logger.warning(f"PDS: {pds} not valid.")
             not_active += 1
+            if attempt == 0:
+                await database_handler.update_pds_status(pds, False)
             attempt += 1
-            await database_handler.update_pds_status(pds, False)
         else:
             logger.warning("Response status code: " + str(response.status_code) + f" for PDS: {pds} url: {full_url} not valid.")
-            await database_handler.update_pds_status(pds, False)
+            if attempt == 0:
+                await database_handler.update_pds_status(pds, False)
             attempt += 1
 
         if attempt > 0:
             logger.info(f"Attempt {attempt}/10 failed for {pds}.")
+            if attempt == 10:
+                attempt = 0
 
     return active, not_active
 
