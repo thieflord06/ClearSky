@@ -2086,7 +2086,7 @@ async def tables_exists():
 async def get_unique_did_to_pds():
     logger.info("Getting unique did to pds.")
 
-    records = set()
+    records = []
 
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -2102,7 +2102,7 @@ async def get_unique_did_to_pds():
                 """)
 
                 for record in records_to_check:
-                    records.add((record['did'], record['pds']))
+                    records.append((record['did'], record['pds']))
 
                 logger.info("Retrieved data.")
                 logger.info(f"Processing {len(records)} records.")
