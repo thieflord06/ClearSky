@@ -819,8 +819,6 @@ async def crawler_batch(batch_dids, forced=False):
 
 
 async def get_quarter_of_users_db(quarter_number):
-    dids = set()
-
     async with connection_pools["write"].acquire() as connection:
         logger.info(f"Getting quarter {quarter_number} of dids.")
         quarter_number = int(quarter_number)
@@ -836,16 +834,14 @@ async def get_quarter_of_users_db(quarter_number):
 
         logger.info(f"Quarter {quarter_number} of DIDs fetched.")
 
-        for record in records:
-            dids.add((record['did'], record['pds']))
         # Return the fetched records
-        return dids
+        return records
 
 
 async def get_all_users_db(run_update=False, get_dids=False, init_db_run=False, quarter=None):
     batch_size = 10000
     pds_records = set()
-    dids = set()
+    dids = []
     total_dids = 0
 
     async with connection_pools["write"].acquire() as connection:
@@ -855,7 +851,7 @@ async def get_all_users_db(run_update=False, get_dids=False, init_db_run=False, 
                 # records = await connection.fetch('SELECT did, pds FROM users')
                 records = await get_quarter_of_users_db(quarter)
                 for record in records:
-                    dids.add((record['did'], record['pds']))
+                    dids.append((record['did'], record['pds']))
 
                 return dids
         else:
