@@ -1262,6 +1262,7 @@ async def get_federated_pdses():
     active = 0
     not_active = 0
     processed_pds = {}
+    doa_processed_pds = {}
     attempt = 0
     last_pds = None
 
@@ -1273,6 +1274,13 @@ async def get_federated_pdses():
         return None, None
 
     for did, pds in records:
+        if "https://" not in pds:
+            if pds in doa_processed_pds:
+                continue
+            doa_processed_pds[pds] = True
+            await database_handler.update_pds_status(pds, False)
+            continue
+
         current_pds = pds
         if current_pds != last_pds:
             attempt = 0
