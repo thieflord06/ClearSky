@@ -664,13 +664,13 @@ async def crawl_all(forced=False, quarter=None):
     processed_count = 0
     cumulative_processed_count = 0  # Initialize cumulative count
     total_blocks_updated = 0
-    table = "temporary_table"
+    table = f"temporary_table_{quarter}"
 
     # Check if there is a last processed DID in the temporary table
     async with connection_pools["write"].acquire() as connection:
         async with connection.transaction():
             try:
-                query = "SELECT last_processed_did FROM temporary_table"
+                query = f"SELECT last_processed_did FROM {table}"
                 last_processed_did = await connection.fetchval(query)
                 logger.debug("last did from db: " + str(last_processed_did))
             except Exception as e:
@@ -678,7 +678,7 @@ async def crawl_all(forced=False, quarter=None):
                 logger.error(f"Exception getting from db: {str(e)}")
 
     if not last_processed_did:
-        await create_temporary_table()
+        await create_temporary_table(table)
 
     if last_processed_did:
         # Find the index of the last processed DID in the list
@@ -819,6 +819,8 @@ async def crawler_batch(batch_dids, forced=False):
 
 
 async def get_quarter_of_users_db(quarter_number):
+    dids = set()
+
     async with connection_pools["write"].acquire() as connection:
         logger.info(f"Getting quarter {quarter_number} of dids.")
         quarter_number = int(quarter_number)
@@ -834,8 +836,10 @@ async def get_quarter_of_users_db(quarter_number):
 
         logger.info(f"Quarter {quarter_number} of DIDs fetched.")
 
+        for record in records:
+            dids.add((record['did'], record['pds']))
         # Return the fetched records
-        return records
+        return dids
 
 
 async def get_all_users_db(run_update=False, get_dids=False, init_db_run=False, quarter=None):
@@ -1311,20 +1315,20 @@ async def process_batch(batch_dids, ad_hoc, table, batch_size):
     return total_handles_updated
 
 
-async def create_temporary_table():
+async def create_temporary_table(table):
     try:
-        logger.info("Creating temp table.")
+        logger.info(f"Creating temp table: {table}")
         async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
-                query = """
-                CREATE TABLE IF NOT EXISTS temporary_table (
+                query = f"""
+                CREATE TABLE IF NOT EXISTS {table} (
                     last_processed_did text PRIMARY KEY,
                     touched timestamptz
                 )
                 """
                 await connection.execute(query)
     except Exception as e:
-        logger.error("Error creating temporary table: %s", e)
+        logger.error(f"Error creating temporary table: {table} %s", e)
 
 
 async def create_new_users_temporary_table():
