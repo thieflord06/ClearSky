@@ -1723,8 +1723,14 @@ async def get_internal_status():
             block_cache_status = "not initialized"
         else:
             block_cache_status = "In memory"
-    if not read_db_connected and write_db_connected:
+    if not read_db_connected and not write_db_connected:
         db_status = "disconnected"
+    elif not read_db_connected and write_db_connected:
+        db_status = "degraded: read db disconnected"
+    elif read_db_connected and not write_db_connected:
+        db_status = "degraded: write db disconnected"
+    else:
+        db_status = "connected"
     if not read_db_connected:
         read_db_status = "disconnected"
     else:
@@ -1743,7 +1749,7 @@ async def get_internal_status():
     all_blocks_last_update = await get_time_since(database_handler.all_blocks_last_update)
 
     status = {
-        "clearsky version": version,
+        "clearsky backend version": version,
         "uptime": str(uptime),
         "block stats status": stats_status,
         "block stats last process time": str(utils.block_stats_process_time),
