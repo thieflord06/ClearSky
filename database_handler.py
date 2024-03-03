@@ -703,7 +703,7 @@ async def crawl_all(forced=False, quarter=None):
         # Update the temporary table with the last processed DID
         if batch_dids:
             try:
-                last_processed_did = batch_dids[-1]  # Assuming DID is the first element in each tuple
+                last_processed_did = batch_dids[-1][0]  # Assuming DID is the first element in each tuple
             except IndexError:
                 logger.error(f"Batch of DIDs is empty: {batch_dids}")
 
@@ -740,6 +740,7 @@ async def crawler_batch(batch_dids, forced=False):
     handle_count = 0
     total_mutes_updated = [mute_lists, mute_users_list]
     handles_to_update = []
+    max_retries = 3
 
     for did, pds in batch_dids:
         handle = await on_wire.resolve_did(did)
@@ -757,34 +758,44 @@ async def crawler_batch(batch_dids, forced=False):
             logger.warning(f"DID: {did} not resolved.")
             continue
 
-        try:
-            blocked_data = await utils.get_user_block_list(did, pds)
-            mutelists_data = await utils.get_mutelists(did, pds)
-            mutelists_users_data = await utils.get_mutelist_users(did, pds)
-            subscribe_data = await utils.get_subscribelists(did, pds)
+        retry_count = 0
+        success = False
+        while retry_count < max_retries and not success:
+            try:
+                blocked_data = await utils.get_user_block_list(did, pds)
+                mutelists_data = await utils.get_mutelists(did, pds)
+                mutelists_users_data = await utils.get_mutelist_users(did, pds)
+                subscribe_data = await utils.get_subscribelists(did, pds)
 
-            if blocked_data:
-                # Update the blocklists table in the database with the retrieved data
-                total_blocks_updated += await update_blocklist_table(did, blocked_data, forced=forced)
-            else:
-                logger.debug(f"didn't update no blocks: {did}")
+                if blocked_data:
+                    # Update the blocklists table in the database with the retrieved data
+                    total_blocks_updated += await update_blocklist_table(did, blocked_data, forced=forced)
+                else:
+                    logger.debug(f"didn't update no blocks: {did}")
 
-            if mutelists_data or mutelists_users_data:
-                # Update the mutelist tables in the database with the retrieved data
-                total_mutes_updated += await update_mutelist_tables(did, mutelists_data, mutelists_users_data, forced=forced)
+                if mutelists_data or mutelists_users_data:
+                    # Update the mutelist tables in the database with the retrieved data
+                    total_mutes_updated += await update_mutelist_tables(did, mutelists_data, mutelists_users_data, forced=forced)
 
-                logger.debug(f"Updated mute lists for DID: {did}")
-            else:
-                logger.debug(f"didn't update no mutelists: {did}")
+                    logger.debug(f"Updated mute lists for DID: {did}")
+                else:
+                    logger.debug(f"didn't update no mutelists: {did}")
 
-            if subscribe_data:
-                total_subscribed_updated += await update_subscribe_table(did, subscribe_data, forced=forced)
+                if subscribe_data:
+                    total_subscribed_updated += await update_subscribe_table(did, subscribe_data, forced=forced)
 
-                logger.debug(f"Updated subscribe lists for DID: {did}")
-            else:
-                logger.debug(f"didn't update not subscribed to any lists: {did}")
-        except Exception as e:
-            logger.error(f"Error updating for DID {did}: {e}")
+                    logger.debug(f"Updated subscribe lists for DID: {did}")
+                else:
+                    logger.debug(f"didn't update not subscribed to any lists: {did}")
+
+                success = True # Mark the operation as successful if no exception is raised
+            except Exception as e:
+                logger.error(f"Error updating for DID {did}: {e}")
+                retry_count += 1  # Increment the retry count
+                await asyncio.sleep(5)  # Wait for a short interval before retrying
+
+        if not success:
+            logger.error(f"Failed to update for DID {did} after {max_retries} retries.")
 
     # Update the database with the batch of handles
     if handles_to_update:
