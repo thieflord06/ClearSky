@@ -558,7 +558,7 @@ async def get_user_block_list(ident, pds):
             await asyncio.sleep(10)
             continue
         except httpx.RequestError as e:
-            logger.warning("Error during API call: %s", e)
+            logger.warning(f"Error during API call: {e} : {full_url}")
             retry_count += 1
             logger.info("sleeping 5")
             await asyncio.sleep(5)
@@ -909,7 +909,7 @@ async def get_mutelists(ident, pds):
             await asyncio.sleep(10)
             continue
         except httpx.RequestError as e:
-            logger.warning("Error during API call: %s", e)
+            logger.warning(f"Error during API call: {e} : {full_url}")
             retry_count += 1
             logger.info("sleeping 5")
             await asyncio.sleep(5)
@@ -1027,7 +1027,7 @@ async def get_mutelist_users(ident, pds):
             await asyncio.sleep(10)
             continue
         except httpx.RequestError as e:
-            logger.warning("Error during API call: %s", e)
+            logger.warning(f"Error during API call: {e} : {full_url}")
             retry_count += 1
             logger.info("sleeping 5")
             await asyncio.sleep(5)
@@ -1135,7 +1135,7 @@ async def get_subscribelists(ident, pds):
             await asyncio.sleep(10)
             continue
         except httpx.RequestError as e:
-            logger.warning("Error during API call: %s", e)
+            logger.warning(f"Error during API call: {e} : {full_url}")
             retry_count += 1
             logger.info("sleeping 5")
             await asyncio.sleep(5)
