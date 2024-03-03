@@ -656,8 +656,8 @@ async def blocklist_search(search_list, lookup, switch):
                 return resultslist
 
 
-async def crawl_all(forced=False, quarter=None):
-    all_dids = await get_all_users_db(False, True, quarter=quarter)
+async def crawl_all(forced=False, quarter=None, total_crawlers=None):
+    all_dids = await get_all_users_db(False, True, quarter=quarter, total_crawlers=total_crawlers)
     total_dids = len(all_dids)
     batch_size = 500
     pause_interval = 500  # Pause every x DID requests
@@ -829,12 +829,12 @@ async def crawler_batch(batch_dids, forced=False):
     return total_items_updated
 
 
-async def get_quarter_of_users_db(quarter_number):
+async def get_quarter_of_users_db(quarter_number, total_crawlers=4):
     async with connection_pools["write"].acquire() as connection:
         logger.info(f"Getting quarter {quarter_number} of dids.")
         quarter_number = int(quarter_number)
         total_rows = await connection.fetchval('SELECT COUNT(*) FROM users')
-        quarter_size = total_rows / 4
+        quarter_size = total_rows / total_crawlers
         offset = math.floor((quarter_number - 1) * quarter_size)
 
         logger.info(f"Total rows: {total_rows} | quarter size: {quarter_size} | offset: {offset}")
@@ -849,7 +849,7 @@ async def get_quarter_of_users_db(quarter_number):
         return records
 
 
-async def get_all_users_db(run_update=False, get_dids=False, init_db_run=False, quarter=None):
+async def get_all_users_db(run_update=False, get_dids=False, init_db_run=False, quarter=None, total_crawlers=None):
     batch_size = 10000
     pds_records = set()
     dids = []
@@ -860,7 +860,7 @@ async def get_all_users_db(run_update=False, get_dids=False, init_db_run=False, 
             if get_dids:
                 # Return the user_dids from the "users" table
                 # records = await connection.fetch('SELECT did, pds FROM users')
-                records = await get_quarter_of_users_db(quarter)
+                records = await get_quarter_of_users_db(quarter, total_crawlers)
                 for record in records:
                     dids.append((record['did'], record['pds']))
 

@@ -104,8 +104,10 @@ async def main():
     elif args.crawler:
         if not os.getenv('CLEAR_SKY'):
             quarter_value = config.get("environment", "quarter")
+            total_crawlers = config.get("environment", "total_crawlers")
         else:
             quarter_value = os.environ.get("CLEARSKY_CRAWLER_NUMBER")
+            total_crawlers = os.environ.get("CLEARSKY_CRAWLER_TOTAL")
 
         if not quarter_value:
             logger.warning("Using default quarter.")
@@ -116,7 +118,7 @@ async def main():
 
         await asyncio.sleep(10)  # Pause for 10 seconds
 
-        await database_handler.crawl_all(quarter=quarter_value)
+        await database_handler.crawl_all(quarter=quarter_value, total_crawlers=total_crawlers)
         await database_handler.delete_temporary_table()
         logger.info("Crawl fetch finished.")
         sys.exit()
