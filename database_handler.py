@@ -682,7 +682,7 @@ async def crawl_all(forced=False, quarter=None, total_crawlers=None):
 
     if last_processed_did:
         # Find the index of the last processed DID in the list
-        start_index = next((i for i, (did) in enumerate(all_dids) if did == last_processed_did), None)
+        start_index = next((i for i, (did, _) in enumerate(all_dids) if did == last_processed_did), None)
         if start_index is None:
             logger.warning(
                 f"Last processed DID '{last_processed_did}' not found in the list. Starting from the beginning.")
