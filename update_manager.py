@@ -113,8 +113,12 @@ async def main():
             logger.warning("Using default quarter.")
             quarter_value = "1"
 
+        if not total_crawlers:
+            logger.warning("Using default total crawlers.")
+            total_crawlers = "4"
+
         logger.info("Crawler requested.")
-        logger.warning(f"This is crawler: {quarter_value}")
+        logger.warning(f"This is crawler: {quarter_value}/{total_crawlers}")
 
         await asyncio.sleep(10)  # Pause for 10 seconds
 
@@ -125,15 +129,21 @@ async def main():
     elif args.crawler_forced:
         if not os.getenv('CLEAR_SKY'):
             quarter_value = config.get("environment", "quarter")
+            total_crawlers = config.get("environment", "total_crawlers")
         else:
             quarter_value = os.environ.get("CLEARSKY_CRAWLER_NUMBER")
+            total_crawlers = os.environ.get("CLEARSKY_CRAWLER_TOTAL")
 
         if not quarter_value:
             logger.warning("Using default quarter.")
             quarter_value = "1"
 
+        if not total_crawlers:
+            logger.warning("Using default total crawlers.")
+            total_crawlers = "4"
+
         logger.info("Crawler forced requested.")
-        logger.warning(f"This is crawler: {quarter_value}")
+        logger.warning(f"This is crawler: {quarter_value}/{total_crawlers}")
 
         await asyncio.sleep(10)  # Pause for 10 seconds
 

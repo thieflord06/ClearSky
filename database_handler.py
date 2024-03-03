@@ -834,7 +834,7 @@ async def get_quarter_of_users_db(quarter_number, total_crawlers=4):
         logger.info(f"Getting quarter {quarter_number} of dids.")
         quarter_number = int(quarter_number)
         total_rows = await connection.fetchval('SELECT COUNT(*) FROM users')
-        quarter_size = total_rows / total_crawlers
+        quarter_size = total_rows / int(total_crawlers)
         offset = math.floor((quarter_number - 1) * quarter_size)
 
         logger.info(f"Total rows: {total_rows} | quarter size: {quarter_size} | offset: {offset}")
