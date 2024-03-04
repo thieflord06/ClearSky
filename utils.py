@@ -729,18 +729,12 @@ async def fetch_handles_batch(batch_dids, ad_hoc=False):
 
     if not ad_hoc:
         for did in batch_dids:
-            if "did:web" in did[0]:
-                handle = await on_wire.resolve_did(did[0].strip(), did_web=True)
-            else:
-                handle = await on_wire.resolve_did(did[0].strip())
+            handle = await on_wire.resolve_did(did[0].strip())
             if handle is not None:
                 handles.append((did[0].strip(), handle))
     else:
         for did in batch_dids:
-            if "did:web" in did:
-                handle = await on_wire.resolve_did(did.strip(), did_web=True)
-            else:
-                handle = await on_wire.resolve_did(did.strip())
+            handle = await on_wire.resolve_did(did.strip())
             if handle is not None:
                 handles.append((did.strip(), handle))
 

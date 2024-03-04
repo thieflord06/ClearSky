@@ -55,14 +55,14 @@ async def resolve_handle(info):  # Take Handle and get DID
     return None
 
 
-async def resolve_did(did, did_web=False, did_web_pds=False):  # Take DID and get handle
+async def resolve_did(did, did_web_pds=False):  # Take DID and get handle
     base_url = "https://plc.directory/"
     url = f"{base_url}{did}"
 
     max_retries = 5
     retry_count = 0
 
-    if did_web or "did:web" in did:
+    if "did:web" in did:
         logger.info("Resolving did:web")
         short_did = did[len("did:web:"):]
         url = f"https://{short_did}/.well-known/did.json"

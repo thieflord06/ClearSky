@@ -743,10 +743,7 @@ async def crawler_batch(batch_dids, forced=False):
     max_retries = 3
 
     for did, pds in batch_dids:
-        if "did:web" in did:
-            handle = await on_wire.resolve_did(did, did_web=True)
-        else:
-            handle = await on_wire.resolve_did(did)
+        handle = await on_wire.resolve_did(did)
 
         if handle is not None:
             # Check if the DID and handle combination already exists in the database
@@ -1285,7 +1282,7 @@ async def process_batch(batch_dids, ad_hoc, table, batch_size):
         logger.debug(str(handle_batch))
         for did, handle in handle_batch:
             if "did:web" in did:
-                pds = await on_wire.resolve_did(did, did_web=True, did_web_pds=True)
+                pds = await on_wire.resolve_did(did, did_web_pds=True)
                 if pds:
                     await update_pds(did, pds)
 
