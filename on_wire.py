@@ -99,9 +99,10 @@ async def resolve_did(did, did_web_pds=False):  # Take DID and get handle
                         logger.info(f"Getting PDS for {did}")
 
                         try:
-                            services = response_json.get("service", "")
-                            endpoint = services.get("serviceEndpoint", "")
-                            logger.debug(f"Endpoint: {endpoint}")
+                            record = response_json
+                            endpoint = record["service"]["serviceEndpoint"]
+
+                            logger.info(f"Endpoint retrieved for {did}: {endpoint}")
 
                             return endpoint
                         except Exception as e:
