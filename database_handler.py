@@ -2174,6 +2174,38 @@ async def update_pds(did, pds):
         logger.error(f"Error updating pds: {e}")
 
 
+async def get_didwebs_without_pds():
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                query = """SELECT did FROM users WHERE pds IS NULL AND did LIKE 'did:web%'"""
+                dids = await connection.fetch(query)
+
+                records = [record['did'] for record in dids]
+
+                return records
+    except Exception as e:
+        logger.error(f"Error getting didwebs without pds: {e}")
+
+        return None
+
+
+async def get_didwebs_pdses():
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                query = """SELECT did, pds FROM users WHERE did LIKE 'did:web%'"""
+                pds = await connection.fetch(query)
+
+                records = [(record['did'], record['pds']) for record in pds]
+
+                return records
+    except Exception as e:
+        logger.error(f"Error checking didweb pds: {e}")
+
+        return None
+
+
 async def get_api_keys(environment, key_type, key):
     async with connection_pools["write"].acquire() as connection:
         async with connection.transaction():

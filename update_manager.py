@@ -2,6 +2,7 @@
 
 import asyncpg
 import database_handler
+import on_wire
 from config_helper import logger, config
 import sys
 import argparse
@@ -166,6 +167,18 @@ async def main():
             last_value = None
             logger.info(f"No last value retrieved, starting from beginning.")
         await utils.get_all_did_records(last_value)
+
+        logger.info("Getting did:webs without PDSes.")
+        dids = await database_handler.get_didwebs_without_pds()
+
+        if dids:
+            logger.info(f"Processing {len(dids)} did:webs")
+            for did in dids:
+                pds = await on_wire.resolve_did(did, did_web_pds=True)
+                if pds:
+                    await database_handler.update_pds(did, pds)
+                    logger.info(f"Updated PDS for {did} PDS:{pds}")
+
         logger.info("Finished processing data.")
         sys.exit()
     elif args.get_federated_pdses:
