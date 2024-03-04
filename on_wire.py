@@ -90,7 +90,17 @@ async def resolve_did(did, did_web_pds=False):  # Take DID and get handle
                 logger.debug("response: " + str(response_json))
 
                 if response.status_code == 200:
-                    record = response_json.get("alsoKnownAs", "")
+
+                    if "did:web" in did:
+                        try:
+                            record = response_json["alsoKnownAs"][0]
+                        except Exception as e:
+                            logger.error(f"Error getting did:web handle: {e} | did: {did} | {url}")
+
+                            record = None
+                    else:
+                        record = response_json.get("alsoKnownAs", "")
+
                     record = str(record)
                     stripped_record = record.replace("at://", "")
                     stripped_record = stripped_record.strip("[]").replace("'", "")
@@ -99,8 +109,7 @@ async def resolve_did(did, did_web_pds=False):  # Take DID and get handle
                         logger.info(f"Getting PDS for {did}")
 
                         try:
-                            record = response_json
-                            endpoint = record["service"]["serviceEndpoint"]
+                            endpoint = response_json["service"][0]["serviceEndpoint"]
 
                             logger.info(f"Endpoint retrieved for {did}: {endpoint}")
 
