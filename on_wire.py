@@ -62,7 +62,7 @@ async def resolve_did(did, did_web=False, did_web_pds=False):  # Take DID and ge
     max_retries = 5
     retry_count = 0
 
-    if did_web:
+    if did_web or "did:web" in did:
         logger.info("Resolving did:web")
         short_did = did[len("did:web:"):]
         url = f"https://{short_did}/.well-known/did.json"
