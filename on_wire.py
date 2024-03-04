@@ -55,14 +55,19 @@ async def resolve_handle(info):  # Take Handle and get DID
     return None
 
 
-async def resolve_did(did):  # Take DID and get handle
+async def resolve_did(did, did_web=False, did_web_pds=False):  # Take DID and get handle
     base_url = "https://plc.directory/"
     url = f"{base_url}{did}"
 
-    logger.debug(url)
-
     max_retries = 5
     retry_count = 0
+
+    if did_web:
+        logger.info("Resolving did:web")
+        short_did = did[len("did:web:"):]
+        url = f"https://{short_did}/.well-known/did.json"
+
+    logger.debug(url)
 
     while retry_count < max_retries:
         try:
@@ -89,6 +94,20 @@ async def resolve_did(did):  # Take DID and get handle
                     record = str(record)
                     stripped_record = record.replace("at://", "")
                     stripped_record = stripped_record.strip("[]").replace("'", "")
+
+                    if did_web_pds:
+                        logger.info(f"Getting PDS for {did}")
+
+                        try:
+                            services = response_json.get("service", "")
+                            endpoint = services.get("serviceEndpoint", "")
+                            logger.debug(f"Endpoint: {endpoint}")
+
+                            return endpoint
+                        except Exception as e:
+                            logger.error(f"Error getting did:web PDS: {e} | did: {did} | PDS: {endpoint} | {url}")
+
+                            return None
 
                     if "RateLimit Exceeded" in stripped_record:
                         retry_count += 1

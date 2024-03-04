@@ -743,7 +743,10 @@ async def crawler_batch(batch_dids, forced=False):
     max_retries = 3
 
     for did, pds in batch_dids:
-        handle = await on_wire.resolve_did(did)
+        if "did:web" in did:
+            handle = await on_wire.resolve_did(did, did_web=True)
+        else:
+            handle = await on_wire.resolve_did(did)
 
         if handle is not None:
             # Check if the DID and handle combination already exists in the database
@@ -1281,6 +1284,11 @@ async def process_batch(batch_dids, ad_hoc, table, batch_size):
         handles_to_update = []
         logger.debug(str(handle_batch))
         for did, handle in handle_batch:
+            if "did:web" in did:
+                pds = await on_wire.resolve_did(did, did_web=True, did_web_pds=True)
+                if pds:
+                    await update_pds(did, pds)
+
             # Check if the DID and handle combination already exists in the database
             logger.debug("Did: " + str(did) + " | handle: " + str(handle))
             if await does_did_and_handle_exist_in_database(did, handle):
@@ -2154,6 +2162,19 @@ async def update_pds_status(pds, status):
                 await connection.execute(query, pds, status)
     except Exception as e:
         logger.error(f"Error updating pds status: {e}")
+
+
+async def update_pds(did, pds):
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                exists = await connection.fetchval('SELECT EXISTS(SELECT 1 FROM users WHERE did = $1 AND pds = $2)', did, pds)
+
+                if not exists:
+                    query = """UPDATE users SET pds = $2 WHERE did = $1"""
+                    await connection.execute(query, did, pds)
+    except Exception as e:
+        logger.error(f"Error updating pds: {e}")
 
 
 async def get_api_keys(environment, key_type, key):
