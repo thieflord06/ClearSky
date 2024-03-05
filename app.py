@@ -108,34 +108,33 @@ async def pre_process_identifier(identifier):
         return None, None
 
     # Check if did or handle exists before processing
-    if utils.is_did(identifier) or utils.is_handle(identifier):
-        if utils.is_did(identifier):
-            if not await database_handler.local_db():
-                try:
-                    did_identifier = identifier
-                    handle_identifier = await asyncio.wait_for(utils.use_handle(identifier), timeout=30)
-                except asyncio.TimeoutError:
-                    handle_identifier = None
-                    logger.warning("resolution failed, possible connection issue.")
-            else:
+    if utils.is_did(identifier):
+        if not await database_handler.local_db():
+            try:
                 did_identifier = identifier
-                handle_identifier = await utils.get_user_handle(identifier)
-        elif utils.is_handle(identifier):
-            if not await database_handler.local_db():
-                try:
-                    handle_identifier = identifier
-                    did_identifier = await asyncio.wait_for(utils.use_did(identifier), timeout=30)
-                except asyncio.TimeoutError:
-                    did_identifier = None
-                    logger.warning("resolution failed, possible connection issue.")
-            else:
-                handle_identifier = identifier
-                did_identifier = await utils.get_user_did(identifier)
+                handle_identifier = await asyncio.wait_for(utils.use_handle(identifier), timeout=5)
+            except asyncio.TimeoutError:
+                handle_identifier = None
+                logger.warning("resolution failed, possible connection issue.")
         else:
-            did_identifier = None
-            handle_identifier = None
+            did_identifier = identifier
+            handle_identifier = await utils.get_user_handle(identifier)
+    elif utils.is_handle(identifier):
+        if not await database_handler.local_db():
+            try:
+                handle_identifier = identifier
+                did_identifier = await asyncio.wait_for(utils.use_did(identifier), timeout=5)
+            except asyncio.TimeoutError:
+                did_identifier = None
+                logger.warning("resolution failed, possible connection issue.")
+        else:
+            handle_identifier = identifier
+            did_identifier = await utils.get_user_did(identifier)
+    else:
+        did_identifier = None
+        handle_identifier = None
 
-        return did_identifier, handle_identifier
+    return did_identifier, handle_identifier
 
 
 async def preprocess_status(identifier):
