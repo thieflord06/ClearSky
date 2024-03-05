@@ -64,40 +64,40 @@ sleep_time = 15
 async def identifier_exists_in_db(identifier):
     async with database_handler.connection_pools["read"].acquire() as connection:
         if is_did(identifier):
-            result = await connection.fetchrow('SELECT did, status FROM users WHERE did = $1', identifier)
+            results = await connection.fetch('SELECT did, status FROM users WHERE did = $1', identifier)
 
-            if result:
-                ident = result['did']
+            true_record = None
+
+            for result in results:
+                # ident = result['did']
                 status = result['status']
-            else:
-                ident = None
-                status = None
 
-            if ident and status is True:
-                ident = True
-                status = True
-            elif ident and status is False:
-                ident = True
-                status = False
+                if status:
+                    ident = True
+                    true_record = (ident, status)
+                    break
+
+            if true_record:
+                ident, status = true_record
             else:
                 ident = False
                 status = False
         elif is_handle(identifier):
-            result = await connection.fetchrow('SELECT handle, status FROM users WHERE handle = $1', identifier)
+            results = await connection.fetch('SELECT handle, status FROM users WHERE handle = $1', identifier)
 
-            if result:
-                ident = result['handle']
+            true_record = None
+
+            for result in results:
+                # ident = result['handle']
                 status = result['status']
-            else:
-                ident = None
-                status = None
 
-            if ident is not None and status is True:
-                ident = True
-                status = True
-            elif ident is not None and status is False:
-                ident = True
-                status = False
+                if status:
+                    ident = True
+                    true_record = (ident, status)
+                    break
+
+            if true_record:
+                ident, status = true_record
             else:
                 ident = False
                 status = False
@@ -105,7 +105,7 @@ async def identifier_exists_in_db(identifier):
             ident = False
             status = False
 
-        return ident, status
+    return ident, status
 
 
 async def resolve_did(did, count, test=False):
