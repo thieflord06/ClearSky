@@ -10,7 +10,7 @@ from config_helper import logger, limiter
 # ======================================================================================================================
 # ============================================= On-Wire requests =======================================================
 async def resolve_handle(info):  # Take Handle and get DID
-    base_url = "https://bsky.social/xrpc/"
+    base_url = "https://api.bsky.app/xrpc/"
     url = urllib.parse.urljoin(base_url, "com.atproto.identity.resolveHandle")
     params = {
         "handle": info
@@ -189,7 +189,7 @@ async def resolve_did(did, did_web_pds=False):  # Take DID and get handle
 
 async def get_avatar_id(did):
     handle = did
-    base_url = "https://bsky.social/xrpc/"
+    base_url = "https://api.bsky.app/xrpc/"
     collection = "app.bsky.actor.profile"
     rkey = "self"
     url = urllib.parse.urljoin(base_url, "com.atproto.repo.getRecord")
