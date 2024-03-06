@@ -801,7 +801,7 @@ async def get_handle_history(identifier):
         except httpx.ReadTimeout:
             logger.warning("Request timed out. Retrying... Retry count: %d", retry_count)
             retry_count += 1
-            await asyncio.sleep(10)
+            await asyncio.sleep(5)
             continue
         except httpx.RequestError as e:
             logger.warning("Error during API call: %s", e)
@@ -1304,11 +1304,11 @@ async def get_federated_pdses():
         except httpx.RequestError as e:
             response = None
             logger.warning("Error during API call: %s", e)
-            await asyncio.sleep(60)  # Retry after 60 seconds
+            await asyncio.sleep(5)  # Retry after 5 seconds
         except Exception as e:
             response = None
             logger.warning("Error during API call: %s", str(e))
-            await asyncio.sleep(60)  # Retry after 60 seconds
+            await asyncio.sleep(5)  # Retry after 10 seconds
 
         if response.status_code == 200:
             response_json = response.json()
