@@ -38,7 +38,9 @@ async def resolve_handle(info):  # Take Handle and get DID
 
                             return None
                     except KeyError:
-                        pass
+                        logger.error(f"Error getting response: key error")
+
+                        return None
                 logger.debug("response: " + str(response_json))
 
                 result = list(response_json.values())[0]
@@ -47,8 +49,8 @@ async def resolve_handle(info):  # Take Handle and get DID
         except (httpx.RequestError, HTTPStatusError) as e:
             retry_count += 1
             logger.error(f"Error occurred while making the API call: {e}")
-            await asyncio.sleep(30)
-            continue
+            # await asyncio.sleep(30)
+            return None
 
     logger.warning("Resolve error for: " + info + " after multiple retries.")
 
@@ -133,7 +135,7 @@ async def resolve_did(did, did_web_pds=False):  # Take DID and get handle
                     return stripped_record
                 elif response.status_code == 429:
                     logger.warning("Too many requests, pausing.")
-                    await asyncio.sleep(60)
+                    await asyncio.sleep(10)
                 elif response.status_code == 404:
                     logger.warning(f"404 not found: {did}")
 
@@ -154,31 +156,31 @@ async def resolve_did(did, did_web_pds=False):  # Take DID and get handle
                         retry_count += 1
                         logger.warning("Error:" + str(response.status_code))
                         logger.warning("Retrying: " + str(url))
-                        await asyncio.sleep(60)
+                        await asyncio.sleep(5)
         except httpx.DecodingError as e:
             retry_count += 1
             logger.error(f"Error occurred while parsing JSON response: {e}")
-            await asyncio.sleep(60)
+            # await asyncio.sleep(5)
 
-            continue
+            return None
         except httpx.RequestError as e:
             retry_count += 1
             logger.error(f"Error occurred while making the API call: {str(e)} {url}")
-            await asyncio.sleep(60)
+            # await asyncio.sleep(5)
 
-            continue
+            return None
         except httpx.HTTPStatusError as e:
             retry_count += 1
             logger.error(f"Error occurred while parsing JSON response: {str(e)} {url}")
-            await asyncio.sleep(60)
+            # await asyncio.sleep(5)
 
-            continue
+            return None
         except Exception as e:
             retry_count += 1
             logger.error(f"An unexpected error occurred: {str(e)} {url}")
-            await asyncio.sleep(60)
+            # await asyncio.sleep(5)
 
-            continue
+            return None
 
     logger.warning("Failed to resolve: " + str(did) + " after multiple retries.")
 
@@ -243,27 +245,27 @@ async def get_avatar_id(did):
         except httpx.DecodingError as e:
             retry_count += 1
             logger.error(f"Error occurred while parsing JSON response: {e}")
-            await asyncio.sleep(30)
+            # await asyncio.sleep(30)
 
-            continue
+            return None
         except httpx.RequestError as e:
             retry_count += 1
             logger.error(f"Error occurred while making the API call: {str(e)} {full_url}")
-            await asyncio.sleep(30)
+            # await asyncio.sleep(30)
 
-            continue
+            return None
         except httpx.HTTPStatusError as e:
             retry_count += 1
             logger.error(f"Error occurred while parsing JSON response: {str(e)} {full_url}")
-            await asyncio.sleep(30)
+            # await asyncio.sleep(30)
 
-            continue
+            return None
         except Exception as e:
             retry_count += 1
             logger.error(f"An unexpected error occurred: {str(e)} {full_url}")
-            await asyncio.sleep(30)
+            # await asyncio.sleep(30)
 
-            continue
+            return None
 
     logger.warning("Failed to resolve: " + str(did) + " after multiple retries.")
 
@@ -316,27 +318,27 @@ async def get_profile_picture(did, avatar_id):
         except httpx.DecodingError as e:
             retry_count += 1
             logger.error(f"Error occurred while parsing JSON response: {e}")
-            await asyncio.sleep(30)
+            # await asyncio.sleep(30)
 
-            continue
+            return None
         except httpx.RequestError as e:
             retry_count += 1
             logger.error(f"Error occurred while making the API call: {str(e)} {full_url}")
-            await asyncio.sleep(30)
+            # await asyncio.sleep(30)
 
-            continue
+            return None
         except httpx.HTTPStatusError as e:
             retry_count += 1
             logger.error(f"Error occurred while parsing JSON response: {str(e)} {full_url}")
-            await asyncio.sleep(30)
+            # await asyncio.sleep(30)
 
-            continue
+            return None
         except Exception as e:
             retry_count += 1
             logger.error(f"An unexpected error occurred: {str(e)} {full_url}")
-            await asyncio.sleep(30)
+            # await asyncio.sleep(30)
 
-            continue
+            return None
 
     logger.warning("Failed to resolve: " + str(did) + " after multiple retries.")
 
