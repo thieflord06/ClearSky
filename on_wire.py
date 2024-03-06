@@ -67,7 +67,7 @@ async def resolve_did(did, did_web_pds=False):  # Take DID and get handle
     if "did:web" in did:
         logger.info("Resolving did:web")
         short_did = did[len("did:web:"):]
-        url = f"https://{short_did}/.well-known/did.json"
+        url = f"https://{urllib.parse.unquote(short_did)}/.well-known/did.json"
 
     logger.debug(url)
 
