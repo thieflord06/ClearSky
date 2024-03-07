@@ -753,8 +753,27 @@ async def fetch_handles_batch(batch_dids, ad_hoc=False):
 
 
 def is_did(identifier):
-    did_pattern = r'^did:[a-z]+:[a-zA-Z0-9._:%-]*[a-zA-Z0-9._-]$'
+    # Check if the identifier contains percent-encoded characters
+    if '%' in identifier:
+        logger.warning(f"Identifier contains percent-encoded characters: {identifier}")
 
+        return False
+
+    # Check if the identifier ends with ':' or '%'
+    if identifier.endswith(':') or identifier.endswith('%'):
+        logger.warning(f"Identifier ends with ':' or '%': {identifier}")
+
+        return False
+
+    if not len(identifier.encode('utf-8')) <= 2 * 1024:
+        logger.warning(f"Identifier is too long: {identifier}")
+
+        return False
+
+    # Define the regex pattern for DID
+    did_pattern = r'^did:(?:web|plc):[a-zA-Z0-9._:-]*[a-zA-Z0-9._-]$'
+
+    # Match the identifier against the regex pattern
     return re.match(did_pattern, identifier) is not None
 
 
