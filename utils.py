@@ -1409,9 +1409,10 @@ async def get_all_did_records(last_cursor=None):
 
         if last_created != old_last_created:
             logger.info(f"Data fetched until createdAt: {last_created}")
-
-            await database_handler.update_last_created_did_date(last_created)
-
+            if last_created:
+                await database_handler.update_last_created_did_date(last_created)
+            else:
+                break
             # Update the after_value for the next request
             after_value = last_created
             old_last_created = last_created
