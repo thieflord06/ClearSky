@@ -908,10 +908,15 @@ async def get_all_users_db(run_update=False, get_dids=False, init_db_run=False, 
                             async with connection.transaction():
                                 # Insert data in batches
                                 for i in range(0, len(records), batch_size):
-                                    batch_data = [(did, True) if utils.is_did(did) else (did, False) for did in records[i: i + batch_size]]
+                                    batch_data = [(did, True, pds) if utils.is_did(did) else (did, False, pds) for did in records[i: i + batch_size]]
                                     try:
                                         await connection.executemany(
-                                            'INSERT INTO users (did, status) VALUES ($1, $2) ON CONFLICT (did) DO UPDATE SET status = TRUE WHERE users.status <> TRUE',
+                                            """INSERT INTO users (did, status, pds)
+                                            VALUES ($1, $2, $3) 
+                                            ON CONFLICT (did) 
+                                            DO UPDATE SET pds = EXCLUDED.pds, 
+                                            status = TRUE WHERE users.status <> TRUE
+                                            """,
                                             batch_data)
 
                                         logger.info(
