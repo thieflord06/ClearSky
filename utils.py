@@ -1412,6 +1412,7 @@ async def get_all_did_records(last_cursor=None):
             if last_created:
                 await database_handler.update_last_created_did_date(last_created)
             else:
+                logger.warning("No last_created date found, keeping last value.")
                 break
             # Update the after_value for the next request
             after_value = last_created
