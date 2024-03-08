@@ -451,15 +451,23 @@ async def get_all_users(pds):
             continue
         except TimeoutError:
             logger.warning(f"Timeout error: {full_url}")
-            break
+            if cursor:
+                await asyncio.sleep(5)
+                retry_count += 1
+                continue
+            else:
+                break
         except AttributeError:
             logger.warning(f"{pds} didn't return a response code: {full_url}")
-            await asyncio.sleep(5)
-            retry_count += 1
-            continue
+            break
         except Exception as e:
             logger.warning(f"General Error during API call: {e} | {full_url}")
-            break
+            if cursor:
+                await asyncio.sleep(5)
+                retry_count += 1
+                continue
+            else:
+                break
 
     if retry_count >= max_retries:
         logger.warning(f"Max retries reached for {pds} {full_url}")
