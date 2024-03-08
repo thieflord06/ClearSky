@@ -458,7 +458,7 @@ async def get_all_users(pds):
             retry_count += 1
             continue
         except Exception as e:
-            logger.warning(f"Error during API call: {e} | {full_url}")
+            logger.warning(f"General Error during API call: {e} | {full_url}")
             break
 
     if retry_count >= max_retries:
