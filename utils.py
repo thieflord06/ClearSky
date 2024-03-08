@@ -379,7 +379,10 @@ async def get_all_users(pds):
 
     logger.info(f"Getting all dids from {pds}")
 
-    while True:
+    retry_count = 0
+    max_retries = 5
+
+    while retry_count < max_retries:
         url = urllib.parse.urljoin(base_url, "com.atproto.sync.listRepos")
         params = {
             "limit": limit,
@@ -441,9 +444,20 @@ async def get_all_users(pds):
             else:
                 logger.warning("Response status code: " + str(response.status_code) + f" {full_url}")
                 break
+        except (httpx.RequestError, Exception) as e:
+            logger.warning("Error during API call: %s", e)
+            await asyncio.sleep(5)
+            retry_count += 1
+            continue
         except AttributeError:
             logger.warning(f"{pds} didn't return a response code: {full_url}")
-            break
+            await asyncio.sleep(5)
+            retry_count += 1
+            continue
+
+    if retry_count >= max_retries:
+        logger.warning(f"Max retries reached for {pds} {full_url}")
+
     return records
 
 
