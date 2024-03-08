@@ -444,16 +444,22 @@ async def get_all_users(pds):
             else:
                 logger.warning("Response status code: " + str(response.status_code) + f" {full_url}")
                 break
-        except (httpx.RequestError, Exception) as e:
-            logger.warning("Error during API call: %s", e)
+        except httpx.RequestError as e:
+            logger.warning(f"Error during API call: {e} | {full_url}")
             await asyncio.sleep(5)
             retry_count += 1
             continue
+        except TimeoutError:
+            logger.warning(f"Timeout error: {full_url}")
+            break
         except AttributeError:
             logger.warning(f"{pds} didn't return a response code: {full_url}")
             await asyncio.sleep(5)
             retry_count += 1
             continue
+        except Exception as e:
+            logger.warning(f"Error during API call: {e} | {full_url}")
+            break
 
     if retry_count >= max_retries:
         logger.warning(f"Max retries reached for {pds} {full_url}")
