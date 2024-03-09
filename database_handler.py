@@ -1550,6 +1550,9 @@ async def get_top_blocks():
 
 async def update_did_service(data):
     logger.info("Updating services information for batch.")
+
+    pop = "delete from resolution_queue where did = $1"
+
     try:
         async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
@@ -1563,11 +1566,13 @@ async def update_did_service(data):
                             insert_pds_query = """UPDATE users SET created_date = $2, pds = $3 WHERE did = $1"""
 
                             await connection.execute(insert_pds_query, record[0], record[1], record[2])
+                            await connection.execute(pop, record[0])
                         elif did_exists[0]["pds"] != record[2]:
                             old_pds = did_exists[0]["pds"]
                             update_query = """UPDATE users SET pds = $2 WHERE did = $1"""
 
                             await connection.execute(update_query, record[0], record[2])
+                            await connection.execute(pop, record[0])
 
                             logger.info(f"Updated pds for: {record[0]} | from {old_pds} to {record[2]}")
                         else:
@@ -1580,6 +1585,8 @@ async def update_did_service(data):
                             await connection.execute(insert_query, record[0], record[1], record[2], record[3], True)
                         else:
                             await connection.execute(insert_query, record[0], record[1], record[2], record[3], False)
+
+                        await connection.execute(pop, record[0])
     except Exception as e:
         logger.error("Error retrieving/inserting data to db", e)
 
