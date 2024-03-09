@@ -5,6 +5,7 @@ import asyncio
 import httpx
 from httpx import HTTPStatusError
 from config_helper import logger, limiter
+import dns.resolver
 
 
 # ======================================================================================================================
@@ -29,7 +30,11 @@ async def resolve_handle(info):  # Take Handle and get DID
                 response = await client.get(full_url)
                 response_json = response.json()
 
-                if response.status_code == 400:
+                if response.status_code == 200:
+                    result = list(response_json.values())[0]
+
+                    return result
+                elif response.status_code == 400:
                     try:
                         error_message = response.json()["error"]
                         message = response.json()["message"]
@@ -41,12 +46,11 @@ async def resolve_handle(info):  # Take Handle and get DID
                         logger.error(f"Error getting response: key error")
 
                         return None
-                logger.debug("response: " + str(response_json))
+                else:
+                    logger.warning(f"Error resolving {info} response: {response_json}")
 
-                result = list(response_json.values())[0]
-
-                return result
-        except (httpx.RequestError, HTTPStatusError) as e:
+                    return None
+        except Exception as e:
             retry_count += 1
             logger.error(f"Error occurred while making the API call: {e}")
             # await asyncio.sleep(30)
@@ -343,3 +347,113 @@ async def get_profile_picture(did, avatar_id):
     logger.warning("Failed to resolve: " + str(did) + " after multiple retries.")
 
     return "Error"
+
+
+async def verify_handle(identity):
+    handle1 = None
+    handle2 = None
+    handle3 = None
+
+    async def resolve_handle_wellknown_atproto(ident):
+        url = f"https://{urllib.parse.unquote(ident)}/.well-known/atproto-did"
+
+        max_retries = 5
+        retry_count = 0
+
+        while retry_count < max_retries:
+            try:
+                async with httpx.AsyncClient() as client:
+                    response = await client.get(url)
+                    if response.status_code == 200:
+                        response_json = response.json()
+
+                        return response_json
+                    if response.status_code == 400:
+                        logger.debug(f"response 400: {response.json()}")
+
+                        return None
+
+                    return result
+            except Exception as e:
+                retry_count += 1
+                logger.error(f"Error occurred while making the API call: {e}")
+                return None
+
+        logger.warning("Resolve error for: " + ident + " after multiple retries.")
+
+        return None
+
+    at_proto_lookup = "_atproto."
+
+    lookup = f"{at_proto_lookup}{identity}"
+
+    at_proto_result = await resolve_handle_wellknown_atproto(identity)
+
+    bsky_result = await resolve_handle(identity)
+
+    try:
+        resolver = dns.resolver.Resolver()
+        resolver.timeout = 5
+        resolver.lifetime = 5
+        result = resolver.resolve(lookup, "TXT")
+
+        if result:
+            result = str(result[0])
+            dns_result = result.strip('"')
+            dns_result = dns_result.replace('did=', '')
+        else:
+            dns_result = None
+
+        # return result
+    except Exception as e:
+        logger.error(f"Error resolving DNS: {e}")
+
+        dns_result = None
+
+    if (at_proto_result is not None and "did:plc" in at_proto_result) or (bsky_result is not None and "did:plc" in bsky_result) or (dns_result is not None and "did:plc" in dns_result):
+        if "bsky.social" in identity:
+            if at_proto_result and bsky_result:
+                if at_proto_result == bsky_result:
+                    return True
+                else:
+                    return False
+        else:
+            if dns_result and bsky_result:
+                if dns_result == bsky_result:
+                    return True
+                else:
+                    return False
+            elif bsky_result and at_proto_result:
+                if bsky_result == at_proto_result:
+                    return True
+                else:
+                    return False
+            else:
+                logger.error(f"validitiy case didnt match for {identity} | at_proto: {at_proto_result} | bsky: {bsky_result} | dns: {dns_result}")
+
+                return False
+    elif (at_proto_result is not None and "did:web" in at_proto_result) or (bsky_result is not None and "did:web" in bsky_result) or (dns_result is not None and "did:web" in dns_result):
+        if "did:web" in at_proto_result:
+            handle1 = await resolve_did(at_proto_result)
+        elif "did:web" in bsky_result:
+            handle2 = await resolve_did(bsky_result)
+        elif "did:web" in dns_result:
+            handle3 = await resolve_did(dns_result)
+
+        if identity == handle1 or identity == handle2 or identity == handle3:
+            if dns_result and bsky_result:
+                if dns_result == bsky_result:
+                    return True
+                else:
+                    return False
+            elif bsky_result and at_proto_result:
+                if bsky_result == at_proto_result:
+                    return True
+                else:
+                    return False
+            else:
+                logger.error(f"validitiy case didnt match for {identity} | at_proto: {at_proto_result} | bsky: {bsky_result} | dns: {dns_result}")
+
+                return False
+    else:
+        return False

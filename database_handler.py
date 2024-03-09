@@ -2243,7 +2243,11 @@ async def update_did_webs():
                         continue
                     else:
                         if old_handle != handle:
-                            change_handle = True
+                            if await on_wire.verify_handle(handle):
+                                change_handle = True
+                            else:
+                                change_handle = False
+                                logger.warning(f"invalid handle: {handle} for did:web: {did}")
 
                         if old_pds != pds:
                             change_pds = True
