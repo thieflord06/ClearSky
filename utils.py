@@ -1449,6 +1449,8 @@ async def get_all_did_records(last_cursor=None):
             logger.warning("DIDs up to date. Exiting.")
             break
 
+    await database_handler.update_did_webs()
+
 
 async def list_uri_to_url(uri):
     pattern = r'did:plc:[a-zA-Z0-9]+'

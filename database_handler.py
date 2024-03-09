@@ -2205,6 +2205,62 @@ async def get_didwebs_without_pds():
         return None
 
 
+async def update_did_webs():
+    query1 = """UPDATE users SET handle = $2, pds = $3 WHERE did = $1"""
+    query2 = """UPDATE users SET pds = $2 WHERE did = $1"""
+    query3 = """UPDATE users SET handle = $2 WHERE did = $1"""
+
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                query = """SELECT DISTINCT(did), timestamp FROM resolution_queue WHERE did LIKE 'did:web%'"""
+                records = await connection.execute(query)
+
+                did_webs_in_queue = [(record['did'], record['timestamp']) for record in records]
+
+                for did, timestamp in did_webs_in_queue:
+                    change_handle = False
+                    change_pds = False
+
+                    get_info = """SELECT handle, pds created_date FROM users WHERE did = $1"""
+                    user_info = await connection.fetch(get_info, did)
+                    if user_info:
+                        old_handle = user_info[0]['handle']
+                        old_pds = user_info[0]['pds']
+                    else:
+                        logger.info(f"new did:web: {did}")
+                        await connection.execute("""INSERT INTO users (did, created_date) VALUES ($1, $2)""", did, timestamp)
+
+                    handle = await on_wire.resolve_did(did)
+
+                    pds = await on_wire.resolve_did(did, True)
+
+                    if not handle and not pds:
+                        logger.info(f"did:web dead: {did}")
+                        await connection.execute("""UPDATE users SET status = FALSE WHERE did = $1""", did)
+                        await connection.execute("""INSERT INTO did_web_history (did, handle, pds, timestamp, status) VALUES ($1, $2, $3, $4, FALSE)""", did, handle, pds, timestamp)
+                        await connection.execute("""delete from resolution_queue where did = $1""", did)
+                        continue
+                    else:
+                        if old_handle != handle:
+                            change_handle = True
+
+                        if old_pds != pds:
+                            change_pds = True
+
+                        if change_handle and change_pds:
+                            await connection.execute(query1, did, handle, pds)
+                        elif change_handle and not change_pds:
+                            await connection.execute(query3, did, handle)
+                        elif change_pds and not change_handle:
+                            await connection.execute(query2, did, pds)
+
+                    await connection.execute("""INSERT INTO did_web_history (did, handle, pds, timestamp) VALUES ($1, $2, $3, $4)""", did, handle, pds, timestamp)
+                    await connection.execute("""delete from resolution_queue where did = $1""", did)
+    except Exception as e:
+        logger.error(f"Error updating didwebs: {e}")
+
+
 async def get_didwebs_pdses():
     try:
         async with connection_pools["write"].acquire() as connection:
