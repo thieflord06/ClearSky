@@ -2340,6 +2340,16 @@ async def get_dids_per_pds():
         return None
 
 
+async def set_status_code(pds, status_code):
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                query = """UPDATE pds SET last_status_code = $2 WHERE pds = $1"""
+                await connection.execute(query, pds, status_code)
+    except Exception as e:
+        logger.error(f"Error updating status code: {e}")
+
+
 # ======================================================================================================================
 # ============================================ get database credentials ================================================
 def get_database_config():
