@@ -2102,6 +2102,12 @@ async def auth_subscribe_blocks_single_blocklist(client_identifier, page):
     return await retrieve_subscribe_blocks_single_blocklist(client_identifier, page)
 
 
+@app.route('/api/v1/auth/validation/validate-handle/<client_identifier>', methods=['GET'])
+@rate_limit(50, timedelta(seconds=1))
+async def auth_validate_handle(client_identifier):
+    return await on_wire.verify_handle(client_identifier)
+
+
 # ======================================================================================================================
 # ========================================== Unauthenticated API Endpoints =============================================
 @app.route('/api/v1/anon/blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
@@ -2233,6 +2239,12 @@ async def anon_subscribe_blocks_blocklist(client_identifier, page):
 @rate_limit(30, timedelta(seconds=1))
 async def anon_subscribe_blocks_single_blocklist(client_identifier, page):
     return await retrieve_subscribe_blocks_single_blocklist(client_identifier, page)
+
+
+@app.route('/api/v1/anon/validation/validate-handle/<client_identifier>', methods=['GET'])
+@rate_limit(30, timedelta(seconds=1))
+async def anon_validate_handle(client_identifier):
+    return await on_wire.verify_handle(client_identifier)
 
 
 # ======================================================================================================================
