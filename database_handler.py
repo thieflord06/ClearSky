@@ -2237,7 +2237,7 @@ async def update_did_webs():
                         change_handle = False
                         change_pds = False
 
-                        get_info = """SELECT handle, pds created_date FROM users WHERE did = $1"""
+                        get_info = """SELECT handle, pds, created_date FROM users WHERE did = $1"""
                         user_info = await connection.fetch(get_info, did)
                         if user_info:
                             old_handle = user_info[0]['handle']
