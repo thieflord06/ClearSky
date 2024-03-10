@@ -376,6 +376,7 @@ async def get_all_users(pds):
     limit = 1000
     cursor = None
     records = set()
+    count = 0
 
     logger.info(f"Getting all dids from {pds}")
 
@@ -421,8 +422,14 @@ async def get_all_users(pds):
                     logger.warning(f"Received empty response from the server: {full_url}")
                     break
             elif response.status_code == 429:
-                logger.warning(f"Received 429 Too Many Requests. Retrying after 60 seconds...{full_url}")
-                await asyncio.sleep(60)  # Retry after 60 seconds
+                if count < 10:
+                    count += 1
+                    logger.warning(f"Received 429 Too Many Requests. Retrying after 60 seconds...{full_url}")
+                    await asyncio.sleep(60)  # Retry after 60 seconds
+                else:
+                    logger.error(f"Received 429. Max retries reached. {full_url}")
+                    records = None
+                    break
             elif response.status_code == 522:
                 logger.warning(f"Received 522 Origin Connection Time-out, skipping. {full_url}")
                 break
