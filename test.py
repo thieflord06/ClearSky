@@ -1,15 +1,23 @@
 # test.py
+import asyncio
+import urllib
+
+import httpx
 
 from config_helper import logger
 import database_handler
 import random
 import string
 import datetime
+import dns.resolver
+
+from on_wire import resolve_handle
+from on_wire import resolve_did
 
 
 async def generate_random_user_data():
     try:
-        async with database_handler.connection_pool.acquire() as connection:
+        async with database_handler.connection_pools['read'].acquire() as connection:
             async with connection.transaction():
                 # Generate and insert random user data into the 'users' table
                 user_data = []
@@ -39,7 +47,7 @@ async def generate_random_user_data():
 
 async def generate_random_block_data(user_data):
     try:
-        async with database_handler.connection_pool.acquire() as connection:
+        async with database_handler.connection_pools['read'].acquire() as connection:
             async with connection.transaction():
                 # Generate and insert random blocklist data into the 'blocklists' table
 
@@ -75,3 +83,144 @@ def generate_random_date():
     random_date = start_date + datetime.timedelta(days=random.randint(0, (end_date - start_date).days))
 
     return random_date.isoformat()
+
+
+def resolve_handle_dns(domain):
+    at_proto_lookup = "_atproto."
+
+    lookup = f"{at_proto_lookup}{domain}"
+
+    try:
+        resolver = dns.resolver.Resolver()
+        resolver.timeout = 5
+        resolver.lifetime = 5
+        result = resolver.resolve(lookup, "TXT")
+
+        result = str(result[0])
+        result = result.strip('"')
+
+        return result
+    except Exception as e:
+        logger.error(f"Error resolving DNS: {e}")
+
+        return None
+
+
+async def verify_handle(identity):
+    handle1 = None
+    handle2 = None
+    handle3 = None
+
+    async def resolve_handle_wellknown_atproto(ident):
+        url = f"https://{urllib.parse.unquote(ident)}/.well-known/atproto-did"
+
+        max_retries = 5
+        retry_count = 0
+
+        while retry_count < max_retries:
+            try:
+                async with httpx.AsyncClient() as client:
+                    response = await client.get(url)
+                    if response.status_code == 200:
+                        response_json = response.json()
+
+                        return response_json
+                    if response.status_code == 400:
+                        logger.debug(f"response 400: {response.json()}")
+
+                        return None
+
+                    return result
+            except Exception as e:
+                retry_count += 1
+                logger.error(f"Error occurred while making the API call: {e}")
+                return None
+
+        logger.warning("Resolve error for: " + ident + " after multiple retries.")
+
+        return None
+
+    at_proto_lookup = "_atproto."
+
+    lookup = f"{at_proto_lookup}{identity}"
+
+    at_proto_result = await resolve_handle_wellknown_atproto(identity)
+
+    bsky_result = await resolve_handle(identity)
+
+    try:
+        resolver = dns.resolver.Resolver()
+        resolver.timeout = 5
+        resolver.lifetime = 5
+        result = resolver.resolve(lookup, "TXT")
+
+        if result:
+            result = str(result[0])
+            dns_result = result.strip('"')
+            dns_result = dns_result.replace('did=', '')
+        else:
+            dns_result = None
+
+        # return result
+    except Exception as e:
+        logger.error(f"Error resolving DNS: {e}")
+
+        dns_result = None
+
+    if (at_proto_result is not None and "did:plc" in at_proto_result) or (bsky_result is not None and "did:plc" in bsky_result) or (dns_result is not None and "did:plc" in dns_result):
+        if "bsky.social" in identity:
+            if at_proto_result and bsky_result:
+                if at_proto_result == bsky_result:
+                    return True
+                else:
+                    return False
+        else:
+            if dns_result and bsky_result:
+                if dns_result == bsky_result:
+                    return True
+                else:
+                    return False
+            elif bsky_result and at_proto_result:
+                if bsky_result == at_proto_result:
+                    return True
+                else:
+                    return False
+            else:
+                logger.error(
+                    f"validitiy case didnt match for {identity} | at_proto: {at_proto_result} | bsky: {bsky_result} | dns: {dns_result}")
+
+                return False
+    elif (at_proto_result is not None and "did:web" in at_proto_result) or (bsky_result is not None and "did:web" in bsky_result) or (dns_result is not None and "did:web" in dns_result):
+        if at_proto_result is not None and "did:web" in at_proto_result:
+            handle1 = await resolve_did(at_proto_result)
+        elif bsky_result is not None and "did:web" in bsky_result:
+            handle2 = await resolve_did(bsky_result)
+        elif dns_result is not None and "did:web" in dns_result:
+            handle3 = await resolve_did(dns_result)
+
+        if identity == handle1 or identity == handle2 or identity == handle3:
+            if dns_result and bsky_result:
+                if dns_result == bsky_result:
+                    return True
+                else:
+                    return False
+            elif bsky_result and at_proto_result:
+                if bsky_result == at_proto_result:
+                    return True
+                else:
+                    return False
+            else:
+                logger.error(
+                    f"validitiy case didnt match for {identity} | at_proto: {at_proto_result} | bsky: {bsky_result} | dns: {dns_result}")
+
+                return False
+    else:
+        return False
+
+
+async def main():
+    answer = await verify_handle("genco.me")
+    logger.info(f"handle valid: {answer}")
+
+if __name__ == '__main__':
+    asyncio.run(main())
