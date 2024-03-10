@@ -1420,6 +1420,73 @@ async def get_federated_pdses():
     return active, not_active
 
 
+async def validate_did_atproto(did):
+    base_url = f"https://bsky.network/xrpc/"
+
+    url = urllib.parse.urljoin(base_url, "com.atproto.sync.getLatestCommit")
+    params = {
+        "did": did,
+    }
+
+    encoded_params = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
+    full_url = f"{url}?{encoded_params}"
+
+    logger.info(full_url)
+
+    retry_count = 0
+    max_retries = 5
+
+    while retry_count < max_retries:
+        try:
+            response = requests.get(full_url)
+        except httpx.RequestError as e:
+            response = None
+            logger.warning("Error during API call: %s", e)
+            retry_count += 1
+            await asyncio.sleep(5)  # Retry after 5 seconds
+        except Exception as e:
+            logger.warning("Error during API call: %s", str(e))
+
+            return False
+
+        if response.status_code == 200:
+            response_json = response.json()
+            try:
+                cid = response_json.get("cid", [])
+                rev = response_json.get("rev", [])
+
+                if cid and rev:
+                    return True
+            except AttributeError:
+                try:
+                    error = response_json.get("error", [])
+
+                    if "user not found" in error:
+                        return False
+                    else:
+                        logger.error(f"Unexpected error message: {error} {full_url}")
+
+                        return False
+                except AttributeError:
+                    logger.error(f"Error fetching data: {full_url}")
+                    return False
+        elif response.status_code == 429:
+            logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
+            retry_count += 1
+            await asyncio.sleep(10)  # Retry after 60 seconds
+        elif response.status_code == 404:
+            return False
+        elif response.status_code == 500:
+            return False
+        else:
+            return False
+
+    if retry_count == max_retries:
+        logger.warning("Could not validate DID: " + did)
+
+        return False
+
+
 async def get_all_did_records(last_cursor=None):
     url = 'https://plc.directory/export'
     after_value = last_cursor
