@@ -471,7 +471,7 @@ async def describe_pds(pds):
 
             if response.status_code == 200:
                 response_json = response.json()
-                available_user_domains = response_json.get("availableUserDomains").strip("[]")
+                available_user_domains = str(response_json["availableUserDomains"]).strip("[]")
                 logger.info(f"available_user_domains: {available_user_domains}")
                 if available_user_domains is not None:
                     return True
