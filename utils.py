@@ -1331,6 +1331,12 @@ async def get_federated_pdses():
         current_pds = pds
         if current_pds != last_pds:
             attempt = 0
+            pds_status = await on_wire.describe_pds(pds)
+            if not pds_status:
+                not_active += 1
+                doa_processed_pds[pds] = True
+                await database_handler.update_pds_status(pds, False)
+                continue
         if pds in processed_pds:
             continue
         base_url = f"https://bsky.network/xrpc/"
