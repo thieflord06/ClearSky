@@ -455,3 +455,31 @@ async def verify_handle(identity):
                 return False
     else:
         return False
+
+
+async def describe_pds(pds):
+    url = f"{pds}/xrpc/com.atproto.server.describeServer"
+
+    logger.debug(url)
+
+    try:
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(url)
+            except Exception:
+                return False
+
+            if response.status_code == 200:
+                response_json = response.json()
+                available_user_domains = response_json.get("availableUserDomains").strip("[]")
+                logger.info(f"available_user_domains: {available_user_domains}")
+                if available_user_domains is not None:
+                    return True
+                else:
+                    return False
+            else:
+                return False
+    except Exception:
+        logger.warning(f"Failed to describe PDS: {url}")
+
+        return False
