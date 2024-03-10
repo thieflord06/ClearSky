@@ -349,39 +349,37 @@ async def get_profile_picture(did, avatar_id):
     return "Error"
 
 
+async def resolve_handle_wellknown_atproto(ident):
+    url = f"https://{urllib.parse.unquote(ident)}/.well-known/atproto-did"
+
+    max_retries = 5
+    retry_count = 0
+
+    while retry_count < max_retries:
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(url)
+                if response.status_code == 200:
+                    response_json = response.json()
+
+                    return response_json
+                if response.status_code == 400:
+                    logger.debug(f"response 400: {response.json()}")
+
+                    return None
+        except Exception as e:
+            retry_count += 1
+            logger.error(f"Error occurred while making the API call: {e}")
+
+    if retry_count == max_retries:
+        logger.warning("Resolve error for: " + ident + " after multiple retries.")
+        return None
+
+
 async def verify_handle(identity):
     handle1 = None
     handle2 = None
     handle3 = None
-
-    async def resolve_handle_wellknown_atproto(ident):
-        url = f"https://{urllib.parse.unquote(ident)}/.well-known/atproto-did"
-
-        max_retries = 5
-        retry_count = 0
-
-        while retry_count < max_retries:
-            try:
-                async with httpx.AsyncClient() as client:
-                    response = await client.get(url)
-                    if response.status_code == 200:
-                        response_json = response.json()
-
-                        return response_json
-                    if response.status_code == 400:
-                        logger.debug(f"response 400: {response.json()}")
-
-                        return None
-
-                    return result
-            except Exception as e:
-                retry_count += 1
-                logger.error(f"Error occurred while making the API call: {e}")
-                return None
-
-        logger.warning("Resolve error for: " + ident + " after multiple retries.")
-
-        return None
 
     at_proto_lookup = "_atproto."
 
