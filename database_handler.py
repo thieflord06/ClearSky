@@ -2218,49 +2218,54 @@ async def update_did_webs():
 
                 did_webs_in_queue = [(record['did'], record['timestamp']) for record in records]
 
-                for did, timestamp in did_webs_in_queue:
-                    change_handle = False
-                    change_pds = False
+                if did_webs_in_queue:
+                    for did, timestamp in did_webs_in_queue:
+                        change_handle = False
+                        change_pds = False
 
-                    get_info = """SELECT handle, pds created_date FROM users WHERE did = $1"""
-                    user_info = await connection.fetch(get_info, did)
-                    if user_info:
-                        old_handle = user_info[0]['handle']
-                        old_pds = user_info[0]['pds']
-                    else:
-                        logger.info(f"new did:web: {did}")
-                        await connection.execute("""INSERT INTO users (did, created_date) VALUES ($1, $2)""", did, timestamp)
+                        get_info = """SELECT handle, pds created_date FROM users WHERE did = $1"""
+                        user_info = await connection.fetch(get_info, did)
+                        if user_info:
+                            old_handle = user_info[0]['handle']
+                            old_pds = user_info[0]['pds']
+                        else:
+                            logger.info(f"new did:web: {did}")
+                            await connection.execute("""INSERT INTO users (did, created_date) VALUES ($1, $2)""", did, timestamp)
 
-                    handle = await on_wire.resolve_did(did)
+                        handle = await on_wire.resolve_did(did)
 
-                    pds = await on_wire.resolve_did(did, True)
+                        pds = await on_wire.resolve_did(did, True)
 
-                    if not handle and not pds:
-                        logger.info(f"did:web dead: {did}")
-                        await connection.execute("""UPDATE users SET status = FALSE WHERE did = $1""", did)
-                        await connection.execute("""INSERT INTO did_web_history (did, handle, pds, timestamp, status) VALUES ($1, $2, $3, $4, FALSE)""", did, handle, pds, timestamp)
-                        await connection.execute("""delete from resolution_queue where did = $1""", did)
-                        continue
-                    else:
-                        if old_handle != handle:
-                            if await on_wire.verify_handle(handle):
-                                change_handle = True
+                        if not await utils.validate_did_atproto(did) and pds is None and handle is None:
+                            logger.error(f"did:web dead: {did}")
+                            # await connection.execute("""UPDATE users SET status = FALSE WHERE did = $1""", did)
+                            # await connection.execute("""INSERT INTO did_web_history (did, handle, pds, timestamp, status) VALUES ($1, $2, $3, $4, FALSE)""", did, handle, pds, timestamp)
+                            # await connection.execute("""delete from resolution_queue where did = $1""", did)
+                            # continue
+                        else:
+                            if old_handle != handle:
+                                if await on_wire.verify_handle(handle):
+                                    change_handle = True
+                                else:
+                                    change_handle = False
+                                    logger.warning(f"invalid handle: {handle} for did:web: {did}")
+
+                            if old_pds != pds:
+                                change_pds = True
+
+                            if change_handle and change_pds:
+                                await connection.execute(query1, did, handle, pds)
+                            elif change_handle and not change_pds:
+                                await connection.execute(query3, did, handle)
+                            elif change_pds and not change_handle:
+                                await connection.execute(query2, did, pds)
                             else:
-                                change_handle = False
-                                logger.warning(f"invalid handle: {handle} for did:web: {did}")
+                                continue
 
-                        if old_pds != pds:
-                            change_pds = True
+                        await connection.execute("""INSERT INTO did_web_history (did, handle, pds, timestamp) VALUES ($1, $2, $3, $4)""", did, handle, pds, timestamp)
+                        await connection.execute("""delete from resolution_queue where did = $1""", did)
 
-                        if change_handle and change_pds:
-                            await connection.execute(query1, did, handle, pds)
-                        elif change_handle and not change_pds:
-                            await connection.execute(query3, did, handle)
-                        elif change_pds and not change_handle:
-                            await connection.execute(query2, did, pds)
-
-                    await connection.execute("""INSERT INTO did_web_history (did, handle, pds, timestamp) VALUES ($1, $2, $3, $4)""", did, handle, pds, timestamp)
-                    await connection.execute("""delete from resolution_queue where did = $1""", did)
+                logger.info(f"No did:web in queue.")
     except Exception as e:
         logger.error(f"Error updating didwebs: {e}")
 
