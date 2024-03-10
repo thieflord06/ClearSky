@@ -3,9 +3,9 @@
 import urllib.parse
 import asyncio
 import httpx
-from httpx import HTTPStatusError
 from config_helper import logger, limiter
 import dns.resolver
+import database_handler
 
 
 # ======================================================================================================================
@@ -458,6 +458,8 @@ async def verify_handle(identity):
 
 
 async def describe_pds(pds):
+    status_code = None
+
     url = f"{pds}/xrpc/com.atproto.server.describeServer"
 
     logger.debug(url)
@@ -468,6 +470,13 @@ async def describe_pds(pds):
                 response = await client.get(url)
             except Exception:
                 return False
+
+            try:
+                status_code = response.status_code
+            except Exception:
+                pass
+            if status_code:
+                await database_handler.set_status_code(pds, status_code)
 
             if response.status_code == 200:
                 response_json = response.json()

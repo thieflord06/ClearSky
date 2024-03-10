@@ -1319,7 +1319,6 @@ async def get_federated_pdses():
     doa_processed_pds = {}
     attempt = 0
     last_pds = None
-    status_code = None
 
     records = await database_handler.get_unique_did_to_pds()
 
@@ -1362,12 +1361,6 @@ async def get_federated_pdses():
         try:
             response = requests.get(full_url)
             last_pds = current_pds
-            try:
-                status_code = response.status_code
-            except Exception:
-                pass
-            if status_code:
-                await database_handler.set_status_code(pds, status_code)
         except httpx.RequestError as e:
             response = None
             logger.warning("Error during API call: %s", e)
