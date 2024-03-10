@@ -433,11 +433,11 @@ async def verify_handle(identity):
 
                 return False
     elif (at_proto_result is not None and "did:web" in at_proto_result) or (bsky_result is not None and "did:web" in bsky_result) or (dns_result is not None and "did:web" in dns_result):
-        if "did:web" in at_proto_result:
+        if at_proto_result is not None and "did:web" in at_proto_result:
             handle1 = await resolve_did(at_proto_result)
-        elif "did:web" in bsky_result:
+        elif bsky_result is not None and "did:web" in bsky_result:
             handle2 = await resolve_did(bsky_result)
-        elif "did:web" in dns_result:
+        elif dns_result is not None and "did:web" in dns_result:
             handle3 = await resolve_did(dns_result)
 
         if identity == handle1 or identity == handle2 or identity == handle3:
