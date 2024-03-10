@@ -1549,7 +1549,7 @@ async def get_top_blocks():
 
 
 async def update_did_service(data):
-    pop = 0
+    pop_count = 0
     logger.info("Updating services information for batch.")
 
     pop = "delete from resolution_queue where did = $1"
@@ -1569,7 +1569,7 @@ async def update_did_service(data):
                             await connection.execute(insert_pds_query, record[0], record[1], record[2])
                             await connection.execute(pop, record[0])
                             logger.info(f"pop: {record[0]}")
-                            pop += 1
+                            pop_count += 1
                         elif did_exists[0]["pds"] != record[2]:
                             old_pds = did_exists[0]["pds"]
                             update_query = """UPDATE users SET pds = $2 WHERE did = $1"""
@@ -1577,13 +1577,13 @@ async def update_did_service(data):
                             await connection.execute(update_query, record[0], record[2])
                             await connection.execute(pop, record[0])
                             logger.info(f"pop: {record[0]}")
-                            pop += 1
+                            pop_count += 1
 
                             logger.info(f"Updated pds for: {record[0]} | from {old_pds} to {record[2]}")
                         else:
                             await connection.execute(pop, record[0])
                             logger.info(f"pop: {record[0]}")
-                            pop += 1
+                            pop_count += 1
                             logger.debug("Up to date.")
                             continue
                     else:
@@ -1596,9 +1596,9 @@ async def update_did_service(data):
 
                         await connection.execute(pop, record[0])
                         logger.info(f"pop: {record[0]}")
-                        pop += 1
+                        pop_count += 1
 
-                logger.info(f"Popped {pop} times from resolution queue.")
+                logger.info(f"Popped {pop_count} times from resolution queue.")
     except Exception as e:
         logger.error("Error retrieving/inserting data to db", e)
 
