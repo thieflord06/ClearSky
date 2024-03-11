@@ -472,8 +472,9 @@ async def describe_pds(pds):
                 return False
             try:
                 num_redirects = len(response.history)
+                logger.warning(f"Number of redirects: {num_redirects}")
             except Exception:
-                num_redirects = 0
+                pass
             try:
                 status_code = response.status_code
             except Exception:
@@ -485,7 +486,6 @@ async def describe_pds(pds):
                 response_json = response.json()
                 available_user_domains = str(response_json["availableUserDomains"]).strip("[]")
                 logger.info(f"available_user_domains: {available_user_domains}")
-                logger.warning(f"Number of redirects: {num_redirects}")
                 if available_user_domains is not None:
                     return True
                 else:
