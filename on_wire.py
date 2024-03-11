@@ -467,10 +467,13 @@ async def describe_pds(pds):
     try:
         async with httpx.AsyncClient() as client:
             try:
-                response = await client.get(url)
+                response = await client.get(url, follow_redirects=True)
             except Exception:
                 return False
-
+            try:
+                num_redirects = len(response.history)
+            except Exception:
+                num_redirects = 0
             try:
                 status_code = response.status_code
             except Exception:
@@ -482,6 +485,7 @@ async def describe_pds(pds):
                 response_json = response.json()
                 available_user_domains = str(response_json["availableUserDomains"]).strip("[]")
                 logger.info(f"available_user_domains: {available_user_domains}")
+                logger.warning(f"Number of redirects: {num_redirects}")
                 if available_user_domains is not None:
                     return True
                 else:

@@ -395,7 +395,7 @@ async def get_all_users(pds):
         full_url = f"{url}?{encoded_params}"
         logger.debug(full_url)
         try:
-            response = requests.get(full_url)
+            response = requests.get(full_url, allow_redirects=True)
         except httpx.RequestError as e:
             response = None
             logger.warning("Error during API call: %s", e)
@@ -577,7 +577,7 @@ async def get_user_block_list(ident, pds):
         try:
             async with limiter:
                 async with httpx.AsyncClient() as client:
-                    response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
+                    response = await client.get(full_url, timeout=10, follow_redirects=True)  # Set an appropriate timeout value (in seconds)
 
                 ratelimit_limit = int(response.headers.get('Ratelimit-Limit', 0))
                 ratelimit_remaining = int(response.headers.get('Ratelimit-Remaining', 0))
@@ -946,7 +946,7 @@ async def get_mutelists(ident, pds):
         try:
             async with limiter:
                 async with httpx.AsyncClient() as client:
-                    response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
+                    response = await client.get(full_url, timeout=10, follow_redirects=True)  # Set an appropriate timeout value (in seconds)
 
                 ratelimit_limit = int(response.headers.get('Ratelimit-Limit', 0))
                 ratelimit_remaining = int(response.headers.get('Ratelimit-Remaining', 0))
@@ -1064,7 +1064,7 @@ async def get_mutelist_users(ident, pds):
         try:
             async with limiter:
                 async with httpx.AsyncClient() as client:
-                    response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
+                    response = await client.get(full_url, timeout=10, follow_redirects=True)  # Set an appropriate timeout value (in seconds)
 
                 ratelimit_limit = int(response.headers.get('Ratelimit-Limit', 0))
                 ratelimit_remaining = int(response.headers.get('Ratelimit-Remaining', 0))
@@ -1172,7 +1172,7 @@ async def get_subscribelists(ident, pds):
         try:
             async with limiter:
                 async with httpx.AsyncClient() as client:
-                    response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
+                    response = await client.get(full_url, timeout=10, follow_redirects=True)  # Set an appropriate timeout value (in seconds)
 
                 ratelimit_limit = int(response.headers.get('Ratelimit-Limit', 0))
                 ratelimit_remaining = int(response.headers.get('Ratelimit-Remaining', 0))
