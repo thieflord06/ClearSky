@@ -2315,6 +2315,11 @@ async def get_didwebs_pdses():
 
 
 async def get_api_keys(environment, key_type, key):
+    if not key and not key_type and not environment:
+        logger.error("Missing required parameters for API verification.")
+
+        return None
+
     async with connection_pools["write"].acquire() as connection:
         async with connection.transaction():
             try:
