@@ -2381,6 +2381,7 @@ async def set_status_code(pds, status_code):
 async def update_mutelist_count():
     limit = 100
     offset = 0
+    touched_actor = "crawler"
 
     logger.info("Updating mutelists counts.")
 
@@ -2402,8 +2403,8 @@ async def update_mutelist_count():
                         count_result = await connection.fetch(query_2, list_uri)
                         count = count_result[0]['count']
 
-                        query_3 = """UPDATE mutelists SET count = $2 WHERE uri = $1"""
-                        await connection.execute(query_3, list_uri, count)
+                        query_3 = """UPDATE mutelist_user_count SET count = $2, touched_actor = $3, touched = $4 WHERE uri = $1"""
+                        await connection.execute(query_3, list_uri, count, touched_actor, datetime.now())
 
                     offset += 100
 
