@@ -29,6 +29,7 @@ async def main():
     parser.add_argument('--fetch-users-count', action='store_true', help='Fetch the count of users')
     parser.add_argument('--update-redis-cache', action='store_true', help='Update the redis cache')
     parser.add_argument('--get-federated-pdses', action='store_true', help='Validate PDSes')
+    parser.add_argument('--count-list-users', action='store_true', help='Count list users')
     args = parser.parse_args()
 
     await database_handler.create_connection_pool("read")  # Creates connection pool for db
