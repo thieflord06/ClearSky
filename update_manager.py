@@ -101,6 +101,7 @@ async def main():
 
         logger.info("Users db update finished.")
         await database_handler.delete_new_users_temporary_table()
+        await database_handler.update_mutelist_count()
         sys.exit()
     elif args.crawler:
         if not os.getenv('CLEAR_SKY'):

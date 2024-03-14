@@ -2378,6 +2378,40 @@ async def set_status_code(pds, status_code):
         logger.error(f"Error updating status code: {e}")
 
 
+async def update_mutelist_count():
+    limit = 100
+    offset = 0
+
+    logger.info("Updating mutelists counts.")
+
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                while True:
+                    query_1 = """SELECT uri FROM mutelists LIMIT $1 OFFSET $2"""
+
+                    lists = await connection.fetch(query_1, limit, offset)
+
+                    if not lists:
+                        break
+
+                    for list_entry in lists:
+                        list_uri = list_entry['uri']
+
+                        query_2 = """SELECT COUNT(*) FROM mutelists_users WHERE list_uri = $1"""
+                        count_result = await connection.fetch(query_2, list_uri)
+                        count = count_result[0]['count']
+
+                        query_3 = """UPDATE mutelists SET count = $2 WHERE uri = $1"""
+                        await connection.execute(query_3, list_uri, count)
+
+                    offset += 100
+
+        logger.info("Mutelists counts updated.")
+    except Exception as e:
+        logger.error(f"Error updating mutelist count: {e}")
+
+
 # ======================================================================================================================
 # ============================================ get database credentials ================================================
 def get_database_config():
