@@ -2381,6 +2381,7 @@ async def set_status_code(pds, status_code):
 async def update_mutelist_count():
     limit = 100
     offset = 0
+    list_count = 0
     touched_actor = "crawler"
 
     logger.info("Updating mutelists counts.")
@@ -2406,9 +2407,11 @@ async def update_mutelist_count():
                         query_3 = """UPDATE mutelist_user_count SET count = $2, touched_actor = $3, touched = $4 WHERE uri = $1"""
                         await connection.execute(query_3, list_uri, count, touched_actor, datetime.now())
 
+                    list_count += len(lists)
                     offset += 100
 
         logger.info("Mutelists counts updated.")
+        logger.info(f"Counted: {list_count}")
     except Exception as e:
         logger.error(f"Error updating mutelist count: {e}")
 
