@@ -2461,8 +2461,8 @@ async def update_subscribe_list_count():
                     list_count += len(lists)
                     offset += 100
 
-        logger.info("Mutelists counts updated.")
-        logger.info(f"Counted: {list_count} lists")
+        logger.info("Subscribe lists counts updated.")
+        logger.info(f"Counted: {list_count} subscribe lists")
     except Exception as e:
         logger.error(f"Error updating mutelist count (general): {e}")
 
