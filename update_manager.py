@@ -105,6 +105,7 @@ async def main():
 
         logger.info("Users db update finished.")
         await database_handler.delete_new_users_temporary_table()
+        await database_handler.process_delete_queue()
         sys.exit()
     elif args.crawler:
         if not os.getenv('CLEAR_SKY'):
@@ -200,6 +201,9 @@ async def main():
     elif args.count_subscribe_list_users:
         logger.info("Count subscribe list users requested.")
         await database_handler.update_subscribe_list_count()
+        sys.exit()
+    else:
+        logger.error("Not a recognized command.")
         sys.exit()
 if __name__ == '__main__':
     asyncio.run(main())

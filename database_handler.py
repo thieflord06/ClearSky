@@ -2464,6 +2464,63 @@ async def update_subscribe_list_count():
         logger.error(f"Error updating mutelist count (general): {e}")
 
 
+async def process_delete_queue():
+    logger.info("Processing delete queue.")
+
+    limit = 100
+    offset = 0
+    pop = 0
+
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                while True:
+                    query = """SELECT uri FROM count_delete_queue LIMIT $1 OFFSET $2"""
+                    uris = await connection.fetch(query, limit, offset)
+
+                    if not uris:
+                        break
+
+                    for uri in uris:
+                        item = uri['uri']
+
+                        if "listitem" in item:
+                            try:
+                                await connection.execute("""UPDATE mutelist_user_count
+                                        SET user_count = user_count - 1
+                                        WHERE list_uri IN (
+                                        SELECT list_uri
+                                        FROM mutelists_users
+                                        WHERE listitem_uri = $1""", item)
+
+                                await connection.execute("""DELETE FROM count_delete_queue WHERE uri = $1""", item)
+                                pop = +1
+                            except Exception as e:
+                                logger.error(f"Error deleting listitem: {e}")
+
+                        elif "listblock" in item:
+                            try:
+                                await connection.execute("""UPDATE subscribe_blocklists_user_count
+                                        SET user_count = user_count - 1
+                                        WHERE list_uri IN (
+                                        SELECT list_uri
+                                        FROM subscribe_blocklists
+                                        WHERE uri = $1""", item)
+
+                                await connection.execute("""DELETE FROM count_delete_queue WHERE uri = $1""", item)
+                                pop = +1
+                            except Exception as e:
+                                logger.error(f"Error deleting listblock: {e}")
+                        else:
+                            logger.warning(f"Unknown item type: {item}")
+
+                    offset += 100
+
+        logger.info(f"Deleted {pop} entries from delete queue.")
+    except Exception as e:
+        logger.error(f"Error processing delete queue: {e}")
+
+
 # ======================================================================================================================
 # ============================================ get database credentials ================================================
 def get_database_config():
