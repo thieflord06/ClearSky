@@ -2059,10 +2059,11 @@ async def get_mutelists(ident):
     async with connection_pools["read"].acquire() as connection:
         async with connection.transaction():
             query = """
-            SELECT ml.url, u.handle, u.status, ml.name, ml.description, ml.created_date, mu.date_added
+            SELECT ml.url, u.handle, u.status, ml.name, ml.description, ml.created_date, mu.date_added, mc.user_count
             FROM mutelists AS ml
             INNER JOIN mutelists_users AS mu ON ml.uri = mu.list_uri
             INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle
+            INNER JOIN mutelists_user_count AS mc ON ml.uri = mc.list_uri
             WHERE mu.subject_did = $1
             """
             try:
@@ -2081,7 +2082,8 @@ async def get_mutelists(ident):
                     "name": record['name'],
                     "description": record['description'],
                     "created_date": record['created_date'].isoformat(),
-                    "date_added": record['date_added'].isoformat()
+                    "date_added": record['date_added'].isoformat(),
+                    "list user count": record['count']
                 }
                 lists.append(data)
 
