@@ -320,11 +320,12 @@ async def get_subscribe_blocks(ident, limit=100, offset=0):
     try:
         async with connection_pools["read"].acquire() as connection:
             async with connection.transaction():
-                query_1 = """SELECT mu.subject_did, u.handle, s.date_added, u.status, s.list_uri, m.url
+                query_1 = """SELECT mu.subject_did, u.handle, s.date_added, u.status, s.list_uri, m.url, sc.user_count
                                 FROM subscribe_blocklists AS s
                                 INNER JOIN mutelists_users AS mu ON s.list_uri = mu.list_uri
                                 INNER JOIN users AS u ON mu.subject_did = u.did
                                 INNER JOIN mutelists AS m ON s.list_uri = m.uri
+                                INNER JOIN subscribe_blocklists_user_count AS sc ON s.list_uri = sc.list_uri
                                 WHERE s.did = $1
                                 ORDER BY s.date_added DESC
                                 LIMIT $2
@@ -349,7 +350,8 @@ async def get_subscribe_blocks(ident, limit=100, offset=0):
                         "date_added": record['date_added'].isoformat(),
                         "status": record['status'],
                         "list_uri": record['list_uri'],
-                        "list_url": record['url']
+                        "list_url": record['url'],
+                        "list count": record['user_count']
                     }
 
                     data_list.append(list_dict)
@@ -375,10 +377,11 @@ async def get_subscribe_blocks_single(ident, list_of_lists, limit=100, offset=0)
     try:
         async with connection_pools["read"].acquire() as connection:
             async with connection.transaction():
-                query_1 = """SELECT s.did, u.handle, s.date_added, u.status, s.list_uri, m.url
+                query_1 = """SELECT s.did, u.handle, s.date_added, u.status, s.list_uri, m.url, sc.user_count
                                 FROM subscribe_blocklists AS s
                                 INNER JOIN users AS u ON s.did = u.did
                                 INNER JOIN mutelists AS m ON s.list_uri = m.uri
+                                INNER JOIN subscribe_blocklists_user_count AS sc ON s.list_uri = sc.list_uri
                                 WHERE m.url = $1
                                 ORDER BY s.date_added DESC
                                 LIMIT $2
