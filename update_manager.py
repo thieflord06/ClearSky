@@ -18,6 +18,8 @@ import os
 # python update_manager.py --fetch-users-count // command to get current count in db
 # python update_manager.py --update-redis-cache // update handles in redis
 # python update_manager.py --get-federated-pdses // validate PDSes
+# python update_manager.py --count-list-users // count list users
+# python update_manager.py --count-subscribe-list-users // count subscribe list users
 
 
 async def main():
@@ -30,6 +32,7 @@ async def main():
     parser.add_argument('--update-redis-cache', action='store_true', help='Update the redis cache')
     parser.add_argument('--get-federated-pdses', action='store_true', help='Validate PDSes')
     parser.add_argument('--count-list-users', action='store_true', help='Count list users')
+    parser.add_argument('--count-subscribe-list-users', action='store_true', help='Count subscribe list users')
     args = parser.parse_args()
 
     await database_handler.create_connection_pool("read")  # Creates connection pool for db
@@ -193,6 +196,10 @@ async def main():
     elif args.count_list_users:
         logger.info("Count list users requested.")
         await database_handler.update_mutelist_count()
+        sys.exit()
+    elif args.count_subscribe_list_users:
+        logger.info("Count subscribe list users requested.")
+        await database_handler.update_subscribe_list_count()
         sys.exit()
 if __name__ == '__main__':
     asyncio.run(main())

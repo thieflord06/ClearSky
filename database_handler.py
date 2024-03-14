@@ -2424,6 +2424,46 @@ async def update_mutelist_count():
         logger.error(f"Error updating mutelist count (general): {e}")
 
 
+async def update_subscribe_list_count():
+    limit = 100
+    offset = 0
+    list_count = 0
+    touched_actor = "crawler"
+
+    logger.info("Updating subscribe block list counts.")
+
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                while True:
+                    query_1 = """SELECT uri FROM mutelists LIMIT $1 OFFSET $2"""
+
+                    lists = await connection.fetch(query_1, limit, offset)
+
+                    if not lists:
+                        break
+
+                    for list_entry in lists:
+                        list_uri = list_entry['uri']
+
+                        query_2 = """SELECT COUNT(*) FROM subscribe_blocklists WHERE list_uri = $1"""
+                        count_result = await connection.fetchval(query_2, list_uri)
+
+                        try:
+                            await connection.execute("""INSERT INTO subscribe_blocklists_user_count (list_uri, user_count, touched_actor, touched)
+                                        VALUES ($1, $2, $3, $4)""", list_uri, count_result, touched_actor, datetime.now(pytz.utc))
+                        except Exception as e:
+                            logger.error(f"Error updating count: {e}")
+
+                    list_count += len(lists)
+                    offset += 100
+
+        logger.info("Mutelists counts updated.")
+        logger.info(f"Counted: {list_count} lists")
+    except Exception as e:
+        logger.error(f"Error updating mutelist count (general): {e}")
+
+
 # ======================================================================================================================
 # ============================================ get database credentials ================================================
 def get_database_config():
