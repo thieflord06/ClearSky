@@ -2401,17 +2401,16 @@ async def update_mutelist_count():
                         list_uri = list_entry['uri']
 
                         query_2 = """SELECT COUNT(*) FROM mutelists_users WHERE list_uri = $1"""
-                        count_result = await connection.fetch(query_2, list_uri)
-                        count = count_result[0]['count']
+                        count_result = await connection.fetchval(query_2, list_uri)
 
                         query_3 = """UPDATE mutelist_user_count SET user_count = $2, touched_actor = $3, touched = $4 WHERE list_uri = $1"""
-                        await connection.execute(query_3, list_uri, count, touched_actor, datetime.now())
+                        await connection.execute(query_3, list_uri, count_result, touched_actor, datetime.now())
 
                     list_count += len(lists)
                     offset += 100
 
         logger.info("Mutelists counts updated.")
-        logger.info(f"Counted: {list_count}")
+        logger.info(f"Counted: {list_count} lists")
     except Exception as e:
         logger.error(f"Error updating mutelist count: {e}")
 
