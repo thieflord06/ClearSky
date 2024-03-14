@@ -101,7 +101,6 @@ async def main():
 
         logger.info("Users db update finished.")
         await database_handler.delete_new_users_temporary_table()
-        await database_handler.update_mutelist_count()
         sys.exit()
     elif args.crawler:
         if not os.getenv('CLEAR_SKY'):
@@ -190,6 +189,9 @@ async def main():
         logger.info(f"Not active PDSes: {not_active}")
         logger.info("Finished processing data. Exiting.")
         sys.exit()
-
+    elif args.count_list_users:
+        logger.info("Count list users requested.")
+        await database_handler.update_mutelist_count()
+        sys.exit()
 if __name__ == '__main__':
     asyncio.run(main())
