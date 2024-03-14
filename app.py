@@ -2210,7 +2210,7 @@ async def anon_block_stats():
 
 
 @app.route('/api/v1/anon/base/autocomplete/<client_identifier>', methods=['GET'])
-@rate_limit(30, timedelta(seconds=1))
+@rate_limit(10, timedelta(seconds=1))
 async def anon_autocomplete(client_identifier):
     return await autocomplete(client_identifier)
 
@@ -2245,12 +2245,6 @@ async def anon_subscribe_blocks_single_blocklist(client_identifier, page):
 @rate_limit(30, timedelta(seconds=1))
 async def anon_validate_handle(client_identifier):
     return await on_wire.verify_handle(client_identifier)
-
-
-@app.route('/api/v1/anon/base/autocomplete/<client_identifier>', methods=['GET'])
-@rate_limit(10, timedelta(seconds=1))
-async def anon_autocomplete(client_identifier):
-    return await autocomplete(client_identifier)
 
 
 # ======================================================================================================================
