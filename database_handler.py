@@ -2403,8 +2403,11 @@ async def update_mutelist_count():
                         query_2 = """SELECT COUNT(*) FROM mutelists_users WHERE list_uri = $1"""
                         count_result = await connection.fetchval(query_2, list_uri)
 
-                        query_3 = """UPDATE mutelist_user_count SET user_count = $2, touched_actor = $3, touched = $4 WHERE list_uri = $1"""
-                        await connection.execute(query_3, list_uri, count_result, touched_actor, datetime.now())
+                        try:
+                            await connection.execute("""INSERT INTO mutelists_user_count (list_uri, user_count, touched_actor, touched)
+                                        VALUES ($1, $2, $3, $4)""", list_uri, count_result, touched_actor, datetime.now(pytz.utc))
+                        except Exception as e:
+                            logger.error(f"Error updating count: {e}")
 
                     list_count += len(lists)
                     offset += 100
@@ -2412,7 +2415,7 @@ async def update_mutelist_count():
         logger.info("Mutelists counts updated.")
         logger.info(f"Counted: {list_count} lists")
     except Exception as e:
-        logger.error(f"Error updating mutelist count: {e}")
+        logger.error(f"Error updating mutelist count (general): {e}")
 
 
 # ======================================================================================================================
