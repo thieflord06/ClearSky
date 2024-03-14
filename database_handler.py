@@ -457,18 +457,20 @@ async def get_moderation_list(name, limit=100, offset=0):
             async with connection.transaction():
                 search_string = f'%{name}%'
 
-                name_query = """SELECT ml.url, u.handle, u.status, ml.name, ml.description, ml.created_date
+                name_query = """SELECT ml.url, u.handle, u.status, ml.name, ml.description, ml.created_date, mc.user_count
                 FROM mutelists AS ml 
                 INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle 
+                INNER JOIN mutelists_user_count AS mc ON ml.url = mc.url
                 WHERE ml.name ILIKE $1
                 LIMIT $2
                 OFFSET $3"""
 
                 name_mod_lists = await connection.fetch(name_query, search_string, limit, offset)
 
-                description_query = """SELECT ml.url, u.handle, u.status, ml.name, ml.description, ml.created_date
+                description_query = """SELECT ml.url, u.handle, u.status, ml.name, ml.description, ml.created_date, mc.user_count
                 FROM mutelists AS ml
                 INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle
+                INNER JOIN mutelists_user_count AS mc ON ml.url = mc.url
                 WHERE ml.description ILIKE $1
                 LIMIT $2
                 OFFSET $3"""
@@ -512,7 +514,8 @@ async def get_moderation_list(name, limit=100, offset=0):
                 "status": record['status'],
                 "name": record['name'],
                 "description": record['description'],
-                "created_date": record['created_date'].isoformat()
+                "created_date": record['created_date'].isoformat(),
+                "list count": record['user_count']
             }
             lists.append(data)
 
@@ -523,7 +526,8 @@ async def get_moderation_list(name, limit=100, offset=0):
                 "status": record['status'],
                 "name": record['name'],
                 "description": record['description'],
-                "created_date": record['created_date'].isoformat()
+                "created_date": record['created_date'].isoformat(),
+                "list count": record['user_count']
             }
             lists.append(data)
     else:
