@@ -2497,7 +2497,7 @@ async def process_delete_queue():
                                         WHERE list_uri IN (
                                         SELECT list_uri
                                         FROM mutelists_users
-                                        WHERE listitem_uri = $1""", item)
+                                        WHERE listitem_uri = $1)""", item)
 
                                 await connection.execute("""DELETE FROM count_delete_queue WHERE uri = $1""", item)
                                 pop = +1
@@ -2511,7 +2511,7 @@ async def process_delete_queue():
                                         WHERE list_uri IN (
                                         SELECT list_uri
                                         FROM subscribe_blocklists
-                                        WHERE uri = $1""", item)
+                                        WHERE uri = $1)""", item)
 
                                 await connection.execute("""DELETE FROM count_delete_queue WHERE uri = $1""", item)
                                 pop = +1
