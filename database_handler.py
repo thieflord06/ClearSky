@@ -2244,7 +2244,7 @@ async def update_did_webs():
                     logger.error(f"Error getting did:web from resolution queue: {e}")
                     records = None
 
-                if records:
+                if records is not None:
                     did_webs_in_queue = [(record['did'], record['timestamp']) for record in records]
 
                 if did_webs_in_queue:
