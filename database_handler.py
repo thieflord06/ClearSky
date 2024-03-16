@@ -2492,7 +2492,7 @@ async def process_delete_queue():
 
                         if "listitem" in item:
                             try:
-                                await connection.execute("""UPDATE mutelist_user_count
+                                await connection.execute("""UPDATE mutelists_user_count
                                         SET user_count = user_count - 1
                                         WHERE list_uri IN (
                                         SELECT list_uri
