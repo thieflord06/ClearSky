@@ -2514,7 +2514,7 @@ async def process_delete_queue():
                                         WHERE uri = $1)""", item)
 
                                 await connection.execute("""DELETE FROM count_delete_queue WHERE uri = $1""", item)
-                                pop = +1
+                                pop += 1
                             except Exception as e:
                                 logger.error(f"Error deleting listblock: {e}")
                         else:
