@@ -218,9 +218,39 @@ async def verify_handle(identity):
         return False
 
 
+async def describe_pds(pds):
+    url = f"{pds}/xrpc/com.atproto.server.describeServer"
+
+    logger.debug(url)
+
+    try:
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(url)
+            except Exception:
+                return False
+
+            if response.status_code == 200:
+                response_json = response.json()
+                available_user_domains = str(response_json["availableUserDomains"]).strip("[]")
+                logger.info(f"available_user_domains: {available_user_domains}")
+                if available_user_domains is not None:
+                    return True
+                else:
+                    return False
+            else:
+                return False
+    except Exception:
+        logger.warning(f"Failed to describe PDS: {pds}")
+        return False
+
+
 async def main():
-    answer = await verify_handle("genco.me")
-    logger.info(f"handle valid: {answer}")
+    # answer = await describe_pds('https://zaluka.yartsa.xyz')
+    # logger.info(f"pds valid: {answer}")
+    await database_handler.create_connection_pool("write")
+
+    await database_handler.process_delete_queue()
 
 if __name__ == '__main__':
     asyncio.run(main())
