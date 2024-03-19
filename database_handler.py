@@ -2241,7 +2241,7 @@ async def update_did_webs():
             async with connection.transaction():
                 query = """SELECT DISTINCT(did), timestamp FROM resolution_queue WHERE did LIKE 'did:web%'"""
                 try:
-                    records = await connection.execute(query)
+                    records = await connection.fetch(query)
 
                     if not records:
                         records = None
