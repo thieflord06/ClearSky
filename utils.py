@@ -377,7 +377,6 @@ async def get_all_users(pds):
     cursor = None
     records = set()
     count = 0
-    num_redirects = 0
 
     logger.info(f"Getting all dids from {pds}")
 
@@ -399,7 +398,8 @@ async def get_all_users(pds):
             response = requests.get(full_url, allow_redirects=True)
             try:
                 num_redirects = len(response.history)
-                logger.info(f"Number of redirects: {num_redirects}")
+                if num_redirects > 0:
+                    logger.info(f"Number of redirects: {num_redirects}")
             except Exception:
                 pass
         except httpx.RequestError as e:

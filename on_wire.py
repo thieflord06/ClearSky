@@ -472,7 +472,8 @@ async def describe_pds(pds):
                 return False
             try:
                 num_redirects = len(response.history)
-                logger.warning(f"Number of redirects: {num_redirects}")
+                if num_redirects > 0:
+                    logger.warning(f"Number of redirects: {num_redirects}")
             except Exception:
                 pass
             try:
