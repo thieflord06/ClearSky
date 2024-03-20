@@ -750,6 +750,8 @@ async def crawler_batch(batch_dids, forced=False):
     max_retries = 3
 
     for did, pds in batch_dids:
+        if pds is None:
+            continue
         if "bsky.network" not in pds:
             continue
         handle = await on_wire.resolve_did(did)
