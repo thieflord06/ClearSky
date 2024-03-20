@@ -103,7 +103,7 @@ async def main():
 
         logger.info("Users db update finished.")
         await database_handler.delete_new_users_temporary_table()
-        await database_handler.process_delete_queue()
+        await database_handler.process_delete_queue()  # Process the delete count for lists
         sys.exit()
     elif args.crawler:
         if not os.getenv('CLEAR_SKY'):

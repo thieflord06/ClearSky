@@ -905,6 +905,7 @@ async def get_all_users_db(run_update=False, get_dids=False, init_db_run=False, 
 
                         for did in dids_deactivated:
                             await connection.execute("""UPDATE users SET status = FALSE WHERE did = $1""", did)
+                            await connection.execute("delete from resolution_queue where did = $1", did)  # Remove the DID from the resolution queue
                             count += 1
                             logger.debug(f"DIDs deactivated: {count}")
 
@@ -929,6 +930,8 @@ async def get_all_users_db(run_update=False, get_dids=False, init_db_run=False, 
                                             status = TRUE WHERE users.status <> TRUE
                                             """,
                                             batch_data)
+
+                                        await connection.execute("delete from resolution_queue where did = $1", did)  # Remove the DID from the resolution queue
 
                                         logger.info(
                                             f"Inserted batch {i // batch_size + 1} of {len(records) // batch_size + 1} batches.")
@@ -1261,6 +1264,8 @@ async def update_user_handles(handles_to_update):
                 ON CONFLICT (did) DO UPDATE
                 SET handle = EXCLUDED.handle
             ''')
+
+            await connection.execute("delete from resolution_queue where did = $1", did)  # Remove the DID from the resolution queue
 
         logger.info(f"Updated {len(handles_to_update)} handles in the database.")
 
