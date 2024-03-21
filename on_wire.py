@@ -191,7 +191,7 @@ async def resolve_did(did, did_web_pds=False):  # Take DID and get handle
     return None
 
 
-async def get_avatar_id(did):
+async def get_avatar_id(did, aux=False):
     handle = did
     base_url = "https://api.bsky.app/xrpc/"
     collection = "app.bsky.actor.profile"
@@ -218,6 +218,18 @@ async def get_avatar_id(did):
                 logger.debug("response: " + str(response_json))
 
                 if response.status_code == 200:
+                    if aux:
+                        try:
+                            display_value = response_json['value']['displayName']
+                        except Exception:
+                            display_value = None
+
+                        try:
+                            description = response_json['value']['description']
+                        except Exception:
+                            description = None
+
+                        return display_value, description
                     avatar_info = response_json.get("value", {}).get("avatar", {})
                     avatar_link = avatar_info.get("ref", {}).get("$link", "")
                     avatar_mimetype = avatar_info.get("mimeType", "")
@@ -239,6 +251,8 @@ async def get_avatar_id(did):
                         await asyncio.sleep(10)
                 elif response.status_code == 400:
                     logger.warning("User not found. Skipping...")
+                    if aux:
+                        return None, None
 
                     return None
                 else:

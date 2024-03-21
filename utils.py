@@ -1267,6 +1267,8 @@ def fetch_data_with_after_parameter(url, after_value):
     response = requests.get(url, params={'after': after_value})
     if response.status_code == 200:
         db_data = []
+        atproto_labelers = []
+        in_endpoint = None
 
         for line in response.iter_lines():
             try:
@@ -1299,6 +1301,20 @@ def fetch_data_with_after_parameter(url, after_value):
                 created_date = record.get("createdAt")
                 created_date = datetime.fromisoformat(created_date)
 
+                if in_endpoint:
+                    try:
+                        # Extract type and endpoint if atproto_labeler is present for the first time
+                        if "atproto_labeler" in in_endpoint:
+                            atproto_labeler = {
+                                "did": did,
+                                "type": in_endpoint["atproto_labeler"]["type"],
+                                "endpoint": in_endpoint["atproto_labeler"]["endpoint"],
+                                "createdAt": created_date
+                            }
+                            atproto_labelers.append(atproto_labeler)
+                    except Exception as e:
+                        logger.error(f"Error: {e}")
+
                 db_data.append([did, created_date, service, handle])
             except json.JSONDecodeError:
                 logger.error(f"Failed to parse JSON line: {line}")
@@ -1310,12 +1326,12 @@ def fetch_data_with_after_parameter(url, after_value):
         else:
             last_created_date = None
 
-        return db_data, last_created_date
+        return db_data, last_created_date, atproto_labelers
     else:
         # Handle any errors or exceptions here
         logger.error(f"Error fetching data. Status code: {response.status_code}")
 
-        return None, None
+        return None, None, None
 
 
 async def get_federated_pdses():
@@ -1512,14 +1528,14 @@ async def get_all_did_records(last_cursor=None):
     old_last_created = None
 
     while True:
-        data, last_created = fetch_data_with_after_parameter(url, after_value)
+        data, last_created, label_data = fetch_data_with_after_parameter(url, after_value)
 
         logger.info("data batch fetched.")
-        if data is None:
+        if data is None and label_data is None:
             break
         else:
             # print(data)
-            await database_handler.update_did_service(data)
+            await database_handler.update_did_service(data, label_data)
 
         if last_created != old_last_created:
             logger.info(f"Data fetched until createdAt: {last_created}")

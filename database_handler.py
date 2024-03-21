@@ -1564,7 +1564,7 @@ async def get_top_blocks():
         logger.error("Error retrieving data from db", e)
 
 
-async def update_did_service(data):
+async def update_did_service(data, label_data):
     pop_count = 0
     logger.info("Updating services information for batch.")
 
@@ -1573,50 +1573,111 @@ async def update_did_service(data):
     try:
         async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
-                for record in data:
-                    query = """SELECT did, pds, created_date FROM users where did = $1"""
+                if data:
+                    for record in data:
+                        query = """SELECT did, pds, created_date FROM users where did = $1"""
 
-                    did_exists = await connection.fetch(query, record[0])
+                        did_exists = await connection.fetch(query, record[0])
 
-                    if did_exists:
-                        if not did_exists[0]["pds"] or not did_exists[0]["created_date"]:
-                            insert_pds_query = """UPDATE users SET created_date = $2, pds = $3 WHERE did = $1"""
+                        if did_exists:
+                            if not did_exists[0]["pds"] or not did_exists[0]["created_date"]:
+                                insert_pds_query = """UPDATE users SET created_date = $2, pds = $3 WHERE did = $1"""
 
-                            await connection.execute(insert_pds_query, record[0], record[1], record[2])
-                            await connection.execute(pop, record[0])
-                            logger.info(f"pop: {record[0]}")
-                            pop_count += 1
-                        elif did_exists[0]["pds"] != record[2]:
-                            old_pds = did_exists[0]["pds"]
-                            update_query = """UPDATE users SET pds = $2 WHERE did = $1"""
+                                await connection.execute(insert_pds_query, record[0], record[1], record[2])
+                                await connection.execute(pop, record[0])
+                                logger.info(f"pop: {record[0]}")
+                                pop_count += 1
+                            elif did_exists[0]["pds"] != record[2]:
+                                old_pds = did_exists[0]["pds"]
+                                update_query = """UPDATE users SET pds = $2 WHERE did = $1"""
 
-                            await connection.execute(update_query, record[0], record[2])
-                            await connection.execute(pop, record[0])
-                            logger.info(f"pop: {record[0]}")
-                            pop_count += 1
+                                await connection.execute(update_query, record[0], record[2])
+                                await connection.execute(pop, record[0])
+                                logger.info(f"pop: {record[0]}")
+                                pop_count += 1
 
-                            logger.info(f"Updated pds for: {record[0]} | from {old_pds} to {record[2]}")
+                                logger.info(f"Updated pds for: {record[0]} | from {old_pds} to {record[2]}")
+                            else:
+                                await connection.execute(pop, record[0])
+                                logger.info(f"pop: {record[0]}")
+                                pop_count += 1
+                                logger.debug("Up to date.")
+                                continue
                         else:
+                            insert_query = """INSERT INTO users (did, created_date, pds, handle, status) VALUES ($1, $2, $3, $4, $5)"""
+
+                            if utils.is_did(record[0]):
+                                await connection.execute(insert_query, record[0], record[1], record[2], record[3], True)
+                            else:
+                                await connection.execute(insert_query, record[0], record[1], record[2], record[3], False)
+
                             await connection.execute(pop, record[0])
                             logger.info(f"pop: {record[0]}")
                             pop_count += 1
-                            logger.debug("Up to date.")
-                            continue
-                    else:
-                        insert_query = """INSERT INTO users (did, created_date, pds, handle, status) VALUES ($1, $2, $3, $4, $5)"""
 
-                        if utils.is_did(record[0]):
-                            await connection.execute(insert_query, record[0], record[1], record[2], record[3], True)
-                        else:
-                            await connection.execute(insert_query, record[0], record[1], record[2], record[3], False)
+                    if label_data:
+                        for label in label_data:
+                            display_name, description = await on_wire.get_avatar_id(label['did'], True)
 
-                        await connection.execute(pop, record[0])
-                        logger.info(f"pop: {record[0]}")
-                        pop_count += 1
+                            query = """SELECT did, endpoint, created_date FROM labelers where did = $1"""
+
+                            did_exists = await connection.fetch(query, label["did"])
+
+                            if did_exists:
+                                if not did_exists[0]["endpoint"] or not did_exists[0]["created_date"]:
+                                    insert_label_query = """UPDATE labelers SET created_date = $2, endpoint = $3 WHERE did = $1"""
+
+                                    await connection.execute(insert_label_query, label["did"], label["endpoint"], label["createdAt"])
+                                    await connection.execute(pop, label["did"])
+                                    logger.info(f"pop: {label['did']}")
+                                    pop_count += 1
+                                elif not did_exists[0].get("name"):
+                                    insert_label_query = """UPDATE labelers SET name = $2 WHERE did = $1"""
+
+                                    await connection.execute(insert_label_query, label["did"], display_name)
+                                elif not did_exists[0].get("description"):
+                                    insert_label_query = """UPDATE labelers SET description = $2 WHERE did = $1"""
+
+                                    await connection.execute(insert_label_query, label["did"], description)
+                                elif did_exists[0].get("description") != description:
+                                    old_description = did_exists[0]["description"]
+                                    update_query = """UPDATE labelers SET description = $2 WHERE did = $1"""
+
+                                    await connection.execute(update_query, label["did"], description)
+
+                                    logger.info(f"Updated description for: {label['did']} | from {old_description} to {description}")
+                                elif did_exists[0]["name"] != display_name:
+                                    old_name = did_exists[0]["name"]
+                                    update_query = """UPDATE labelers SET name = $2 WHERE did = $1"""
+
+                                    await connection.execute(update_query, label["did"], display_name)
+
+                                    logger.info(f"Updated name for: {label['did']} | from {old_name} to {display_name}")
+                                elif did_exists[0]["endpoint"] != label["endpoint"]:
+                                    old_endpoint = did_exists[0]["endpoint"]
+                                    update_query = """UPDATE labelers SET endpoint = $2 WHERE did = $1"""
+
+                                    await connection.execute(update_query, label["did"], label["endpoint"])
+
+                                    logger.info(f"Updated endpoint for: {label['did']} | from {old_endpoint} to {label['endpoint']}")
+                                    await connection.execute(pop, label['did'])
+                                    logger.info(f"pop: {label['did']}")
+                                    pop_count += 1
+                                else:
+                                    await connection.execute(pop, label['did'])
+                                    logger.info(f"pop: {label['did']}")
+                                    pop_count += 1
+                                    logger.debug("Up to date.")
+                            else:
+                                insert_label_query = """INSERT INTO labelers (did, endpoint, created_date, name, description) VALUES ($1, $2, $3, $4, $5)"""
+                                await connection.execute(insert_label_query, label["did"], label["endpoint"], label["createdAt"], display_name, description)
+                                await connection.execute(pop, label["did"])
+                                logger.info(f"pop: {label['did']}")
+                                pop_count += 1
 
                 logger.info(f"Popped {pop_count} times from resolution queue.")
     except Exception as e:
-        logger.error("Error retrieving/inserting data to db", e)
+        logger.error("Error retrieving/inserting labeler data to db", e)
 
 
 async def update_last_created_did_date(last_created):
