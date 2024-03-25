@@ -989,7 +989,7 @@ async def update_blocklist_table(ident, blocked_data, forced=False):
                         if uri is None:
                             logger.error(f"a URI is None in: {ident}")
                             continue  # Skip processing when uri is None
-                        await connection.execute('INSERT INTO blocklists_transaction (user_did, uri, block_date, touched, touched_actor, delete) VALUES ($1, $2, $3, $4)', ident, uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor, True)
+                        await connection.execute('INSERT INTO blocklists_transaction (user_did, uri, block_date, touched, touched_actor, delete) VALUES ($1, $2, $3, $4, $5, $6)', ident, uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor, True)
                 except Exception as e:
                     logger.error(f"Error updating blocklists_transaction on delete : {e}")
                     logger.error(existing_blocklist_entries)
