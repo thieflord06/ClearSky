@@ -729,8 +729,8 @@ async def crawl_all(forced=False, quarter=None, total_crawlers=None):
             logger.info(f"Pausing after {i + 1} DID requests...")
 
             # Log information for each batch
-            logger.info(f"Processed batch {i // batch_size + 1}/{total_dids // batch_size + 1}...")
-            logger.info(f"Processed {cumulative_processed_count}/{total_dids} DIDs...")
+            logger.info(f"Processed batch {i // batch_size + 1}/{total_dids // batch_size + 1}")
+            logger.info(f"Processed {cumulative_processed_count}/{total_dids} DIDs")
             await asyncio.sleep(5)  # Pause for 30 secondsx
 
         processed_count += batch_size
