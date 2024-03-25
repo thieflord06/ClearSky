@@ -931,12 +931,12 @@ async def get_all_users_db(run_update=False, get_dids=False, init_db_run=False, 
                                             """,
                                             batch_data)
 
-                                        await connection.execute("delete from resolution_queue where did = $1", did)  # Remove the DID from the resolution queue
-
                                         logger.info(
                                             f"Inserted batch {i // batch_size + 1} of {len(records) // batch_size + 1} batches.")
                                     except Exception as e:
                                         logger.error(f"Error inserting batch {i // batch_size + 1}: {str(e)}")
+                                for did in batch_data:
+                                    await connection.execute("delete from resolution_queue where did = $1", did[0])  # Remove the DID from the resolution queue
                 else:
                     logger.warning(f"No users in {pds} or could not get users.")
 
