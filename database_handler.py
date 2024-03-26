@@ -295,10 +295,10 @@ async def get_blocklist(ident, limit=100, offset=0):
     try:
         async with connection_pools["read"].acquire() as connection:
             async with connection.transaction():
-                query = "SELECT b.blocked_did, b.block_date, u.handle, u.status FROM blocklists AS b JOIN users AS u ON b.blocked_did = u.did WHERE b.user_did = $1 ORDER BY block_date DESC LIMIT $2 OFFSET $3"
+                query = "SELECT DISTINCT b.blocked_did, b.block_date, u.handle, u.status FROM blocklists AS b JOIN users AS u ON b.blocked_did = u.did WHERE b.user_did = $1 ORDER BY block_date DESC LIMIT $2 OFFSET $3"
                 blocklist_rows = await connection.fetch(query, ident, limit, offset)
 
-                query2 = "SELECT COUNT(blocked_did) FROM blocklists WHERE user_did = $1"
+                query2 = "SELECT COUNT(DISTINCT blocked_did) FROM blocklists WHERE user_did = $1"
                 total_blocked_count = await connection.fetchval(query2, ident)
 
                 return blocklist_rows, total_blocked_count
