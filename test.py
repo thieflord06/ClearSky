@@ -10,9 +10,10 @@ import random
 import string
 import datetime
 import dns.resolver
-
+import on_wire
 from on_wire import resolve_handle
 from on_wire import resolve_did
+import utils
 
 
 async def generate_random_user_data():
@@ -250,7 +251,17 @@ async def main():
     # logger.info(f"pds valid: {answer}")
     await database_handler.create_connection_pool("write")
 
-    await database_handler.process_delete_queue()
+    # await database_handler.process_delete_queue()
 
+    # await database_handler.update_did_webs()
+
+    logger.info("Update did pds service information.")
+    last_value = "2024-03-21 01:07:33.497000+00:00"
+    if last_value:
+        logger.info(f"last value retrieved, starting from: {last_value}")
+    else:
+        last_value = None
+        logger.info(f"No last value retrieved, starting from beginning.")
+    await utils.get_all_did_records(last_value)
 if __name__ == '__main__':
     asyncio.run(main())
