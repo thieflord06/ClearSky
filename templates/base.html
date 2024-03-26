@@ -12,20 +12,29 @@
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="/images/favicon.png">
+<!--    <link rel="icon" type="image/png" href="/images/CleardayLarge.png">-->
     <title>ClearSky Search Tool</title>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
     <div id="base-container">
-        <h1>ClearSky Search Tool</h1>
+        <img src="/images/CleardayLarge.png" alt="ClearSky Logo">
+        <style>
+        /* Set the maximum width of the logo */
+        img {
+            max-width: 50%; /* Adjust the value as needed */
+            height: auto;
+        }
+        </style>
+        <h1>ClearSky Search Tool API</h1>
         <nav>
             <ul class="menu">
                 <li><a href="/">Home</a></li>
                 <li><a href="/contact">Contact</a></li>
                 <li><a href="/frequently_asked">FAQ</a></li>
-                <li><a href="/fun_facts">Top Blocks</a></li>
-                <li><a href="/funer_facts">Last 24 hours</a></li>
-                <li><a href="/block_stats">Block Statistics</a></li>
+<!--                <li><a href="/fun_facts">Top Blocks</a></li>-->
+<!--                <li><a href="/funer_facts">Last 24 hours</a></li>-->
+<!--                <li><a href="/block_stats">Block Statistics</a></li>-->
             </ul>
         </nav>
     </div>

@@ -13,6 +13,7 @@ from datetime import datetime
 from collections import defaultdict
 import pytz
 import on_wire
+import math
 
 # ======================================================================================================================
 # ===================================================  global variables ================================================
@@ -37,6 +38,8 @@ top_blocks_start_time = None
 top_24_blocks_start_time = None
 top_blocks_process_time = None
 top_24_blocks_process_time = None
+top_blocked_as_of_time = None
+top_24_blocked_as_of_time = None
 
 
 # ======================================================================================================================
@@ -256,9 +259,9 @@ async def find_handles(value):
                 logger.debug(f"{value}")
 
                 query_text1 = """SELECT handle 
-                            FROM users
-                            WHERE handle LIKE $1 || '%'
-                            LIMIT 5"""
+                                FROM users
+                                WHERE handle LIKE $1 || '%'
+                                LIMIT 5"""
 
                 result = await asyncio.wait_for(connection.fetch(query_text1, value), timeout=5.0)
 
@@ -292,10 +295,10 @@ async def get_blocklist(ident, limit=100, offset=0):
     try:
         async with connection_pools["read"].acquire() as connection:
             async with connection.transaction():
-                query = "SELECT b.blocked_did, b.block_date, u.handle, u.status FROM blocklists AS b JOIN users AS u ON b.blocked_did = u.did WHERE b.user_did = $1 ORDER BY block_date DESC LIMIT $2 OFFSET $3"
+                query = "SELECT DISTINCT b.blocked_did, b.block_date, u.handle, u.status FROM blocklists AS b JOIN users AS u ON b.blocked_did = u.did WHERE b.user_did = $1 ORDER BY block_date DESC LIMIT $2 OFFSET $3"
                 blocklist_rows = await connection.fetch(query, ident, limit, offset)
 
-                query2 = "SELECT COUNT(blocked_did) FROM blocklists WHERE user_did = $1"
+                query2 = "SELECT COUNT(DISTINCT blocked_did) FROM blocklists WHERE user_did = $1"
                 total_blocked_count = await connection.fetchval(query2, ident)
 
                 return blocklist_rows, total_blocked_count
@@ -309,6 +312,253 @@ async def get_blocklist(ident, limit=100, offset=0):
         logger.error(f"Error retrieving blocklist for {ident}: {e} {type(e)}")
 
         return None, None
+
+
+async def get_subscribe_blocks(ident, limit=100, offset=0):
+    data_list = []
+
+    try:
+        async with connection_pools["read"].acquire() as connection:
+            async with connection.transaction():
+                query_1 = """SELECT mu.subject_did, u.handle, s.date_added, u.status, s.list_uri, m.url, sc.user_count
+                                FROM subscribe_blocklists AS s
+                                INNER JOIN mutelists_users AS mu ON s.list_uri = mu.list_uri
+                                INNER JOIN users AS u ON mu.subject_did = u.did
+                                INNER JOIN mutelists AS m ON s.list_uri = m.uri
+                                INNER JOIN subscribe_blocklists_user_count AS sc ON s.list_uri = sc.list_uri
+                                WHERE s.did = $1
+                                ORDER BY s.date_added DESC
+                                LIMIT $2
+                                OFFSET $3"""
+
+                query_2 = """SELECT COUNT(mu.subject_did)
+                                FROM subscribe_blocklists AS s
+                                INNER JOIN mutelists_users AS mu ON s.list_uri = mu.list_uri
+                                WHERE s.did = $1"""
+
+                sub_list = await connection.fetch(query_1, ident, limit, offset)
+
+                total_blocked_count = await connection.fetchval(query_2, ident)
+
+                if not sub_list:
+                    return None, 0
+
+                for record in sub_list:
+                    list_dict = {
+                        "handle": record['handle'],
+                        "subject_did": record['subject_did'],
+                        "date_added": record['date_added'].isoformat(),
+                        "status": record['status'],
+                        "list_uri": record['list_uri'],
+                        "list_url": record['url'],
+                        "list count": record['user_count']
+                    }
+
+                    data_list.append(list_dict)
+
+                return data_list, total_blocked_count
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+    except AttributeError:
+        logger.error(f"db connection issue.")
+    except Exception as e:
+        logger.error(f"Error retrieving subscribe blocklist for {ident}: {e} {type(e)}")
+
+        return None, None
+
+
+async def get_subscribe_blocks_single(ident, list_of_lists, limit=100, offset=0):
+    data_list = []
+    total_data = []
+    total_count = 0
+
+    try:
+        async with connection_pools["read"].acquire() as connection:
+            async with connection.transaction():
+                query_1 = """SELECT s.did, u.handle, s.date_added, u.status, s.list_uri, m.url, sc.user_count
+                                FROM subscribe_blocklists AS s
+                                INNER JOIN users AS u ON s.did = u.did
+                                INNER JOIN mutelists AS m ON s.list_uri = m.uri
+                                INNER JOIN subscribe_blocklists_user_count AS sc ON s.list_uri = sc.list_uri
+                                WHERE m.url = $1
+                                ORDER BY s.date_added DESC
+                                LIMIT $2
+                                OFFSET $3"""
+
+                query_2 = """SELECT COUNT(s.did)
+                                FROM subscribe_blocklists AS s
+                                INNER JOIN mutelists AS m ON s.list_uri = m.uri
+                                WHERE m.url = $1"""
+
+                if not list_of_lists:
+                    return None, 0
+
+                for list_url in list_of_lists:
+                    count = await connection.fetchval(query_2, list_url)
+                    if count:
+                        data = await connection.fetch(query_1, list_url, limit, offset)
+
+                        total_data.append(data)
+                    total_count += count
+
+                if not total_data:
+                    return None, 0
+
+                for record in total_data:
+                    for data in record:
+                        list_dict = {
+                            "handle": data['handle'],
+                            "did": data['did'],
+                            "date_added": data['date_added'].isoformat(),
+                            "status": data['status'],
+                            "list_uri": data['list_uri'],
+                            "list_url": data['url']
+                        }
+
+                        data_list.append(list_dict)
+
+                return data_list, total_count
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+    except AttributeError:
+        logger.error(f"db connection issue.")
+    except Exception as e:
+        logger.error(f"Error retrieving subscribe blocklist for {ident}: {e} {type(e)}")
+
+        return None, None
+
+
+async def get_listitem_url(uri):
+    try:
+        async with connection_pools["read"].acquire() as connection:
+            async with connection.transaction():
+                query = "SELECT list_uri FROM mutelist_users WHERE listitem_uri = $1"
+                list_uri = await connection.fetchval(query, uri)
+
+                url = await utils.list_uri_to_url(list_uri)
+
+                return url
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+    except AttributeError:
+        logger.error(f"db connection issue.")
+    except Exception as e:
+        logger.error(f"Error retrieving URL {uri}: {e} {type(e)}")
+
+        return None
+
+
+async def get_moderation_list(name, limit=100, offset=0):
+    try:
+        async with connection_pools["read"].acquire() as connection:
+            async with connection.transaction():
+                search_string = f'%{name}%'
+
+                name_query = """SELECT ml.url, u.handle, u.status, ml.name, ml.description, ml.created_date, mc.user_count
+                FROM mutelists AS ml 
+                INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle 
+                INNER JOIN mutelists_user_count AS mc ON ml.url = mc.url
+                WHERE ml.name ILIKE $1
+                LIMIT $2
+                OFFSET $3"""
+
+                name_mod_lists = await connection.fetch(name_query, search_string, limit, offset)
+
+                description_query = """SELECT ml.url, u.handle, u.status, ml.name, ml.description, ml.created_date, mc.user_count
+                FROM mutelists AS ml
+                INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle
+                INNER JOIN mutelists_user_count AS mc ON ml.url = mc.url
+                WHERE ml.description ILIKE $1
+                LIMIT $2
+                OFFSET $3"""
+
+                description_mod_lists = await connection.fetch(description_query, search_string, limit, offset)
+
+                name_count_query = """SELECT COUNT(*) FROM mutelists WHERE name ILIKE $1"""
+
+                description_count_query = """SELECT COUNT(*) FROM mutelists WHERE description ILIKE $1"""
+
+                name_count = await connection.fetchval(name_count_query, search_string)
+
+                description_count = await connection.fetchval(description_count_query, search_string)
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+    except AttributeError:
+        logger.error(f"db connection issue.")
+    except Exception as e:
+        logger.error(f"Error retrieving results for {name}: {e} {type(e)}")
+
+        return None, 0
+
+    count = name_count + description_count
+
+    if count > 0:
+        pages = count / 100
+
+        pages = math.ceil(pages)
+    else:
+        pages = 0
+
+    lists = []
+
+    if name_mod_lists or description_mod_lists:
+        for record in name_mod_lists:
+            data = {
+                "url": record['url'],
+                "handle": record['handle'],
+                "status": record['status'],
+                "name": record['name'],
+                "description": record['description'],
+                "created_date": record['created_date'].isoformat(),
+                "list count": record['user_count']
+            }
+            lists.append(data)
+
+        for record in description_mod_lists:
+            data = {
+                "url": record['url'],
+                "handle": record['handle'],
+                "status": record['status'],
+                "name": record['name'],
+                "description": record['description'],
+                "created_date": record['created_date'].isoformat(),
+                "list count": record['user_count']
+            }
+            lists.append(data)
+    else:
+        lists = None
+
+    return lists, pages
+
+
+async def get_listblock_url(uri):
+    try:
+        async with connection_pools["read"].acquire() as connection:
+            async with connection.transaction():
+                query = "SELECT list_uri FROM subscribe_blocklists WHERE uri = $1"
+                list_uri = await connection.fetchval(query, uri)
+
+                url = await utils.list_uri_to_url(list_uri)
+
+                return url
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+    except AttributeError:
+        logger.error(f"db connection issue.")
+    except Exception as e:
+        logger.error(f"Error retrieving URL {uri}: {e} {type(e)}")
+
+        return None
 
 
 async def get_dids_without_handles():
@@ -354,21 +604,80 @@ async def get_pdses():
         return None
 
 
-async def crawl_all(forced=False):
-    all_dids = await get_all_users_db(False, True)
+async def blocklist_search(search_list, lookup, switch):
+    async with connection_pools["write"].acquire() as connection:
+        async with connection.transaction():
+            try:
+                blocking = """SELECT b.user_did, b.blocked_did, b.block_date, u1.handle, u1.status
+                                FROM blocklists AS b
+                                INNER JOIN users AS u1 ON b.user_did = u1.did
+                                INNER JOIN users AS u2 ON b.blocked_did = u2.did
+                                WHERE u1.handle = $1
+                                  AND u2.handle = $2"""
+
+                blocked = """SELECT b.user_did, b.blocked_did, b.block_date, u1.handle, u1.status
+                                FROM blocklists AS b
+                                INNER JOIN users AS u1 ON b.user_did = u1.did
+                                INNER JOIN users AS u2 ON b.blocked_did = u2.did
+                                WHERE u1.handle = $2
+                                  AND u2.handle = $1"""
+
+                if "blocking" in switch:
+                    query = blocking
+                elif "blocked" in switch:
+                    query = blocked
+                else:
+                    result = None
+
+                    return result
+
+                result = await connection.fetch(query, search_list, lookup)
+
+                if result:
+                    resultslist = {}
+
+                    for record in result:
+                        block_date = record['block_date']
+                        handle = record['handle']
+                        status = record['status']
+
+                    results = {
+                        "blocked_date": block_date.isoformat(),
+                        "handle": handle,
+                        "status": status
+                    }
+
+                    resultslist.update(results)
+
+                    return resultslist
+                else:
+                    resultslist = None
+
+                    return resultslist
+
+            except Exception as e:
+                logger.error(f"Error retrieving blocklist search result: {e}")
+
+                resultslist = None
+
+                return resultslist
+
+
+async def crawl_all(forced=False, quarter=None, total_crawlers=None):
+    all_dids = await get_all_users_db(False, True, quarter=quarter, total_crawlers=total_crawlers)
     total_dids = len(all_dids)
     batch_size = 500
     pause_interval = 500  # Pause every x DID requests
     processed_count = 0
     cumulative_processed_count = 0  # Initialize cumulative count
     total_blocks_updated = 0
-    table = "temporary_table"
+    table = f"temporary_table_{quarter}"
 
     # Check if there is a last processed DID in the temporary table
     async with connection_pools["write"].acquire() as connection:
         async with connection.transaction():
             try:
-                query = "SELECT last_processed_did FROM temporary_table"
+                query = f"SELECT last_processed_did FROM {table}"
                 last_processed_did = await connection.fetchval(query)
                 logger.debug("last did from db: " + str(last_processed_did))
             except Exception as e:
@@ -376,11 +685,11 @@ async def crawl_all(forced=False):
                 logger.error(f"Exception getting from db: {str(e)}")
 
     if not last_processed_did:
-        await create_temporary_table()
+        await create_temporary_table(table)
 
     if last_processed_did:
         # Find the index of the last processed DID in the list
-        start_index = next((i for i, (did) in enumerate(all_dids) if did == last_processed_did), None)
+        start_index = next((i for i, (did, _) in enumerate(all_dids) if did == last_processed_did), None)
         if start_index is None:
             logger.warning(
                 f"Last processed DID '{last_processed_did}' not found in the list. Starting from the beginning.")
@@ -401,7 +710,7 @@ async def crawl_all(forced=False):
         # Update the temporary table with the last processed DID
         if batch_dids:
             try:
-                last_processed_did = batch_dids[-1]  # Assuming DID is the first element in each tuple
+                last_processed_did = batch_dids[-1][0]  # Assuming DID is the first element in each tuple
             except IndexError:
                 logger.error(f"Batch of DIDs is empty: {batch_dids}")
 
@@ -420,8 +729,8 @@ async def crawl_all(forced=False):
             logger.info(f"Pausing after {i + 1} DID requests...")
 
             # Log information for each batch
-            logger.info(f"Processed batch {i // batch_size + 1}/{total_dids // batch_size + 1}...")
-            logger.info(f"Processed {cumulative_processed_count}/{total_dids} DIDs...")
+            logger.info(f"Processed batch {i // batch_size + 1}/{total_dids // batch_size + 1}")
+            logger.info(f"Processed {cumulative_processed_count}/{total_dids} DIDs")
             await asyncio.sleep(5)  # Pause for 30 secondsx
 
         processed_count += batch_size
@@ -438,8 +747,13 @@ async def crawler_batch(batch_dids, forced=False):
     handle_count = 0
     total_mutes_updated = [mute_lists, mute_users_list]
     handles_to_update = []
+    max_retries = 3
 
     for did, pds in batch_dids:
+        if pds is None:
+            continue
+        if "bsky.network" not in pds:
+            continue
         handle = await on_wire.resolve_did(did)
 
         if handle is not None:
@@ -455,34 +769,44 @@ async def crawler_batch(batch_dids, forced=False):
             logger.warning(f"DID: {did} not resolved.")
             continue
 
-        try:
-            blocked_data = await utils.get_user_block_list(did, pds)
-            mutelists_data = await utils.get_mutelists(did, pds)
-            mutelists_users_data = await utils.get_mutelist_users(did, pds)
-            subscribe_data = await utils.get_subscribelists(did, pds)
+        retry_count = 0
+        success = False
+        while retry_count < max_retries and not success:
+            try:
+                blocked_data = await utils.get_user_block_list(did, pds)
+                mutelists_data = await utils.get_mutelists(did, pds)
+                mutelists_users_data = await utils.get_mutelist_users(did, pds)
+                subscribe_data = await utils.get_subscribelists(did, pds)
 
-            if blocked_data:
-                # Update the blocklists table in the database with the retrieved data
-                total_blocks_updated += await update_blocklist_table(did, blocked_data, forced=forced)
-            else:
-                logger.debug(f"didn't update no blocks: {did}")
+                if blocked_data:
+                    # Update the blocklists table in the database with the retrieved data
+                    total_blocks_updated += await update_blocklist_table(did, blocked_data, forced=forced)
+                else:
+                    logger.debug(f"didn't update no blocks: {did}")
 
-            if mutelists_data or mutelists_users_data:
-                # Update the mutelist tables in the database with the retrieved data
-                total_mutes_updated += await update_mutelist_tables(did, mutelists_data, mutelists_users_data, forced=forced)
+                if mutelists_data or mutelists_users_data:
+                    # Update the mutelist tables in the database with the retrieved data
+                    total_mutes_updated += await update_mutelist_tables(did, mutelists_data, mutelists_users_data, forced=forced)
 
-                logger.debug(f"Updated mute lists for DID: {did}")
-            else:
-                logger.debug(f"didn't update no mutelists: {did}")
+                    logger.debug(f"Updated mute lists for DID: {did}")
+                else:
+                    logger.debug(f"didn't update no mutelists: {did}")
 
-            if subscribe_data:
-                total_subscribed_updated += await update_subscribe_table(did, subscribe_data, forced=forced)
+                if subscribe_data:
+                    total_subscribed_updated += await update_subscribe_table(did, subscribe_data, forced=forced)
 
-                logger.debug(f"Updated subscribe lists for DID: {did}")
-            else:
-                logger.debug(f"didn't update not subscribed to any lists: {did}")
-        except Exception as e:
-            logger.error(f"Error updating for DID {did}: {e}")
+                    logger.debug(f"Updated subscribe lists for DID: {did}")
+                else:
+                    logger.debug(f"didn't update not subscribed to any lists: {did}")
+
+                success = True # Mark the operation as successful if no exception is raised
+            except Exception as e:
+                logger.error(f"Error updating for DID {did}: {e}")
+                retry_count += 1  # Increment the retry count
+                await asyncio.sleep(5)  # Wait for a short interval before retrying
+
+        if not success:
+            logger.error(f"Failed to update for DID {did} after {max_retries} retries.")
 
     # Update the database with the batch of handles
     if handles_to_update:
@@ -516,22 +840,40 @@ async def crawler_batch(batch_dids, forced=False):
     return total_items_updated
 
 
-async def get_all_users_db(run_update=False, get_dids=False, get_count=False, init_db_run=False):
-    batch_size = 10000
-    all_records = set()
-    dids = set()
+async def get_quarter_of_users_db(quarter_number, total_crawlers=4):
     async with connection_pools["write"].acquire() as connection:
-        if get_count:
-            # Fetch the total count of users in the "users" table
-            count = await connection.fetchval('SELECT COUNT(*) FROM users')
+        logger.info(f"Getting quarter {quarter_number} of dids.")
+        quarter_number = int(quarter_number)
+        total_rows = await connection.fetchval('SELECT COUNT(*) FROM users')
+        quarter_size = total_rows / int(total_crawlers)
+        offset = math.floor((quarter_number - 1) * quarter_size)
 
-            return count
+        logger.info(f"Total rows: {total_rows} | quarter size: {quarter_size} | offset: {offset}")
+
+        # Fetch a quarter of the DIDs from the database based on the quarter number
+        records = await connection.fetch('SELECT did, pds FROM users ORDER BY did OFFSET $1 LIMIT $2', offset,
+                                         quarter_size)
+
+        logger.info(f"Quarter {quarter_number} of DIDs fetched.")
+
+        # Return the fetched records
+        return records
+
+
+async def get_all_users_db(run_update=False, get_dids=False, init_db_run=False, quarter=None, total_crawlers=None):
+    batch_size = 10000
+    pds_records = set()
+    dids = []
+    total_dids = 0
+
+    async with connection_pools["write"].acquire() as connection:
         if not run_update:
             if get_dids:
                 # Return the user_dids from the "users" table
-                records = await connection.fetch('SELECT did, pds FROM users')
+                # records = await connection.fetch('SELECT did, pds FROM users')
+                records = await get_quarter_of_users_db(quarter, total_crawlers)
                 for record in records:
-                    dids.add((record['did'], record['pds']))
+                    dids.append((record['did'], record['pds']))
 
                 return dids
         else:
@@ -539,58 +881,67 @@ async def get_all_users_db(run_update=False, get_dids=False, get_count=False, in
 
             # Get all DIDs
             for pds in pdses:
-                new_records = await utils.get_all_users(pds)
-                logger.info(f"{len(new_records)} users in {pds}")
-                all_records.update(new_records)
+                pds_dids = await utils.get_all_users(pds)
+                if pds_dids:
+                    logger.info(f"{len(pds_dids)} users in {pds}")
 
-            logger.info(f"Total DIDs: {len(all_records)}")
+                    current_true_pds_records = await connection.fetch('SELECT did FROM users WHERE PDS = $1 AND status = TRUE', pds)
+                    current_true_pds_set = set(record["did"] for record in current_true_pds_records)
 
-            current_true_records = await connection.fetch('SELECT did FROM users WHERE status = TRUE')
+                    logger.info("Getting DIDs to deactivate.")
+                    dids_deactivated = current_true_pds_set - set(pds_dids)
 
-            current_true_set = set()
-            for record in current_true_records:
-                current_true_set.add(record["did"])
+                    logger.info("Getting new DIDs.")
+                    new_dids = set(pds_dids) - current_true_pds_set
 
-            logger.info("Getting DIDs to deactivate.")
-            dids_deactivated = current_true_set - all_records
+                    logger.info(f"Total new DIDs: {len(new_dids)}")
 
-            logger.info("Getting new DIDs.")
-            new_dids = all_records - current_true_set
+                    total_dids += len(pds_records)
 
-            logger.info(f"Total new DIDs: {len(new_dids)}")
+                    if dids_deactivated:
+                        count = 0
 
-            if init_db_run:
-                logger.info("Connected to db.")
+                        logger.info(f"deactivating {len(dids_deactivated)} dids in {pds}.")
 
-                records = list(new_dids)
+                        for did in dids_deactivated:
+                            await connection.execute("""UPDATE users SET status = FALSE WHERE did = $1""", did)
+                            await connection.execute("delete from resolution_queue where did = $1", did)  # Remove the DID from the resolution queue
+                            count += 1
+                            logger.debug(f"DIDs deactivated: {count}")
 
-                async with connection.transaction():
-                    # Insert data in batches
-                    for i in range(0, len(records), batch_size):
-                        batch_data = [(did, True) for did in records[i: i + batch_size]]
-                        try:
-                            await connection.executemany('INSERT INTO users (did, status) VALUES ($1, $2) ON CONFLICT (did) DO UPDATE SET status = TRUE WHERE users.status <> TRUE', batch_data)
+                        logger.info(f"{str(len(dids_deactivated))} dids deactivated in {pds}.")
 
-                            logger.info(f"Inserted batch {i // batch_size + 1} of {len(records) // batch_size + 1} batches.")
-                        except Exception as e:
-                            logger.error(f"Error inserting batch {i // batch_size + 1}: {str(e)}")
+                    if init_db_run:
+                        if new_dids:
+                            logger.info(f"Adding new DIDs {len(new_dids)} to the database.")
 
-        logger.info("Comparing status")
+                            records = list(new_dids)
 
-        if dids_deactivated:
-            count = 0
+                            async with connection.transaction():
+                                # Insert data in batches
+                                for i in range(0, len(records), batch_size):
+                                    batch_data = [(did, True, pds) if utils.is_did(did) else (did, False, pds) for did in records[i: i + batch_size]]
+                                    try:
+                                        await connection.executemany(
+                                            """INSERT INTO users (did, status, pds)
+                                            VALUES ($1, $2, $3) 
+                                            ON CONFLICT (did) 
+                                            DO UPDATE SET pds = EXCLUDED.pds, 
+                                            status = TRUE WHERE users.status <> TRUE
+                                            """,
+                                            batch_data)
 
-            logger.info(f"deactivating {len(dids_deactivated)} dids")
+                                        logger.info(
+                                            f"Inserted batch {i // batch_size + 1} of {len(records) // batch_size + 1} batches.")
+                                    except Exception as e:
+                                        logger.error(f"Error inserting batch {i // batch_size + 1}: {str(e)}")
+                                for did in batch_data:
+                                    await connection.execute("delete from resolution_queue where did = $1", did[0])  # Remove the DID from the resolution queue
+                else:
+                    logger.warning(f"No users in {pds} or could not get users.")
 
-            for did in dids_deactivated:
-                await connection.execute("""UPDATE users SET status = FALSE WHERE did = $1""", did)
-                count += 1
-                logger.info(f"DIDs deactivated: {count}")
-
-            logger.info(f"{str(len(dids_deactivated))} dids deactivated.")
-
-        # Return the records when run_update is false and get_count is called
-        return records
+            logger.info(f"Total DIDs: {total_dids}")
+            logger.info(f"Total PDSes processed: {len(pdses)}")
 
 
 async def update_blocklist_table(ident, blocked_data, forced=False):
@@ -638,7 +989,7 @@ async def update_blocklist_table(ident, blocked_data, forced=False):
                         if uri is None:
                             logger.error(f"a URI is None in: {ident}")
                             continue  # Skip processing when uri is None
-                        await connection.execute('INSERT INTO blocklists_transaction (uri, block_date, touched, touched_actor) VALUES ($1, $2, $3, $4)', uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor)
+                        await connection.execute('INSERT INTO blocklists_transaction (user_did, uri, block_date, touched, touched_actor, delete) VALUES ($1, $2, $3, $4, $5, $6)', ident, uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor, True)
                 except Exception as e:
                     logger.error(f"Error updating blocklists_transaction on delete : {e}")
                     logger.error(existing_blocklist_entries)
@@ -665,7 +1016,7 @@ async def update_blocklist_table(ident, blocked_data, forced=False):
 
                 return counter
             else:
-                logger.info("Blocklist not updated already exists.")
+                logger.debug("Blocklist not updated already exists.")
 
                 return counter
 
@@ -914,6 +1265,8 @@ async def update_user_handles(handles_to_update):
                 SET handle = EXCLUDED.handle
             ''')
 
+            await connection.execute("delete from resolution_queue where did = $1", did)  # Remove the DID from the resolution queue
+
         logger.info(f"Updated {len(handles_to_update)} handles in the database.")
 
 
@@ -949,6 +1302,11 @@ async def process_batch(batch_dids, ad_hoc, table, batch_size):
         handles_to_update = []
         logger.debug(str(handle_batch))
         for did, handle in handle_batch:
+            if "did:web" in did:
+                pds = await on_wire.resolve_did(did, did_web_pds=True)
+                if pds:
+                    await update_pds(did, pds)
+
             # Check if the DID and handle combination already exists in the database
             logger.debug("Did: " + str(did) + " | handle: " + str(handle))
             if await does_did_and_handle_exist_in_database(did, handle):
@@ -990,20 +1348,20 @@ async def process_batch(batch_dids, ad_hoc, table, batch_size):
     return total_handles_updated
 
 
-async def create_temporary_table():
+async def create_temporary_table(table):
     try:
-        logger.info("Creating temp table.")
+        logger.info(f"Creating temp table: {table}")
         async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
-                query = """
-                CREATE TABLE IF NOT EXISTS temporary_table (
+                query = f"""
+                CREATE TABLE IF NOT EXISTS {table} (
                     last_processed_did text PRIMARY KEY,
                     touched timestamptz
                 )
                 """
                 await connection.execute(query)
     except Exception as e:
-        logger.error("Error creating temporary table: %s", e)
+        logger.error(f"Error creating temporary table: {table} %s", e)
 
 
 async def create_new_users_temporary_table():
@@ -1206,37 +1564,120 @@ async def get_top_blocks():
         logger.error("Error retrieving data from db", e)
 
 
-async def update_did_service(data):
+async def update_did_service(data, label_data):
+    pop_count = 0
     logger.info("Updating services information for batch.")
+
+    pop = "delete from resolution_queue where did = $1"
+
     try:
         async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
-                for record in data:
-                    query = """SELECT did, pds, created_date FROM users where did = $1"""
+                if data:
+                    for record in data:
+                        query = """SELECT did, pds, created_date FROM users where did = $1"""
 
-                    did_exists = await connection.fetch(query, record[0])
+                        did_exists = await connection.fetch(query, record[0])
 
-                    if did_exists:
-                        if not did_exists[0]["pds"] or not did_exists[0]["created_date"]:
-                            insert_pds_query = """UPDATE users SET created_date = $2, pds = $3 WHERE did = $1"""
+                        if did_exists:
+                            if not did_exists[0]["pds"] or not did_exists[0]["created_date"]:
+                                insert_pds_query = """UPDATE users SET created_date = $2, pds = $3 WHERE did = $1"""
 
-                            await connection.execute(insert_pds_query, record[0], record[1], record[2])
-                        elif did_exists[0]["pds"] != record[2]:
-                            old_pds = did_exists[0]["pds"]
-                            update_query = """UPDATE users SET pds = $2 WHERE did = $1"""
+                                await connection.execute(insert_pds_query, record[0], record[1], record[2])
+                                await connection.execute(pop, record[0])
+                                logger.info(f"pop: {record[0]}")
+                                pop_count += 1
+                            elif did_exists[0]["pds"] != record[2]:
+                                old_pds = did_exists[0]["pds"]
+                                update_query = """UPDATE users SET pds = $2 WHERE did = $1"""
 
-                            await connection.execute(update_query, record[0], record[2])
+                                await connection.execute(update_query, record[0], record[2])
+                                await connection.execute(pop, record[0])
+                                logger.info(f"pop: {record[0]}")
+                                pop_count += 1
 
-                            logger.info(f"Updated pds for: {record[0]} | from {old_pds} to {record[2]}")
+                                logger.info(f"Updated pds for: {record[0]} | from {old_pds} to {record[2]}")
+                            else:
+                                await connection.execute(pop, record[0])
+                                logger.info(f"pop: {record[0]}")
+                                pop_count += 1
+                                logger.debug("Up to date.")
+                                continue
                         else:
-                            logger.debug("Up to date.")
-                            continue
-                    else:
-                        insert_query = """INSERT INTO users (did, created_date, pds, handle, status) VALUES ($1, $2, $3, $4, $5)"""
+                            insert_query = """INSERT INTO users (did, created_date, pds, handle, status) VALUES ($1, $2, $3, $4, $5)"""
 
-                        await connection.execute(insert_query, record[0], record[1], record[2], record[3], True)
+                            if utils.is_did(record[0]):
+                                await connection.execute(insert_query, record[0], record[1], record[2], record[3], True)
+                            else:
+                                await connection.execute(insert_query, record[0], record[1], record[2], record[3], False)
+
+                            await connection.execute(pop, record[0])
+                            logger.info(f"pop: {record[0]}")
+                            pop_count += 1
+
+                    if label_data:
+                        for label in label_data:
+                            display_name, description = await on_wire.get_avatar_id(label['did'], True)
+
+                            query = """SELECT did, endpoint, created_date FROM labelers where did = $1"""
+
+                            did_exists = await connection.fetch(query, label["did"])
+
+                            if did_exists:
+                                if not did_exists[0]["endpoint"] or not did_exists[0]["created_date"]:
+                                    insert_label_query = """UPDATE labelers SET created_date = $2, endpoint = $3 WHERE did = $1"""
+
+                                    await connection.execute(insert_label_query, label["did"], label["endpoint"], label["createdAt"])
+                                    await connection.execute(pop, label["did"])
+                                    logger.info(f"pop: {label['did']}")
+                                    pop_count += 1
+                                elif not did_exists[0].get("name"):
+                                    insert_label_query = """UPDATE labelers SET name = $2 WHERE did = $1"""
+
+                                    await connection.execute(insert_label_query, label["did"], display_name)
+                                elif not did_exists[0].get("description"):
+                                    insert_label_query = """UPDATE labelers SET description = $2 WHERE did = $1"""
+
+                                    await connection.execute(insert_label_query, label["did"], description)
+                                elif did_exists[0].get("description") != description:
+                                    old_description = did_exists[0]["description"]
+                                    update_query = """UPDATE labelers SET description = $2 WHERE did = $1"""
+
+                                    await connection.execute(update_query, label["did"], description)
+
+                                    logger.info(f"Updated description for: {label['did']} | from {old_description} to {description}")
+                                elif did_exists[0]["name"] != display_name:
+                                    old_name = did_exists[0]["name"]
+                                    update_query = """UPDATE labelers SET name = $2 WHERE did = $1"""
+
+                                    await connection.execute(update_query, label["did"], display_name)
+
+                                    logger.info(f"Updated name for: {label['did']} | from {old_name} to {display_name}")
+                                elif did_exists[0]["endpoint"] != label["endpoint"]:
+                                    old_endpoint = did_exists[0]["endpoint"]
+                                    update_query = """UPDATE labelers SET endpoint = $2 WHERE did = $1"""
+
+                                    await connection.execute(update_query, label["did"], label["endpoint"])
+
+                                    logger.info(f"Updated endpoint for: {label['did']} | from {old_endpoint} to {label['endpoint']}")
+                                    await connection.execute(pop, label['did'])
+                                    logger.info(f"pop: {label['did']}")
+                                    pop_count += 1
+                                else:
+                                    await connection.execute(pop, label['did'])
+                                    logger.info(f"pop: {label['did']}")
+                                    pop_count += 1
+                                    logger.debug("Up to date.")
+                            else:
+                                insert_label_query = """INSERT INTO labelers (did, endpoint, created_date, name, description) VALUES ($1, $2, $3, $4, $5)"""
+                                await connection.execute(insert_label_query, label["did"], label["endpoint"], label["createdAt"], display_name, description)
+                                await connection.execute(pop, label["did"])
+                                logger.info(f"pop: {label['did']}")
+                                pop_count += 1
+
+                logger.info(f"Popped {pop_count} times from resolution queue.")
     except Exception as e:
-        logger.error("Error retrieving/inserting data to db", e)
+        logger.error("Error retrieving/inserting labeler data to db", e)
 
 
 async def update_last_created_did_date(last_created):
@@ -1602,6 +2043,7 @@ async def blocklists_updater():
     global blocklist_updater_status
     global top_blocks_start_time
     global top_blocks_process_time
+    global top_blocked_as_of_time
 
     blocked_list = "blocked"
     blocker_list = "blocker"
@@ -1636,6 +2078,8 @@ async def blocklists_updater():
 
     top_blocks_start_time = None
 
+    top_blocked_as_of_time = datetime.now().isoformat()
+
     return top_blocked, top_blockers, blocked_aid, blocker_aid
 
 
@@ -1644,6 +2088,7 @@ async def top_24blocklists_updater():
     global blocklist_24_updater_status
     global top_24_blocks_start_time
     global top_24_blocks_process_time
+    global top_24_blocked_as_of_time
 
     blocked_list_24 = "blocked"
     blocker_list_24 = "blocker"
@@ -1682,6 +2127,8 @@ async def top_24blocklists_updater():
 
     top_24_blocks_start_time = None
 
+    top_24_blocked_as_of_time = datetime.now().isoformat()
+
     return top_blocked_24, top_blockers_24, blocked_aid_24, blocker_aid_24
 
 
@@ -1689,10 +2136,11 @@ async def get_mutelists(ident):
     async with connection_pools["read"].acquire() as connection:
         async with connection.transaction():
             query = """
-            SELECT ml.url, u.handle, u.status, ml.name, ml.description, ml.created_date, mu.date_added
+            SELECT ml.url, u.handle, u.status, ml.name, ml.description, ml.created_date, mu.date_added, mc.user_count
             FROM mutelists AS ml
             INNER JOIN mutelists_users AS mu ON ml.uri = mu.list_uri
             INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle
+            INNER JOIN mutelists_user_count AS mc ON ml.uri = mc.list_uri
             WHERE mu.subject_did = $1
             """
             try:
@@ -1710,12 +2158,23 @@ async def get_mutelists(ident):
                     "status": record['status'],
                     "name": record['name'],
                     "description": record['description'],
-                    "created_date": record['created_date'],
-                    "date_added": record['date_added']
+                    "created_date": record['created_date'].isoformat(),
+                    "date_added": record['date_added'].isoformat(),
+                    "list user count": record['count']
                 }
                 lists.append(data)
 
             return lists
+
+
+async def check_api_key(api_environment, key_type, key_value):
+    async with connection_pools["read"].acquire() as connection:
+        async with connection.transaction():
+            query = """SELECT valid FROM API WHERE key = $3 environment = $1 AND access_type LIKE '%' || $2 || '%'"""
+
+            status = await connection.fetchval(query, api_environment, key_type, key_value)
+
+            return status
 
 
 async def wait_for_redis():
@@ -1770,19 +2229,23 @@ async def tables_exists():
 async def get_unique_did_to_pds():
     logger.info("Getting unique did to pds.")
 
-    records = set()
+    records = []
 
     try:
-        async with connection_pools["read"].acquire() as connection:
+        async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
-                records_to_check = await connection.fetch("""SELECT DISTINCT ON (pds) did, pds
-                                                                FROM users
-                                                                WHERE pds IS NOT NULL
-                                                                ORDER BY pds, did
+                records_to_check = await connection.fetch("""SELECT did, pds
+                                                                FROM (
+                                                                    SELECT did, pds, row_number() OVER (PARTITION BY pds ORDER BY random()) as rn
+                                                                    FROM users
+                                                                    WHERE pds IS NOT NULL
+                                                                ) sub
+                                                                WHERE rn <= 10
+                                                                ORDER BY pds, rn
                 """)
 
                 for record in records_to_check:
-                    records.add((record['did'], record['pds']))
+                    records.append((record['did'], record['pds']))
 
                 logger.info("Retrieved data.")
                 logger.info(f"Processing {len(records)} records.")
@@ -1802,6 +2265,336 @@ async def update_pds_status(pds, status):
                 await connection.execute(query, pds, status)
     except Exception as e:
         logger.error(f"Error updating pds status: {e}")
+
+
+async def update_pds(did, pds):
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                exists = await connection.fetchval('SELECT EXISTS(SELECT 1 FROM users WHERE did = $1 AND pds = $2)', did, pds)
+
+                if not exists:
+                    query = """UPDATE users SET pds = $2 WHERE did = $1"""
+                    await connection.execute(query, did, pds)
+    except Exception as e:
+        logger.error(f"Error updating pds: {e}")
+
+
+async def get_didwebs_without_pds():
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                query = """SELECT did FROM users WHERE pds IS NULL AND did LIKE 'did:web%'"""
+                dids = await connection.fetch(query)
+
+                records = [record['did'] for record in dids]
+
+                return records
+    except Exception as e:
+        logger.error(f"Error getting didwebs without pds: {e}")
+
+        return None
+
+
+async def update_did_webs():
+    pop = 0
+    did_webs_in_queue = None
+
+    query1 = """UPDATE users SET handle = $2, pds = $3 WHERE did = $1"""
+    query2 = """UPDATE users SET pds = $2 WHERE did = $1"""
+    query3 = """UPDATE users SET handle = $2 WHERE did = $1"""
+
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                query = """SELECT DISTINCT(did), timestamp FROM resolution_queue WHERE did LIKE 'did:web%'"""
+                try:
+                    records = await connection.fetch(query)
+
+                    if not records:
+                        records = None
+                except Exception as e:
+                    logger.error(f"Error getting did:web from resolution queue: {e}")
+                    records = None
+
+                if records:
+                    did_webs_in_queue = [(record['did'], record['timestamp']) for record in records]
+
+                if did_webs_in_queue:
+                    for did, timestamp in did_webs_in_queue:
+                        change_handle = False
+                        change_pds = False
+
+                        get_info = """SELECT handle, pds, created_date FROM users WHERE did = $1"""
+                        user_info = await connection.fetch(get_info, did)
+                        if user_info:
+                            old_handle = user_info[0]['handle']
+                            old_pds = user_info[0]['pds']
+                        else:
+                            logger.info(f"new did:web: {did}")
+                            try:
+                                await connection.execute("""INSERT INTO users (did, created_date) VALUES ($1, $2)""", did, timestamp)
+                            except Exception as e:
+                                logger.error(f"Error inserting new did:web: {e}")
+
+                        handle = await on_wire.resolve_did(did)
+
+                        pds = await on_wire.resolve_did(did, True)
+
+                        if not await utils.validate_did_atproto(did) and pds is None and handle is None:
+                            logger.error(f"did:web dead: {did}")
+                            # await connection.execute("""UPDATE users SET status = FALSE WHERE did = $1""", did)
+                            # await connection.execute("""INSERT INTO did_web_history (did, handle, pds, timestamp, status) VALUES ($1, $2, $3, $4, FALSE)""", did, handle, pds, timestamp)
+                            # await connection.execute("""delete from resolution_queue where did = $1""", did)
+                            # continue
+                        else:
+                            if old_handle != handle:
+                                if await on_wire.verify_handle(handle):
+                                    change_handle = True
+                                else:
+                                    change_handle = False
+                                    logger.warning(f"invalid handle: {handle} for did:web: {did}")
+
+                            if old_pds != pds:
+                                change_pds = True
+                            try:
+                                if change_handle and change_pds:
+                                    await connection.execute(query1, did, handle, pds)
+                                elif change_handle and not change_pds:
+                                    await connection.execute(query3, did, handle)
+                                elif change_pds and not change_handle:
+                                    await connection.execute(query2, did, pds)
+                                else:
+                                    continue
+                            except Exception as e:
+                                logger.error(f"Error updating did:web: {e}")
+
+                        await connection.execute("""INSERT INTO did_web_history (did, handle, pds, timestamp) VALUES ($1, $2, $3, $4)""", did, handle, pds, timestamp)
+                        await connection.execute("""delete from resolution_queue where did = $1""", did)
+                        pop += 1
+
+                    logger.info(f"Popped {pop} did:web from resolution queue.")
+
+                logger.info(f"No did:web in queue.")
+    except Exception as e:
+        logger.error(f"Error updating didwebs: {e}")
+
+
+async def get_didwebs_pdses():
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                query = """SELECT did, pds FROM users WHERE did LIKE 'did:web%'"""
+                pds = await connection.fetch(query)
+
+                records = [(record['did'], record['pds']) for record in pds]
+
+                return records
+    except Exception as e:
+        logger.error(f"Error checking didweb pds: {e}")
+
+        return None
+
+
+async def get_api_keys(environment, key_type, key):
+    if not key and not key_type and not environment:
+        logger.error("Missing required parameters for API verification.")
+
+        return None
+
+    async with connection_pools["write"].acquire() as connection:
+        async with connection.transaction():
+            try:
+                query = f"""SELECT a.key as key, a.valid, aa.*
+                            FROM api AS a
+                            INNER JOIN api_access AS aa ON a.key = aa.key
+                            WHERE a.key = $2 AND a.environment = $1 AND a.valid is TRUE"""
+
+                results = await connection.fetch(query, environment, key)
+
+                for item in results:
+                    data = {
+                        "key": item['key'],
+                        "valid": item['valid'],
+                        key_type: item[key_type.lower()]
+                    }
+                return data
+            except Exception as e:
+                # Handle other exceptions as needed
+                logger.error(f"Error getting API keys: {e}")
+
+                return None
+
+
+async def get_dids_per_pds():
+    data_dict = {}
+
+    try:
+        async with connection_pools["read"].acquire() as connection:
+            async with connection.transaction():
+                query = """SELECT users.pds, COUNT(did) AS did_count
+                            FROM users
+                            join pds on users.pds = pds.pds
+                            WHERE users.pds IS NOT NULL AND pds.status is TRUE
+                            GROUP BY users.pds
+                            ORDER BY did_count desc"""
+
+                results = await connection.fetch(query)
+                for record in results:
+                    data_dict[record['pds']] = record['did_count']
+
+                return data_dict
+    except Exception as e:
+        logger.error(f"Error getting dids per pds: {e}")
+
+        return None
+
+
+async def set_status_code(pds, status_code):
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                query = """UPDATE pds SET last_status_code = $2 WHERE pds = $1"""
+                await connection.execute(query, pds, status_code)
+    except Exception as e:
+        logger.error(f"Error updating status code: {e}")
+
+
+async def update_mutelist_count():
+    limit = 100
+    offset = 0
+    list_count = 0
+    touched_actor = "crawler"
+
+    logger.info("Updating mutelists counts.")
+
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                while True:
+                    query_1 = """SELECT uri FROM mutelists LIMIT $1 OFFSET $2"""
+
+                    lists = await connection.fetch(query_1, limit, offset)
+
+                    if not lists:
+                        break
+
+                    for list_entry in lists:
+                        list_uri = list_entry['uri']
+
+                        query_2 = """SELECT COUNT(*) FROM mutelists_users WHERE list_uri = $1"""
+                        count_result = await connection.fetchval(query_2, list_uri)
+
+                        try:
+                            await connection.execute("""INSERT INTO mutelists_user_count (list_uri, user_count, touched_actor, touched)
+                                        VALUES ($1, $2, $3, $4)""", list_uri, count_result, touched_actor, datetime.now(pytz.utc))
+                        except Exception as e:
+                            logger.error(f"Error updating count: {e}")
+
+                    list_count += len(lists)
+                    offset += 100
+
+        logger.info("Mutelists counts updated.")
+        logger.info(f"Counted: {list_count} lists")
+    except Exception as e:
+        logger.error(f"Error updating mutelist count (general): {e}")
+
+
+async def update_subscribe_list_count():
+    limit = 100
+    offset = 0
+    list_count = 0
+    touched_actor = "crawler"
+
+    logger.info("Updating subscribe block list counts.")
+
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                while True:
+                    query_1 = """SELECT uri FROM mutelists LIMIT $1 OFFSET $2"""
+
+                    lists = await connection.fetch(query_1, limit, offset)
+
+                    if not lists:
+                        break
+
+                    for list_entry in lists:
+                        list_uri = list_entry['uri']
+
+                        query_2 = """SELECT COUNT(*) FROM subscribe_blocklists WHERE list_uri = $1"""
+                        count_result = await connection.fetchval(query_2, list_uri)
+
+                        try:
+                            await connection.execute("""INSERT INTO subscribe_blocklists_user_count (list_uri, user_count, touched_actor, touched)
+                                        VALUES ($1, $2, $3, $4)""", list_uri, count_result, touched_actor, datetime.now(pytz.utc))
+                        except Exception as e:
+                            logger.error(f"Error updating count: {e}")
+
+                    list_count += len(lists)
+                    offset += 100
+
+        logger.info("Subscribe lists counts updated.")
+        logger.info(f"Counted: {list_count} subscribe lists")
+    except Exception as e:
+        logger.error(f"Error updating mutelist count (general): {e}")
+
+
+async def process_delete_queue():
+    logger.info("Processing delete queue.")
+
+    limit = 100
+    offset = 0
+    pop = 0
+
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                while True:
+                    query = """SELECT uri FROM count_delete_queue LIMIT $1 OFFSET $2"""
+                    uris = await connection.fetch(query, limit, offset)
+
+                    if not uris:
+                        break
+
+                    for uri in uris:
+                        item = uri['uri']
+
+                        if "listitem" in item:
+                            try:
+                                await connection.execute("""UPDATE mutelists_user_count
+                                        SET user_count = user_count - 1
+                                        WHERE list_uri IN (
+                                        SELECT list_uri
+                                        FROM mutelists_users
+                                        WHERE listitem_uri = $1)""", item)
+
+                                await connection.execute("""DELETE FROM count_delete_queue WHERE uri = $1""", item)
+                                pop = +1
+                            except Exception as e:
+                                logger.error(f"Error deleting listitem: {e}")
+
+                        elif "listblock" in item:
+                            try:
+                                await connection.execute("""UPDATE subscribe_blocklists_user_count
+                                        SET user_count = user_count - 1
+                                        WHERE list_uri IN (
+                                        SELECT list_uri
+                                        FROM subscribe_blocklists
+                                        WHERE uri = $1)""", item)
+
+                                await connection.execute("""DELETE FROM count_delete_queue WHERE uri = $1""", item)
+                                pop += 1
+                            except Exception as e:
+                                logger.error(f"Error deleting listblock: {e}")
+                        else:
+                            logger.warning(f"Unknown item type: {item}")
+
+                    offset += 100
+
+        logger.info(f"Deleted {pop} entries from delete queue.")
+    except Exception as e:
+        logger.error(f"Error processing delete queue: {e}")
 
 
 # ======================================================================================================================

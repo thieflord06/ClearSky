@@ -2,12 +2,14 @@
 
 import asyncpg
 import database_handler
-from config_helper import logger
+import on_wire
+from config_helper import logger, config
 import sys
 import argparse
 import asyncio
 import app
 import utils
+import os
 
 # python update_manager.py --crawler // Update all info
 # python update_manager.py --crawler-forced // Force update all info
@@ -16,6 +18,7 @@ import utils
 # python update_manager.py --fetch-users-count // command to get current count in db
 # python update_manager.py --update-redis-cache // update handles in redis
 # python update_manager.py --get-federated-pdses // validate PDSes
+# python update_manager.py --count-list-users // count list users
 
 
 async def main():
@@ -27,6 +30,7 @@ async def main():
     parser.add_argument('--fetch-users-count', action='store_true', help='Fetch the count of users')
     parser.add_argument('--update-redis-cache', action='store_true', help='Update the redis cache')
     parser.add_argument('--get-federated-pdses', action='store_true', help='Validate PDSes')
+    parser.add_argument('--count-list-users', action='store_true', help='Count list users')
     args = parser.parse_args()
 
     await database_handler.create_connection_pool("read")  # Creates connection pool for db
@@ -99,16 +103,55 @@ async def main():
 
         logger.info("Users db update finished.")
         await database_handler.delete_new_users_temporary_table()
+        await database_handler.process_delete_queue()  # Process the delete count for lists
         sys.exit()
     elif args.crawler:
+        if not os.getenv('CLEAR_SKY'):
+            quarter_value = config.get("environment", "quarter")
+            total_crawlers = config.get("environment", "total_crawlers")
+        else:
+            quarter_value = os.environ.get("CLEARSKY_CRAWLER_NUMBER")
+            total_crawlers = os.environ.get("CLEARSKY_CRAWLER_TOTAL")
+
+        if not quarter_value:
+            logger.warning("Using default quarter.")
+            quarter_value = "1"
+
+        if not total_crawlers:
+            logger.warning("Using default total crawlers.")
+            total_crawlers = "4"
+
         logger.info("Crawler requested.")
-        await database_handler.crawl_all()
+        logger.warning(f"This is crawler: {quarter_value}/{total_crawlers}")
+
+        await asyncio.sleep(10)  # Pause for 10 seconds
+
+        await database_handler.crawl_all(quarter=quarter_value, total_crawlers=total_crawlers)
         await database_handler.delete_temporary_table()
         logger.info("Crawl fetch finished.")
         sys.exit()
     elif args.crawler_forced:
+        if not os.getenv('CLEAR_SKY'):
+            quarter_value = config.get("environment", "quarter")
+            total_crawlers = config.get("environment", "total_crawlers")
+        else:
+            quarter_value = os.environ.get("CLEARSKY_CRAWLER_NUMBER")
+            total_crawlers = os.environ.get("CLEARSKY_CRAWLER_TOTAL")
+
+        if not quarter_value:
+            logger.warning("Using default quarter.")
+            quarter_value = "1"
+
+        if not total_crawlers:
+            logger.warning("Using default total crawlers.")
+            total_crawlers = "4"
+
         logger.info("Crawler forced requested.")
-        await database_handler.crawl_all(forced=True)
+        logger.warning(f"This is crawler: {quarter_value}/{total_crawlers}")
+
+        await asyncio.sleep(10)  # Pause for 10 seconds
+
+        await database_handler.crawl_all(forced=True, quarter=quarter_value)
         await database_handler.delete_temporary_table()
         logger.info("Crawl forced fetch finished.")
         sys.exit()
@@ -127,6 +170,18 @@ async def main():
             last_value = None
             logger.info(f"No last value retrieved, starting from beginning.")
         await utils.get_all_did_records(last_value)
+
+        logger.info("Getting did:webs without PDSes.")
+        dids = await database_handler.get_didwebs_without_pds()
+
+        if dids:
+            logger.info(f"Processing {len(dids)} did:webs")
+            for did in dids:
+                pds = await on_wire.resolve_did(did, did_web_pds=True)
+                if pds:
+                    await database_handler.update_pds(did, pds)
+                    logger.info(f"Updated PDS for {did} PDS:{pds}")
+
         logger.info("Finished processing data.")
         sys.exit()
     elif args.get_federated_pdses:
@@ -135,7 +190,16 @@ async def main():
         logger.info("Validated PDSes.")
         logger.info(f"Active PDSes: {active}")
         logger.info(f"Not active PDSes: {not_active}")
+        logger.info("Finished processing data. Exiting.")
         sys.exit()
-
+    elif args.count_list_users:
+        logger.info("Count list users requested.")
+        await database_handler.update_mutelist_count()
+        logger.info("Count subscribe list users requested.")
+        await database_handler.update_subscribe_list_count()
+        sys.exit()
+    else:
+        logger.error("Not a recognized command.")
+        sys.exit()
 if __name__ == '__main__':
     asyncio.run(main())

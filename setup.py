@@ -21,6 +21,7 @@ mute_lists_transaction_table = "mutelists_transaction"
 mute_lists_users_transaction_table = "mutelists_users_transaction"
 subscribe_block_list_table = "subscribe_blocklists"
 subscribe_block_list_transaction_table = "subscribe_blocklists_transaction"
+api_table = "api"
 pds_table = "pds"
 users_transaction_table = "users_transaction"
 
@@ -175,6 +176,15 @@ async def create_db():
                 create_last_created_table = """CREATE TABLE IF NOT EXISTS {} (
                 last_created timestamptz PRIMARY KEY""".format(last_created_table)
 
+                create_api_table = """
+                CREATE TABLE IF NOT EXISTS {} (
+                    key text PRIMARY KEY,
+                    date_added timestamp,
+                    valid bool,
+                    owner text,
+                    owner_id text
+                )""".format(api_table)
+
                 create_users_transaction_table = """
                 create table users_transaction (
                     serial_id BIGSERIAL primary key,
@@ -205,6 +215,7 @@ async def create_db():
                 await connection.execute(create_subscribe_block_list_table)
                 await connection.execute(create_subscribe_block_list_transaction_table)
                 await connection.execute(create_pds_table)
+                await connection.execute(create_api_table)
                 await connection.execute(create_users_transaction_table)
 
                 await connection.execute(index_1)

@@ -1,5 +1,6 @@
 # utils.py
 
+import math
 import httpx
 import urllib.parse
 from datetime import datetime
@@ -49,6 +50,7 @@ total_users_status = asyncio.Event()
 block_stats_process_time = None
 block_stats_last_update = None
 block_stats_start_time = None
+block_stats_as_of_time = None
 
 total_users_process_time = None
 total_users_last_update = None
@@ -62,40 +64,40 @@ sleep_time = 15
 async def identifier_exists_in_db(identifier):
     async with database_handler.connection_pools["read"].acquire() as connection:
         if is_did(identifier):
-            result = await connection.fetchrow('SELECT did, status FROM users WHERE did = $1', identifier)
+            results = await connection.fetch('SELECT did, status FROM users WHERE did = $1', identifier)
 
-            if result:
-                ident = result['did']
+            true_record = None
+
+            for result in results:
+                # ident = result['did']
                 status = result['status']
-            else:
-                ident = None
-                status = None
 
-            if ident and status is True:
-                ident = True
-                status = True
-            elif ident and status is False:
-                ident = True
-                status = False
+                if status:
+                    ident = True
+                    true_record = (ident, status)
+                    break
+
+            if true_record:
+                ident, status = true_record
             else:
                 ident = False
                 status = False
         elif is_handle(identifier):
-            result = await connection.fetchrow('SELECT handle, status FROM users WHERE handle = $1', identifier)
+            results = await connection.fetch('SELECT handle, status FROM users WHERE handle = $1', identifier)
 
-            if result:
-                ident = result['handle']
+            true_record = None
+
+            for result in results:
+                # ident = result['handle']
                 status = result['status']
-            else:
-                ident = None
-                status = None
 
-            if ident is not None and status is True:
-                ident = True
-                status = True
-            elif ident is not None and status is False:
-                ident = True
-                status = False
+                if status:
+                    ident = True
+                    true_record = (ident, status)
+                    break
+
+            if true_record:
+                ident, status = true_record
             else:
                 ident = False
                 status = False
@@ -103,7 +105,7 @@ async def identifier_exists_in_db(identifier):
             ident = False
             status = False
 
-        return ident, status
+    return ident, status
 
 
 async def resolve_did(did, count, test=False):
@@ -284,6 +286,7 @@ async def update_block_statistics():
     global block_stats_last_update
     global block_stats_status
     global block_stats_start_time
+    global block_stats_as_of_time
 
     logger.info("Updating block statsitics.")
 
@@ -328,6 +331,8 @@ async def update_block_statistics():
     block_stats_last_update = end_time
     block_stats_start_time = None
 
+    block_stats_as_of_time = datetime.now().isoformat()
+
     return (number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking,
             number_block_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000,
             average_number_of_blocks, number_blocked_1, number_blocked_2_and_100, number_blocked_101_and_1000,
@@ -371,10 +376,14 @@ async def get_all_users(pds):
     limit = 1000
     cursor = None
     records = set()
+    count = 0
 
-    logger.info("Getting all dids.")
+    logger.info(f"Getting all dids from {pds}")
 
-    while True:
+    retry_count = 0
+    max_retries = 5
+
+    while retry_count < max_retries:
         url = urllib.parse.urljoin(base_url, "com.atproto.sync.listRepos")
         params = {
             "limit": limit,
@@ -386,32 +395,95 @@ async def get_all_users(pds):
         full_url = f"{url}?{encoded_params}"
         logger.debug(full_url)
         try:
-            response = requests.get(full_url)
+            response = requests.get(full_url, allow_redirects=True)
+            try:
+                num_redirects = len(response.history)
+                if num_redirects > 0:
+                    logger.info(f"Number of redirects: {num_redirects}")
+            except Exception:
+                pass
         except httpx.RequestError as e:
             response = None
             logger.warning("Error during API call: %s", e)
-            await asyncio.sleep(60)  # Retry after 60 seconds
         except Exception as e:
             response = None
             logger.warning("Error during API call: %s", str(e))
-            await asyncio.sleep(60)  # Retry after 60 seconds
+        try:
+            if response.status_code == 200:
+                if response.content:
+                    try:
+                        response_json = response.json()
+                    except Exception as e:
+                        logger.error(f"Error fetching users for: {pds} {full_url}")
+                        logger.error(f"Error: {e}")
+                        break
+                    repos = response_json.get("repos", [])
+                    for repo in repos:
+                        records.add(repo["did"])
 
-        if response.status_code == 200:
-            response_json = response.json()
-            repos = response_json.get("repos", [])
-            for repo in repos:
-                records.add(repo["did"])
-
-            cursor = response_json.get("cursor")
-            if not cursor:
+                    cursor = response_json.get("cursor")
+                    if not cursor:
+                        break
+                else:
+                    logger.warning(f"Received empty response from the server: {full_url}")
+                    break
+            elif response.status_code == 429:
+                if count < 10:
+                    count += 1
+                    logger.warning(f"Received 429 Too Many Requests. Retrying after 60 seconds...{full_url}")
+                    await asyncio.sleep(60)  # Retry after 60 seconds
+                else:
+                    logger.error(f"Received 429. Max retries reached. {full_url}")
+                    records = None
+                    break
+            elif response.status_code == 522:
+                logger.warning(f"Received 522 Origin Connection Time-out, skipping. {full_url}")
                 break
-        elif response.status_code == 429:
-            logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
-            await asyncio.sleep(60)  # Retry after 60 seconds
-        else:
-            logger.warning("Response status code: " + str(response.status_code))
-            await asyncio.sleep(10)
+            elif response.status_code == 530:
+                logger.warning(f"Received 530 Origin DNS Error, skipping. {full_url}")
+                break
+            elif response.status_code == 504:
+                logger.warning(f"Received 504 Gateway Timeout, skipping. {full_url}")
+                break
+            elif response.status_code == 104:
+                logger.warning(f"Received 104 Connection Reset by Peer, skipping. {full_url}")
+                break
+            elif response.status_code == 403:
+                logger.warning(f"Received 403 Forbidden, skipping. {full_url}")
+                break
+            elif response.status_code == 502:
+                logger.warning(f"Received 502 Bad Gateway, skipping. {full_url}")
+                break
+            else:
+                logger.warning("Response status code: " + str(response.status_code) + f" {full_url}")
+                break
+        except httpx.RequestError as e:
+            logger.warning(f"Error during API call: {e} | {full_url}")
+            await asyncio.sleep(5)
+            retry_count += 1
             continue
+        except TimeoutError:
+            logger.warning(f"Timeout error: {full_url}")
+            if cursor:
+                await asyncio.sleep(5)
+                retry_count += 1
+                continue
+            else:
+                break
+        except AttributeError:
+            logger.warning(f"{pds} didn't return a response code: {full_url}")
+            break
+        except Exception as e:
+            logger.warning(f"General Error during API call: {e} | {full_url}")
+            if cursor:
+                await asyncio.sleep(5)
+                retry_count += 1
+                continue
+            else:
+                break
+
+    if retry_count >= max_retries:
+        logger.warning(f"Max retries reached for {pds} {full_url}")
 
     return records
 
@@ -425,7 +497,7 @@ async def get_user_handle(did):
 
 async def get_user_did(handle):
     async with database_handler.connection_pools["read"].acquire() as connection:
-        did = await connection.fetchval('SELECT did FROM users WHERE handle = $1', handle)
+        did = await connection.fetchval('SELECT did FROM users WHERE handle = $1 AND status is True', handle)
 
     return did
 
@@ -453,37 +525,35 @@ async def get_single_user_blocks(ident, limit=100, offset=0):
     try:
         # Execute the SQL query to get all the user_dids that have the specified did/ident in their blocklist
         async with database_handler.connection_pools["read"].acquire() as connection:
-            result = await connection.fetch('SELECT b.user_did, b.block_date, u.handle, u.status FROM blocklists AS b JOIN users as u ON b.user_did = u.did WHERE b.blocked_did = $1 ORDER BY block_date DESC LIMIT $2 OFFSET $3', ident, limit, offset)
-            count = await connection.fetchval('SELECT COUNT(user_did) FROM blocklists WHERE blocked_did = $1', ident)
+            result = await connection.fetch('SELECT DISTINCT b.user_did, b.block_date, u.handle, u.status FROM blocklists AS b JOIN users as u ON b.user_did = u.did WHERE b.blocked_did = $1 ORDER BY block_date DESC LIMIT $2 OFFSET $3', ident, limit, offset)
+            count = await connection.fetchval('SELECT COUNT(DISTINCT user_did) FROM blocklists WHERE blocked_did = $1', ident)
 
             block_list = []
+
+            if count > 0:
+                pages = count / 100
+
+                pages = math.ceil(pages)
+            else:
+                pages = 0
 
             if result:
                 # Iterate over blocked_users and extract handle and status
                 for user_did, block_date, handle, status in result:
-                    block_list.append({"handle": handle, "status": status, "blocked_date": block_date})
+                    block_list.append({"handle": handle, "status": status, "blocked_date": block_date.isoformat()})
 
-                return block_list, count
+                return block_list, count, pages
             else:
+                block_list = []
                 total_blocked = 0
-                if is_did(ident):
-                    ident = await use_handle(ident)
-                handles = [f"{ident} hasn't blocked anyone."]
-                timestamp = datetime.now().date()
-                status = False
-                block_list.append({"handle": handles, "status": status, "blocked_date": timestamp})
 
-                return block_list, total_blocked
+                return block_list, total_blocked, pages
     except Exception as e:
         block_list = []
         logger.error(f"Error fetching blocklists for {ident}: {e}")
-        handles = "there was an error"
-        timestamp = datetime.now().date()
         count = 0
-        status = False
-        block_list.append({"handle": handles, "status": status, "blocked_date": timestamp})
 
-        return block_list, count
+        return block_list, count, pages
 
 
 async def get_user_block_list(ident, pds):
@@ -513,7 +583,7 @@ async def get_user_block_list(ident, pds):
         try:
             async with limiter:
                 async with httpx.AsyncClient() as client:
-                    response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
+                    response = await client.get(full_url, timeout=10, follow_redirects=True)  # Set an appropriate timeout value (in seconds)
 
                 ratelimit_limit = int(response.headers.get('Ratelimit-Limit', 0))
                 ratelimit_remaining = int(response.headers.get('Ratelimit-Remaining', 0))
@@ -529,7 +599,7 @@ async def get_user_block_list(ident, pds):
             await asyncio.sleep(10)
             continue
         except httpx.RequestError as e:
-            logger.warning("Error during API call: %s", e)
+            logger.warning(f"Error during API call: {e} : {full_url}")
             retry_count += 1
             logger.info("sleeping 5")
             await asyncio.sleep(5)
@@ -610,39 +680,89 @@ async def get_user_block_list(ident, pds):
 
 
 async def process_user_block_list(ident, limit, offset):
+    block_list = []
+
     blocked_users, count = await database_handler.get_blocklist(ident, limit=limit, offset=offset)
 
-    block_list = []
+    if blocked_users:
+        # Iterate over blocked_users and extract handle and status
+        for user_did, block_date, handle, status in blocked_users:
+            block_list.append({"handle": handle, "status": status, "blocked_date": block_date.isoformat()})
+
+    if count > 0:
+        pages = count / 100
+
+        pages = math.ceil(pages)
+    else:
+        pages = 0
 
     if not blocked_users:
         total_blocked = 0
-        if is_did(ident):
-            ident = await use_handle(ident)
-        handles = [f"{ident} hasn't blocked anyone."]
-        timestamp = datetime.now().date()
-        status = False
-        block_list.append({"handle": handles, "status": status, "blocked_date": timestamp})
         logger.info(f"{ident} Hasn't blocked anyone.")
 
-        return block_list, total_blocked
+        return block_list, total_blocked, pages
     elif "no repo" in blocked_users:
         total_blocked = 0
-        handles = [f"Couldn't find {ident}, there may be a typo."]
-        timestamp = datetime.now().date()
-        status = False
-        block_list.append({"handle": handles, "status": status, "blocked_date": timestamp})
         logger.info(f"{ident} doesn't exist.")
 
-        return block_list, total_blocked
+        return block_list, total_blocked, pages
     else:
-        # blocked_users now contains blocked_did, handle, and status
-        total_blocked = count
 
-        # Iterate over blocked_users and extract handle and status
-        for user_did, blocked_date, handle, status in blocked_users:
-            block_list.append({"handle": handle, "status": status, "blocked_date": blocked_date})
+        return block_list, count, pages
 
-        return block_list, total_blocked
+
+async def process_subscribe_blocks(ident, limit, offset):
+    block_list = {}
+
+    blocked_users, count = await database_handler.get_subscribe_blocks(ident, limit=limit, offset=offset)
+
+    if count > 0:
+        pages = count / 100
+
+        pages = math.ceil(pages)
+    else:
+        pages = 0
+
+    if not blocked_users:
+        total_blocked = 0
+        logger.info(f"{ident} Hasn't subscribed blocked any lists.")
+
+        return block_list, total_blocked, pages
+    elif "no repo" in blocked_users:
+        total_blocked = 0
+        logger.info(f"{ident} doesn't exist.")
+
+        return block_list, total_blocked, pages
+    else:
+
+        return blocked_users, count, pages
+
+
+async def process_subscribe_blocks_single(ident, list_of_lists, limit, offset):
+    block_list = {}
+
+    blocked_users, count = await database_handler.get_subscribe_blocks_single(ident, list_of_lists, limit=limit, offset=offset)
+
+    if count > 0:
+        pages = count / 100
+
+        pages = math.ceil(pages)
+    else:
+        pages = 0
+
+    if not blocked_users:
+        total_blocked = 0
+        logger.info(f"{ident} Hasn't subscribed blocked any lists.")
+
+        return block_list, total_blocked, pages
+    elif "no repo" in blocked_users:
+        total_blocked = 0
+        logger.info(f"{ident} doesn't exist.")
+
+        return block_list, total_blocked, pages
+    else:
+
+        return blocked_users, count, pages
 
 
 async def fetch_handles_batch(batch_dids, ad_hoc=False):
@@ -674,8 +794,27 @@ async def fetch_handles_batch(batch_dids, ad_hoc=False):
 
 
 def is_did(identifier):
-    did_pattern = r'^did:[a-z]+:[a-zA-Z0-9._:%-]*[a-zA-Z0-9._-]$'
+    # Check if the identifier contains percent-encoded characters
+    if '%' in identifier:
+        logger.warning(f"Identifier contains percent-encoded characters: {identifier}")
 
+        return False
+
+    # Check if the identifier ends with ':' or '%'
+    if identifier.endswith(':') or identifier.endswith('%'):
+        logger.warning(f"Identifier ends with ':' or '%': {identifier}")
+
+        return False
+
+    if not len(identifier.encode('utf-8')) <= 2 * 1024:
+        logger.warning(f"Identifier is too long: {identifier}")
+
+        return False
+
+    # Define the regex pattern for DID
+    did_pattern = r'^did:(?:web|plc):[a-zA-Z0-9._:-]*[a-zA-Z0-9._-]$'
+
+    # Match the identifier against the regex pattern
     return re.match(did_pattern, identifier) is not None
 
 
@@ -722,7 +861,7 @@ async def get_handle_history(identifier):
         except httpx.ReadTimeout:
             logger.warning("Request timed out. Retrying... Retry count: %d", retry_count)
             retry_count += 1
-            await asyncio.sleep(10)
+            await asyncio.sleep(5)
             continue
         except httpx.RequestError as e:
             logger.warning("Error during API call: %s", e)
@@ -734,25 +873,33 @@ async def get_handle_history(identifier):
             response_json = response.json()
 
             for record in response_json:
-                also_known_as = record["operation"]["alsoKnownAs"]
+                try:
+                    also_known_as = record["operation"]["alsoKnownAs"]
+                except KeyError:
+                    also_known_as = record["operation"]["handle"]
+                try:
+                    endpoint = record["operation"]["services"]["atproto_pds"]["endpoint"]
+                except KeyError:
+                    endpoint = record["operation"]["service"]
+
                 created_at_value = record["createdAt"]
-                created_at = datetime.fromisoformat(created_at_value)
-                cleaned_also_known_as = [(item.replace("at://", ""), created_at) for item in also_known_as]
+                # created_at = datetime.fromisoformat(created_at_value)
+
+                if isinstance(also_known_as, str):  # Handle single string case
+                    if "at://" not in also_known_as[0]:
+                        cleaned_also_known_as = [(also_known_as, created_at_value, endpoint)]
+                    else:
+                        cleaned_also_known_as = [(item.replace("at://", ""), created_at_value, endpoint) for item in also_known_as]
+                else:
+                    cleaned_also_known_as = [(item.replace("at://", ""), created_at_value, endpoint) for item in also_known_as if "at://" in item]
+
                 also_known_as_list.extend(cleaned_also_known_as)
 
-            # Remove adjacent duplicates while preserving non-adjacent duplicates
-            # cleaned_also_known_as_list = []
-            # prev_item = None
-            # for item in also_known_as_list:
-            #     if item != prev_item:
-            #         cleaned_also_known_as_list.append(item)
-            #     prev_item = item
-
+            # Sort the list by the date in created_at
+            also_known_as_list.sort(key=lambda x: x[1])
             also_known_as_list.reverse()
-            # cleaned_also_known_as_list.reverse()
 
             return also_known_as_list
-            # return cleaned_also_known_as_list
         elif response.status_code == 429:
             logger.warning("Received 429 Too Many Requests. Retrying after 30 seconds...")
             await asyncio.sleep(30)  # Retry after 60 seconds
@@ -805,7 +952,7 @@ async def get_mutelists(ident, pds):
         try:
             async with limiter:
                 async with httpx.AsyncClient() as client:
-                    response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
+                    response = await client.get(full_url, timeout=10, follow_redirects=True)  # Set an appropriate timeout value (in seconds)
 
                 ratelimit_limit = int(response.headers.get('Ratelimit-Limit', 0))
                 ratelimit_remaining = int(response.headers.get('Ratelimit-Remaining', 0))
@@ -822,7 +969,7 @@ async def get_mutelists(ident, pds):
             await asyncio.sleep(10)
             continue
         except httpx.RequestError as e:
-            logger.warning("Error during API call: %s", e)
+            logger.warning(f"Error during API call: {e} : {full_url}")
             retry_count += 1
             logger.info("sleeping 5")
             await asyncio.sleep(5)
@@ -923,7 +1070,7 @@ async def get_mutelist_users(ident, pds):
         try:
             async with limiter:
                 async with httpx.AsyncClient() as client:
-                    response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
+                    response = await client.get(full_url, timeout=10, follow_redirects=True)  # Set an appropriate timeout value (in seconds)
 
                 ratelimit_limit = int(response.headers.get('Ratelimit-Limit', 0))
                 ratelimit_remaining = int(response.headers.get('Ratelimit-Remaining', 0))
@@ -940,7 +1087,7 @@ async def get_mutelist_users(ident, pds):
             await asyncio.sleep(10)
             continue
         except httpx.RequestError as e:
-            logger.warning("Error during API call: %s", e)
+            logger.warning(f"Error during API call: {e} : {full_url}")
             retry_count += 1
             logger.info("sleeping 5")
             await asyncio.sleep(5)
@@ -1031,7 +1178,7 @@ async def get_subscribelists(ident, pds):
         try:
             async with limiter:
                 async with httpx.AsyncClient() as client:
-                    response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
+                    response = await client.get(full_url, timeout=10, follow_redirects=True)  # Set an appropriate timeout value (in seconds)
 
                 ratelimit_limit = int(response.headers.get('Ratelimit-Limit', 0))
                 ratelimit_remaining = int(response.headers.get('Ratelimit-Remaining', 0))
@@ -1048,7 +1195,7 @@ async def get_subscribelists(ident, pds):
             await asyncio.sleep(10)
             continue
         except httpx.RequestError as e:
-            logger.warning("Error during API call: %s", e)
+            logger.warning(f"Error during API call: {e} : {full_url}")
             retry_count += 1
             logger.info("sleeping 5")
             await asyncio.sleep(5)
@@ -1120,6 +1267,8 @@ def fetch_data_with_after_parameter(url, after_value):
     response = requests.get(url, params={'after': after_value})
     if response.status_code == 200:
         db_data = []
+        atproto_labelers = []
+        in_endpoint = None
 
         for line in response.iter_lines():
             try:
@@ -1152,6 +1301,20 @@ def fetch_data_with_after_parameter(url, after_value):
                 created_date = record.get("createdAt")
                 created_date = datetime.fromisoformat(created_date)
 
+                if in_endpoint:
+                    try:
+                        # Extract type and endpoint if atproto_labeler is present for the first time
+                        if "atproto_labeler" in in_endpoint:
+                            atproto_labeler = {
+                                "did": did,
+                                "type": in_endpoint["atproto_labeler"]["type"],
+                                "endpoint": in_endpoint["atproto_labeler"]["endpoint"],
+                                "createdAt": created_date
+                            }
+                            atproto_labelers.append(atproto_labeler)
+                    except Exception as e:
+                        logger.error(f"Error: {e}")
+
                 db_data.append([did, created_date, service, handle])
             except json.JSONDecodeError:
                 logger.error(f"Failed to parse JSON line: {line}")
@@ -1163,17 +1326,21 @@ def fetch_data_with_after_parameter(url, after_value):
         else:
             last_created_date = None
 
-        return db_data, last_created_date
+        return db_data, last_created_date, atproto_labelers
     else:
         # Handle any errors or exceptions here
         logger.error(f"Error fetching data. Status code: {response.status_code}")
 
-        return None, None
+        return None, None, None
 
 
 async def get_federated_pdses():
     active = 0
     not_active = 0
+    processed_pds = {}
+    doa_processed_pds = {}
+    attempt = 0
+    last_pds = None
 
     records = await database_handler.get_unique_did_to_pds()
 
@@ -1183,6 +1350,24 @@ async def get_federated_pdses():
         return None, None
 
     for did, pds in records:
+        if "https://" not in pds:
+            if pds in doa_processed_pds:
+                continue
+            doa_processed_pds[pds] = True
+            await database_handler.update_pds_status(pds, False)
+            continue
+
+        current_pds = pds
+        if current_pds != last_pds:
+            attempt = 0
+            pds_status = await on_wire.describe_pds(pds)
+            if not pds_status:
+                not_active += 1
+                doa_processed_pds[pds] = True
+                await database_handler.update_pds_status(pds, False)
+                continue
+        if pds in processed_pds:
+            continue
         base_url = f"https://bsky.network/xrpc/"
 
         url = urllib.parse.urljoin(base_url, "com.atproto.sync.getLatestCommit")
@@ -1197,14 +1382,15 @@ async def get_federated_pdses():
 
         try:
             response = requests.get(full_url)
+            last_pds = current_pds
         except httpx.RequestError as e:
             response = None
             logger.warning("Error during API call: %s", e)
-            await asyncio.sleep(60)  # Retry after 60 seconds
+            await asyncio.sleep(5)  # Retry after 5 seconds
         except Exception as e:
             response = None
             logger.warning("Error during API call: %s", str(e))
-            await asyncio.sleep(60)  # Retry after 60 seconds
+            await asyncio.sleep(5)  # Retry after 10 seconds
 
         if response.status_code == 200:
             response_json = response.json()
@@ -1216,6 +1402,8 @@ async def get_federated_pdses():
                     logger.info(f"PDS: {pds} is valid.")
                     active += 1
                     await database_handler.update_pds_status(pds, True)
+                    processed_pds[pds] = True  # Mark PDS as processed
+                    attempt = 0
             except AttributeError:
                 try:
                     error = response_json.get("error", [])
@@ -1223,24 +1411,115 @@ async def get_federated_pdses():
                     if "user not found" in error:
                         logger.warning(f"PDS: {pds} not valid.")
                         not_active += 1
-                        await database_handler.update_pds_status(pds, False)
+                        if attempt == 0:
+                            await database_handler.update_pds_status(pds, False)
+                        attempt += 1
+                    else:
+                        logger.error(f"Unexpected error message: {error} {full_url}")
+                        not_active += 1
+                        if attempt == 0:
+                            await database_handler.update_pds_status(pds, False)
+                        attempt += 1
                 except AttributeError:
                     logger.error(f"Error fetching data: {full_url}")
+                    not_active += 1
+                    if attempt == 0:
+                        await database_handler.update_pds_status(pds, False)
+                    attempt += 1
         elif response.status_code == 429:
             logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
             await asyncio.sleep(60)  # Retry after 60 seconds
         elif response.status_code == 404:
             logger.warning(f"PDS: {pds} not valid.")
             not_active += 1
-            await database_handler.update_pds_status(pds, False)
+            if attempt == 0:
+                await database_handler.update_pds_status(pds, False)
+            attempt += 1
         elif response.status_code == 500:
             logger.warning(f"PDS: {pds} not valid.")
             not_active += 1
-            await database_handler.update_pds_status(pds, False)
+            if attempt == 0:
+                await database_handler.update_pds_status(pds, False)
+            attempt += 1
         else:
-            logger.warning("Response status code: " + str(response.status_code) + f" for PDS: {pds} url: {full_url}")
+            logger.warning("Response status code: " + str(response.status_code) + f" for PDS: {pds} url: {full_url} not valid.")
+            if attempt == 0:
+                await database_handler.update_pds_status(pds, False)
+            attempt += 1
+
+        if attempt > 0:
+            logger.info(f"Attempt {attempt}/10 failed for {pds}.")
+            if attempt == 10:
+                attempt = 0
 
     return active, not_active
+
+
+async def validate_did_atproto(did):
+    base_url = f"https://bsky.network/xrpc/"
+
+    url = urllib.parse.urljoin(base_url, "com.atproto.sync.getLatestCommit")
+    params = {
+        "did": did,
+    }
+
+    encoded_params = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
+    full_url = f"{url}?{encoded_params}"
+
+    logger.info(full_url)
+
+    retry_count = 0
+    max_retries = 5
+
+    while retry_count < max_retries:
+        try:
+            response = requests.get(full_url)
+        except httpx.RequestError as e:
+            response = None
+            logger.warning("Error during API call: %s", e)
+            retry_count += 1
+            await asyncio.sleep(5)  # Retry after 5 seconds
+        except Exception as e:
+            logger.warning("Error during API call: %s", str(e))
+
+            return False
+
+        if response.status_code == 200:
+            response_json = response.json()
+            try:
+                cid = response_json.get("cid", [])
+                rev = response_json.get("rev", [])
+
+                if cid and rev:
+                    return True
+            except AttributeError:
+                try:
+                    error = response_json.get("error", [])
+
+                    if "user not found" in error:
+                        return False
+                    else:
+                        logger.error(f"Unexpected error message: {error} {full_url}")
+
+                        return False
+                except AttributeError:
+                    logger.error(f"Error fetching data: {full_url}")
+                    return False
+        elif response.status_code == 429:
+            logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
+            retry_count += 1
+            await asyncio.sleep(10)  # Retry after 60 seconds
+        elif response.status_code == 404:
+            return False
+        elif response.status_code == 500:
+            return False
+        else:
+            return False
+
+    if retry_count == max_retries:
+        logger.warning("Could not validate DID: " + did)
+
+        return False
 
 
 async def get_all_did_records(last_cursor=None):
@@ -1249,23 +1528,40 @@ async def get_all_did_records(last_cursor=None):
     old_last_created = None
 
     while True:
-        data, last_created = fetch_data_with_after_parameter(url, after_value)
+        data, last_created, label_data = fetch_data_with_after_parameter(url, after_value)
 
         logger.info("data batch fetched.")
-        if data is None:
+        if data is None and label_data is None:
             break
         else:
             # print(data)
-            await database_handler.update_did_service(data)
+            await database_handler.update_did_service(data, label_data)
 
         if last_created != old_last_created:
             logger.info(f"Data fetched until createdAt: {last_created}")
-
-            await database_handler.update_last_created_did_date(last_created)
-
+            if last_created:
+                await database_handler.update_last_created_did_date(last_created)
+            else:
+                logger.warning("No last_created date found, keeping last value.")
+                break
             # Update the after_value for the next request
             after_value = last_created
             old_last_created = last_created
         else:
             logger.warning("DIDs up to date. Exiting.")
             break
+
+    await database_handler.update_did_webs()
+
+
+async def list_uri_to_url(uri):
+    pattern = r'did:plc:[a-zA-Z0-9]+'
+    pattern2 = r'/([^/]+)$'
+    list_base_url = "https://bsky.app/profile"
+    match = re.search(pattern, uri)
+    match2 = re.search(pattern2, uri)
+    did = match.group(0)
+    commit_rev = match2.group(1)
+    list_full_url = f"""{list_base_url}/{did}/lists/{commit_rev}"""
+
+    return list_full_url
