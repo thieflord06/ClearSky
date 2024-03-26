@@ -373,8 +373,7 @@ def ratelimit_error(e):
     return jsonify(error="ratelimit exceeded", message=str(e.description)), 429
 
 
-async def fetch_and_push_data():
-    global api_key
+async def fetch_and_push_data(api_key):
     global push_server
     global self_server
 
@@ -2263,7 +2262,7 @@ async def main():
     await initialize_task
 
     # Fetch and push data immediately
-    await fetch_and_push_data()
+    await fetch_and_push_data(api_key)
 
     aiocron.crontab('* * * * *', schedule_data_push)
 
