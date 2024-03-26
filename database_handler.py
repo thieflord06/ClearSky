@@ -2160,7 +2160,7 @@ async def get_mutelists(ident):
                     "description": record['description'],
                     "created_date": record['created_date'].isoformat(),
                     "date_added": record['date_added'].isoformat(),
-                    "list user count": record['count']
+                    "list user count": record['user_count']
                 }
                 lists.append(data)
 
