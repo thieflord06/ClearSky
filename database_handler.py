@@ -1672,7 +1672,7 @@ async def update_did_service(data, label_data):
                                 insert_label_query = """INSERT INTO labelers (did, endpoint, created_date, name, description) VALUES ($1, $2, $3, $4, $5)"""
                                 await connection.execute(insert_label_query, label["did"], label["endpoint"], label["createdAt"], display_name, description)
                                 await connection.execute(pop, label["did"])
-                                logger.info(f"pop: {label['did']}")
+                                logger.debug(f"pop: {label['did']}")
                                 pop_count += 1
 
                 logger.info(f"Popped {pop_count} times from resolution queue.")
