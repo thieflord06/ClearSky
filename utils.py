@@ -655,7 +655,7 @@ async def get_user_block_list(ident, pds):
                 error_message = response.json()["error"]
                 message = response.json()["message"]
                 if error_message == "InvalidRequest" and "Could not find repo" in message:
-                    logger.warning("Could not find repo: " + str(ident))
+                    logger.debug("Could not find repo: " + str(ident))
 
                     return None
             except KeyError:
@@ -1020,7 +1020,7 @@ async def get_mutelists(ident, pds):
                 error_message = response.json()["error"]
                 message = response.json()["message"]
                 if error_message == "InvalidRequest" and "Could not find repo" in message:
-                    logger.warning("Could not find repo: " + str(ident))
+                    logger.debug("Could not find repo: " + str(ident))
 
                     return None
             except KeyError:
@@ -1130,7 +1130,7 @@ async def get_mutelist_users(ident, pds):
                 error_message = response.json()["error"]
                 message = response.json()["message"]
                 if error_message == "InvalidRequest" and "Could not find repo" in message:
-                    logger.warning("Could not find repo: " + str(ident))
+                    logger.debug("Could not find repo: " + str(ident))
                     return None
             except KeyError:
                 pass
@@ -1239,7 +1239,7 @@ async def get_subscribelists(ident, pds):
                 error_message = response.json()["error"]
                 message = response.json()["message"]
                 if error_message == "InvalidRequest" and "Could not find repo" in message:
-                    logger.warning("Could not find repo: " + str(ident))
+                    logger.debug("Could not find repo: " + str(ident))
 
                     return None
             except KeyError:
