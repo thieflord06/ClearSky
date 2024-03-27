@@ -188,10 +188,14 @@ async def main():
         logger.info("Get federated pdses requested.")
         active, not_active = await utils.get_federated_pdses()
         logger.info("Validated PDSes.")
-        logger.info(f"Active PDSes: {active}")
-        logger.info(f"Not active PDSes: {not_active}")
-        logger.info("Finished processing data. Exiting.")
-        sys.exit()
+        if active and not_active:
+            logger.info(f"Active PDSes: {active}")
+            logger.info(f"Not active PDSes: {not_active}")
+            logger.info("Finished processing data. Exiting.")
+            sys.exit()
+        else:
+            logger.info("No PDS info.")
+            sys.exit()
     elif args.count_list_users:
         logger.info("Count list users requested.")
         await database_handler.update_mutelist_count()
