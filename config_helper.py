@@ -33,6 +33,13 @@ def remove_file_handler_from_config(config_file_path):
             handlers.remove('fileHandler')
         configure['logger_root']['handlers'] = ','.join(handlers)
 
+    if 'fileHandler' in configure['logger_httpxLogger']['handlers']:
+        # Remove 'fileHandler' from the list of handlers
+        handlers = configure['logger_httpxLogger']['handlers'].split(',')
+        if 'fileHandler' in handlers:
+            handlers.remove('fileHandler')
+        configure['logger_httpxLogger']['handlers'] = ','.join(handlers)
+
     # Save the modified config to the same file
     with open(config_file_path, 'w') as config_file:
         configure.write(config_file)
@@ -54,6 +61,10 @@ def read_config():
 
 
 def update_config_based_on_os(config, temp=False):
+    args = None
+    log_dir = None
+    log_name = None
+
     try:
         current_os = platform.platform()
 
@@ -75,9 +86,10 @@ def update_config_based_on_os(config, temp=False):
             log_dir = config.get("linux", "logdir")
             log_name = config.get("linux", "log_name")
 
-        config.set("handler_fileHandler", "args", str(args))
-        config.set("handler_fileHandler", "logdir", str(log_dir))
-        config.set("handler_fileHandler", "log_name", str(log_name))
+        if args and log_dir and log_name:
+            config.set("handler_fileHandler", "args", str(args))
+            config.set("handler_fileHandler", "logdir", str(log_dir))
+            config.set("handler_fileHandler", "log_name", str(log_name))
 
         with open(ini_file, 'w') as configfile:
             config.write(configfile)
@@ -107,6 +119,11 @@ def create_log_directory(log_dir, configer):
                                 handler.strip() != 'fileHandler']
         configer['handlers']['keys'] = ','.join(updated_handlers_key)
 
+        httpx_handlers_value = configer['logger_httpxLogger']['handlers']
+        updated_httpx_handlers = [handler.strip() for handler in httpx_handlers_value.split(',') if
+                                  handler.strip() != 'fileHandler']
+        configer['logger_httpxLogger']['handlers'] = ','.join(updated_httpx_handlers)
+
         # Save the updated config to the file
         with open(ini_file, 'w') as configfile:
             configer.write(configfile)
@@ -127,6 +144,11 @@ def configure_logging():
     try:
         logging.config.fileConfig(ini_file)
         logger = logging.getLogger()
+
+        # Set log level for httpx logger
+        httpx_logger = logging.getLogger('httpx')
+        httpx_level = logging.getLevelName(config.get('logger_httpxLogger', 'level'))
+        httpx_logger.setLevel(httpx_level)
 
         return logger
 
