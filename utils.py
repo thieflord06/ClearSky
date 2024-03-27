@@ -1399,7 +1399,7 @@ async def get_federated_pdses():
                 rev = response_json.get("rev", [])
 
                 if cid and rev:
-                    logger.info(f"PDS: {pds} is valid.")
+                    logger.debug(f"PDS: {pds} is valid.")
                     active += 1
                     await database_handler.update_pds_status(pds, True)
                     processed_pds[pds] = True  # Mark PDS as processed
