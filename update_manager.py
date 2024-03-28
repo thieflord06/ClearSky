@@ -37,170 +37,194 @@ async def main():
     await database_handler.create_connection_pool("write")
 
     if args.fetch_users_count:
-        # Call the function to fetch the count of users
-        count = await database_handler.count_users_table()
-        logger.info(f"Total users in the database: {count}")
+        try:
+            # Call the function to fetch the count of users
+            count = await database_handler.count_users_table()
+            logger.info(f"Total users in the database: {count}")
+        except Exception as e:
+            logger.error(f"Error fetching users count: {str(e)}")
         sys.exit()
     elif args.update_users_dids:
-        # await database_handler.create_user_status_temporary_table()
-        # Call the function to update the database with all users dids
-        logger.info("Users db update dids only requested.")
-        await database_handler.get_all_users_db(True, False, init_db_run=True)
-        logger.info("Users db updated dids finished.")
+        try:
+            # await database_handler.create_user_status_temporary_table()
+            # Call the function to update the database with all users dids
+            logger.info("Users db update dids only requested.")
+            await database_handler.get_all_users_db(True, False, init_db_run=True)
+            logger.info("Users db updated dids finished.")
 
-        logger.info("Users db update requested.")
-        all_dids = await database_handler.get_dids_without_handles()
-        logger.info("Update users handles requested.")
-        total_dids = len(all_dids)
-        batch_size = 500
-        total_handles_updated = 0
-        table = "new_users_temporary_table"
+            logger.info("Users db update requested.")
+            all_dids = await database_handler.get_dids_without_handles()
+            logger.info("Update users handles requested.")
+            total_dids = len(all_dids)
+            batch_size = 500
+            total_handles_updated = 0
+            table = "new_users_temporary_table"
 
-        # Check if there is a last processed DID in the temporary table
-        async with database_handler.connection_pools["write"].acquire() as connection:
-            async with connection.transaction():
-                try:
-                    query = "SELECT last_processed_did FROM new_users_temporary_table"
-                    last_processed_did = await connection.fetchval(query)
-                except asyncpg.UndefinedTableError:
-                    logger.warning("Temporary table doesn't exist.")
-                    last_processed_did = None
-                except Exception as e:
-                    last_processed_did = None
-                    logger.error(f"Exception getting from db: {str(e)}")
+            # Check if there is a last processed DID in the temporary table
+            async with database_handler.connection_pools["write"].acquire() as connection:
+                async with connection.transaction():
+                    try:
+                        query = "SELECT last_processed_did FROM new_users_temporary_table"
+                        last_processed_did = await connection.fetchval(query)
+                    except asyncpg.UndefinedTableError:
+                        logger.warning("Temporary table doesn't exist.")
+                        last_processed_did = None
+                    except Exception as e:
+                        last_processed_did = None
+                        logger.error(f"Exception getting from db: {str(e)}")
 
-        if not last_processed_did:
-            await database_handler.create_new_users_temporary_table()
+            if not last_processed_did:
+                await database_handler.create_new_users_temporary_table()
 
-        if last_processed_did:
-            # Find the index of the last processed DID in the list
-            start_index = next((i for i, (did) in enumerate(all_dids) if did == last_processed_did), None)
-            if start_index is None:
-                logger.warning(
-                    f"Last processed DID '{last_processed_did}' not found in the list. Starting from the beginning.")
-            else:
-                logger.info(f"Resuming processing from DID: {last_processed_did}")
-                all_dids = all_dids[start_index:]
+            if last_processed_did:
+                # Find the index of the last processed DID in the list
+                start_index = next((i for i, (did) in enumerate(all_dids) if did == last_processed_did), None)
+                if start_index is None:
+                    logger.warning(
+                        f"Last processed DID '{last_processed_did}' not found in the list. Starting from the beginning.")
+                else:
+                    logger.info(f"Resuming processing from DID: {last_processed_did}")
+                    all_dids = all_dids[start_index:]
 
-        async with database_handler.connection_pools["write"].acquire() as connection:
-            async with connection.transaction():
-                # Concurrently process batches and update the handles
-                for i in range(0, total_dids, batch_size):
-                    logger.info("Getting batch to resolve.")
-                    batch_dids = all_dids[i:i + batch_size]
+            async with database_handler.connection_pools["write"].acquire() as connection:
+                async with connection.transaction():
+                    # Concurrently process batches and update the handles
+                    for i in range(0, total_dids, batch_size):
+                        logger.info("Getting batch to resolve.")
+                        batch_dids = all_dids[i:i + batch_size]
 
-                    # Process the batch asynchronously
-                    batch_handles_updated = await database_handler.process_batch(batch_dids, True, table, batch_size)
-                    total_handles_updated += batch_handles_updated
+                        # Process the batch asynchronously
+                        batch_handles_updated = await database_handler.process_batch(batch_dids, True, table, batch_size)
+                        total_handles_updated += batch_handles_updated
 
-                    # Log progress for the current batch
-                    logger.info(f"Handles updated: {total_handles_updated}/{total_dids}")
-                    logger.info(f"First few DIDs in the batch: {batch_dids[:5]}")
+                        # Log progress for the current batch
+                        logger.info(f"Handles updated: {total_handles_updated}/{total_dids}")
+                        logger.info(f"First few DIDs in the batch: {batch_dids[:5]}")
 
-                    # Pause after each batch of handles resolved
-                    logger.info("Pausing...")
-                    await asyncio.sleep(60)  # Pause for 60 seconds
+                        # Pause after each batch of handles resolved
+                        logger.info("Pausing...")
+                        await asyncio.sleep(60)  # Pause for 60 seconds
 
-        logger.info("Users db update finished.")
-        await database_handler.delete_new_users_temporary_table()
-        await database_handler.process_delete_queue()  # Process the delete count for lists
+            logger.info("Users db update finished.")
+            await database_handler.delete_new_users_temporary_table()
+            await database_handler.process_delete_queue()  # Process the delete count for lists
+        except Exception as e:
+            logger.error(f"Error updating users: {str(e)}")
         sys.exit()
     elif args.crawler:
-        if not os.getenv('CLEAR_SKY'):
-            quarter_value = config.get("environment", "quarter")
-            total_crawlers = config.get("environment", "total_crawlers")
-        else:
-            quarter_value = os.environ.get("CLEARSKY_CRAWLER_NUMBER")
-            total_crawlers = os.environ.get("CLEARSKY_CRAWLER_TOTAL")
+        try:
+            if not os.getenv('CLEAR_SKY'):
+                quarter_value = config.get("environment", "quarter")
+                total_crawlers = config.get("environment", "total_crawlers")
+            else:
+                quarter_value = os.environ.get("CLEARSKY_CRAWLER_NUMBER")
+                total_crawlers = os.environ.get("CLEARSKY_CRAWLER_TOTAL")
 
-        if not quarter_value:
-            logger.warning("Using default quarter.")
-            quarter_value = "1"
+            if not quarter_value:
+                logger.warning("Using default quarter.")
+                quarter_value = "1"
 
-        if not total_crawlers:
-            logger.warning("Using default total crawlers.")
-            total_crawlers = "4"
+            if not total_crawlers:
+                logger.warning("Using default total crawlers.")
+                total_crawlers = "4"
 
-        logger.info("Crawler requested.")
-        logger.warning(f"This is crawler: {quarter_value}/{total_crawlers}")
+            logger.info("Crawler requested.")
+            logger.warning(f"This is crawler: {quarter_value}/{total_crawlers}")
 
-        await asyncio.sleep(10)  # Pause for 10 seconds
+            await asyncio.sleep(10)  # Pause for 10 seconds
 
-        await database_handler.crawl_all(quarter=quarter_value, total_crawlers=total_crawlers)
-        await database_handler.delete_temporary_table()
-        logger.info("Crawl fetch finished.")
+            await database_handler.crawl_all(quarter=quarter_value, total_crawlers=total_crawlers)
+            await database_handler.delete_temporary_table()
+            logger.info("Crawl fetch finished.")
+        except Exception as e:
+            logger.error(f"Error crawling: {str(e)}")
         sys.exit()
     elif args.crawler_forced:
-        if not os.getenv('CLEAR_SKY'):
-            quarter_value = config.get("environment", "quarter")
-            total_crawlers = config.get("environment", "total_crawlers")
-        else:
-            quarter_value = os.environ.get("CLEARSKY_CRAWLER_NUMBER")
-            total_crawlers = os.environ.get("CLEARSKY_CRAWLER_TOTAL")
+        try:
+            if not os.getenv('CLEAR_SKY'):
+                quarter_value = config.get("environment", "quarter")
+                total_crawlers = config.get("environment", "total_crawlers")
+            else:
+                quarter_value = os.environ.get("CLEARSKY_CRAWLER_NUMBER")
+                total_crawlers = os.environ.get("CLEARSKY_CRAWLER_TOTAL")
 
-        if not quarter_value:
-            logger.warning("Using default quarter.")
-            quarter_value = "1"
+            if not quarter_value:
+                logger.warning("Using default quarter.")
+                quarter_value = "1"
 
-        if not total_crawlers:
-            logger.warning("Using default total crawlers.")
-            total_crawlers = "4"
+            if not total_crawlers:
+                logger.warning("Using default total crawlers.")
+                total_crawlers = "4"
 
-        logger.info("Crawler forced requested.")
-        logger.warning(f"This is crawler: {quarter_value}/{total_crawlers}")
+            logger.info("Crawler forced requested.")
+            logger.warning(f"This is crawler: {quarter_value}/{total_crawlers}")
 
-        await asyncio.sleep(10)  # Pause for 10 seconds
+            await asyncio.sleep(10)  # Pause for 10 seconds
 
-        await database_handler.crawl_all(forced=True, quarter=quarter_value)
-        await database_handler.delete_temporary_table()
-        logger.info("Crawl forced fetch finished.")
+            await database_handler.crawl_all(forced=True, quarter=quarter_value)
+            await database_handler.delete_temporary_table()
+            logger.info("Crawl forced fetch finished.")
+        except Exception as e:
+            logger.error(f"Error crawling: {str(e)}")
         sys.exit()
     elif args.update_redis_cache:
-        logger.info("Cache update requested.")
-        status = await database_handler.populate_redis_with_handles()
-        if not status:
-            logger.info("Cache update complete.")
+        try:
+            logger.info("Cache update requested.")
+            status = await database_handler.populate_redis_with_handles()
+            if not status:
+                logger.info("Cache update complete.")
+        except Exception as e:
+            logger.error(f"Error updating redis: {str(e)}")
         sys.exit()
     elif args.update_all_did_pds_service_info:
-        logger.info("Update did pds service information.")
-        last_value = await database_handler.check_last_created_did_date()
-        if last_value:
-            logger.info(f"last value retrieved, starting from: {last_value}")
-        else:
-            last_value = None
-            logger.info(f"No last value retrieved, starting from beginning.")
-        await utils.get_all_did_records(last_value)
+        try:
+            logger.info("Update did pds service information.")
+            last_value = await database_handler.check_last_created_did_date()
+            if last_value:
+                logger.info(f"last value retrieved, starting from: {last_value}")
+            else:
+                last_value = None
+                logger.info(f"No last value retrieved, starting from beginning.")
+            await utils.get_all_did_records(last_value)
 
-        logger.info("Getting did:webs without PDSes.")
-        dids = await database_handler.get_didwebs_without_pds()
+            logger.info("Getting did:webs without PDSes.")
+            dids = await database_handler.get_didwebs_without_pds()
 
-        if dids:
-            logger.info(f"Processing {len(dids)} did:webs")
-            for did in dids:
-                pds = await on_wire.resolve_did(did, did_web_pds=True)
-                if pds:
-                    await database_handler.update_pds(did, pds)
-                    logger.info(f"Updated PDS for {did} PDS:{pds}")
+            if dids:
+                logger.info(f"Processing {len(dids)} did:webs")
+                for did in dids:
+                    pds = await on_wire.resolve_did(did, did_web_pds=True)
+                    if pds:
+                        await database_handler.update_pds(did, pds)
+                        logger.info(f"Updated PDS for {did} PDS:{pds}")
 
-        logger.info("Finished processing data.")
+            logger.info("Finished processing data.")
+        except Exception as e:
+            logger.error(f"Error updating did pds service information: {str(e)}")
         sys.exit()
     elif args.get_federated_pdses:
-        logger.info("Get federated pdses requested.")
-        active, not_active = await utils.get_federated_pdses()
-        logger.info("Validated PDSes.")
-        if active and not_active:
-            logger.info(f"Active PDSes: {active}")
-            logger.info(f"Not active PDSes: {not_active}")
-            logger.info("Finished processing data. Exiting.")
-            sys.exit()
-        else:
-            logger.info("No PDS info.")
-            sys.exit()
+        try:
+            logger.info("Get federated pdses requested.")
+            active, not_active = await utils.get_federated_pdses()
+            logger.info("Validated PDSes.")
+            if active and not_active:
+                logger.info(f"Active PDSes: {active}")
+                logger.info(f"Not active PDSes: {not_active}")
+                logger.info("Finished processing data. Exiting.")
+                sys.exit()
+            else:
+                logger.info("No PDS info.")
+        except Exception as e:
+            logger.error(f"Error getting federated pdses: {str(e)}")
+        sys.exit()
     elif args.count_list_users:
-        logger.info("Count list users requested.")
-        await database_handler.update_mutelist_count()
-        logger.info("Count subscribe list users requested.")
-        await database_handler.update_subscribe_list_count()
+        try:
+            logger.info("Count list users requested.")
+            await database_handler.update_mutelist_count()
+            logger.info("Count subscribe list users requested.")
+            await database_handler.update_subscribe_list_count()
+        except Exception as e:
+            logger.error(f"Error counting list users: {str(e)}")
         sys.exit()
     else:
         logger.error("Not a recognized command.")
