@@ -14,7 +14,7 @@ from collections import defaultdict
 import pytz
 import on_wire
 import math
-from functools import wraps
+import functools
 
 # ======================================================================================================================
 # ===================================================  global variables ================================================
@@ -132,17 +132,27 @@ async def create_connection_pool(db):
         return False
 
 
-def check_database_connection(db):
+async def check_database_connection(db):
     if db in connection_pools:
-        if connection_pools[db] is None:
+        pool = connection_pools[db]
+        if pool is None:
             logger.error(f"Database connection pool for {db} does not exist.")
 
             return False
-        else:
-            return True
+        try:
+            async with pool.acquire() as connection:
+                try:
+                    # Perform a simple query to check if the connection is alive
+                    await connection.fetchval('SELECT 1')
+                    return True
+                except Exception as e:
+                    logger.error(f"Error checking database connection for {db}: {e}")
+                    return False
+        except Exception as e:
+            logger.error(f"Error checking database connection for {db}: {e}")
+            return False
     else:
         logger.error(f"Database connection pool for {db} does not exist.")
-
         return False
 
 
@@ -152,10 +162,10 @@ class DatabaseConnectionError(Exception):
 
 def check_db_connection(*dbs):
     def decorator(func):
-        @wraps(func)
+        @functools.wraps(func)
         async def wrapper(*args, **kwargs):
             for db in dbs:
-                if not check_database_connection(db):  # Implement your function to check the database connection here
+                if not await check_database_connection(db):  # Implement your function to check the database connection here
                     raise DatabaseConnectionError("Database connection not available")
 
             return await func(*args, **kwargs)
