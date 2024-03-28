@@ -256,7 +256,7 @@ async def initialize():
 
     logger.info("Initialized.")
 
-    if not read_db_connected and write_db_connected:
+    if not read_db_connected and not write_db_connected:
         while True:
             read_db_connected = await database_handler.create_connection_pool("read")
             write_db_connected = await database_handler.create_connection_pool("write")
