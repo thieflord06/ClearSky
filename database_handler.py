@@ -839,7 +839,7 @@ async def crawler_batch(batch_dids, forced=False):
                 else:
                     logger.debug(f"didn't update not subscribed to any lists: {did}")
 
-                success = True # Mark the operation as successful if no exception is raised
+                success = True  # Mark the operation as successful if no exception is raised
             except Exception as e:
                 logger.error(f"Error updating for DID {did}: {e}")
                 retry_count += 1  # Increment the retry count
@@ -1126,6 +1126,7 @@ async def update_subscribe_table(ident, subscribelists_data, forced=False):
                 logger.info("Blocklist not updated already exists.")
 
                 return subscribe_list_counter
+
 
 @check_db_connection("write")
 async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, forced=False):
@@ -1879,7 +1880,7 @@ async def get_block_stats():
                 logger.info("Completed query 12")
                 average_number_blocked = await connection.fetchval(query_13)
                 logger.info("Completed query 13")
-                total_users = await utils.get_user_count(get_active=False)
+                total_users = await get_user_count(get_active=False)
                 logger.info("Completed query 14")
 
                 logger.info("All blocklist queries complete.")
@@ -2091,7 +2092,7 @@ async def get_similar_users(user_did):
     # Select top 20 users
     top_similar_users = sorted_users[:20]
 
-    logger.info(f"Similar blocks: {await utils.get_user_handle(user_id)} | {top_similar_users}")
+    logger.info(f"Similar blocks: {await get_user_handle(user_id)} | {top_similar_users}")
 
     users = [user for user, percentage in top_similar_users]
     percentages = [percentage for user, percentage in top_similar_users]
@@ -2678,6 +2679,127 @@ async def process_delete_queue():
         logger.info(f"Deleted {pop} entries from delete queue.")
     except Exception as e:
         logger.error(f"Error processing delete queue: {e}")
+
+
+@check_db_connection("read")
+async def identifier_exists_in_db(identifier):
+    async with connection_pools["read"].acquire() as connection:
+        if utils.is_did(identifier):
+            results = await connection.fetch('SELECT did, status FROM users WHERE did = $1', identifier)
+
+            true_record = None
+
+            for result in results:
+                # ident = result['did']
+                status = result['status']
+
+                if status:
+                    ident = True
+                    true_record = (ident, status)
+                    break
+
+            if true_record:
+                ident, status = true_record
+            else:
+                ident = False
+                status = False
+        elif utils.is_handle(identifier):
+            results = await connection.fetch('SELECT handle, status FROM users WHERE handle = $1', identifier)
+
+            true_record = None
+
+            for result in results:
+                # ident = result['handle']
+                status = result['status']
+
+                if status:
+                    ident = True
+                    true_record = (ident, status)
+                    break
+
+            if true_record:
+                ident, status = true_record
+            else:
+                ident = False
+                status = False
+        else:
+            ident = False
+            status = False
+
+    return ident, status
+
+
+@check_db_connection("read")
+async def get_user_did(handle):
+    async with connection_pools["read"].acquire() as connection:
+        did = await connection.fetchval('SELECT did FROM users WHERE handle = $1 AND status is True', handle)
+
+    return did
+
+
+@check_db_connection("read")
+async def get_user_handle(did):
+    async with connection_pools["read"].acquire() as connection:
+        handle = await connection.fetchval('SELECT handle FROM users WHERE did = $1', did)
+
+    return handle
+
+
+@check_db_connection("read")
+async def get_user_count(get_active=True):
+    async with connection_pools["read"].acquire() as connection:
+        if get_active:
+            count = await connection.fetchval("""SELECT COUNT(*) 
+            FROM users 
+            JOIN pds ON users.pds = pds.pds 
+            WHERE users.status IS TRUE AND pds.status IS TRUE""")
+        else:
+            count = await connection.fetchval("""SELECT COUNT(*) FROM users JOIN pds ON users.pds = pds.pds WHERE pds.status is TRUE""")
+        return count
+
+
+@check_db_connection("read")
+async def get_deleted_users_count():
+    async with connection_pools["read"].acquire() as connection:
+        count = await connection.fetchval('SELECT COUNT(*) FROM USERS JOIN pds ON users.pds = pds.pds WHERE pds.status is TRUE AND users.status is FALSE')
+
+        return count
+
+
+@check_db_connection("read")
+async def get_single_user_blocks(ident, limit=100, offset=0):
+    try:
+        # Execute the SQL query to get all the user_dids that have the specified did/ident in their blocklist
+        async with connection_pools["read"].acquire() as connection:
+            result = await connection.fetch('SELECT DISTINCT b.user_did, b.block_date, u.handle, u.status FROM blocklists AS b JOIN users as u ON b.user_did = u.did WHERE b.blocked_did = $1 ORDER BY block_date DESC LIMIT $2 OFFSET $3', ident, limit, offset)
+            count = await connection.fetchval('SELECT COUNT(DISTINCT user_did) FROM blocklists WHERE blocked_did = $1', ident)
+
+            block_list = []
+
+            if count > 0:
+                pages = count / 100
+
+                pages = math.ceil(pages)
+            else:
+                pages = 0
+
+            if result:
+                # Iterate over blocked_users and extract handle and status
+                for user_did, block_date, handle, status in result:
+                    block_list.append({"handle": handle, "status": status, "blocked_date": block_date.isoformat()})
+
+                return block_list, count, pages
+            else:
+                block_list = []
+                total_blocked = 0
+
+                return block_list, total_blocked, pages
+    except Exception as e:
+        block_list = []
+        logger.error(f"Error fetching blocklists for {ident}: {e}")
+        count = 0
+
+        return block_list, count, pages
 
 
 # ======================================================================================================================

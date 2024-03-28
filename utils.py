@@ -41,8 +41,8 @@ number_blocked_greater_than_1000_cache = TTLCache(maxsize=2, ttl=86400)  # Every
 average_number_of_blocked_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
 block_stats_total_users_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
 total_users_cache = TTLCache(maxsize=2, ttl=3600)  # Every 1 hour
-total_active_users_cache = TTLCache(maxsize=2, ttl=3600) # Every 1 hour
-total_deleted_users_cache = TTLCache(maxsize=2, ttl=3600) # Every 1 hour
+total_active_users_cache = TTLCache(maxsize=2, ttl=3600)  # Every 1 hour
+total_deleted_users_cache = TTLCache(maxsize=2, ttl=3600)  # Every 1 hour
 
 block_stats_status = asyncio.Event()
 total_users_status = asyncio.Event()
@@ -61,54 +61,6 @@ sleep_time = 15
 
 # ======================================================================================================================
 # ============================================= Features functions =====================================================
-@database_handler.check_db_connection("read")
-async def identifier_exists_in_db(identifier):
-    async with database_handler.connection_pools["read"].acquire() as connection:
-        if is_did(identifier):
-            results = await connection.fetch('SELECT did, status FROM users WHERE did = $1', identifier)
-
-            true_record = None
-
-            for result in results:
-                # ident = result['did']
-                status = result['status']
-
-                if status:
-                    ident = True
-                    true_record = (ident, status)
-                    break
-
-            if true_record:
-                ident, status = true_record
-            else:
-                ident = False
-                status = False
-        elif is_handle(identifier):
-            results = await connection.fetch('SELECT handle, status FROM users WHERE handle = $1', identifier)
-
-            true_record = None
-
-            for result in results:
-                # ident = result['handle']
-                status = result['status']
-
-                if status:
-                    ident = True
-                    true_record = (ident, status)
-                    break
-
-            if true_record:
-                ident, status = true_record
-            else:
-                ident = False
-                status = False
-        else:
-            ident = False
-            status = False
-
-    return ident, status
-
-
 async def resolve_did(did, count, test=False):
     if not test:
         resolved_did = await on_wire.resolve_did(did)
@@ -350,9 +302,9 @@ async def update_total_users():
 
     total_users_status.set()
 
-    active_count = await get_user_count(get_active=True)
-    total_count = await get_user_count(get_active=False)
-    deleted_count = await get_deleted_users_count()
+    active_count = await database_handler.get_user_count(get_active=True)
+    total_count = await database_handler.get_user_count(get_active=False)
+    deleted_count = await database_handler.get_deleted_users_count()
 
     total_users_cache["total_users"] = total_count
     total_active_users_cache["total_active_users"] = active_count
@@ -378,6 +330,7 @@ async def get_all_users(pds):
     cursor = None
     records = set()
     count = 0
+    full_url = None
 
     logger.info(f"Getting all dids from {pds}")
 
@@ -487,79 +440,6 @@ async def get_all_users(pds):
         logger.warning(f"Max retries reached for {pds} {full_url}")
 
     return records
-
-
-@database_handler.check_db_connection("read")
-async def get_user_handle(did):
-    async with database_handler.connection_pools["read"].acquire() as connection:
-        handle = await connection.fetchval('SELECT handle FROM users WHERE did = $1', did)
-
-    return handle
-
-
-@database_handler.check_db_connection("read")
-async def get_user_did(handle):
-    async with database_handler.connection_pools["read"].acquire() as connection:
-        did = await connection.fetchval('SELECT did FROM users WHERE handle = $1 AND status is True', handle)
-
-    return did
-
-
-@database_handler.check_db_connection("read")
-async def get_user_count(get_active=True):
-    async with database_handler.connection_pools["read"].acquire() as connection:
-        if get_active:
-            count = await connection.fetchval("""SELECT COUNT(*) 
-            FROM users 
-            JOIN pds ON users.pds = pds.pds 
-            WHERE users.status IS TRUE AND pds.status IS TRUE""")
-        else:
-            count = await connection.fetchval("""SELECT COUNT(*) FROM users JOIN pds ON users.pds = pds.pds WHERE pds.status is TRUE""")
-        return count
-
-
-@database_handler.check_db_connection("read")
-async def get_deleted_users_count():
-    async with database_handler.connection_pools["read"].acquire() as connection:
-        count = await connection.fetchval('SELECT COUNT(*) FROM USERS JOIN pds ON users.pds = pds.pds WHERE pds.status is TRUE AND users.status is FALSE')
-
-        return count
-
-
-@database_handler.check_db_connection("read")
-async def get_single_user_blocks(ident, limit=100, offset=0):
-    try:
-        # Execute the SQL query to get all the user_dids that have the specified did/ident in their blocklist
-        async with database_handler.connection_pools["read"].acquire() as connection:
-            result = await connection.fetch('SELECT DISTINCT b.user_did, b.block_date, u.handle, u.status FROM blocklists AS b JOIN users as u ON b.user_did = u.did WHERE b.blocked_did = $1 ORDER BY block_date DESC LIMIT $2 OFFSET $3', ident, limit, offset)
-            count = await connection.fetchval('SELECT COUNT(DISTINCT user_did) FROM blocklists WHERE blocked_did = $1', ident)
-
-            block_list = []
-
-            if count > 0:
-                pages = count / 100
-
-                pages = math.ceil(pages)
-            else:
-                pages = 0
-
-            if result:
-                # Iterate over blocked_users and extract handle and status
-                for user_did, block_date, handle, status in result:
-                    block_list.append({"handle": handle, "status": status, "blocked_date": block_date.isoformat()})
-
-                return block_list, count, pages
-            else:
-                block_list = []
-                total_blocked = 0
-
-                return block_list, total_blocked, pages
-    except Exception as e:
-        block_list = []
-        logger.error(f"Error fetching blocklists for {ident}: {e}")
-        count = 0
-
-        return block_list, count, pages
 
 
 async def get_user_block_list(ident, pds):
