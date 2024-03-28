@@ -377,7 +377,7 @@ async def fetch_and_push_data(api_key):
     global push_server
     global self_server
 
-    if api_key:
+    if api_key is not None:
         try:
             fetch_api = {
                 "top_blocked": f'{self_server}/api/v1/auth/lists/fun-facts',
