@@ -41,6 +41,8 @@ async def main():
             # Call the function to fetch the count of users
             count = await database_handler.count_users_table()
             logger.info(f"Total users in the database: {count}")
+        except database_handler.DatabaseConnectionError:
+            logger.error("Database connection error")
         except Exception as e:
             logger.error(f"Error fetching users count: {str(e)}")
         sys.exit()
@@ -108,6 +110,8 @@ async def main():
             logger.info("Users db update finished.")
             await database_handler.delete_new_users_temporary_table()
             await database_handler.process_delete_queue()  # Process the delete count for lists
+        except database_handler.DatabaseConnectionError:
+            logger.error("Database connection error")
         except Exception as e:
             logger.error(f"Error updating users: {str(e)}")
         sys.exit()
@@ -136,6 +140,8 @@ async def main():
             await database_handler.crawl_all(quarter=quarter_value, total_crawlers=total_crawlers)
             await database_handler.delete_temporary_table()
             logger.info("Crawl fetch finished.")
+        except database_handler.DatabaseConnectionError:
+            logger.error("Database connection error")
         except Exception as e:
             logger.error(f"Error crawling: {str(e)}")
         sys.exit()
@@ -164,6 +170,8 @@ async def main():
             await database_handler.crawl_all(forced=True, quarter=quarter_value)
             await database_handler.delete_temporary_table()
             logger.info("Crawl forced fetch finished.")
+        except database_handler.DatabaseConnectionError:
+            logger.error("Database connection error")
         except Exception as e:
             logger.error(f"Error crawling: {str(e)}")
         sys.exit()
@@ -173,6 +181,8 @@ async def main():
             status = await database_handler.populate_redis_with_handles()
             if not status:
                 logger.info("Cache update complete.")
+        except database_handler.DatabaseConnectionError:
+            logger.error("Database connection error")
         except Exception as e:
             logger.error(f"Error updating redis: {str(e)}")
         sys.exit()
@@ -199,6 +209,8 @@ async def main():
                         logger.info(f"Updated PDS for {did} PDS:{pds}")
 
             logger.info("Finished processing data.")
+        except database_handler.DatabaseConnectionError:
+            logger.error("Database connection error")
         except Exception as e:
             logger.error(f"Error updating did pds service information: {str(e)}")
         sys.exit()
@@ -214,6 +226,8 @@ async def main():
                 sys.exit()
             else:
                 logger.info("No PDS info.")
+        except database_handler.DatabaseConnectionError:
+            logger.error("Database connection error")
         except Exception as e:
             logger.error(f"Error getting federated pdses: {str(e)}")
         sys.exit()
@@ -223,6 +237,8 @@ async def main():
             await database_handler.update_mutelist_count()
             logger.info("Count subscribe list users requested.")
             await database_handler.update_subscribe_list_count()
+        except database_handler.DatabaseConnectionError:
+            logger.error("Database connection error")
         except Exception as e:
             logger.error(f"Error counting list users: {str(e)}")
         sys.exit()
