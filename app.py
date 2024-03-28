@@ -425,7 +425,7 @@ async def fetch_and_push_data():
             logger.error("PUSH not executed, no API key configured.")
             await asyncio.sleep(5)
 
-    if retry == retry_max:
+    if retry >= retry_max:
         logger.error("PUSH not executed, maximum retries reached.")
 
 
