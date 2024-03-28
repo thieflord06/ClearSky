@@ -322,10 +322,10 @@ async def first_run():
             tables = await database_handler.tables_exists()
 
             if tables:
-                # await database_handler.blocklists_updater()
-                # await database_handler.top_24blocklists_updater()
-                # await utils.update_block_statistics()
-                # await utils.update_total_users()
+                await database_handler.blocklists_updater()
+                await database_handler.top_24blocklists_updater()
+                await utils.update_block_statistics()
+                await utils.update_total_users()
 
                 break
             else:
@@ -421,6 +421,17 @@ async def fetch_and_push_data():
             except Exception as e:
                 logger.error(f"An error occurred: {e}")
         else:
+            config_api_key = config.get("environment", "api_key")
+
+            if not os.getenv('CLEAR_SKY'):
+                api_key = config.get("environment", "api_key")
+            else:
+                api_key = os.environ.get("CLEARSKY_API_KEY")
+
+            if not api_key:
+                logger.error(f"No API key configured, attempting to use config file: {config_api_key}")
+                api_key = config_api_key
+
             retry += 1
             logger.error("PUSH not executed, no API key configured.")
             await asyncio.sleep(5)
