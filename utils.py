@@ -12,7 +12,6 @@ import on_wire
 import re
 from cachetools import TTLCache
 import json
-from database_handler import check_db_connection
 # ======================================================================================================================
 # ================================================ cache/global variables ==============================================
 resolved_blocked_cache = TTLCache(maxsize=100, ttl=86400)  # Every 24 hours
@@ -62,7 +61,7 @@ sleep_time = 15
 
 # ======================================================================================================================
 # ============================================= Features functions =====================================================
-@check_db_connection("read")
+@database_handler.check_db_connection("read")
 async def identifier_exists_in_db(identifier):
     async with database_handler.connection_pools["read"].acquire() as connection:
         if is_did(identifier):
@@ -490,7 +489,7 @@ async def get_all_users(pds):
     return records
 
 
-@check_db_connection("read")
+@database_handler.check_db_connection("read")
 async def get_user_handle(did):
     async with database_handler.connection_pools["read"].acquire() as connection:
         handle = await connection.fetchval('SELECT handle FROM users WHERE did = $1', did)
@@ -498,7 +497,7 @@ async def get_user_handle(did):
     return handle
 
 
-@check_db_connection("read")
+@database_handler.check_db_connection("read")
 async def get_user_did(handle):
     async with database_handler.connection_pools["read"].acquire() as connection:
         did = await connection.fetchval('SELECT did FROM users WHERE handle = $1 AND status is True', handle)
@@ -506,7 +505,7 @@ async def get_user_did(handle):
     return did
 
 
-@check_db_connection("read")
+@database_handler.check_db_connection("read")
 async def get_user_count(get_active=True):
     async with database_handler.connection_pools["read"].acquire() as connection:
         if get_active:
@@ -519,7 +518,7 @@ async def get_user_count(get_active=True):
         return count
 
 
-@check_db_connection("read")
+@database_handler.check_db_connection("read")
 async def get_deleted_users_count():
     async with database_handler.connection_pools["read"].acquire() as connection:
         count = await connection.fetchval('SELECT COUNT(*) FROM USERS JOIN pds ON users.pds = pds.pds WHERE pds.status is TRUE AND users.status is FALSE')
@@ -527,7 +526,7 @@ async def get_deleted_users_count():
         return count
 
 
-@check_db_connection("read")
+@database_handler.check_db_connection("read")
 async def get_single_user_blocks(ident, limit=100, offset=0):
     try:
         # Execute the SQL query to get all the user_dids that have the specified did/ident in their blocklist
