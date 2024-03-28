@@ -1992,7 +1992,7 @@ async def get_similar_blocked_by(user_did):
 
             # Only include matches with a match_percentage greater than 1
             if match_percentage > 1:
-                user_match_percentages[user_id] = match_percentage
+                user_match_percentages[blocked_by_user_id] = match_percentage
 
     # Sort users by match percentage
     sorted_users = sorted(user_match_percentages.items(), key=lambda x: x[1], reverse=True)
@@ -2092,7 +2092,7 @@ async def get_similar_users(user_did):
     # Select top 20 users
     top_similar_users = sorted_users[:20]
 
-    logger.info(f"Similar blocks: {await get_user_handle(user_id)} | {top_similar_users}")
+    logger.info(f"Similar blocks: {await get_user_handle(user_did)} | {top_similar_users}")
 
     users = [user for user, percentage in top_similar_users]
     percentages = [percentage for user, percentage in top_similar_users]
