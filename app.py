@@ -1868,6 +1868,8 @@ async def retrieve_subscribe_blocks_blocklist(client_identifier, page):
 async def retrieve_subscribe_blocks_single_blocklist(client_identifier, page):
     global api_key
     global self_server
+    count = 0
+    pages = 0
 
     session_ip = await get_ip()
     received_api_key = request.headers.get('X-API-Key')
