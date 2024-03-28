@@ -422,7 +422,7 @@ async def fetch_and_push_data(api_key):
 @aiocron.crontab('0 * * * *')
 async def schedule_data_push():
     logger.info("Starting scheduled data push.")
-    await fetch_and_push_data()
+    await fetch_and_push_data(api_key)
 
 
 # ======================================================================================================================
