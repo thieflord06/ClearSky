@@ -373,78 +373,56 @@ def ratelimit_error(e):
     return jsonify(error="ratelimit exceeded", message=str(e.description)), 429
 
 
-async def fetch_and_push_data():
+async def fetch_and_push_data(api_key):
     global push_server
     global self_server
-    global api_key
 
-    retry = 0
-    retry_max = 3
+    if api_key is not None:
+        try:
+            fetch_api = {
+                "top_blocked": f'{self_server}/api/v1/auth/lists/fun-facts',
+                "top_24_blocked": f'{self_server}/api/v1/auth/lists/funer-facts',
+                "block_stats": f'{self_server}/api/v1/auth/lists/block-stats',
+                "total_users": f'{self_server}/api/v1/auth/total-users'
+            }
+            send_api = {
+                "top_blocked": f'{push_server}/api/v1/base/reporting/stats-cache/top-blocked',
+                "top_24_blocked": f'{push_server}/api/v1/base/reporting/stats-cache/top-24-blocked',
+                "block_stats": f'{push_server}/api/v1/base/reporting/stats-cache/block-stats',
+                "total_users": f'{push_server}/api/v1/base/reporting/stats-cache/total-users'
+            }
+            headers = {'X-API-Key': f'{api_key}'}
 
-    while retry < retry_max:
-        if api_key is not None:
-            try:
-                fetch_api = {
-                    "top_blocked": f'{self_server}/api/v1/auth/lists/fun-facts',
-                    "top_24_blocked": f'{self_server}/api/v1/auth/lists/funer-facts',
-                    "block_stats": f'{self_server}/api/v1/auth/lists/block-stats',
-                    "total_users": f'{self_server}/api/v1/auth/total-users'
-                }
-                send_api = {
-                    "top_blocked": f'{push_server}/api/v1/base/reporting/stats-cache/top-blocked',
-                    "top_24_blocked": f'{push_server}/api/v1/base/reporting/stats-cache/top-24-blocked',
-                    "block_stats": f'{push_server}/api/v1/base/reporting/stats-cache/block-stats',
-                    "total_users": f'{push_server}/api/v1/base/reporting/stats-cache/total-users'
-                }
-                headers = {'X-API-Key': f'{api_key}'}
+            async with aiohttp.ClientSession(headers=headers) as session:
+                for (fetch_name, fetch_api), (send_name, send_api) in zip(fetch_api.items(), send_api.items()):
+                    logger.info(f"Fetching data from {fetch_name} API")
 
-                async with aiohttp.ClientSession(headers=headers) as session:
-                    for (fetch_name, fetch_api), (send_name, send_api) in zip(fetch_api.items(), send_api.items()):
-                        logger.info(f"Fetching data from {fetch_name} API")
-
-                        async with session.get(fetch_api) as internal_response:
-                            if internal_response.status == 200:
-                                internal_data = await internal_response.json()
-                                if "timeLeft" in internal_data['data']:
-                                    logger.info(f"{fetch_name} Data not ready, skipping.")
-                                else:
-                                    async with session.post(send_api, json=internal_data) as response:
-                                        if response.status == 200:
-                                            logger.info(f"Data successfully pushed to {send_api}")
-                                        else:
-                                            logger.error("Failed to push data to the destination server")
-                                            continue
+                    async with session.get(fetch_api) as internal_response:
+                        if internal_response.status == 200:
+                            internal_data = await internal_response.json()
+                            if "timeLeft" in internal_data['data']:
+                                logger.info(f"{fetch_name} Data not ready, skipping.")
                             else:
-                                logger.error(f"Failed to fetch data from {fetch_api}")
-                                continue
-                break
-            except Exception as e:
-                logger.error(f"An error occurred: {e}")
-        else:
-            config_api_key = config.get("environment", "api_key")
-
-            if not os.getenv('CLEAR_SKY'):
-                api_key = config.get("environment", "api_key")
-            else:
-                api_key = os.environ.get("CLEARSKY_API_KEY")
-
-            if not api_key:
-                logger.error(f"No API key configured, attempting to use config file: {config_api_key}")
-                api_key = config_api_key
-
-            retry += 1
-            logger.error("PUSH not executed, no API key configured.")
-            await asyncio.sleep(5)
-
-    if retry >= retry_max:
-        logger.error("PUSH not executed, maximum retries reached.")
+                                async with session.post(send_api, json=internal_data) as response:
+                                    if response.status == 200:
+                                        logger.info(f"Data successfully pushed to {send_api}")
+                                    else:
+                                        logger.error("Failed to push data to the destination server")
+                                        continue
+                        else:
+                            logger.error(f"Failed to fetch data from {fetch_api}")
+                            continue
+        except Exception as e:
+            logger.error(f"An error occurred: {e}")
+    else:
+        logger.error("PUSH not executed, no API key configured.")
 
 
 # Schedule the task to run every hour
 @aiocron.crontab('0 * * * *')
-async def schedule_data_push():
+async def schedule_data_push(api_key):
     logger.info("Starting scheduled data push.")
-    await fetch_and_push_data()
+    await fetch_and_push_data(api_key)
 
 
 # ======================================================================================================================
@@ -2596,9 +2574,9 @@ async def main():
     await initialize_task
 
     # Fetch and push data immediately
-    await fetch_and_push_data()
+    await fetch_and_push_data(api_key)
 
-    aiocron.crontab('* * * * *', schedule_data_push)
+    aiocron.crontab('* * * * *', schedule_data_push, api_key)
 
     await asyncio.gather(run_web_server_task, first_run())
 
