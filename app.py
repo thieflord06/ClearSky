@@ -1947,7 +1947,11 @@ async def retrieve_subscribe_blocks_single_blocklist(client_identifier, page):
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_get_blocklist(client_identifier, page):
-    return await get_blocklist(client_identifier, page)
+    try:
+        return await get_blocklist(client_identifier, page)
+    except Exception as e:
+        logger.error(f"Error in auth_get_blocklist: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/auth/single-blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
@@ -1955,63 +1959,99 @@ async def auth_get_blocklist(client_identifier, page):
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_get_single_blocklist(client_identifier, page):
-    return await get_single_blocklist(client_identifier, page)
+    try:
+        return await get_single_blocklist(client_identifier, page)
+    except Exception as e:
+        logger.error(f"Error in auth_get_single_blocklist: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/auth/in-common-blocklist/<client_identifier>', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_get_in_common_blocklist(client_identifier):
-    return await get_in_common_blocklist(client_identifier)
+    try:
+        return await get_in_common_blocklist(client_identifier)
+    except Exception as e:
+        logger.error(f"Error in auth_get_in_common_blocklist: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/auth/in-common-blocked-by/<client_identifier>', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_get_in_common_blocked_by(client_identifier):
-    return await get_in_common_blocked(client_identifier)
+    try:
+        return await get_in_common_blocked(client_identifier)
+    except Exception as e:
+        logger.error(f"Error in auth_get_in_common_blocked_by: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/auth/at-uri/<path:uri>', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_convert_uri_to_url(uri):
-    return await convert_uri_to_url(uri)
+    try:
+        return await convert_uri_to_url(uri)
+    except Exception as e:
+        logger.error(f"Error in auth_convert_uri_to_url: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/auth/total-users', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_get_total_users():
-    return await get_total_users()
+    try:
+        return await get_total_users()
+    except Exception as e:
+        logger.error(f"Error in auth_get_total_users: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/auth/get-did/<client_identifier>', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_get_did_info(client_identifier):
-    return await get_did_info(client_identifier)
+    try:
+        return await get_did_info(client_identifier)
+    except Exception as e:
+        logger.error(f"Error in auth_get_did_info: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/auth/get-handle/<client_identifier>', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_get_handle_info(client_identifier):
-    return await get_handle_info(client_identifier)
+    try:
+        return await get_handle_info(client_identifier)
+    except Exception as e:
+        logger.error(f"Error in auth_get_handle_info: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/auth/get-handle-history/<client_identifier>', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_get_handle_history_info(client_identifier):
-    return await get_handle_history_info(client_identifier)
+    try:
+        return await get_handle_history_info(client_identifier)
+    except Exception as e:
+        logger.error(f"Error in auth_get_handle_history_info: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/auth/get-list/<client_identifier>', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_get_list_info(client_identifier):
-    return await get_list_info(client_identifier)
+    try:
+        return await get_list_info(client_identifier)
+    except Exception as e:
+        logger.error(f"Error in auth_get_list_info: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/auth/get-moderation-list/<string:input_name>', defaults={'page': 1}, methods=['GET'])
@@ -2019,70 +2059,110 @@ async def auth_get_list_info(client_identifier):
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_get_moderation_lists(input_name, page):
-    return await get_moderation_lists(input_name, page)
+    try:
+        return await get_moderation_lists(input_name, page)
+    except Exception as e:
+        logger.error(f"Error in auth_get_moderation_lists: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/auth/blocklist-search-blocked/<client_identifier>/<search_identifier>', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_get_blocked_search(client_identifier, search_identifier):
-    return await get_blocked_search(client_identifier, search_identifier)
+    try:
+        return await get_blocked_search(client_identifier, search_identifier)
+    except Exception as e:
+        logger.error(f"Error in auth_get_blocked_search: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/auth/blocklist-search-blocking/<client_identifier>/<search_identifier>', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_get_blocking_search(client_identifier, search_identifier):
-    return await get_blocking_search(client_identifier, search_identifier)
+    try:
+        return await get_blocking_search(client_identifier, search_identifier)
+    except Exception as e:
+        logger.error(f"Error in auth_get_blocking_search: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/auth/lists/fun-facts', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_fun_facts():
-    return await fun_facts()
+    try:
+        return await fun_facts()
+    except Exception as e:
+        logger.error(f"Error in auth_fun_facts: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/auth/lists/funer-facts', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_funer_facts():
-    return await funer_facts()
+    try:
+        return await funer_facts()
+    except Exception as e:
+        logger.error(f"Error in auth_funer_facts: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/auth/lists/block-stats', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_block_stats():
-    return await block_stats()
+    try:
+        return await block_stats()
+    except Exception as e:
+        logger.error(f"Error in auth_block_stats: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/auth/base/autocomplete/<client_identifier>', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_autocomplete(client_identifier):
-    return await autocomplete(client_identifier)
+    try:
+        return await autocomplete(client_identifier)
+    except Exception as e:
+        logger.error(f"Error in auth_autocomplete: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/auth/base/internal/status/process-status', methods=['GET'])
 @api_key_required("INTERNALSERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_get_internal_status():
-    return await get_internal_status()
+    try:
+        return await get_internal_status()
+    except Exception as e:
+        logger.error(f"Error in auth_get_internal_status: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/auth/base/internal/api-check', methods=['GET'])
 @api_key_required("INTERNALSERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_check_api_keys():
-    return await check_api_keys()
+    try:
+        return await check_api_keys()
+    except Exception as e:
+        logger.error(f"Error in auth_check_api_keys: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/auth/lists/dids-per-pds', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_dids_per_pds():
-    return await retrieve_dids_per_pds()
+    try:
+        return await retrieve_dids_per_pds()
+    except Exception as e:
+        logger.error(f"Error in auth_dids_per_pds: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/auth/subscribe-blocks-blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
@@ -2090,7 +2170,11 @@ async def auth_dids_per_pds():
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_subscribe_blocks_blocklist(client_identifier, page):
-    return await retrieve_subscribe_blocks_blocklist(client_identifier, page)
+    try:
+        return await retrieve_subscribe_blocks_blocklist(client_identifier, page)
+    except Exception as e:
+        logger.error(f"Error in auth_subscribe_blocks_blocklist: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/auth/subscribe-blocks-single-blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
@@ -2098,13 +2182,21 @@ async def auth_subscribe_blocks_blocklist(client_identifier, page):
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_subscribe_blocks_single_blocklist(client_identifier, page):
-    return await retrieve_subscribe_blocks_single_blocklist(client_identifier, page)
+    try:
+        return await retrieve_subscribe_blocks_single_blocklist(client_identifier, page)
+    except Exception as e:
+        logger.error(f"Error in auth_subscribe_blocks_single_blocklist: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/auth/validation/validate-handle/<client_identifier>', methods=['GET'])
 @rate_limit(30, timedelta(seconds=1))
 async def auth_validate_handle(client_identifier):
-    return await on_wire.verify_handle(client_identifier)
+    try:
+        return await on_wire.verify_handle(client_identifier)
+    except Exception as e:
+        logger.error(f"Error in auth_validate_handle: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 # ======================================================================================================================
@@ -2113,137 +2205,225 @@ async def auth_validate_handle(client_identifier):
 @app.route('/api/v1/anon/blocklist/<client_identifier>/<int:page>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
 async def anon_get_blocklist(client_identifier, page):
-    return await get_blocklist(client_identifier, page)
+    try:
+        return await get_blocklist(client_identifier, page)
+    except Exception as e:
+        logger.error(f"Error in anon_get_blocklist: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/anon/single-blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
 @app.route('/api/v1/anon/single-blocklist/<client_identifier>/<int:page>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
 async def anon_get_single_blocklist(client_identifier, page):
-    return await get_single_blocklist(client_identifier, page)
+    try:
+        return await get_single_blocklist(client_identifier, page)
+    except Exception as e:
+        logger.error(f"Error in anon_get_single_blocklist: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/anon/in-common-blocklist/<client_identifier>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
 async def anon_get_in_common_blocklist(client_identifier):
-    return await get_in_common_blocklist(client_identifier)
+    try:
+        return await get_in_common_blocklist(client_identifier)
+    except Exception as e:
+        logger.error(f"Error in anon_get_in_common_blocklist: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/anon/in-common-blocked-by/<client_identifier>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
 async def anon_get_in_common_blocked_by(client_identifier):
-    return await get_in_common_blocked(client_identifier)
+    try:
+        return await get_in_common_blocked(client_identifier)
+    except Exception as e:
+        logger.error(f"Error in anon_get_in_common_blocked_by: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/anon/at-uri/<path:uri>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
 async def anon_convert_uri_to_url(uri):
-    return await convert_uri_to_url(uri)
+    try:
+        return await convert_uri_to_url(uri)
+    except Exception as e:
+        logger.error(f"Error in anon_convert_uri_to_url: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/anon/total-users', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
 async def anon_get_total_users():
-    return await get_total_users()
+    try:
+        return await get_total_users()
+    except Exception as e:
+        logger.error(f"Error in anon_get_total_users: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/anon/get-did/<client_identifier>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
 async def anon_get_did_info(client_identifier):
-    return await get_did_info(client_identifier)
+    try:
+        return await get_did_info(client_identifier)
+    except Exception as e:
+        logger.error(f"Error in anon_get_did_info: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/anon/get-handle/<client_identifier>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
 async def anon_get_handle_info(client_identifier):
-    return await get_handle_info(client_identifier)
+    try:
+        return await get_handle_info(client_identifier)
+    except Exception as e:
+        logger.error(f"Error in anon_get_handle_info: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/anon/get-handle-history/<client_identifier>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
 async def anon_get_handle_history_info(client_identifier):
-    return await get_handle_history_info(client_identifier)
+    try:
+        return await get_handle_history_info(client_identifier)
+    except Exception as e:
+        logger.error(f"Error in anon_get_handle_history_info: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/anon/get-list/<client_identifier>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
 async def anon_get_list_info(client_identifier):
-    return await get_list_info(client_identifier)
+    try:
+        return await get_list_info(client_identifier)
+    except Exception as e:
+        logger.error(f"Error in anon_get_list_info: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/anon/get-moderation-list/<string:input_name>', defaults={'page': 1}, methods=['GET'])
 @app.route('/api/v1/anon/get-moderation-list/<string:input_name>/<int:page>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
 async def anon_get_moderation_lists(input_name, page):
-    return await get_moderation_lists(input_name, page)
+    try:
+        return await get_moderation_lists(input_name, page)
+    except Exception as e:
+        logger.error(f"Error in anon_get_moderation_lists: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/anon/blocklist-search-blocked/<client_identifier>/<search_identifier>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
 async def anon_get_blocked_search(client_identifier, search_identifier):
-    return await get_blocked_search(client_identifier, search_identifier)
+    try:
+        return await get_blocked_search(client_identifier, search_identifier)
+    except Exception as e:
+        logger.error(f"Error in anon_get_blocked_search: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/anon/blocklist-search-blocking/<client_identifier>/<search_identifier>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
 async def anon_get_blocking_search(client_identifier, search_identifier):
-    return await get_blocking_search(client_identifier, search_identifier)
+    try:
+        return await get_blocking_search(client_identifier, search_identifier)
+    except Exception as e:
+        logger.error(f"Error in anon_get_blocking_search: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/anon/lists/fun-facts', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
 async def anon_fun_facts():
-    return await fun_facts()
+    try:
+        return await fun_facts()
+    except Exception as e:
+        logger.error(f"Error in anon_fun_facts: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/anon/lists/funer-facts', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
 async def anon_funer_facts():
-    return await funer_facts()
+    try:
+        return await funer_facts()
+    except Exception as e:
+        logger.error(f"Error in anon_funer_facts: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/anon/lists/block-stats', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
 async def anon_block_stats():
-    return await block_stats()
+    try:
+        return await block_stats()
+    except Exception as e:
+        logger.error(f"Error in anon_block_stats: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/anon/base/autocomplete/<client_identifier>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
 async def anon_autocomplete(client_identifier):
-    return await autocomplete(client_identifier)
+    try:
+        return await autocomplete(client_identifier)
+    except Exception as e:
+        logger.error(f"Error in anon_autocomplete: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/anon/base/internal/status/process-status', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
 async def anon_get_internal_status():
-    return await get_internal_status()
+    try:
+        return await get_internal_status()
+    except Exception as e:
+        logger.error(f"Error in anon_get_internal_status: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/anon/lists/dids-per-pds', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
 async def anon_dids_per_pds():
-    return await retrieve_dids_per_pds()
+    try:
+        return await retrieve_dids_per_pds()
+    except Exception as e:
+        logger.error(f"Error in anon_dids_per_pds: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/anon/subscribe-blocks-blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
 @app.route('/api/v1/anon/subscribe-blocks-blocklist/<client_identifier>/<int:page>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
 async def anon_subscribe_blocks_blocklist(client_identifier, page):
-    return await retrieve_subscribe_blocks_blocklist(client_identifier, page)
+    try:
+        return await retrieve_subscribe_blocks_blocklist(client_identifier, page)
+    except Exception as e:
+        logger.error(f"Error in anon_subscribe_blocks_blocklist: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/anon/subscribe-blocks-single-blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
 @app.route('/api/v1/anon/subscribe-blocks-single-blocklist/<client_identifier>/<int:page>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
 async def anon_subscribe_blocks_single_blocklist(client_identifier, page):
-    return await retrieve_subscribe_blocks_single_blocklist(client_identifier, page)
+    try:
+        return await retrieve_subscribe_blocks_single_blocklist(client_identifier, page)
+    except Exception as e:
+        logger.error(f"Error in anon_subscribe_blocks_single_blocklist: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 @app.route('/api/v1/anon/validation/validate-handle/<client_identifier>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
 async def anon_validate_handle(client_identifier):
-    return await on_wire.verify_handle(client_identifier)
+    try:
+        return await on_wire.verify_handle(client_identifier)
+    except Exception as e:
+        logger.error(f"Error in anon_validate_handle: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 
 # ======================================================================================================================
