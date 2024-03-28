@@ -118,7 +118,7 @@ async def pre_process_identifier(identifier):
                 logger.warning("resolution failed, possible connection issue.")
         else:
             did_identifier = identifier
-            handle_identifier = await utils.get_user_handle(identifier)
+            handle_identifier = await database_handler.get_user_handle(identifier)
     elif utils.is_handle(identifier):
         if not await database_handler.local_db():
             try:
@@ -129,7 +129,7 @@ async def pre_process_identifier(identifier):
                 logger.warning("resolution failed, possible connection issue.")
         else:
             handle_identifier = identifier
-            did_identifier = await utils.get_user_did(identifier)
+            did_identifier = await database_handler.get_user_did(identifier)
     else:
         did_identifier = None
         handle_identifier = None
@@ -139,7 +139,7 @@ async def pre_process_identifier(identifier):
 
 async def preprocess_status(identifier):
     try:
-        persona, status = await utils.identifier_exists_in_db(identifier)
+        persona, status = await database_handler.identifier_exists_in_db(identifier)
         logger.debug(f"persona: {persona} status: {status}")
     except AttributeError:
         logger.error("db connection issue.")
@@ -556,7 +556,7 @@ async def get_single_blocklist(client_identifier, page):
             items_per_page = 100
             offset = (page - 1) * items_per_page
 
-            blocklist, count, pages = await utils.get_single_user_blocks(did_identifier, limit=items_per_page,
+            blocklist, count, pages = await database_handler.get_single_user_blocks(did_identifier, limit=items_per_page,
                                                                          offset=offset)
             formatted_count = '{:,}'.format(count)
 
@@ -683,6 +683,7 @@ async def convert_uri_to_url(uri):
 async def get_total_users():
     session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
+    remaining_time = "not yet determined"
 
     logger.info(f"<< {session_ip} - {api_key} - total users request")
 
