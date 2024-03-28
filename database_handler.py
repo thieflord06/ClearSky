@@ -146,13 +146,17 @@ def check_database_connection(db):
         return False
 
 
+class DatabaseConnectionError(Exception):
+    pass
+
+
 def check_db_connection(*dbs):
     def decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
             for db in dbs:
                 if not check_database_connection(db):  # Implement your function to check the database connection here
-                    return {"error": "Connection not available"}, 503
+                    raise DatabaseConnectionError("Database connection not available")
 
             return await func(*args, **kwargs)
 
