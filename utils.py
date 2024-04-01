@@ -506,7 +506,8 @@ async def get_user_block_list(ident, pds):
             for record in records:
                 value = record.get("value", {})
                 subject = value.get("subject")
-                timestamp = value.get("createdAt")
+                created_at_value = value.get("createdAt")
+                timestamp = datetime.fromisoformat(created_at_value)
                 uri = record.get("uri")
                 cid = record.get("cid")
 
