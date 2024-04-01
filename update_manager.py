@@ -119,54 +119,68 @@ async def main():
             logger.error(f"Error updating users: {str(e)}")
         sys.exit()
     elif args.crawler:
-        if not os.getenv('CLEAR_SKY'):
+        try:
+            if not os.getenv('CLEAR_SKY'):
+                quarter_value = config.get("environment", "quarter")
+                total_crawlers = config.get("environment", "total_crawlers")
+            else:
+                quarter_value = os.environ.get("CLEARSKY_CRAWLER_NUMBER")
+                total_crawlers = os.environ.get("CLEARSKY_CRAWLER_TOTAL")
+
+            if not quarter_value:
+                logger.warning("Using default quarter.")
+                quarter_value = "1"
+
+            if not total_crawlers:
+                logger.warning("Using default total crawlers.")
+                total_crawlers = "4"
+
+            logger.info("Crawler requested.")
+            logger.warning(f"This is crawler: {quarter_value}/{total_crawlers}")
+
+            await asyncio.sleep(10)  # Pause for 10 seconds
+
+            await database_handler.crawl_all(quarter=quarter_value, total_crawlers=total_crawlers)
+            await database_handler.delete_temporary_table(quarter_value)
+            logger.info("Crawl fetch finished.")
+        except database_handler.DatabaseConnectionError:
+            logger.error("Database connection error")
             quarter_value = config.get("environment", "quarter")
-            total_crawlers = config.get("environment", "total_crawlers")
-        else:
-            quarter_value = os.environ.get("CLEARSKY_CRAWLER_NUMBER")
-            total_crawlers = os.environ.get("CLEARSKY_CRAWLER_TOTAL")
+            await database_handler.delete_temporary_table(quarter_value)
+            sys.exit()
 
-        if not quarter_value:
-            logger.warning("Using default quarter.")
-            quarter_value = "1"
-
-        if not total_crawlers:
-            logger.warning("Using default total crawlers.")
-            total_crawlers = "4"
-
-        logger.info("Crawler requested.")
-        logger.warning(f"This is crawler: {quarter_value}/{total_crawlers}")
-
-        await asyncio.sleep(10)  # Pause for 10 seconds
-
-        await database_handler.crawl_all(quarter=quarter_value, total_crawlers=total_crawlers)
-        await database_handler.delete_temporary_table()
-        logger.info("Crawl fetch finished.")
         sys.exit()
     elif args.crawler_forced:
-        if not os.getenv('CLEAR_SKY'):
+        try:
+            if not os.getenv('CLEAR_SKY'):
+                quarter_value = config.get("environment", "quarter")
+                total_crawlers = config.get("environment", "total_crawlers")
+            else:
+                quarter_value = os.environ.get("CLEARSKY_CRAWLER_NUMBER")
+                total_crawlers = os.environ.get("CLEARSKY_CRAWLER_TOTAL")
+
+            if not quarter_value:
+                logger.warning("Using default quarter.")
+                quarter_value = "1"
+
+            if not total_crawlers:
+                logger.warning("Using default total crawlers.")
+                total_crawlers = "4"
+
+            logger.info("Crawler forced requested.")
+            logger.warning(f"This is crawler: {quarter_value}/{total_crawlers}")
+
+            await asyncio.sleep(10)  # Pause for 10 seconds
+
+            await database_handler.crawl_all(forced=True, quarter=quarter_value)
+            await database_handler.delete_temporary_table(quarter_value)
+            logger.info("Crawl forced fetch finished.")
+        except database_handler.DatabaseConnectionError:
+            logger.error("Database connection error")
             quarter_value = config.get("environment", "quarter")
-            total_crawlers = config.get("environment", "total_crawlers")
-        else:
-            quarter_value = os.environ.get("CLEARSKY_CRAWLER_NUMBER")
-            total_crawlers = os.environ.get("CLEARSKY_CRAWLER_TOTAL")
+            await database_handler.delete_temporary_table(quarter_value)
+            sys.exit()
 
-        if not quarter_value:
-            logger.warning("Using default quarter.")
-            quarter_value = "1"
-
-        if not total_crawlers:
-            logger.warning("Using default total crawlers.")
-            total_crawlers = "4"
-
-        logger.info("Crawler forced requested.")
-        logger.warning(f"This is crawler: {quarter_value}/{total_crawlers}")
-
-        await asyncio.sleep(10)  # Pause for 10 seconds
-
-        await database_handler.crawl_all(forced=True, quarter=quarter_value)
-        await database_handler.delete_temporary_table()
-        logger.info("Crawl forced fetch finished.")
         sys.exit()
     elif args.update_redis_cache:
         try:
