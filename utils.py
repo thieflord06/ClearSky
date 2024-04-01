@@ -477,6 +477,8 @@ async def get_user_block_list(ident, pds):
                 if ratelimit_remaining < 100:
                     logger.warning(f"Blocklist Rate limit low: {ratelimit_remaining} \n Rate limit: {ratelimit_limit} Rate limit reset: {ratelimit_reset}")
                     # Sleep until the rate limit resets
+                    current_time = datetime.now()
+                    sleep_time = ratelimit_reset - current_time.timestamp() + 1
                     logger.warning(f"Approaching Rate limit waiting for {sleep_time} seconds")
                     await asyncio.sleep(sleep_time)
         except httpx.ReadTimeout:
@@ -490,6 +492,12 @@ async def get_user_block_list(ident, pds):
             logger.info("sleeping 5")
             await asyncio.sleep(5)
             continue
+        except Exception as e:
+            logger.warning(f"General Error during API call: {e} : {full_url}")
+            retry_count += 1
+            logger.info("sleeping 5")
+            await asyncio.sleep(5)
+            continue
 
         if response.status_code == 200:
             response_json = response.json()
@@ -498,8 +506,7 @@ async def get_user_block_list(ident, pds):
             for record in records:
                 value = record.get("value", {})
                 subject = value.get("subject")
-                created_at_value = value.get("createdAt")
-                timestamp = datetime.fromisoformat(created_at_value)
+                timestamp = value.get("createdAt")
                 uri = record.get("uri")
                 cid = record.get("cid")
 
@@ -530,39 +537,38 @@ async def get_user_block_list(ident, pds):
 
             cursor = response_json.get("cursor")
 
-            if not cursor:
-                break
-        elif response.status_code == 429:
-            logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
-            await asyncio.sleep(60)  # Retry after 60 seconds
-        elif response.status_code == 400:
-            retry_count += 1
-            try:
-                error_message = response.json()["error"]
-                message = response.json()["message"]
-                if error_message == "InvalidRequest" and "Could not find repo" in message:
-                    logger.debug("Could not find repo: " + str(ident))
-
-                    return None
-            except KeyError:
-                return None
         else:
-            retry_count += 1
-            logger.warning("Error during API call. Status code: %s", response.status_code)
-            await asyncio.sleep(5)
-            continue
+            if response.status_code == 429:
+                logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
+                await asyncio.sleep(60)  # Retry after 60 seconds
+            elif response.status_code == 400:
+                retry_count += 1
+                try:
+                    error_message = response.json()["error"]
+                    message = response.json()["message"]
+                    if error_message == "InvalidRequest" and "Could not find repo" in message:
+                        logger.debug("Could not find repo: " + str(ident))
 
-        logger.debug(blocked_data)
+                        return None
+                except KeyError:
+                    return None
+            else:
+                retry_count += 1
+                logger.warning("Error during API call. Status code: %s", response.status_code)
+                await asyncio.sleep(5)
+                continue
 
-        return blocked_data
+        if not cursor:
+            break
+
+    logger.debug(blocked_data)
 
     if retry_count == max_retries:
         logger.warning("Could not get block list for: " + ident)
 
         return None
-    if not blocked_data and retry_count != max_retries:
 
-        return None
+    return blocked_data
 
 
 async def process_user_block_list(ident, limit, offset):
