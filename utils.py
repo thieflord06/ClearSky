@@ -852,6 +852,8 @@ async def get_mutelists(ident, pds):
                 if ratelimit_remaining < 100:
                     logger.warning(f"Mutelist Rate limit low: {ratelimit_remaining} \n Rate limit: {ratelimit_limit} Rate limit reset: {ratelimit_reset}")
                     # Sleep until the rate limit resets
+                    current_time = datetime.now()
+                    sleep_time = ratelimit_reset - current_time.timestamp() + 1
                     logger.warning(f"Approaching Rate limit waiting for {sleep_time} seconds")
                     await asyncio.sleep(sleep_time)
 
@@ -862,6 +864,12 @@ async def get_mutelists(ident, pds):
             continue
         except httpx.RequestError as e:
             logger.warning(f"Error during API call: {e} : {full_url}")
+            retry_count += 1
+            logger.info("sleeping 5")
+            await asyncio.sleep(5)
+            continue
+        except Exception as e:
+            logger.warning(f"General Error during API call: {e} : {full_url}")
             retry_count += 1
             logger.info("sleeping 5")
             await asyncio.sleep(5)
@@ -901,37 +909,38 @@ async def get_mutelists(ident, pds):
                 mutelists_data.append(record_data)
 
             cursor = response_json.get("cursor")
-            if not cursor:
-                break
-        elif response.status_code == 429:
-            logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
-            await asyncio.sleep(60)  # Retry after 60 seconds
-        elif response.status_code == 400:
-            retry_count += 1
-            try:
-                error_message = response.json()["error"]
-                message = response.json()["message"]
-                if error_message == "InvalidRequest" and "Could not find repo" in message:
-                    logger.debug("Could not find repo: " + str(ident))
 
-                    return None
-            except KeyError:
-                return None
         else:
-            retry_count += 1
-            logger.warning("Error during API call. Status code: %s", response.status_code)
-            await asyncio.sleep(5)
-            continue
+            if response.status_code == 429:
+                logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
+                await asyncio.sleep(60)  # Retry after 60 seconds
+            elif response.status_code == 400:
+                retry_count += 1
+                try:
+                    error_message = response.json()["error"]
+                    message = response.json()["message"]
+                    if error_message == "InvalidRequest" and "Could not find repo" in message:
+                        logger.debug("Could not find repo: " + str(ident))
+
+                        return None
+                except KeyError:
+                    return None
+            else:
+                retry_count += 1
+                logger.warning("Error during API call. Status code: %s", response.status_code)
+                await asyncio.sleep(5)
+                continue
+
+        if not cursor:
+            break
 
     if retry_count == max_retries:
         logger.warning("Could not get mute lists for: " + ident)
 
         return None
-    if not mutelists_data and retry_count >= max_retries:
-
-        return None
 
     logger.debug(mutelists_data)
+
     return mutelists_data
 
 
@@ -971,6 +980,8 @@ async def get_mutelist_users(ident, pds):
                 if ratelimit_remaining < 100:
                     logger.warning(f"Mutelist users Rate limit low: {ratelimit_remaining} \n Rate limit: {ratelimit_limit} Rate limit reset: {ratelimit_reset}")
                     # Sleep until the rate limit resets
+                    current_time = datetime.now()
+                    sleep_time = ratelimit_reset - current_time.timestamp() + 1
                     logger.warning(f"Approaching Rate limit waiting for {sleep_time} seconds")
                     await asyncio.sleep(sleep_time)
         except httpx.ReadTimeout:
@@ -980,6 +991,12 @@ async def get_mutelist_users(ident, pds):
             continue
         except httpx.RequestError as e:
             logger.warning(f"Error during API call: {e} : {full_url}")
+            retry_count += 1
+            logger.info("sleeping 5")
+            await asyncio.sleep(5)
+            continue
+        except Exception as e:
+            logger.warning(f"General Error during API call: {e} : {full_url}")
             retry_count += 1
             logger.info("sleeping 5")
             await asyncio.sleep(5)
@@ -1010,36 +1027,37 @@ async def get_mutelist_users(ident, pds):
 
                 # Add this record's data to the list
                 mutelists_users_data.append(user_record_data)
+
             cursor = response_json.get("cursor")
-            if not cursor:
-                break
-        elif response.status_code == 429:
-            logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
-            await asyncio.sleep(60)  # Retry after 60 seconds
-        elif response.status_code == 400:
-            retry_count += 1
-            try:
-                error_message = response.json()["error"]
-                message = response.json()["message"]
-                if error_message == "InvalidRequest" and "Could not find repo" in message:
-                    logger.debug("Could not find repo: " + str(ident))
-                    return None
-            except KeyError:
-                pass
         else:
-            retry_count += 1
-            logger.warning("Error during API call. Status code: %s", response.status_code)
-            await asyncio.sleep(5)
-            continue
+            if response.status_code == 429:
+                logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
+                await asyncio.sleep(60)  # Retry after 60 seconds
+            elif response.status_code == 400:
+                retry_count += 1
+                try:
+                    error_message = response.json()["error"]
+                    message = response.json()["message"]
+                    if error_message == "InvalidRequest" and "Could not find repo" in message:
+                        logger.debug("Could not find repo: " + str(ident))
+                        return None
+                except KeyError:
+                    pass
+            else:
+                retry_count += 1
+                logger.warning("Error during API call. Status code: %s", response.status_code)
+                await asyncio.sleep(5)
+                continue
+
+        if not cursor:
+            break
 
     if retry_count == max_retries:
         logger.warning("Could not get mute list for: " + ident)
         return None
-    if not mutelists_users_data and retry_count != max_retries:
-
-        return None
 
     logger.debug(mutelists_users_data)
+
     return mutelists_users_data
 
 
@@ -1079,6 +1097,8 @@ async def get_subscribelists(ident, pds):
                 if ratelimit_remaining < 100:
                     logger.warning(f"Subscribe Rate limit low: {ratelimit_remaining} \n Rate limit: {ratelimit_limit} Rate limit reset: {ratelimit_reset}")
                     # Sleep until the rate limit resets
+                    current_time = datetime.now()
+                    sleep_time = ratelimit_reset - current_time.timestamp() + 1
                     logger.warning(f"Approaching Rate limit waiting for {sleep_time} seconds")
                     await asyncio.sleep(sleep_time)
         except httpx.ReadTimeout:
@@ -1088,6 +1108,12 @@ async def get_subscribelists(ident, pds):
             continue
         except httpx.RequestError as e:
             logger.warning(f"Error during API call: {e} : {full_url}")
+            retry_count += 1
+            logger.info("sleeping 5")
+            await asyncio.sleep(5)
+            continue
+        except Exception as e:
+            logger.warning(f"General Error during API call: {e} : {full_url}")
             retry_count += 1
             logger.info("sleeping 5")
             await asyncio.sleep(5)
@@ -1120,33 +1146,32 @@ async def get_subscribelists(ident, pds):
                 subscribe_data.append(record_data)
 
             cursor = response_json.get("cursor")
-            if not cursor:
-                break
-        elif response.status_code == 429:
-            logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
-            await asyncio.sleep(60)  # Retry after 60 seconds
-        elif response.status_code == 400:
-            retry_count += 1
-            try:
-                error_message = response.json()["error"]
-                message = response.json()["message"]
-                if error_message == "InvalidRequest" and "Could not find repo" in message:
-                    logger.debug("Could not find repo: " + str(ident))
-
-                    return None
-            except KeyError:
-                return None
         else:
-            retry_count += 1
-            logger.warning("Error during API call. Status code: %s", response.status_code)
-            await asyncio.sleep(5)
-            continue
+            if response.status_code == 429:
+                logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
+                await asyncio.sleep(60)  # Retry after 60 seconds
+            elif response.status_code == 400:
+                retry_count += 1
+                try:
+                    error_message = response.json()["error"]
+                    message = response.json()["message"]
+                    if error_message == "InvalidRequest" and "Could not find repo" in message:
+                        logger.debug("Could not find repo: " + str(ident))
+
+                        return None
+                except KeyError:
+                    return None
+            else:
+                retry_count += 1
+                logger.warning("Error during API call. Status code: %s", response.status_code)
+                await asyncio.sleep(5)
+                continue
+
+        if not cursor:
+            break
 
     if retry_count == max_retries:
         logger.warning("Could not get mute lists for: " + ident)
-
-        return None
-    if not subscribe_data and retry_count >= max_retries:
 
         return None
 
