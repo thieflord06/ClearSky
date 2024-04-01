@@ -1540,14 +1540,15 @@ async def get_24_hour_block_list():
 
 
 @check_db_connection("write")
-async def delete_temporary_table():
-    try:
-        async with connection_pools["write"].acquire() as connection:
-            async with connection.transaction():
-                query = "DROP TABLE IF EXISTS temporary_table"
-                await connection.execute(query)
-    except Exception as e:
-        logger.error("Error deleting temporary table: %s", e)
+async def delete_temporary_table(table):
+    if table:
+        try:
+            async with connection_pools["write"].acquire() as connection:
+                async with connection.transaction():
+                    query = f"DROP TABLE IF EXISTS {table}"
+                    await connection.execute(query)
+        except Exception as e:
+            logger.error("Error deleting temporary table: %s", e)
 
 
 @check_db_connection("write")
