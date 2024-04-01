@@ -1,10 +1,10 @@
 # test.py
 import asyncio
 import urllib
-
+import urllib.parse
 import httpx
-
-from config_helper import logger
+from datetime import datetime
+from config_helper import logger, limiter
 import database_handler
 import random
 import string
@@ -246,22 +246,154 @@ async def describe_pds(pds):
         return False
 
 
+async def get_user_block_list(ident, pds):
+    base_url = f"{pds}/xrpc/"
+    collection = "app.bsky.graph.block"
+    limit = 100
+    blocked_data = []
+    cursor = None
+    retry_count = 0
+    max_retries = 5
+
+    while retry_count < max_retries:
+        url = urllib.parse.urljoin(base_url, "com.atproto.repo.listRecords")
+        params = {
+            "repo": ident,
+            "limit": limit,
+            "collection": collection,
+        }
+
+        if cursor:
+            params["cursor"] = cursor
+
+        encoded_params = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
+        full_url = f"{url}?{encoded_params}"
+        logger.debug(full_url)
+
+        try:
+            async with limiter:
+                async with httpx.AsyncClient() as client:
+                    response = await client.get(full_url, timeout=10,
+                                                follow_redirects=True)  # Set an appropriate timeout value (in seconds)
+
+                ratelimit_limit = int(response.headers.get('Ratelimit-Limit', 0))
+                ratelimit_remaining = int(response.headers.get('Ratelimit-Remaining', 0))
+                ratelimit_reset = int(response.headers.get('Ratelimit-Reset', 0))
+                if ratelimit_remaining < 100:
+                    logger.warning(
+                        f"Blocklist Rate limit low: {ratelimit_remaining} \n Rate limit: {ratelimit_limit} Rate limit reset: {ratelimit_reset}")
+                    # Sleep until the rate limit resets
+                    current_time = datetime.now()
+                    sleep_time = ratelimit_reset - current_time.timestamp() + 1
+                    logger.warning(f"Approaching Rate limit waiting for {sleep_time} seconds")
+                    await asyncio.sleep(sleep_time)
+        except httpx.ReadTimeout:
+            logger.warning("Request timed out. Retrying... Retry count: %d", retry_count)
+            retry_count += 1
+            await asyncio.sleep(10)
+            continue
+        except httpx.RequestError as e:
+            logger.warning(f"Error during API call: {e} : {full_url}")
+            retry_count += 1
+            logger.info("sleeping 5")
+            await asyncio.sleep(5)
+            continue
+
+        if response.status_code == 200:
+            response_json = response.json()
+            records = response_json.get("records", [])
+
+            for record in records:
+                value = record.get("value", {})
+                subject = value.get("subject")
+                created_at_value = value.get("createdAt")
+                timestamp = created_at_value
+                # timestamp = datetime.fromisoformat(created_at_value)
+                uri = record.get("uri")
+                cid = record.get("cid")
+
+                logger.debug(f"subject: {subject} created: {timestamp} uri: {uri} cid: {cid}")
+
+                if subject and timestamp and uri and cid:
+                    blocked_data.append((subject, timestamp, uri, cid))
+                else:
+                    if not timestamp:
+                        timestamp = None
+                        blocked_data.append((subject, timestamp, uri, cid))
+                        logger.error(f"{full_url}: missing timestamp")
+                    elif not uri:
+                        uri = None
+                        blocked_data.append((subject, timestamp, uri, cid))
+                        logger.error(f"{full_url}: Missing uri")
+                    elif not cid:
+                        cid = None
+                        blocked_data.append((subject, timestamp, uri, cid))
+                        logger.error(f"{full_url}: missing cid")
+                    elif not subject:
+                        subject = None
+                        blocked_data.append((subject, timestamp, uri, cid))
+                        logger.error(f"{full_url}: missing subject")
+                    else:
+                        logger.error(f"{full_url}: missing data")
+                        return None
+
+            cursor = response_json.get("cursor")
+
+        else:
+            if response.status_code == 429:
+                logger.warning("Received 429 Too Many Requests. Retrying after 60 seconds...")
+                await asyncio.sleep(60)  # Retry after 60 seconds
+            elif response.status_code == 400:
+                retry_count += 1
+                try:
+                    error_message = response.json()["error"]
+                    message = response.json()["message"]
+                    if error_message == "InvalidRequest" and "Could not find repo" in message:
+                        logger.debug("Could not find repo: " + str(ident))
+
+                        return None
+                except KeyError:
+                    return None
+            else:
+                retry_count += 1
+                logger.warning("Error during API call. Status code: %s", response.status_code)
+                await asyncio.sleep(5)
+                continue
+
+        if not cursor:
+            break
+
+    logger.debug(blocked_data)
+
+    if retry_count == max_retries:
+        logger.warning("Could not get block list for: " + ident)
+
+        return None
+
+    return blocked_data
+
+
 async def main():
     # answer = await describe_pds('https://zaluka.yartsa.xyz')
     # logger.info(f"pds valid: {answer}")
-    await database_handler.create_connection_pool("write")
+    # await database_handler.create_connection_pool("write")
 
     # await database_handler.process_delete_queue()
 
     # await database_handler.update_did_webs()
 
-    logger.info("Update did pds service information.")
-    last_value = "2024-03-21 01:07:33.497000+00:00"
-    if last_value:
-        logger.info(f"last value retrieved, starting from: {last_value}")
-    else:
-        last_value = None
-        logger.info(f"No last value retrieved, starting from beginning.")
-    await utils.get_all_did_records(last_value)
+    # logger.info("Update did pds service information.")
+    # last_value = "2024-03-21 01:07:33.497000+00:00"
+    # if last_value:
+    #     logger.info(f"last value retrieved, starting from: {last_value}")
+    # else:
+    #     last_value = None
+    #     logger.info(f"No last value retrieved, starting from beginning.")
+    # await utils.get_all_did_records(last_value)
+
+    record = await get_user_block_list('did:plc:sgkg35xmgmkuyzqsp63abhxa', 'https://lionsmane.us-east.host.bsky.network')
+
+    print(record)
+    print(len(record))
 if __name__ == '__main__':
     asyncio.run(main())
