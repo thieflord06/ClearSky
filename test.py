@@ -376,7 +376,7 @@ async def get_user_block_list(ident, pds):
 async def main():
     # answer = await describe_pds('https://zaluka.yartsa.xyz')
     # logger.info(f"pds valid: {answer}")
-    # await database_handler.create_connection_pool("write")
+    await database_handler.create_connection_pool("write")
 
     # await database_handler.process_delete_queue()
 
@@ -391,9 +391,12 @@ async def main():
     #     logger.info(f"No last value retrieved, starting from beginning.")
     # await utils.get_all_did_records(last_value)
 
-    record = await get_user_block_list('did:plc:sgkg35xmgmkuyzqsp63abhxa', 'https://lionsmane.us-east.host.bsky.network')
+    record = await get_user_block_list('did:plc:mystu6bxz4df3vlxydlc4ekr', 'https://amanita.us-east.host.bsky.network')
 
     print(record)
     print(len(record))
+
+    await database_handler.update_blocklist_table('did:plc:mystu6bxz4df3vlxydlc4ekr', record)
+
 if __name__ == '__main__':
     asyncio.run(main())
