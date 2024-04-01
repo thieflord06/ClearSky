@@ -2576,7 +2576,7 @@ async def main():
     # Fetch and push data immediately
     await fetch_and_push_data(api_key)
 
-    aiocron.crontab('* * * * *', schedule_data_push, api_key)
+    aiocron.crontab('0 * * * *', schedule_data_push, api_key)
 
     await asyncio.gather(run_web_server_task, first_run())
 
