@@ -1973,8 +1973,7 @@ async def store_data(data):
             writer.writerows(data)
 
 
-async def retrieve_csv_data():
-    filename = "fedi.csv"
+async def retrieve_csv_data(filename):
     root_path = os.getcwd()
     path = f"{root_path}/data/{filename}"
 
@@ -2360,15 +2359,16 @@ async def auth_retrieve_data():
     try:
         get_list = request.args.get('list')
         retrieve_lists = request.args.get('retrieveLists')
+        file_name = request.args.get('file')  # need to validate the file name
 
         if get_list == "assemble":
             files_info = await retrieve_csv_files_info()
 
             return files_info
 
-        if retrieve_lists == "true":
+        if retrieve_lists == "true" and file_name is not None:
             # Assuming retrieve_csv_data() returns the file path of the CSV file
-            file = await retrieve_csv_data()
+            file = await retrieve_csv_data(file_name)
 
             # Send the file as a response
             return send_file(file, as_attachment=True)
