@@ -2,7 +2,7 @@
 
 import sys
 import quart
-from quart import Quart, render_template, request, session, jsonify
+from quart import Quart, render_template, request, session, jsonify, send_file
 from datetime import datetime, timedelta
 import os
 import uuid
@@ -18,6 +18,7 @@ from environment import get_api_var
 import aiocron
 import aiohttp
 import functools
+import csv
 
 # ======================================================================================================================
 # ======================================== global variables // Set up logging ==========================================
@@ -373,9 +374,12 @@ def ratelimit_error(e):
     return jsonify(error="ratelimit exceeded", message=str(e.description)), 429
 
 
-async def fetch_and_push_data(api_key):
+async def fetch_and_push_data():
     global push_server
     global self_server
+    global api_key
+
+    logger.info(f"API key: {api_key} | Push server: {push_server} | Self server: {self_server}")
 
     if api_key is not None:
         try:
@@ -420,9 +424,9 @@ async def fetch_and_push_data(api_key):
 
 # Schedule the task to run every hour
 @aiocron.crontab('0 * * * *')
-async def schedule_data_push(api_key):
+async def schedule_data_push():
     logger.info("Starting scheduled data push.")
-    await fetch_and_push_data(api_key)
+    await fetch_and_push_data()
 
 
 # ======================================================================================================================
@@ -1940,6 +1944,46 @@ async def retrieve_subscribe_blocks_single_blocklist(client_identifier, page):
     return jsonify(data)
 
 
+async def file_validation(file):
+    _, extension = os.path.splitext(file)
+
+    if extension:
+        if extension.lower() == '.csv':
+            return True
+        else:
+            return False
+    else:
+        return False
+
+
+async def store_data(data):
+
+    if file_validation(data):
+        # Write JSON data to a file
+        filename = "fedi.csv"
+        root_path = os.getcwd()
+        path = f"{root_path}/data/{filename}"
+
+        # Extracting the header from the first row of data
+        header = list(data[0].keys())
+
+        with open(path, 'w') as file:
+            writer = csv.DictWriter(file, fieldnames=header)
+            writer.writeheader()
+            writer.writerows(data)
+
+
+async def retrieve_csv_data():
+    filename = "fedi.csv"
+    root_path = os.getcwd()
+    path = f"{root_path}/data/{filename}"
+
+    with open(path, 'r', newline='') as file:
+        csv_content = file.read()
+
+    return csv_content
+
+
 # ======================================================================================================================
 # ============================================= Authenticated API Endpoints ============================================
 @app.route('/api/v1/auth/blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
@@ -2268,6 +2312,45 @@ async def auth_validate_handle(client_identifier):
         return jsonify({"error": "Internal error"}), 500
 
 
+@app.route('/api/v1/auth/data-transaction/receive', methods=['POST'])
+@rate_limit(1, timedelta(seconds=2))
+async def auth_receive_data(data):
+    try:
+        # Check if the request contains a file
+        if 'file' not in request.files:
+            return jsonify({"error": "No file provided"}), 400
+
+        # Get the file from the request
+        file = request.files['file']
+
+        # Check if the file has a valid filename
+        if file.filename == '':
+            return jsonify({"error": "No file selected"}), 400
+
+        await store_data(data)
+
+        return jsonify({"message": "File received and processed successfully"}), 200
+    except Exception as e:
+        logger.error(f"Error in auth_receive_data: {e}")
+
+        return jsonify({"error": "Internal error"}), 500
+
+
+@app.route('/api/v1/auth/data-transaction/retrieve', methods=['GET'])
+@rate_limit(1, timedelta(seconds=2))
+async def auth_retrieve_data():
+    try:
+        # Assuming retrieve_csv_data() returns the file path of the CSV file
+        file = await retrieve_csv_data()
+
+        # Send the file as a response
+        return send_file(file, as_attachment=True)
+    except Exception as e:
+        logger.error(f"Error in auth_retrieve_data: {e}")
+
+        return jsonify({"error": "Internal error"}), 500
+
+
 # ======================================================================================================================
 # ========================================== Unauthenticated API Endpoints =============================================
 @app.route('/api/v1/anon/blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
@@ -2573,7 +2656,7 @@ async def main():
 
     await initialize_task
 
-    aiocron.crontab('* * * * *', schedule_data_push, api_key)
+    aiocron.crontab('* * * * *', schedule_data_push)
 
     await asyncio.gather(run_web_server_task, first_run())
 
