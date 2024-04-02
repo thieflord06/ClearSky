@@ -1984,6 +1984,24 @@ async def retrieve_csv_data():
     return csv_content
 
 
+async def retrieve_csv_files_info():
+    root_path = os.getcwd()
+    path = f"{root_path}/data"
+
+    files = os.listdir(path)
+
+    files_info = []
+
+    for csv_file in files:
+        file_info = {
+            'file name': csv_file
+        }
+
+        files_info.append(file_info)
+
+    return files_info
+
+
 # ======================================================================================================================
 # ============================================= Authenticated API Endpoints ============================================
 @app.route('/api/v1/auth/blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
@@ -2340,11 +2358,20 @@ async def auth_receive_data(data):
 @rate_limit(1, timedelta(seconds=2))
 async def auth_retrieve_data():
     try:
-        # Assuming retrieve_csv_data() returns the file path of the CSV file
-        file = await retrieve_csv_data()
+        get_list = request.args.get('list')
+        retrieve_lists = request.args.get('retrieveLists')
 
-        # Send the file as a response
-        return send_file(file, as_attachment=True)
+        if get_list == "assemble":
+            files_info = await retrieve_csv_files_info()
+
+            return files_info
+
+        if retrieve_lists == "true":
+            # Assuming retrieve_csv_data() returns the file path of the CSV file
+            file = await retrieve_csv_data()
+
+            # Send the file as a response
+            return send_file(file, as_attachment=True)
     except Exception as e:
         logger.error(f"Error in auth_retrieve_data: {e}")
 
