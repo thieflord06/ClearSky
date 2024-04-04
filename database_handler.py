@@ -716,6 +716,33 @@ async def blocklist_search(search_list, lookup, switch):
                 return resultslist
 
 
+async def crawl_all_retry_batch(batch_dids, forced=False):
+    max_retries = 10  # Maximum number of retries
+    retry_count = 0
+
+    while retry_count < max_retries:
+        try:
+            await crawler_batch(batch_dids, forced=forced)
+            return  # Successfully processed batch, exit loop
+        except DatabaseConnectionError as e:
+            logger.error(f"Database connection error occurred: {e}")
+            retry_count += 1
+            logger.info(f"Retrying batch (Retry {retry_count}/{max_retries})")
+            await asyncio.sleep(180)  # Wait before retrying
+        except asyncpg.InterfaceError as e:
+            logger.error(f"Interface error occurred: {e}")
+            retry_count += 1
+            logger.info(f"Retrying batch (Retry {retry_count}/{max_retries})")
+            await asyncio.sleep(180)  # Wait before retrying
+        except Exception as e:
+            logger.error(f"An unexpected error occurred: {e}")
+            retry_count += 1
+            logger.info(f"Retrying batch (Retry {retry_count}/{max_retries})")
+            await asyncio.sleep(180)  # Wait before retrying
+
+    logger.error(f"Failed to process batch after {max_retries} retries.")
+
+
 @check_db_connection("write")
 async def crawl_all(forced=False, quarter=None, total_crawlers=None):
     all_dids = await get_all_users_db(False, True, quarter=quarter, total_crawlers=total_crawlers)
@@ -759,7 +786,7 @@ async def crawl_all(forced=False, quarter=None, total_crawlers=None):
 
         batch_dids = all_dids[i:i + current_batch_size]
 
-        await crawler_batch(batch_dids, forced=forced)
+        await crawl_all_retry_batch(batch_dids, forced=forced)
 
         # Update the temporary table with the last processed DID
         if batch_dids:
@@ -785,7 +812,7 @@ async def crawl_all(forced=False, quarter=None, total_crawlers=None):
             # Log information for each batch
             logger.info(f"Processed batch {i // batch_size + 1}/{total_dids // batch_size + 1}")
             logger.info(f"Processed {cumulative_processed_count}/{total_dids} DIDs")
-            await asyncio.sleep(5)  # Pause for 30 secondsx
+            await asyncio.sleep(5)  # Pause for 30 seconds
 
         processed_count += batch_size
 
