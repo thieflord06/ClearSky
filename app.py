@@ -1921,23 +1921,24 @@ async def retrieve_subscribe_blocks_single_blocklist(client_identifier, page):
 
             try:
                 async with aiohttp.ClientSession(headers=headers) as session:
-                        async with session.get(fetch_api) as internal_response:
-                            if internal_response.status == 200:
-                                mod_list = await internal_response.json()
-                            else:
-                                mod_list = "error"
+                    async with session.get(fetch_api) as internal_response:
+                        if internal_response.status == 200:
+                            mod_list = await internal_response.json()
+                        else:
+                            mod_list = "error"
             except Exception as e:
                 logger.error(f"Error retrieving mod list from internal API: {e}")
                 mod_list = None
 
-            if mod_list and 'data' in mod_list and 'lists' in mod_list['data']:
+            if mod_list and 'data' in mod_list and 'lists' in mod_list:
                 for item in mod_list['data']['lists']:
                     url = item['url']
 
                     list_url.append(url)
 
-                blocklist, count, pages = await utils.process_subscribe_blocks_single(did_identifier, list_url, limit=items_per_page,
-                                                                           offset=offset)
+                blocklist, count, pages = await utils.process_subscribe_blocks_single(did_identifier, list_url,
+                                                                                      limit=items_per_page,
+                                                                                      offset=offset)
             else:
                 blocklist = None
                 count = 0
