@@ -1,7 +1,6 @@
 # utils.py
 
 import math
-import aiocron
 import httpx
 import urllib.parse
 from datetime import datetime
@@ -673,17 +672,6 @@ async def fetch_handles_batch(batch_dids, ad_hoc=False):
             handle = await on_wire.resolve_did(did.strip())
             if handle is not None:
                 handles.append((did.strip(), handle))
-
-    # if not ad_hoc:
-    #     tasks = [on_wire.resolve_did(did[0].strip()) for did in batch_dids]
-    # else:
-    #     tasks = [on_wire.resolve_did(did.strip()) for did in batch_dids]
-    # resolved_handles = await asyncio.gather(*tasks)
-    #
-    # if not ad_hoc:
-    #     handles = [(did[0], handle) for did, handle in zip(batch_dids, resolved_handles) if handle is not None]
-    # else:
-    #     handles = [(did, handle) for did, handle in zip(batch_dids, resolved_handles) if handle is not None]
 
     return handles
 

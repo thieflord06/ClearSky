@@ -53,7 +53,7 @@ async def resolve_handle(info):  # Take Handle and get DID
         except Exception as e:
             retry_count += 1
             logger.error(f"Error occurred while making the API call: {e}")
-            # await asyncio.sleep(30)
+
             return None
 
     logger.warning("Resolve error for: " + info + " after multiple retries.")
@@ -80,17 +80,6 @@ async def resolve_did(did, did_web_pds=False):  # Take DID and get handle
             async with limiter:
                 async with httpx.AsyncClient() as client:
                     response = await client.get(url)
-
-                # ratelimit_limit = int(response.headers.get('Ratelimit-Limit', 0))
-                # ratelimit_remaining = int(response.headers.get('Ratelimit-Remaining', 0))
-                # ratelimit_reset = int(response.headers.get('Ratelimit-Reset', 0))
-                #
-                # if ratelimit_remaining < 100:
-                #     logger.warning(f"Resolve Rate limit low: {ratelimit_remaining} \n Rate limit: {ratelimit_limit} Rate limit reset: {ratelimit_reset}")
-                #     # Sleep until the rate limit resets
-                #     sleep_time = 15
-                #     logger.warning(f"Approaching Rate limit waiting for {sleep_time} seconds")
-                #     await asyncio.sleep(sleep_time)
 
                 response_json = response.json()
                 logger.debug("response: " + str(response_json))
@@ -132,9 +121,6 @@ async def resolve_did(did, did_web_pds=False):  # Take DID and get handle
                         logger.warning(f"Approaching Rate limit waiting for {sleep_time} seconds")
 
                         await asyncio.sleep(sleep_time)
-                        # stripped_record = did
-                        #
-                        # return stripped_record
 
                     return stripped_record
                 elif response.status_code == 429:
@@ -164,25 +150,21 @@ async def resolve_did(did, did_web_pds=False):  # Take DID and get handle
         except httpx.DecodingError as e:
             retry_count += 1
             logger.error(f"Error occurred while parsing JSON response: {e}")
-            # await asyncio.sleep(5)
 
             return None
         except httpx.RequestError as e:
             retry_count += 1
             logger.error(f"Error occurred while making the API call: {str(e)} {url}")
-            # await asyncio.sleep(5)
 
             return None
         except httpx.HTTPStatusError as e:
             retry_count += 1
             logger.error(f"Error occurred while parsing JSON response: {str(e)} {url}")
-            # await asyncio.sleep(5)
 
             return None
         except Exception as e:
             retry_count += 1
             logger.error(f"An unexpected error occurred: {str(e)} {url}")
-            # await asyncio.sleep(5)
 
             return None
 
@@ -263,25 +245,21 @@ async def get_avatar_id(did, aux=False):
         except httpx.DecodingError as e:
             retry_count += 1
             logger.error(f"Error occurred while parsing JSON response: {e}")
-            # await asyncio.sleep(30)
 
             return None
         except httpx.RequestError as e:
             retry_count += 1
             logger.error(f"Error occurred while making the API call: {str(e)} {full_url}")
-            # await asyncio.sleep(30)
 
             return None
         except httpx.HTTPStatusError as e:
             retry_count += 1
             logger.error(f"Error occurred while parsing JSON response: {str(e)} {full_url}")
-            # await asyncio.sleep(30)
 
             return None
         except Exception as e:
             retry_count += 1
             logger.error(f"An unexpected error occurred: {str(e)} {full_url}")
-            # await asyncio.sleep(30)
 
             return None
 
@@ -336,25 +314,21 @@ async def get_profile_picture(did, avatar_id):
         except httpx.DecodingError as e:
             retry_count += 1
             logger.error(f"Error occurred while parsing JSON response: {e}")
-            # await asyncio.sleep(30)
 
             return None
         except httpx.RequestError as e:
             retry_count += 1
             logger.error(f"Error occurred while making the API call: {str(e)} {full_url}")
-            # await asyncio.sleep(30)
 
             return None
         except httpx.HTTPStatusError as e:
             retry_count += 1
             logger.error(f"Error occurred while parsing JSON response: {str(e)} {full_url}")
-            # await asyncio.sleep(30)
 
             return None
         except Exception as e:
             retry_count += 1
             logger.error(f"An unexpected error occurred: {str(e)} {full_url}")
-            # await asyncio.sleep(30)
 
             return None
 
@@ -415,8 +389,6 @@ async def verify_handle(identity):
             dns_result = dns_result.replace('did=', '')
         else:
             dns_result = None
-
-        # return result
     except Exception as e:
         logger.error(f"Error resolving DNS: {e}")
 

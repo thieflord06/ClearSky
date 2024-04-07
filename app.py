@@ -753,43 +753,6 @@ async def get_total_users():
     active_count = utils.total_active_users_cache.get('total_active_users')
     deleted_count = utils.total_deleted_users_cache.get('total_deleted_users')
 
-    # if total_count is None or active_count is None or deleted_count is None:
-    #     logger.info("Getting total users new cache.")
-    #
-    #     process_time = utils.total_users_process_time
-    #
-    #     if utils.total_users_start_time is None:
-    #         start_time = datetime.now()
-    #     else:
-    #         start_time = datetime.now()
-    #
-    #     if process_time is None:
-    #         remaining_time = "not yet determined"
-    #     else:
-    #         time_elapsed = datetime.now() - start_time
-    #
-    #         if time_elapsed < process_time:
-    #             # Calculate hours and minutes left
-    #             time_difference = process_time - time_elapsed
-    #             seconds_left = time_difference.total_seconds()
-    #             minutes_left = seconds_left / 60
-    #             # hours = minutes // 60
-    #             remaining_seconds = seconds_left % 60
-    #
-    #             if minutes_left > 1:
-    #                 remaining_time = f"{round(minutes_left)} mins {round(remaining_seconds)} seconds"
-    #             elif seconds_left > 0:
-    #                 remaining_time = f"{round(seconds_left)} seconds"
-    #         else:
-    #             remaining_time = "just finished"
-    #
-    #     timing = {"timeLeft": remaining_time}
-    #     data = {"data": timing}
-    #
-    #     asyncio.create_task(utils.update_total_users())
-    #
-    #     return jsonify(data)
-
     formatted_active_count = '{:,}'.format(active_count)
     formatted_total_count = '{:,}'.format(total_count)
     formatted_deleted_count = '{:,}'.format(deleted_count)
@@ -1151,65 +1114,6 @@ async def fun_facts():
     blocked_aid = utils.blocked_avatar_ids_cache.get('blocked_aid')
     blocker_aid = utils.blocker_avatar_ids_cache.get('blocker_aid')
 
-    # # Check if both lists are empty
-    # if resolved_blocked is None or resolved_blockers is None or blocker_aid is None or blocker_aid is None:
-    #     asyncio.create_task(database_handler.blocklists_updater())
-    #
-    #     resolved_blocked = utils.resolved_blocked_cache.get('resolved_blocked')
-    #     resolved_blockers = utils.resolved_blockers_cache.get('resolved_blockers')
-    #
-    #     blocked_aid = utils.blocked_avatar_ids_cache.get('blocked_aid')
-    #     blocker_aid = utils.blocker_avatar_ids_cache.get('blocker_aid')
-    #
-    #     data_lists = {"blocked": resolved_blocked,
-    #                   "blockers": resolved_blockers,
-    #                   "blocked_aid": blocked_aid,
-    #                   "blockers_aid": blocker_aid
-    #                   }
-    #
-    #     data = {"data": data_lists}
-    #
-    #     if resolved_blocked is None or resolved_blockers is None or blocker_aid is None or blocker_aid is None:
-    #         remaining_time = "not yet determined"
-    #
-    #         logger.info("Getting new cache.")
-    #
-    #         process_time = database_handler.top_blocks_process_time
-    #
-    #         if database_handler.top_blocks_start_time is None:
-    #             start_time = datetime.now()
-    #         else:
-    #             start_time = datetime.now()
-    #
-    #         if process_time is None:
-    #             remaining_time = "not yet determined"
-    #         else:
-    #             time_elapsed = datetime.now() - start_time
-    #
-    #             if time_elapsed < process_time:
-    #                 # Calculate hours and minutes left
-    #                 time_difference = process_time - time_elapsed
-    #                 seconds_left = time_difference.total_seconds()
-    #                 minutes_left = seconds_left / 60
-    #                 # hours = minutes // 60
-    #                 remaining_seconds = seconds_left % 60
-    #
-    #                 if minutes_left > 1:
-    #                     remaining_time = f"{round(minutes_left)} mins {round(remaining_seconds)} seconds"
-    #                 elif seconds_left > 0:
-    #                     remaining_time = f"{round(seconds_left)} seconds"
-    #             else:
-    #                 remaining_time = "just finished"
-    #
-    #         # asyncio.create_task(database_handler.blocklists_updater())
-    #
-    #         timing = {"timeLeft": remaining_time}
-    #         data = {"data": timing}
-
-        # logger.info(f">> Fun facts result returned: {session_ip} - {api_key}")
-        #
-        # return jsonify(data)
-
     data_lists = {"blocked": resolved_blocked,
                   "blockers": resolved_blockers,
                   "blocked_aid": blocked_aid,
@@ -1306,65 +1210,6 @@ async def funer_facts():
     blocked_aid_24 = utils.blocked_24_avatar_ids_cache.get('blocked_aid')
     blocker_aid_24 = utils.blocker_24_avatar_ids_cache.get('blocker_aid')
 
-    # Check if both lists are empty
-    # if resolved_blocked_24 is None or resolved_blockers_24 is None or blocker_aid_24 is None or blocker_aid_24 is None:
-    #     asyncio.create_task(database_handler.top_24blocklists_updater())
-    #
-    #     resolved_blocked_24 = utils.resolved_24_blocked_cache.get('resolved_blocked')
-    #     resolved_blockers_24 = utils.resolved_24blockers_cache.get('resolved_blockers')
-    #
-    #     blocked_aid_24 = utils.blocked_24_avatar_ids_cache.get('blocked_aid')
-    #     blocker_aid_24 = utils.blocker_24_avatar_ids_cache.get('blocker_aid')
-    #
-    #     data_lists = {"blocked24": resolved_blocked_24,
-    #                   "blockers24": resolved_blockers_24,
-    #                   "blocked_aid": blocked_aid_24,
-    #                   "blockers_aid": blocker_aid_24
-    #                   }
-    #
-    #     data = {"data": data_lists}
-    #
-    #     if resolved_blocked_24 is None or resolved_blockers_24 is None or blocker_aid_24 is None or blocker_aid_24 is None:
-    #         remaining_time = "not yet determined"
-    #
-    #         logger.info("Getting new cache.")
-    #
-    #         process_time = database_handler.top_24_blocks_process_time
-    #
-    #         if process_time is None:
-    #             funer_start_time = datetime.now()
-    #         else:
-    #             funer_start_time = datetime.now()
-    #
-    #         if process_time is None:
-    #             remaining_time = "not yet determined"
-    #         else:
-    #             time_elapsed = datetime.now() - funer_start_time
-    #
-    #             if time_elapsed < process_time:
-    #                 # Calculate hours and minutes left
-    #                 time_difference = process_time - time_elapsed
-    #                 seconds_left = time_difference.total_seconds()
-    #                 minutes_left = seconds_left / 60
-    #                 # hours = minutes // 60
-    #                 remaining_seconds = seconds_left % 60
-    #
-    #                 if minutes_left > 1:
-    #                     remaining_time = f"{round(minutes_left)} mins {round(remaining_seconds)} seconds"
-    #                 elif seconds_left > 0:
-    #                     remaining_time = f"{round(seconds_left)} seconds"
-    #             else:
-    #                 remaining_time = "just finished"
-    #
-    #         # asyncio.create_task(database_handler.top_24blocklists_updater())
-    #
-    #         timing = {"timeLeft": remaining_time}
-    #         data = {"data": timing}
-    #
-    #     logger.info(f">> Funer facts result returned: {session_ip} - {api_key}")
-    #
-    #     return jsonify(data)
-
     data_lists = {"blocked24": resolved_blocked_24,
                   "blockers24": resolved_blockers_24,
                   "blocked_aid": blocked_aid_24,
@@ -1454,64 +1299,6 @@ async def block_stats():
     number_blocked_greater_than_1000 = utils.number_blocked_greater_than_1000_cache.get("blockedmore1000")
     average_number_of_blocked = utils.average_number_of_blocked_cache.get("averageblocked")
     total_users = utils.block_stats_total_users_cache.get("total_users")
-
-    # values_to_check = (
-    #     number_of_total_blocks,
-    #     number_of_unique_users_blocked,
-    #     number_of_unique_users_blocking,
-    #     number_blocking_1,
-    #     number_blocking_2_and_100,
-    #     number_blocking_101_and_1000,
-    #     number_blocking_greater_than_1000,
-    #     average_number_of_blocks,
-    #     number_blocked_1,
-    #     number_blocked_2_and_100,
-    #     number_blocked_101_and_1000,
-    #     number_blocked_greater_than_1000,
-    #     average_number_of_blocked,
-    #     total_users
-    # )
-
-    # if any(value is None for value in values_to_check) and not await database_handler.local_db():
-    #     remaining_time = "not yet determined"
-    #
-    #     logger.info("Getting new cache.")
-    #
-    #     process_time = utils.block_stats_process_time
-    #
-    #     if process_time is None:
-    #         block_stats_app_start_time = datetime.now()
-    #     else:
-    #         block_stats_app_start_time = datetime.now()
-    #
-    #     if process_time is None:
-    #         remaining_time = "not yet determined"
-    #     else:
-    #         time_elapsed = datetime.now() - block_stats_app_start_time
-    #
-    #         if time_elapsed < process_time:
-    #             # Calculate hours and minutes left
-    #             time_difference = process_time - time_elapsed
-    #             seconds_left = time_difference.total_seconds()
-    #             minutes_left = seconds_left / 60
-    #             # hours = minutes // 60
-    #             remaining_seconds = seconds_left % 60
-    #
-    #             if minutes_left > 1:
-    #                 remaining_time = f"{round(minutes_left)} mins {round(remaining_seconds)} seconds"
-    #             elif seconds_left > 0:
-    #                 remaining_time = f"{round(seconds_left)} seconds"
-    #         else:
-    #             remaining_time = "just finished"
-    #
-    #     asyncio.create_task(utils.update_block_statistics())
-    #
-    #     timing = {"timeLeft": remaining_time}
-    #     data = {"data": timing}
-    #
-    #     logger.info(f">> block stats result returned: {session_ip} - {api_key}")
-    #
-    #     return jsonify(data)
 
     percent_users_blocked = (int(number_of_unique_users_blocked) / int(total_users)) * 100
     percent_users_blocking = (int(number_of_unique_users_blocking) / int(total_users)) * 100
