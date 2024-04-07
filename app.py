@@ -55,10 +55,7 @@ db_connected = None
 blocklist_24_failed = asyncio.Event()
 blocklist_failed = asyncio.Event()
 db_pool_acquired = asyncio.Event()
-push_server = None
 default_push_server = "https://ui.staging.clearsky.app"
-api_key = None
-self_server = None
 
 
 # ======================================================================================================================
@@ -215,36 +212,9 @@ async def get_time_since(time):
 async def initialize():
     global read_db_connected, write_db_connected
     global db_pool_acquired
-    global push_server
-    global api_key
-    global self_server
 
     read_db_connected = await database_handler.create_connection_pool("read")  # Creates connection pool for db if connection made
     write_db_connected = await database_handler.create_connection_pool("write")
-
-    config_api_key = config.get("environment", "api_key")
-    config_self_server = config.get("environment", "self_server")
-
-    if not os.getenv('CLEAR_SKY'):
-        push_server = config.get("environment", "push_server")
-        api_key = config.get("environment", "api_key")
-        self_server = config.get("environment", "self_server")
-    else:
-        push_server = os.environ.get("CLEARSKY_PUSH_SERVER")
-        api_key = os.environ.get("CLEARSKY_API_KEY")
-        self_server = os.environ.get("CLEARSKY_SELF_SERVER")
-
-    if not api_key:
-        logger.error(f"No API key configured, attempting to use config file: {config_api_key}")
-        api_key = config_api_key
-
-    if not push_server:
-        logger.error(f"No push server configured, using default push server: {default_push_server}")
-        push_server = default_push_server
-
-    if not self_server:
-        logger.error(f"No self server configured, attempting to use config file: {config_self_server}")
-        self_server = config_self_server
 
     log_warning_once = True
 
@@ -369,15 +339,51 @@ def api_key_required(key_type):
     return decorator
 
 
+def get_var_info() -> dict[str, str]:
+    config_api_key = config.get("environment", "api_key")
+    config_self_server = config.get("environment", "self_server")
+
+    if not os.getenv('CLEAR_SKY'):
+        push_server = config.get("environment", "push_server")
+        api_key = config.get("environment", "api_key")
+        self_server = config.get("environment", "self_server")
+    else:
+        push_server = os.environ.get("CLEARSKY_PUSH_SERVER")
+        api_key = os.environ.get("CLEARSKY_API_KEY")
+        self_server = os.environ.get("CLEARSKY_SELF_SERVER")
+
+    if not api_key:
+        logger.error(f"No API key configured, attempting to use config file: {config_api_key}")
+        api_key = config_api_key
+
+    if not push_server:
+        logger.error(f"No push server configured, using default push server: {default_push_server}")
+        push_server = default_push_server
+
+    if not self_server:
+        logger.error(f"No self server configured, attempting to use config file: {config_self_server}")
+        self_server = config_self_server
+
+    values = {
+        "api_key": api_key,
+        "push_server": push_server,
+        "self_server": self_server
+    }
+
+    return values
+
+
 @app.errorhandler(429)
 def ratelimit_error(e):
     return jsonify(error="ratelimit exceeded", message=str(e.description)), 429
 
 
 async def fetch_and_push_data():
-    global push_server
-    global self_server
-    global api_key
+    var_info = get_var_info()
+
+    api_key = var_info.get("api_key")
+    push_server = var_info.get("push_server")
+    self_server = var_info.get("self_server")
 
     logger.info(f"API key: {api_key} | Push server: {push_server} | Self server: {self_server}")
 
@@ -1870,8 +1876,10 @@ async def retrieve_subscribe_blocks_blocklist(client_identifier, page):
 
 
 async def retrieve_subscribe_blocks_single_blocklist(client_identifier, page):
-    global api_key
-    global self_server
+    values = get_var_info()
+
+    api_key = values.get('api_key')
+    self_server = values.get('self_server')
 
     session_ip = await get_ip()
     received_api_key = request.headers.get('X-API-Key')
@@ -2682,8 +2690,6 @@ async def main():
     run_web_server_task = asyncio.create_task(run_web_server())
 
     await initialize_task
-
-    # aiocron.crontab('* * * * *', schedule_data_push)
 
     await asyncio.gather(run_web_server_task, first_run())
 
