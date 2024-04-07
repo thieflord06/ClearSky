@@ -2363,10 +2363,10 @@ async def auth_receive_data(data):
             return jsonify({"error": "No file provided"}), 400
 
         # Get the file from the request
-        file = request.files['file']
+        file = request.files
 
         # Check if the file has a valid filename
-        if file.filename == '':
+        if file == '':
             return jsonify({"error": "No file selected"}), 400
 
         await store_data(data)
