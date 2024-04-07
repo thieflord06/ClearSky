@@ -17,14 +17,14 @@ import json
 resolved_blocked_cache = TTLCache(maxsize=100, ttl=86400)  # Every 24 hours
 resolved_blockers_cache = TTLCache(maxsize=100, ttl=86400)  # Every 24 hours
 
-resolved_24_blocked_cache = TTLCache(maxsize=100, ttl=43200)  # Every 12 hours
-resolved_24blockers_cache = TTLCache(maxsize=100, ttl=43200)  # Every 12 hours
+resolved_24_blocked_cache = TTLCache(maxsize=100, ttl=86400)  # Every 24 hours
+resolved_24blockers_cache = TTLCache(maxsize=100, ttl=86400)  # Every 12 hours
 
 blocked_avatar_ids_cache = TTLCache(maxsize=100, ttl=86400)  # Every 24 hours
 blocker_avatar_ids_cache = TTLCache(maxsize=100, ttl=86400)  # Every 24 hours
 
-blocked_24_avatar_ids_cache = TTLCache(maxsize=100, ttl=43200)  # Every 12 hours
-blocker_24_avatar_ids_cache = TTLCache(maxsize=100, ttl=43200)  # Every 12 hours
+blocked_24_avatar_ids_cache = TTLCache(maxsize=100, ttl=43200)  # Every 24 hours
+blocker_24_avatar_ids_cache = TTLCache(maxsize=100, ttl=43200)  # Every 24 hours
 
 number_of_total_blocks_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
 number_of_unique_users_blocked_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
@@ -40,9 +40,9 @@ number_blocked_101_and_1000_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 h
 number_blocked_greater_than_1000_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
 average_number_of_blocked_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
 block_stats_total_users_cache = TTLCache(maxsize=2, ttl=86400)  # Every 24 hours
-total_users_cache = TTLCache(maxsize=2, ttl=3600)  # Every 1 hour
-total_active_users_cache = TTLCache(maxsize=2, ttl=3600)  # Every 1 hour
-total_deleted_users_cache = TTLCache(maxsize=2, ttl=3600)  # Every 1 hour
+total_users_cache = TTLCache(maxsize=2, ttl=14400)  # Every 4 hour
+total_active_users_cache = TTLCache(maxsize=2, ttl=14400)  # Every 4 hour
+total_deleted_users_cache = TTLCache(maxsize=2, ttl=14400)  # Every 4 hour
 
 block_stats_status = asyncio.Event()
 total_users_status = asyncio.Event()
