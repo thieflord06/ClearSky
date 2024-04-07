@@ -534,7 +534,7 @@ async def main():
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/blocklist-search-blocking/desir.ee/thieflord.dev"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/in-common-blocklist/"
         # api_endpoint = "http://localhost/api/v1/blocklist-search-blocking/desir.ee/thieflord.dev"
-        api_endpoint = "http://localhost/api/v1/anon/blocklist-search-blocked/thieflord.dev/desir.ee"
+        # api_endpoint = "http://localhost/api/v1/anon/blocklist-search-blocked/thieflord.dev/desir.ee"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/total-users"
         # api_endpoint = "http://localhost/api/v1/single-blocklist/thieflord.dev"
         # api_endpoint = "http://localhost/api/v1/at-uri/at://did:plc:smcanwhzsj5dqp4yew7y6ybx/app.bsky.graph.listblock/3kf2kfcic5od2u"
@@ -549,6 +549,7 @@ async def main():
         # api_endpoint = "https://api.clearsky.services/api/v1/anon/lists/fun-facts"
         # api_endpoint = "https://api.clearsky.services/api/v1/anon/lists/funer-facts"
         # api_endpoint = "https://api.clearsky.services/api/v1/anon/lists/block-stats"
+        api_endpoint = "https://api.clearsky.services/api/v1/anon/base/autocomplete/thi"
 
         try:
             logger.info(f"API endpoint: {api_endpoint}")
