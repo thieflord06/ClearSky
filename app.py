@@ -2683,7 +2683,7 @@ async def main():
 
     await initialize_task
 
-    aiocron.crontab('* * * * *', schedule_data_push)
+    # aiocron.crontab('* * * * *', schedule_data_push)
 
     await asyncio.gather(run_web_server_task, first_run())
 
