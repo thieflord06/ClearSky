@@ -2154,7 +2154,6 @@ async def get_similar_users(user_did):
     return users, percentages, status_list
 
 
-@aiocron.crontab('0 * * * *')
 async def blocklists_updater():
     global last_update_top_block
     global blocklist_updater_status
@@ -2200,7 +2199,6 @@ async def blocklists_updater():
     return top_blocked, top_blockers, blocked_aid, blocker_aid
 
 
-@aiocron.crontab('0 * * * *')
 async def top_24blocklists_updater():
     global last_update_top_24_block
     global blocklist_24_updater_status

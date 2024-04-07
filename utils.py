@@ -236,7 +236,6 @@ async def resolve_top24_block_lists():
     return top_resolved_blocked, top_resolved_blockers, blocked_avatar_ids, blocker_avatar_ids
 
 
-@aiocron.crontab('0 * * * *')
 async def update_block_statistics():
     global block_stats_process_time
     global block_stats_last_update
@@ -295,7 +294,6 @@ async def update_block_statistics():
             number_blocked_greater_than_1000, average_number_of_blocked, total_users)
 
 
-@aiocron.crontab('0 * * * *')
 async def update_total_users():
     global total_users_status
     global total_users_process_time

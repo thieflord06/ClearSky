@@ -306,6 +306,18 @@ async def first_run():
         await asyncio.sleep(30)
 
 
+@aiocron.crontab('0 * * * *')
+async def schedule_stats_update() -> None:
+    logger.info("Starting scheduled stats update.")
+
+    await database_handler.blocklists_updater()
+    await database_handler.top_24blocklists_updater()
+    await utils.update_block_statistics()
+    await utils.update_total_users()
+
+    logger.info("Scheduled stats update complete.")
+
+
 def api_key_required(key_type):
     def decorator(func):
         @functools.wraps(func)
