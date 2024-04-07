@@ -213,6 +213,11 @@ async def initialize():
     global read_db_connected, write_db_connected
     global db_pool_acquired
 
+    utils.total_users_status.set()
+    utils.block_stats_status.set()
+    database_handler.blocklist_updater_status.set()
+    database_handler.blocklist_24_updater_status.set()
+
     read_db_connected = await database_handler.create_connection_pool("read")  # Creates connection pool for db if connection made
     write_db_connected = await database_handler.create_connection_pool("write")
 
