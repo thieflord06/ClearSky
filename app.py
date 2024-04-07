@@ -339,7 +339,7 @@ def api_key_required(key_type):
     return decorator
 
 
-def get_var_info() -> dict[str, str]:
+async def get_var_info() -> dict[str, str]:
     config_api_key = config.get("environment", "api_key")
     config_self_server = config.get("environment", "self_server")
 
@@ -379,7 +379,7 @@ def ratelimit_error(e):
 
 
 async def fetch_and_push_data():
-    var_info = get_var_info()
+    var_info = await get_var_info()
 
     api_key = var_info.get("api_key")
     push_server = var_info.get("push_server")
@@ -1876,7 +1876,7 @@ async def retrieve_subscribe_blocks_blocklist(client_identifier, page):
 
 
 async def retrieve_subscribe_blocks_single_blocklist(client_identifier, page):
-    values = get_var_info()
+    values = await get_var_info()
 
     api_key = values.get('api_key')
     self_server = values.get('self_server')
