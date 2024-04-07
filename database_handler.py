@@ -2848,6 +2848,27 @@ async def get_single_user_blocks(ident, limit=100, offset=0):
         return block_list, count, pages
 
 
+async def get_did_web_handle_history(identifier):
+    handle_history = []
+    try:
+        async with connection_pools["read"].acquire() as connection:
+            history = await connection.fetch('SELECT handle, pds, timestamp FROM did_web_history WHERE did = $1', identifier)
+
+            if history is None:
+                return None
+
+            for record in history:
+                handle_history.append((record['handle'], record['pds'], record['timestamp'].isoformat()))
+
+            handle_history.sort(key=lambda x: x[2])
+
+            return history
+    except Exception as e:
+        logger.error(f"Error fetching did:web history: {e}")
+
+        return None
+
+
 # ======================================================================================================================
 # ============================================ get database credentials ================================================
 def get_database_config():

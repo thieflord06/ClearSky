@@ -744,6 +744,10 @@ async def get_handle_history(identifier):
     max_retries = 5
     also_known_as_list = []
 
+    if "did:web" in identifier:
+        history = await database_handler.get_did_web_handle_history(identifier)
+
+        return history
     while retry_count < max_retries:
         full_url = f"{base_url}{identifier}/{collection}"
         logger.debug(f"full url: {full_url}")
