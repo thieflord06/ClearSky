@@ -2,6 +2,7 @@
 
 import urllib.parse
 import asyncio
+from typing import Optional
 import httpx
 from config_helper import logger, limiter
 import dns.resolver
@@ -61,7 +62,7 @@ async def resolve_handle(info):  # Take Handle and get DID
     return None
 
 
-async def resolve_did(did, did_web_pds=False):  # Take DID and get handle
+async def resolve_did(did, did_web_pds=False) -> Optional[str]:  # Take DID and get handle
     base_url = "https://plc.directory/"
     url = f"{base_url}{did}"
 

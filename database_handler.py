@@ -2,6 +2,7 @@
 
 import asyncio
 import os
+from typing import Optional
 import asyncpg
 import config_helper
 import setup
@@ -2248,7 +2249,7 @@ async def top_24blocklists_updater():
 
 
 @check_db_connection("read")
-async def get_mutelists(ident):
+async def get_mutelists(ident) -> Optional[list]:
     async with connection_pools["read"].acquire() as connection:
         async with connection.transaction():
             query = """
@@ -2284,7 +2285,7 @@ async def get_mutelists(ident):
 
 
 @check_db_connection("read")
-async def check_api_key(api_environment, key_type, key_value):
+async def check_api_key(api_environment, key_type, key_value) -> bool:
     async with connection_pools["read"].acquire() as connection:
         async with connection.transaction():
             query = """SELECT valid FROM API WHERE key = $3 environment = $1 AND access_type LIKE '%' || $2 || '%'"""
@@ -2294,7 +2295,7 @@ async def check_api_key(api_environment, key_type, key_value):
             return status
 
 
-async def wait_for_redis():
+async def wait_for_redis() -> None:
     while True:
         status = await redis_connected()
 
@@ -2316,7 +2317,7 @@ async def wait_for_redis():
 
 
 @check_db_connection("write")
-async def tables_exists():
+async def tables_exists() -> bool:
     async with connection_pools["write"].acquire() as connection:
         async with connection.transaction():
             try:
@@ -2345,7 +2346,7 @@ async def tables_exists():
 
 
 @check_db_connection("write")
-async def get_unique_did_to_pds():
+async def get_unique_did_to_pds() -> Optional[list]:
     logger.info("Getting unique did to pds.")
 
     records = []
@@ -2377,7 +2378,7 @@ async def get_unique_did_to_pds():
 
 
 @check_db_connection("write")
-async def update_pds_status(pds, status):
+async def update_pds_status(pds, status) -> None:
     try:
         async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
@@ -2388,7 +2389,7 @@ async def update_pds_status(pds, status):
 
 
 @check_db_connection("write")
-async def update_pds(did, pds):
+async def update_pds(did, pds) -> None:
     try:
         async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
@@ -2402,7 +2403,7 @@ async def update_pds(did, pds):
 
 
 @check_db_connection("write")
-async def get_didwebs_without_pds():
+async def get_didwebs_without_pds() -> Optional[list]:
     try:
         async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
@@ -2419,7 +2420,7 @@ async def get_didwebs_without_pds():
 
 
 @check_db_connection("write")
-async def update_did_webs():
+async def update_did_webs() -> None:
     pop = 0
     did_webs_in_queue = None
 
@@ -2504,7 +2505,7 @@ async def update_did_webs():
 
 
 @check_db_connection("write")
-async def get_didwebs_pdses():
+async def get_didwebs_pdses() -> Optional[list]:
     try:
         async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
@@ -2521,7 +2522,7 @@ async def get_didwebs_pdses():
 
 
 @check_db_connection("write")
-async def get_api_keys(environment, key_type, key):
+async def get_api_keys(environment, key_type, key) -> Optional[dict]:
     if not key and not key_type and not environment:
         logger.error("Missing required parameters for API verification.")
 
@@ -2552,7 +2553,7 @@ async def get_api_keys(environment, key_type, key):
 
 
 @check_db_connection("read")
-async def get_dids_per_pds():
+async def get_dids_per_pds() -> Optional[dict]:
     data_dict = {}
 
     try:
@@ -2577,7 +2578,7 @@ async def get_dids_per_pds():
 
 
 @check_db_connection("write")
-async def set_status_code(pds, status_code):
+async def set_status_code(pds, status_code) -> None:
     try:
         async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
@@ -2588,7 +2589,7 @@ async def set_status_code(pds, status_code):
 
 
 @check_db_connection("write")
-async def update_mutelist_count():
+async def update_mutelist_count() -> None:
     limit = 100
     offset = 0
     list_count = 0
@@ -2629,7 +2630,7 @@ async def update_mutelist_count():
 
 
 @check_db_connection("write")
-async def update_subscribe_list_count():
+async def update_subscribe_list_count() -> None:
     limit = 100
     offset = 0
     list_count = 0
@@ -2670,7 +2671,7 @@ async def update_subscribe_list_count():
 
 
 @check_db_connection("write")
-async def process_delete_queue():
+async def process_delete_queue() -> None:
     logger.info("Processing delete queue.")
 
     limit = 100
@@ -2776,7 +2777,7 @@ async def identifier_exists_in_db(identifier):
 
 
 @check_db_connection("read")
-async def get_user_did(handle):
+async def get_user_did(handle) -> Optional[str]:
     async with connection_pools["read"].acquire() as connection:
         did = await connection.fetchval('SELECT did FROM users WHERE handle = $1 AND status is True', handle)
 
@@ -2784,7 +2785,7 @@ async def get_user_did(handle):
 
 
 @check_db_connection("read")
-async def get_user_handle(did):
+async def get_user_handle(did) -> Optional[str]:
     async with connection_pools["read"].acquire() as connection:
         handle = await connection.fetchval('SELECT handle FROM users WHERE did = $1', did)
 
@@ -2792,7 +2793,7 @@ async def get_user_handle(did):
 
 
 @check_db_connection("read")
-async def get_user_count(get_active=True):
+async def get_user_count(get_active=True) -> int:
     async with connection_pools["read"].acquire() as connection:
         if get_active:
             count = await connection.fetchval("""SELECT COUNT(*) 
@@ -2805,7 +2806,7 @@ async def get_user_count(get_active=True):
 
 
 @check_db_connection("read")
-async def get_deleted_users_count():
+async def get_deleted_users_count() -> int:
     async with connection_pools["read"].acquire() as connection:
         count = await connection.fetchval('SELECT COUNT(*) FROM USERS JOIN pds ON users.pds = pds.pds WHERE pds.status is TRUE AND users.status is FALSE')
 
@@ -2848,7 +2849,7 @@ async def get_single_user_blocks(ident, limit=100, offset=0):
         return block_list, count, pages
 
 
-async def get_did_web_handle_history(identifier):
+async def get_did_web_handle_history(identifier) -> Optional[list]:
     handle_history = []
     try:
         async with connection_pools["read"].acquire() as connection:
@@ -2871,7 +2872,7 @@ async def get_did_web_handle_history(identifier):
 
 # ======================================================================================================================
 # ============================================ get database credentials ================================================
-def get_database_config():
+def get_database_config() -> dict:
     try:
         if not os.getenv('CLEAR_SKY'):
             logger.info("Database connection: Using config.ini.")
@@ -2956,7 +2957,7 @@ else:
     redis_conn = aioredis.from_url(f"rediss://{redis_username}:{redis_password}@{redis_host}:{redis_port}")
 
 
-async def local_db():
+async def local_db() -> bool:
     if database_config["use_local_db"]:
         logger.warning("Using local db.")
 
@@ -2966,7 +2967,7 @@ async def local_db():
         return False
 
 
-async def redis_connected():
+async def redis_connected() -> bool:
     try:
         async with redis_conn:
             response = await redis_conn.ping()

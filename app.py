@@ -19,6 +19,7 @@ import aiocron
 import aiohttp
 import functools
 import csv
+from typing import Optional
 
 # ======================================================================================================================
 # ======================================== global variables // Set up logging ==========================================
@@ -60,7 +61,7 @@ default_push_server = "https://ui.staging.clearsky.app"
 
 # ======================================================================================================================
 # ============================================= Main functions =========================================================
-async def sanitization(identifier):
+async def sanitization(identifier) -> str:
     identifier = identifier.lower()
     identifier = identifier.strip()
     identifier = identifier.replace('@', '')
@@ -68,7 +69,7 @@ async def sanitization(identifier):
     return identifier
 
 
-async def uri_sanitization(uri):
+async def uri_sanitization(uri) -> Optional[str]:
     if uri:
         if "at://" in uri:
             if "app.bsky.graph.listitem" in uri:
@@ -161,11 +162,11 @@ async def preprocess_status(identifier):
         return False
 
 
-def generate_session_number():
+def generate_session_number() -> str:
     return str(uuid.uuid4().hex)
 
 
-async def get_ip():  # Get IP address of session request
+async def get_ip() -> str:  # Get IP address of session request
     if 'X-Forwarded-For' in request.headers:
         # Get the client's IP address from the X-Forwarded-For header
         ip = request.headers.get('X-Forwarded-For')
@@ -179,7 +180,7 @@ async def get_ip():  # Get IP address of session request
     return ip
 
 
-async def get_time_since(time):
+async def get_time_since(time) -> str:
     if time is None:
         return "Not initialized"
     time_difference = datetime.now() - time
@@ -209,7 +210,7 @@ async def get_time_since(time):
     return elapsed_time
 
 
-async def initialize():
+async def initialize() -> None:
     global read_db_connected, write_db_connected
     global db_pool_acquired
 
@@ -273,7 +274,7 @@ async def get_ip_address():
         return ip_address, port_address
 
 
-async def run_web_server():
+async def run_web_server() -> None:
     ip_address, port_address = await get_ip_address()
 
     if not ip_address or not port_address:
@@ -282,10 +283,10 @@ async def run_web_server():
 
     logger.info(f"Web server starting at: {ip_address}:{port_address}")
 
-    await app.run_task(host=ip_address, port=port_address)
+    await app.run_task(host=ip_address, port=int(port_address))
 
 
-async def first_run():
+async def first_run() -> None:
     while not db_pool_acquired.is_set():
         logger.info("db connection not acquired, waiting for established connection.")
         await asyncio.sleep(5)
@@ -323,10 +324,10 @@ async def schedule_stats_update() -> None:
     logger.info("Scheduled stats update complete.")
 
 
-def api_key_required(key_type):
-    def decorator(func):
+def api_key_required(key_type) -> callable:
+    def decorator(func) -> callable:
         @functools.wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs) -> callable:
             api_environment = get_api_var()
 
             provided_api_key = request.headers.get("X-API-Key")
@@ -1757,7 +1758,7 @@ async def retrieve_subscribe_blocks_single_blocklist(client_identifier, page):
     return jsonify(data)
 
 
-async def file_validation(file):
+async def file_validation(file) -> bool:
     _, extension = os.path.splitext(file)
 
     if extension:
@@ -1769,7 +1770,7 @@ async def file_validation(file):
         return False
 
 
-async def store_data(data):
+async def store_data(data) -> None:
 
     if file_validation(data):
         # Write JSON data to a file

@@ -659,7 +659,7 @@ async def process_subscribe_blocks_single(ident, list_of_lists, limit, offset):
         return blocked_users, count, pages
 
 
-async def fetch_handles_batch(batch_dids, ad_hoc=False):
+async def fetch_handles_batch(batch_dids, ad_hoc=False) -> list:
     handles = []
 
     if not ad_hoc:
@@ -676,7 +676,7 @@ async def fetch_handles_batch(batch_dids, ad_hoc=False):
     return handles
 
 
-def is_did(identifier):
+def is_did(identifier) -> bool:
     # Check if the identifier contains percent-encoded characters
     if '%' in identifier:
         logger.warning(f"Identifier contains percent-encoded characters: {identifier}")
@@ -701,7 +701,7 @@ def is_did(identifier):
     return re.match(did_pattern, identifier) is not None
 
 
-def is_handle(identifier):
+def is_handle(identifier) -> bool:
     handle_pattern = r'^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$'
 
     return re.match(handle_pattern, identifier) is not None
