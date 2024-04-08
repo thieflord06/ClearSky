@@ -270,16 +270,14 @@ async def get_avatar_id(did, aux=False):
 
 
 async def get_profile_picture(did, avatar_id):
-    handle = did
     base_url = "https://av-cdn.bsky.app/img/feed_fullsize/plain/"
-    url = urllib.parse.urljoin(base_url)
     params = {
-        "did": handle,
+        "did": did,
         "/": avatar_id
     }
 
     encoded_params = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
-    full_url = f"{url}?{encoded_params}"
+    full_url = f"{base_url}?{encoded_params}"
     logger.debug(full_url)
 
     max_retries = 5
