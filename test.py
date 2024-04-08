@@ -210,7 +210,7 @@ async def verify_handle(identity):
                     return False
             else:
                 logger.error(
-                    f"validitiy case didnt match for {identity} | at_proto: {at_proto_result} | bsky: {bsky_result} | dns: {dns_result}")
+                    f"validity case didn't match for {identity} | at_proto: {at_proto_result} | bsky: {bsky_result} | dns: {dns_result}")
 
                 return False
     else:
