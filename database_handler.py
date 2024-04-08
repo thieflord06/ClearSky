@@ -5,7 +5,6 @@ import os
 from typing import Optional
 import asyncpg
 import config_helper
-import setup
 import utils
 from config_helper import logger
 from cachetools import TTLCache
@@ -42,6 +41,14 @@ top_blocks_process_time = None
 top_24_blocks_process_time = None
 top_blocked_as_of_time = None
 top_24_blocked_as_of_time = None
+
+users_table = "users"
+blocklist_table = "blocklists"
+top_blocks_table = "top_block"
+top_24_blocks_table = "top_twentyfour_hour_block"
+mute_lists_table = "mutelists"
+mute_lists_users_table = "mutelists_users"
+last_created_table = "last_did_created_date"
 
 
 # ======================================================================================================================
@@ -341,10 +348,14 @@ async def get_blocklist(ident, limit=100, offset=0):
     try:
         async with connection_pools["read"].acquire() as connection:
             async with connection.transaction():
-                query = "SELECT DISTINCT b.blocked_did, b.block_date, u.handle, u.status FROM blocklists AS b JOIN users AS u ON b.blocked_did = u.did WHERE b.user_did = $1 ORDER BY block_date DESC LIMIT $2 OFFSET $3"
+                query = """SELECT DISTINCT b.blocked_did, b.block_date, u.handle, u.status 
+                FROM blocklists AS b JOIN users AS u ON b.blocked_did = u.did 
+                WHERE b.user_did = $1 ORDER BY block_date DESC LIMIT $2 OFFSET $3"""
                 blocklist_rows = await connection.fetch(query, ident, limit, offset)
 
-                query2 = "SELECT COUNT(DISTINCT blocked_did) FROM blocklists WHERE user_did = $1"
+                query2 = """SELECT COUNT(DISTINCT blocked_did) 
+                FROM blocklists 
+                WHERE user_did = $1"""
                 total_blocked_count = await connection.fetchval(query2, ident)
 
                 return blocklist_rows, total_blocked_count
@@ -1192,7 +1203,7 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, fo
 
             # Retrieve the existing blocklist entries for the specified ident
             existing_records = await connection.fetch(
-                'SELECT uri FROM {} WHERE did = $1'.format(setup.mute_lists_table), ident
+                'SELECT uri FROM {} WHERE did = $1'.format(mute_lists_table), ident
             )
 
             existing_mutelist_entries = {(record['uri']) for record in existing_records}
@@ -1224,7 +1235,7 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, fo
                 if mutelist_records_to_insert:
                     try:
                         # Insert the new mutelist entries
-                        await connection.executemany("""INSERT INTO {} (url, uri, did, cid, name, created_date, description, touched, touched_actor) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)""".format(setup.mute_lists_table), mutelist_records_to_insert)
+                        await connection.executemany("""INSERT INTO {} (url, uri, did, cid, name, created_date, description, touched, touched_actor) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)""".format(mute_lists_table), mutelist_records_to_insert)
 
                         await connection.executemany("""INSERT INTO mutelists_transaction (url, uri, did, cid, name, created_date, description, touched, touched_actor) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)""", mutelist_records_to_insert)
                     except Exception as e:
@@ -1277,7 +1288,7 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, fo
                     if mutelistusers_records_to_insert:
                         try:
                             # Insert the new mutelist entries
-                            await connection.executemany("""INSERT INTO {} (list_uri, cid, subject_did, owner_did, date_added, touched, touched_actor, listitem_uri) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)""".format(setup.mute_lists_users_table), mutelistusers_records_to_insert)
+                            await connection.executemany("""INSERT INTO {} (list_uri, cid, subject_did, owner_did, date_added, touched, touched_actor, listitem_uri) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)""".format(mute_lists_users_table), mutelistusers_records_to_insert)
 
                             await connection.executemany("""INSERT INTO mutelists_users_transaction (list_uri, cid, subject_did, owner_did, date_added, touched, touched_actor, listitem_uri) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)""", mutelistusers_records_to_insert)
                         except Exception as e:
@@ -1796,11 +1807,11 @@ async def update_last_created_did_date(last_created):
         async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
                 # Delete the existing row if it exists
-                delete_query = f"TRUNCATE {setup.last_created_table}"
+                delete_query = f"TRUNCATE {last_created_table}"
                 await connection.execute(delete_query)
 
                 # Insert the new row with the given last_processed_did
-                insert_query = f"INSERT INTO {setup.last_created_table} (last_created) VALUES ($1)"
+                insert_query = f"INSERT INTO {last_created_table} (last_created) VALUES ($1)"
                 await connection.execute(insert_query, last_created)
     except Exception as e:
         logger.error("Error updating temporary table: %s", e)
@@ -2326,10 +2337,10 @@ async def tables_exists() -> bool:
                 query3 = """SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1)"""
                 query4 = """SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1)"""
 
-                users_exist = await connection.fetchval(query1, setup.users_table)
-                blocklists_exist = await connection.fetchval(query2, setup.blocklist_table)
-                top_blocks_exist = await connection.fetchval(query3, setup.top_blocks_table)
-                top_24_exist = await connection.fetchval(query4, setup.top_24_blocks_table)
+                users_exist = await connection.fetchval(query1, users_table)
+                blocklists_exist = await connection.fetchval(query2, blocklist_table)
+                top_blocks_exist = await connection.fetchval(query3, top_blocks_table)
+                top_24_exist = await connection.fetchval(query4, top_24_blocks_table)
 
                 values = (users_exist, blocklists_exist, top_blocks_exist, top_24_exist)
 
