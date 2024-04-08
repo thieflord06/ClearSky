@@ -299,6 +299,8 @@ async def update_total_users():
     global total_users_last_update
     global total_users_start_time
 
+    logger.info("Updating total users.")
+
     total_users_start_time = datetime.now()
 
     total_users_status.set()
@@ -321,6 +323,8 @@ async def update_total_users():
     total_users_last_update = end_time
 
     total_users_start_time = None
+
+    logger.info("Total users update complete.")
 
     return active_count, total_count, deleted_count
 
