@@ -1038,10 +1038,6 @@ async def fun_facts():
 
     logger.info(f"<< Fun facts requested: {session_ip} - {api_key}")
 
-    # if True:
-    #
-    #     return await render_template('known_issue.html')
-
     if not read_db_connected and write_db_connected:
         logger.error("Database connection is not live.")
 
@@ -1055,25 +1051,12 @@ async def fun_facts():
         return jsonify(data)
 
     if database_handler.blocklist_updater_status.is_set():
-        resolved_blocked = utils.resolved_blocked_cache.get('resolved_blocked')
-        resolved_blockers = utils.resolved_blockers_cache.get('resolved_blockers')
+        logger.info("Updating top blocks in progress.")
 
-        blocked_aid = utils.blocked_avatar_ids_cache.get('blocked_aid')
-        blocker_aid = utils.blocker_avatar_ids_cache.get('blocker_aid')
-
-        data_lists = {"blocked": resolved_blocked,
-                      "blockers": resolved_blockers,
-                      "blocked_aid": blocked_aid,
-                      "blockers_aid": blocker_aid
-                      }
-
-        data = {"data": data_lists}
-
-        if resolved_blocked is None or resolved_blockers is None or blocker_aid is None or blocker_aid is None:
+        if (utils.resolved_blocked_cache.get('resolved_blocked') is None or utils.resolved_blockers_cache.get('resolved_blockers') is None or
+                utils.blocked_avatar_ids_cache.get('blocked_aid') is None or utils.blocker_avatar_ids_cache.get('blocker_aid') is None):
 
             remaining_time = "not yet determined"
-
-            logger.info("Updating top blocks.")
 
             process_time = database_handler.top_blocks_process_time
 
@@ -1105,9 +1088,9 @@ async def fun_facts():
             timing = {"timeLeft": remaining_time}
             data = {"data": timing}
 
-        logger.info(f">> Fun facts result returned: {session_ip} - {api_key}")
+            logger.info(f">> Fun facts result returned: {session_ip} - {api_key}")
 
-        return jsonify(data)
+            return jsonify(data)
 
     resolved_blocked = utils.resolved_blocked_cache.get('resolved_blocked')
     resolved_blockers = utils.resolved_blockers_cache.get('resolved_blockers')
@@ -1152,24 +1135,11 @@ async def funer_facts():
         return jsonify(data)
 
     if database_handler.blocklist_24_updater_status.is_set():
-        resolved_blocked_24 = utils.resolved_24_blocked_cache.get('resolved_blocked')
-        resolved_blockers_24 = utils.resolved_24blockers_cache.get('resolved_blockers')
+        logger.info("Updating top 24 blocks in progress.")
 
-        blocked_aid_24 = utils.blocked_24_avatar_ids_cache.get('blocked_aid')
-        blocker_aid_24 = utils.blocker_24_avatar_ids_cache.get('blocker_aid')
-
-        data_lists = {"blocked24": resolved_blocked_24,
-                      "blockers24": resolved_blockers_24,
-                      "blocked_aid": blocked_aid_24,
-                      "blockers_aid": blocker_aid_24
-                      }
-
-        data = {"data": data_lists}
-
-        if resolved_blocked_24 is None or resolved_blockers_24 is None or blocker_aid_24 is None or blocker_aid_24 is None:
+        if (utils.resolved_24_blocked_cache.get('resolved_blocked') is None or utils.resolved_24blockers_cache.get('resolved_blockers') is None or
+                utils.blocked_24_avatar_ids_cache.get('blocked_aid') is None or utils.blocker_24_avatar_ids_cache.get('blocker_aid') is None):
             remaining_time = "not yet determined"
-
-            logger.info("Updating top 24 blocks.")
 
             process_time = database_handler.top_24_blocks_process_time
 
@@ -1201,9 +1171,9 @@ async def funer_facts():
             timing = {"timeLeft": remaining_time}
             data = {"data": timing}
 
-        logger.info(f">> Funer facts result returned: {session_ip} - {api_key}")
+            logger.info(f">> Funer facts result returned: {session_ip} - {api_key}")
 
-        return jsonify(data)
+            return jsonify(data)
 
     resolved_blocked_24 = utils.resolved_24_blocked_cache.get('resolved_blocked')
     resolved_blockers_24 = utils.resolved_24blockers_cache.get('resolved_blockers')
@@ -1250,7 +1220,7 @@ async def block_stats():
     if utils.block_stats_status.is_set():
         remaining_time = "not yet determined"
 
-        logger.info("Updating block stats.")
+        logger.info("Updating block stats in progress.")
 
         process_time = utils.block_stats_process_time
 
