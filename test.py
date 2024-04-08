@@ -10,10 +10,8 @@ import random
 import string
 import datetime
 import dns.resolver
-import on_wire
 from on_wire import resolve_handle
 from on_wire import resolve_did
-import utils
 
 
 async def generate_random_user_data():
