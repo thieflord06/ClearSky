@@ -27,8 +27,6 @@ async def main():
     parser.add_argument('--crawler-forced', action='store_true', help='Force update all info')
     parser.add_argument('--update-users-dids', action='store_true', help='update db with new dids and handles')
     parser.add_argument('--update-all-did-pds-service-info', action='store_true', help='get past dids and service info')
-    parser.add_argument('--fetch-users-count', action='store_true', help='Fetch the count of users')
-    parser.add_argument('--update-redis-cache', action='store_true', help='Update the redis cache')
     parser.add_argument('--get-federated-pdses', action='store_true', help='Validate PDSes')
     parser.add_argument('--count-list-users', action='store_true', help='Count list users')
     args = parser.parse_args()
@@ -39,17 +37,7 @@ async def main():
         logger.error(f"Error creating connection pool: {str(e)}")
         sys.exit()
 
-    if args.fetch_users_count:
-        try:
-            # Call the function to fetch the count of users
-            count = await database_handler.count_users_table()
-            logger.info(f"Total users in the database: {count}")
-        except database_handler.DatabaseConnectionError:
-            logger.error("Database connection error")
-        except Exception as e:
-            logger.error(f"Error fetching users count: {str(e)}")
-        sys.exit()
-    elif args.update_users_dids:
+    if args.update_users_dids:
         try:
             # await database_handler.create_user_status_temporary_table()
             # Call the function to update the database with all users dids
@@ -181,17 +169,6 @@ async def main():
             await database_handler.delete_temporary_table(quarter_value)
             sys.exit()
 
-        sys.exit()
-    elif args.update_redis_cache:
-        try:
-            logger.info("Cache update requested.")
-            status = await database_handler.populate_redis_with_handles()
-            if not status:
-                logger.info("Cache update complete.")
-        except database_handler.DatabaseConnectionError:
-            logger.error("Database connection error")
-        except Exception as e:
-            logger.error(f"Error updating redis: {str(e)}")
         sys.exit()
     elif args.update_all_did_pds_service_info:
         try:
