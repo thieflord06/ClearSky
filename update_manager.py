@@ -15,8 +15,6 @@ import os
 # python update_manager.py --crawler-forced // Force update all info
 # python update_manager.py --update-users-dids // update db with new dids and handles
 # python update_manager.py --update-all-did-pds-service-info // get past dids and service info
-# python update_manager.py --fetch-users-count // command to get current count in db
-# python update_manager.py --update-redis-cache // update handles in redis
 # python update_manager.py --get-federated-pdses // validate PDSes
 # python update_manager.py --count-list-users // count list users
 
