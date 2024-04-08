@@ -29,7 +29,7 @@ async def main():
     parser.add_argument('--count-list-users', action='store_true', help='Count list users')
     args = parser.parse_args()
     try:
-        await database_handler.create_connection_pool("read")  # Creates connection pool for db
+        await database_handler.create_connection_pool("read")
         await database_handler.create_connection_pool("write")
     except Exception as e:
         logger.error(f"Error creating connection pool: {str(e)}")
@@ -37,8 +37,6 @@ async def main():
 
     if args.update_users_dids:
         try:
-            # await database_handler.create_user_status_temporary_table()
-            # Call the function to update the database with all users dids
             logger.info("Users db update dids only requested.")
             await database_handler.get_all_users_db(True, False, init_db_run=True)
             logger.info("Users db updated dids finished.")
