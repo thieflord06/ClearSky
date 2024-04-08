@@ -45,7 +45,6 @@ cors(app, allow_origin="*")
 # Configure session secret key
 app.secret_key = 'your-secret-key'
 
-session_ip = None
 fun_start_time = None
 funer_start_time = None
 total_start_time = None
@@ -421,17 +420,17 @@ async def fetch_and_push_data():
             }
             headers = {'X-API-Key': f'{api_key}'}
 
-            async with aiohttp.ClientSession(headers=headers) as session:
+            async with aiohttp.ClientSession(headers=headers) as get_session:
                 for (fetch_name, fetch_api), (send_name, send_api) in zip(fetch_api.items(), send_api.items()):
                     logger.info(f"Fetching data from {fetch_name} API")
 
-                    async with session.get(fetch_api) as internal_response:
+                    async with get_session.get(fetch_api) as internal_response:
                         if internal_response.status == 200:
                             internal_data = await internal_response.json()
                             if "timeLeft" in internal_data['data']:
                                 logger.info(f"{fetch_name} Data not ready, skipping.")
                             else:
-                                async with session.post(send_api, json=internal_data) as response:
+                                async with get_session.post(send_api, json=internal_data) as response:
                                     if response.status == 200:
                                         logger.info(f"Data successfully pushed to {send_api}")
                                     else:
@@ -584,8 +583,9 @@ async def get_single_blocklist(client_identifier, page):
             items_per_page = 100
             offset = (page - 1) * items_per_page
 
-            blocklist, count, pages = await database_handler.get_single_user_blocks(did_identifier, limit=items_per_page,
-                                                                         offset=offset)
+            blocklist, count, pages = await database_handler.get_single_user_blocks(did_identifier,
+                                                                                    limit=items_per_page,
+                                                                                    offset=offset)
             formatted_count = '{:,}'.format(count)
 
             blocklist_data = {"blocklist": blocklist,
