@@ -311,7 +311,7 @@ async def first_run() -> None:
         await asyncio.sleep(30)
 
 
-@aiocron.crontab('0 0 * * *')
+@aiocron.crontab('0 */12 * * *')  # Every 12 hours
 async def schedule_stats_update() -> None:
     logger.info("Starting scheduled stats update.")
 
