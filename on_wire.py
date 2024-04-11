@@ -360,6 +360,7 @@ async def resolve_handle_wellknown_atproto(ident):
 
     if retry_count == max_retries:
         logger.warning("Resolve error for: " + ident + " after multiple retries.")
+
         return None
 
 
@@ -442,7 +443,7 @@ async def verify_handle(identity):
         return False
 
 
-async def describe_pds(pds):
+async def describe_pds(pds) -> bool:
     status_code = None
 
     url = f"{pds}/xrpc/com.atproto.server.describeServer"
