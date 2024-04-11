@@ -181,12 +181,6 @@ async def main():
 
             dids = await database_handler.get_didwebs_without_pds()
 
-            logger.info("Getting label information.")
-            labelers = await database_handler.get_labelers()
-
-            logger.info("Updating labeler data.")
-            await database_handler.update_labeler_data(labelers)
-
             if dids:
                 logger.info(f"Processing {len(dids)} did:webs")
                 for did in dids:
@@ -213,6 +207,12 @@ async def main():
                 sys.exit()
             else:
                 logger.info("No PDS info.")
+
+            logger.info("Getting label information.")
+            labelers = await database_handler.get_labelers()
+
+            logger.info("Updating labeler data.")
+            await database_handler.update_labeler_data(labelers)
         except database_handler.DatabaseConnectionError:
             logger.error("Database connection error")
         except Exception as e:
