@@ -2881,6 +2881,58 @@ async def get_did_web_handle_history(identifier) -> Optional[list]:
         return None
 
 
+@check_db_connection("write")
+async def get_labelers() -> dict[str, dict[str, str]]:
+    data = {}
+
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                labelers = await connection.fetch('SELECT did, name, description FROM labelers')
+
+                for item in labelers:
+                    name = item['name']
+                    description = item['description']
+
+                    if name == '':
+                        name = None
+
+                    if description == '':
+                        description = None
+
+                    data[item['did']] = {
+                        "displayName": name,
+                        "description": description
+                    }
+
+                return data
+    except Exception as e:
+        logger.error(f"Error fetching labelers: {e}")
+
+        return {}
+
+
+@check_db_connection("write")
+async def update_labeler_data(data) -> None:
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                for did, info in data.items():
+                    response = await on_wire.get_labeler_info(did)
+
+                    if "error" in response:
+                        await connection.execute('UPDATE labelers SET status = FALSE WHERE did = $1', did)
+                        continue
+
+                    name = info['displayName']
+                    description = info['description']
+
+                    if response['displayName'] != name or response['description'] != description:
+                        await connection.execute('UPDATE labelers SET name = $2, description = $3 WHERE did = $1', did, response['displayName'], response['description'])
+    except Exception as e:
+        logger.error(f"Error updating labeler data: {e}")
+
+
 # ======================================================================================================================
 # ============================================ get database credentials ================================================
 def get_database_config() -> dict:

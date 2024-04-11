@@ -178,7 +178,14 @@ async def main():
             await utils.get_all_did_records(last_value)
 
             logger.info("Getting did:webs without PDSes.")
+
             dids = await database_handler.get_didwebs_without_pds()
+
+            logger.info("Getting label information.")
+            labelers = await database_handler.get_labelers()
+
+            logger.info("Updating labeler data.")
+            await database_handler.update_labeler_data(labelers)
 
             if dids:
                 logger.info(f"Processing {len(dids)} did:webs")

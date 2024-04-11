@@ -482,3 +482,39 @@ async def describe_pds(pds):
         logger.warning(f"Failed to describe PDS: {url}")
 
         return False
+
+
+async def get_labeler_info(did) -> Optional[dict[str, str]]:
+    url = f"https://api.bsky.app/xrpc/app.bsky.actor.getProfile?actor={did}"
+
+    logger.debug(url)
+
+    data = {}
+
+    try:
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(url)
+            except Exception:
+                return {}
+
+            if response.status_code == 200:
+                response_json = response.json()
+                display_name = response_json.get("displayName", None)
+                description = response_json.get("description", None)
+
+                if display_name == "":
+                    display_name = None
+                if description == "":
+                    description = None
+
+                data["displayName"] = display_name
+                data["description"] = description
+
+                return data
+            else:
+                return {"error": "error"}
+    except Exception:
+        logger.warning(f"Failed to get label profile info: {url}")
+
+        return {}
