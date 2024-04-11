@@ -2870,11 +2870,16 @@ async def get_did_web_handle_history(identifier) -> Optional[list]:
                 return None
 
             for record in history:
-                handle_history.append((record['handle'], record['pds'], record['timestamp'].isoformat()))
+                if record['timestamp'] is None:
+                    timestamp = None
+                else:
+                    timestamp = record['timestamp'].isoformat()
+
+                handle_history.append((record['handle'], record['pds'], timestamp))
 
             handle_history.sort(key=lambda x: x[2])
 
-            return history
+            return handle_history
     except Exception as e:
         logger.error(f"Error fetching did:web history: {e}")
 
