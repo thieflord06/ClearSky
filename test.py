@@ -389,12 +389,18 @@ async def main():
     #     logger.info(f"No last value retrieved, starting from beginning.")
     # await utils.get_all_did_records(last_value)
 
-    record = await get_user_block_list('did:plc:mystu6bxz4df3vlxydlc4ekr', 'https://amanita.us-east.host.bsky.network')
+    # record = await get_user_block_list('did:plc:mystu6bxz4df3vlxydlc4ekr', 'https://amanita.us-east.host.bsky.network')
+    #
+    # print(record)
+    # print(len(record))
+    #
+    # await database_handler.update_blocklist_table('did:plc:mystu6bxz4df3vlxydlc4ekr', record)
 
-    print(record)
-    print(len(record))
+    logger.info("Getting label information.")
+    labelers = await database_handler.get_labelers()
 
-    await database_handler.update_blocklist_table('did:plc:mystu6bxz4df3vlxydlc4ekr', record)
+    logger.info("Updating labeler data.")
+    await database_handler.update_labeler_data(labelers)
 
 if __name__ == '__main__':
     asyncio.run(main())
