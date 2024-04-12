@@ -1,9 +1,12 @@
 # test.py
 import asyncio
+import sys
 import urllib
 import urllib.parse
 import httpx
 from datetime import datetime
+
+import app
 from config_helper import logger, limiter
 import database_handler
 import random
@@ -372,9 +375,16 @@ async def get_user_block_list(ident, pds):
 
 
 async def main():
+    try:
+        await database_handler.create_connection_pool("read")
+        await database_handler.create_connection_pool("write")
+    except Exception as e:
+        logger.error(f"Error creating connection pool: {str(e)}")
+        sys.exit()
+
     # answer = await describe_pds('https://zaluka.yartsa.xyz')
     # logger.info(f"pds valid: {answer}")
-    await database_handler.create_connection_pool("write")
+    # await database_handler.create_connection_pool("write")
 
     # await database_handler.process_delete_queue()
 
@@ -396,11 +406,15 @@ async def main():
     #
     # await database_handler.update_blocklist_table('did:plc:mystu6bxz4df3vlxydlc4ekr', record)
 
-    logger.info("Getting label information.")
-    labelers = await database_handler.get_labelers()
+    # logger.info("Getting label information.")
+    # labelers = await database_handler.get_labelers()
+    #
+    # logger.info("Updating labeler data.")
+    # await database_handler.update_labeler_data(labelers)
 
-    logger.info("Updating labeler data.")
-    await database_handler.update_labeler_data(labelers)
+    result = await app.get_handle_history_info("genco.me")
+
+    logger.info(result)
 
 if __name__ == '__main__':
     asyncio.run(main())
