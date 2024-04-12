@@ -1706,7 +1706,7 @@ async def update_did_service(data, label_data):
 
                                 await connection.execute(insert_pds_query, record[0], record[1], record[2])
                                 await connection.execute(pop, record[0])
-                                logger.info(f"pop: {record[0]}")
+                                logger.debug(f"pop: {record[0]}")
                                 pop_count += 1
                             elif did_exists[0]["pds"] != record[2]:
                                 old_pds = did_exists[0]["pds"]
@@ -1714,7 +1714,7 @@ async def update_did_service(data, label_data):
 
                                 await connection.execute(update_query, record[0], record[2])
                                 await connection.execute(pop, record[0])
-                                logger.info(f"pop: {record[0]}")
+                                logger.debug(f"pop: {record[0]}")
                                 pop_count += 1
 
                                 logger.info(f"Updated pds for: {record[0]} | from {old_pds} to {record[2]}")
@@ -1750,7 +1750,7 @@ async def update_did_service(data, label_data):
 
                                     await connection.execute(insert_label_query, label["did"], label["endpoint"], label["createdAt"])
                                     await connection.execute(pop, label["did"])
-                                    logger.info(f"pop: {label['did']}")
+                                    logger.debug(f"pop: {label['did']}")
                                     pop_count += 1
                                 elif not did_exists[0].get("name"):
                                     insert_label_query = """UPDATE labelers SET name = $2 WHERE did = $1"""
@@ -1766,21 +1766,21 @@ async def update_did_service(data, label_data):
 
                                     await connection.execute(update_query, label["did"], description)
 
-                                    logger.info(f"Updated description for: {label['did']} | from {old_description} to {description}")
+                                    logger.debug(f"Updated description for: {label['did']} | from {old_description} to {description}")
                                 elif did_exists[0]["name"] != display_name:
                                     old_name = did_exists[0]["name"]
                                     update_query = """UPDATE labelers SET name = $2 WHERE did = $1"""
 
                                     await connection.execute(update_query, label["did"], display_name)
 
-                                    logger.info(f"Updated name for: {label['did']} | from {old_name} to {display_name}")
+                                    logger.debug(f"Updated name for: {label['did']} | from {old_name} to {display_name}")
                                 elif did_exists[0]["endpoint"] != label["endpoint"]:
                                     old_endpoint = did_exists[0]["endpoint"]
                                     update_query = """UPDATE labelers SET endpoint = $2 WHERE did = $1"""
 
                                     await connection.execute(update_query, label["did"], label["endpoint"])
 
-                                    logger.info(f"Updated endpoint for: {label['did']} | from {old_endpoint} to {label['endpoint']}")
+                                    logger.debug(f"Updated endpoint for: {label['did']} | from {old_endpoint} to {label['endpoint']}")
                                     await connection.execute(pop, label['did'])
                                     logger.info(f"pop: {label['did']}")
                                     pop_count += 1
