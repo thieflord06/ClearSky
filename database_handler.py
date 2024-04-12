@@ -2875,7 +2875,7 @@ async def get_did_web_handle_history(identifier) -> Optional[list]:
                 else:
                     timestamp = record['timestamp'].isoformat()
 
-                handle_history.append((record['handle'], record['pds'], timestamp))
+                handle_history.append((record['handle'], timestamp, record['pds']))
 
             handle_history.sort(key=lambda x: x[2])
 
