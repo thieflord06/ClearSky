@@ -1,29 +1,34 @@
+# API Documentation
+
 Response errors:
 500: Internal Server Error
 503: Service Unavailable
 404: Not Found
 400: Bad Request
 
-Endpoint: /api/v1/anon/blocklist/<handle/did>/<page:int>
-Method: GET
-Description: Get list of users that someone is blocking
-Parameters: handle or did
-Response:
-{
-    "data":
+## 1.
+
+- **Endpoint:** `/api/v1/anon/blocklist/<handle/did>/<page:int>`
+- **Method:** `GET`
+- **Description:** Get list of users that someone is blocking
+- **Parameters:** handle or did
+- **Response:**
+    ```json
         {
-            "blocklist":
-                [
-                    {"blocked_date":"2024-03-26T16:25:45.414000+00:00","handle":"lowqualityfacts.bsky.social","status":true},
-                    {"blocked_date":"2024-03-17T21:17:44.607000+00:00","handle":"acreepyphilosopher.bsky.social","status":true},
-                    {"blocked_date":"2024-03-14T11:17:43.670000+00:00","handle":"danys.bsky.social","status":true}
-                ],
-                "count":"388",
-                "pages":4
-        },
-            "identity":"rudyfraser.com",
-            "status":true
-}
+            "data":
+                {
+                    "blocklist":
+                        [
+                            {"blocked_date":"2024-03-26T16:25:45.414000+00:00","handle":"lowqualityfacts.bsky.social","status":true},
+                            {"blocked_date":"2024-03-17T21:17:44.607000+00:00","handle":"acreepyphilosopher.bsky.social","status":true},
+                            {"blocked_date":"2024-03-14T11:17:43.670000+00:00","handle":"danys.bsky.social","status":true}
+                        ],
+                        "count":"388",
+                        "pages":4
+                },
+                    "identity":"rudyfraser.com",
+                    "status":true
+        }
 
 
 Endpoint: /api/v1/anon/single-blocklist/<handle/did>/<page:int>
