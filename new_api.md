@@ -1,10 +1,10 @@
 # API Documentation
 
 ## Response Errors:
+- **400:** Bad Request
+- **404:** Not Found
 - **500:** Internal Server Error
 - **503:** Service Unavailable
-- **404:** Not Found
-- **400:** Bad Request
 
 ## Pagination:
 
