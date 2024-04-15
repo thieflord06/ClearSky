@@ -1,0 +1,137 @@
+Response errors:
+500: Internal Server Error
+503: Service Unavailable
+404: Not Found
+400: Bad Request
+
+Endpoint: /api/v1/blocklist/<handle/did>/<page:int>
+Method: GET
+Description: Get list of users that someone is blocking
+Parameters: handle or did
+Response:
+
+Endpoint: /api/v1/single-blocklist/<handle/did>/<page:int>
+Method: GET
+Description: Get list of users that someone is blocked by
+Parameters: handle or did
+Response:
+
+Endpoint: /api/v1/get-list/<handle/did>
+Method: GET
+Description: Get list of moderation lists a user is on
+Parameters: handle or did
+Response:
+
+Endpoint: /api/v1/get-did/<handle>
+Method: GET
+Description: Get the DID of a given handle
+Parameters: handle
+Response:
+
+Endpoint: /api/v1/get-handle/<did>
+Method: GET
+Description: Get the handle of a given DID
+Parameters: DID
+Response:
+
+Endpoint: /api/v1/get-handle-history/<handle/did>
+Method: GET
+Description: Get the account history of a user
+Parameters: handle or did
+Response:
+
+Endpoint: /api/v1/at-uri/<uri>
+Method: GET
+Description: Get the URL of a given URI
+Parameters: URI
+Response:
+
+Endpoint: /api/v1/blocklist-search-blocking/<handle1>/<handle2>
+Method: GET
+Description: Get if handle 1 is blocked by handle 2
+Parameters: handle 1 & handle 2
+Response:
+
+Endpoint: /api/v1/blocklist-search-blocked/<handle1>/<handle2>
+Method: GET
+Description: Get if handle 1 blocked by handle 2
+Parameters: handle 1 & handle 2
+Response:
+
+Endpoint: /api/v1/get-moderation-list/<name:string>
+Method: GET
+Description: Get a list of lists and other details based on word search of either the list name or description
+Parameters: name
+Response:
+
+Endpoint: /api/v1/base/autocomplete/<handle:string>
+Method: GET
+Description: Get a list of handles based on a partial word search
+Parameters: handle (partial/complete)
+Response:
+
+Endpoint: /api/v1/total-users
+Method: GET
+Description: Get user count information: total users, active users, deleted users
+Parameters: none
+Response:
+
+Endpoint: /api/v1/lists/fun-facts
+Method: GET
+Description: Get top 20 blockers and blocked
+Parameters: None
+Response:
+
+Endpoint: /api/v1/lists/funer-facts
+Method: GET
+Description: Get top 20 blockers and blocked in the last 24 hours
+Parameters: None
+Response:
+
+Endpoint: /api/v1/lists/block-stats
+Method: GET
+Description: Get a list of block stats based on userbase
+Parameters: None
+Response:
+
+Endpoint: /api/v1/in-common-blocklist/<handle/did>
+Method: GET
+Description: Takes the list of users that a specified user blocks and returns a list of users that also block those same users based on percentage matched
+Parameters: handle or did
+Response:
+
+Endpoint: /api/v1/base/internal/status/process-status
+Method: GET
+Description: Internal status of server
+Parameters: None
+Response:
+
+Endpoint: /api/v1/in-common-blocked-by/<handle/did>
+Method: GET
+Description: Takes the list of users that a specified user is blocked by and returns a list of users that also are blocked by those same users based on percentage matched
+Parameters: handle or did
+Response:
+
+Endpoint: /api/v1/anon/lists/dids-per-pds
+Method: GET
+Description: Return a list of the count of users on each PDS
+Parameters: None
+Response:
+
+Endpoint: api/v1/anon/validation/validate-handle/<handle>
+Method: GET
+Description: Validate a handle
+Parameters: handle
+Response:
+
+Endpoint: /api/v1/anon/subscribe-blocks-blocklist/<handle/did>/<page:int>
+Method: GET
+Description: Get list of lists that a user is blocking
+Parameters: handle or did
+Response:
+
+Endpoint: /api/v1/anon/subscribe-blocks-single-blocklist/<handle/did>/<page:int>
+Method: GET
+Description: Get list of lists that a user is blocked on
+Parameters: handle or did
+Response:
