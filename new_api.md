@@ -131,19 +131,19 @@
     ```json
         {
             "data":
-            {
-                "handle_history":
-                [
-                    ["rudyfraser.com","2023-11-13T02:37:31.907Z","https://shiitake.us-east.host.bsky.network"],
-                    ["rudyfraser.com","2023-05-25T12:22:54.104Z","https://bsky.social"],
-                    ["salesforce.herokuapp.com","2023-05-04T00:32:48.659Z","https://bsky.social"],
-                    ["rudyfraser.herokuapp.com","2023-05-04T00:29:38.207Z","https://bsky.social"],
-                    ["rudyfraser.com","2023-05-02T16:05:34.405Z","https://bsky.social"],
-                    ["shacqeal.bsky.social","2023-05-01T03:43:42.434Z","https://bsky.social"]
-                    ...
-                ],
-                "identifier":"rudyfraser.com"
-            }
+                {
+                    "handle_history":
+                    [
+                        ["rudyfraser.com","2023-11-13T02:37:31.907Z","https://shiitake.us-east.host.bsky.network"],
+                        ["rudyfraser.com","2023-05-25T12:22:54.104Z","https://bsky.social"],
+                        ["salesforce.herokuapp.com","2023-05-04T00:32:48.659Z","https://bsky.social"],
+                        ["rudyfraser.herokuapp.com","2023-05-04T00:29:38.207Z","https://bsky.social"],
+                        ["rudyfraser.com","2023-05-02T16:05:34.405Z","https://bsky.social"],
+                        ["shacqeal.bsky.social","2023-05-01T03:43:42.434Z","https://bsky.social"]
+                        ...
+                    ],
+                    "identifier":"rudyfraser.com"
+                }
         }
 
 ## 7.
@@ -154,6 +154,13 @@
 - **Parameters:** URI
 - **Response:**
     ```json
+        {
+            "data":
+            {
+                "url": "https://bsky.app/profile/did:plc:bfjoqzne3tm5yxvpybdfahzo/lists/3jzmevbfqkj2u"
+            }
+        }
+
 
 ## 8.
 
