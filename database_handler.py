@@ -524,7 +524,7 @@ async def get_moderation_list(name, limit=100, offset=0):
                 name_query = """SELECT ml.url, u.handle, u.status, ml.name, ml.description, ml.created_date, mc.user_count
                 FROM mutelists AS ml 
                 INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle 
-                INNER JOIN mutelists_user_count AS mc ON ml.url = mc.url
+                INNER JOIN mutelists_user_count AS mc ON ml.uri = mc.list_uri
                 WHERE ml.name ILIKE $1
                 LIMIT $2
                 OFFSET $3"""
@@ -534,7 +534,7 @@ async def get_moderation_list(name, limit=100, offset=0):
                 description_query = """SELECT ml.url, u.handle, u.status, ml.name, ml.description, ml.created_date, mc.user_count
                 FROM mutelists AS ml
                 INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle
-                INNER JOIN mutelists_user_count AS mc ON ml.url = mc.url
+                INNER JOIN mutelists_user_count AS mc ON ml.uri = mc.list_uri
                 WHERE ml.description ILIKE $1
                 LIMIT $2
                 OFFSET $3"""
