@@ -354,6 +354,8 @@ async def resolve_handle_wellknown_atproto(ident):
                     logger.debug(f"response 400: {response.json()}")
 
                     return None
+
+                retry_count += 1
         except Exception as e:
             retry_count += 1
             logger.error(f"Error occurred while making the API call: {e}")
