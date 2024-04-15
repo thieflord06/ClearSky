@@ -1,6 +1,6 @@
 # API Documentation
 
-## Response errors:
+## Response Errors:
 - **500:** Internal Server Error
 - **503:** Service Unavailable
 - **404:** Not Found
