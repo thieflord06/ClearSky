@@ -8,7 +8,7 @@
 
 ## Pagination:
 
-- **value:** integer
+- **Value:** Integer 
 - This is a parameter that is used to paginate the results. It is used to specify the page number of the results to be returned. The default value is 1.
 
 ## 1.
