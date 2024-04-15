@@ -21,7 +21,8 @@
                     [
                         {"blocked_date":"2024-03-26T16:25:45.414000+00:00","handle":"lowqualityfacts.bsky.social","status":true},
                         {"blocked_date":"2024-03-17T21:17:44.607000+00:00","handle":"acreepyphilosopher.bsky.social","status":true},
-                        {"blocked_date":"2024-03-14T11:17:43.670000+00:00","handle":"danys.bsky.social","status":true}
+                        {"blocked_date":"2024-03-14T11:17:43.670000+00:00","handle":"danys.bsky.social","status":true},
+                        ...
                     ],
                     "count":"388",
                     "pages":4
@@ -45,7 +46,8 @@
                         [
                             {"blocked_date":"2024-04-08T01:20:28.071211+00:00","handle":"philcollins.bsky.social","status":false},
                             {"blocked_date":"2024-04-07T02:45:47.695801+00:00","handle":"kinew.bsky.social","status":false},
-                            {"blocked_date":"2024-03-23T12:49:13.887000+00:00","handle":"23-march-2024.bsky.social","status":true}
+                            {"blocked_date":"2024-03-23T12:49:13.887000+00:00","handle":"23-march-2024.bsky.social","status":true},
+                            ...
                         ],
                         "count":"292",
                         "pages":3
@@ -72,6 +74,7 @@
                                   {"created_date":"2023-07-02T23:46:37.719000+00:00","date_added":"2024-02-24T18:02:24.691000+00:00","description":"Bas3d crypto skeeters","handle":"alkohlmist.bsky.social","list user count":104,"name":"MetaDAOists","status":true,"url":"https://bsky.app/profile/did:plc:dwzmn37bquliunjanpeostli/lists/3jzlaonnxtl2m"},
                                   {"created_date":"2024-02-29T05:41:53.330000+00:00","date_added":"2024-03-01T17:09:31.144000+00:00","description":"","handle":"edavis.dev","list user count":41,"name":"Tech","status":true,"url":"https://bsky.app/profile/did:plc:4nsduwlpivpuur4mqkbfvm6a/lists/3kmjuvrij622k"},
                                   {"created_date":"2023-12-14T13:45:14.015000+00:00","date_added":"2023-12-22T00:45:29.137000+00:00","description":"Your presence here makes a big difference and improves my feeds, thank you!","handle":"scanty.bsky.social","list user count":1449,"name":"Feed Guard \ud83d\udee1\ufe0f","status":true,"url":"https://bsky.app/profile/did:plc:2wt2zjrqtveulc5a2sl2ppgt/lists/3kq3dtinvc32i"},
+                                  ...
                               ]
                   },
               "identifier":"rudyfraser.com"
@@ -101,7 +104,6 @@
 - **Method:** `GET`
 - **Description:** Get the handle of a given DID
 - **Parameters:** DID
-- **Response:**
 - **Response:**
     ```json
         {
@@ -133,6 +135,7 @@
                     ["rudyfraser.herokuapp.com","2023-05-04T00:29:38.207Z","https://bsky.social"],
                     ["rudyfraser.com","2023-05-02T16:05:34.405Z","https://bsky.social"],
                     ["shacqeal.bsky.social","2023-05-01T03:43:42.434Z","https://bsky.social"]
+                    ...
                 ],
                 "identifier":"rudyfraser.com"
             }
