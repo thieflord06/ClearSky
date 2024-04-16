@@ -2943,7 +2943,7 @@ async def get_resolution_queue() -> Optional[list]:
     try:
         async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
-                query = """SELECT DISTINCT(did), timestamp FROM resolution_queue LIMIT 30"""
+                query = """SELECT DISTINCT(did), timestamp FROM resolution_queue"""
 
                 records = await connection.fetch(query)
 
