@@ -7,6 +7,7 @@ import httpx
 from datetime import datetime
 
 import app
+import utils
 from config_helper import logger, limiter
 import database_handler
 import random
@@ -412,9 +413,11 @@ async def main():
     # logger.info("Updating labeler data.")
     # await database_handler.update_labeler_data(labelers)
 
-    result = await app.get_handle_history_info("genco.me")
+    # result = await app.get_handle_history_info("genco.me")
 
-    logger.info(result)
+    # logger.info(result)
+    # await database_handler.update_did_webs()
 
+    await utils.get_resolution_queue_info()
 if __name__ == '__main__':
     asyncio.run(main())
