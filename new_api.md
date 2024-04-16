@@ -372,6 +372,36 @@
 - **Parameters:** None
 - **Response:**
     ```json
+        {
+            "as of":"2024-04-16T01:41:27.900623",
+                "data":
+                    {
+                        "averageNumberOfBlocked":{"displayname":"Average Number of Users Blocked","value":5.84},
+                        "averageNumberOfBlocks":{"displayname":"Average Number of Blocks","value":"22.09"},
+                        "numberBlock1":{"displayname":"Number of Users Blocking 1 User","value":"218,028"},
+                        "numberBlocked1":{"displayname":"Number of Users Blocked by 1 User","value":"908,864"},
+                        "numberBlocked101and1000":{"displayname":"Number of Users Blocked by 101-1000 Users","value":"9,954"},
+                        "numberBlocked2and100":{"displayname":"Number of Users Blocked by 2-100 Users","value":"1,021,503"},
+                        "numberBlockedGreaterThan1000":{"displayname":"Number of Users Blocked by More than 1000 Users","value":"880"},
+                        "numberBlocking101and1000":{"displayname":"Number of Users Blocking 101-1000 Users","value":"12,653"},
+                        "numberBlocking2and100":{"displayname":"Number of Users Blocking 2-100 Users","value":"281,329"},
+                        "numberBlockingGreaterThan1000":{"displayname":"Number of Users Blocking More than 1000 Users","value":"751"},
+                        "numberOfTotalBlocks":{"displayname":"Number of Total Blocks","value":"11,335,104"},
+                        "numberOfUniqueUsersBlocked":{"displayname":"Number of Unique Users Blocked","value":"1,941,201"},
+                        "numberOfUniqueUsersBlocking":{"displayname":"Number of Unique Users Blocking","value":"512,761"},
+                        "percentNumberBlocked1":{"displayname":"Percent of Users Blocked by 1 User","value":46.82},
+                        "percentNumberBlocked101and1000":{"displayname":"Percent of Users Blocked by 101-1000 Users","value":0.51},
+                        "percentNumberBlocked2and100":{"displayname":"Percent of Users Blocked by 2-100 Users","value":52.62},
+                        "percentNumberBlockedGreaterThan1000":{"displayname":"Percent of Users Blocked by More than 1000 Users","value":0.05},
+                        "percentNumberBlocking1":{"displayname":"Percent of Users Blocking 1 User","value":42.52},
+                        "percentNumberBlocking101and1000":{"displayname":"Percent of Users Blocking 101-1000 Users","value":2.47},
+                        "percentNumberBlocking2and100":{"displayname":"Percent of Users Blocking 2-100 Users","value":54.87},
+                        "percentNumberBlockingGreaterThan1000":{"displayname":"Percent of Users Blocking More than 1000 Users","value":0.15},
+                        "percentUsersBlocked":{"displayname":"Percent Users Blocked","value":32.86},
+                        "percentUsersBlocking":{"displayname":"Percent Users Blocking","value":8.68},
+                        "totalUsers":{"displayname":"Total Users","value":"5,906,944"}
+                    }
+        }
 
 ## 16.
 
