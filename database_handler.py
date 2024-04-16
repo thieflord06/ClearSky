@@ -2943,7 +2943,7 @@ async def get_resolution_queue() -> Optional[list]:
     try:
         async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
-                query = """SELECT DISTINCT(did), timestamp FROM resolution_queue"""
+                query = """SELECT DISTINCT(did), timestamp FROM resolution_queue LIMIT 30"""
 
                 records = await connection.fetch(query)
 
@@ -2955,7 +2955,14 @@ async def get_resolution_queue() -> Optional[list]:
 
 
 async def process_resolution_queue(info):
-    for did, handle, pds in info:
+    pop = 0
+    update_pds = False
+    update_handle = False
+
+    for did, data in info.items():
+        handle = data.get("handle")
+        pds = data.get("pds")
+
         try:
             async with connection_pools["write"].acquire() as connection:
                 async with connection.transaction():
@@ -2979,8 +2986,14 @@ async def process_resolution_queue(info):
                         await connection.execute("""UPDATE users SET pds = $2 WHERE did = $1""", did, pds)
                     elif update_handle and not update_pds:
                         await connection.execute("""UPDATE users SET handle = $2 WHERE did = $1""", did, handle)
+
+                    pop += 1
+                    await connection.execute("delete from resolution_queue where did = $1", did)
+
         except Exception as e:
             logger.error(f"Error updating didwebs: {e}")
+
+    logger.info(f"Popped {pop} from resolution queue.")
 
 
 # ======================================================================================================================
