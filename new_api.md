@@ -5,6 +5,7 @@
 - **404:** Not Found
 - **500:** Internal Server Error
 - **503:** Service Unavailable
+- **423:** Locked
 
 ## Pagination:
  `<page:int>`
