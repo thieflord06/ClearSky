@@ -20,6 +20,7 @@ import aiohttp
 import functools
 import csv
 from typing import Optional
+from errors import BadRequest, NotFound
 
 # ======================================================================================================================
 # ======================================== global variables // Set up logging ==========================================
@@ -1785,6 +1786,23 @@ async def retrieve_csv_files_info():
     return files_info
 
 
+async def verify_handle(client_identifier):
+    identity = await sanitization(client_identifier)
+    is_handle = utils.is_handle(identity)
+
+    if is_handle:
+        result = await on_wire.verify_handle(identity)
+    else:
+        raise BadRequest
+
+    if result:
+        response = {"data": {"valid": "true"}, "identity": identity}
+    else:
+        response = {"data": {"valid": "false"}, "identity": identity}
+
+    return jsonify(response)
+
+
 # ======================================================================================================================
 # ============================================= Authenticated API Endpoints ============================================
 @app.route('/api/v1/auth/blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
@@ -2104,10 +2122,14 @@ async def auth_subscribe_blocks_single_blocklist(client_identifier, page):
 @rate_limit(30, timedelta(seconds=1))
 async def auth_validate_handle(client_identifier):
     try:
-        return await on_wire.verify_handle(client_identifier)
+        return await verify_handle(client_identifier)
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in auth_validate_handle: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2443,10 +2465,14 @@ async def anon_subscribe_blocks_single_blocklist(client_identifier, page):
 @rate_limit(5, timedelta(seconds=1))
 async def anon_validate_handle(client_identifier):
     try:
-        return await on_wire.verify_handle(client_identifier)
+        return await verify_handle(client_identifier)
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in anon_validate_handle: {e}")
         return jsonify({"error": "Internal error"}), 500
