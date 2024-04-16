@@ -1479,3 +1479,29 @@ async def list_uri_to_url(uri):
     list_full_url = f"""{list_base_url}/{did}/lists/{commit_rev}"""
 
     return list_full_url
+
+
+async def get_resolution_queue_info():
+    queue_info = {}
+    resolution_queue = await database_handler.get_resolution_queue()
+
+    if not resolution_queue:
+        logger.info("Nothing in queue.")
+
+    for did in resolution_queue:
+        handle = await on_wire.resolve_did(did)
+
+        if "did:web:" in did:
+            pds = await on_wire.resolve_did(did, True)
+        else:
+            pds = await on_wire.get_pds(did)
+
+        if handle and pds:
+            info = {
+                "handle": handle,
+                "pds": pds
+            }
+
+            queue_info[did] = info
+    if queue_info:
+        await database_handler.process_resolution_queue(queue_info)

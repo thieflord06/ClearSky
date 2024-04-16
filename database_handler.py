@@ -2939,6 +2939,50 @@ async def update_labeler_data(data) -> None:
         logger.error(f"Error updating labeler data: {e}")
 
 
+async def get_resolution_queue() -> Optional[list]:
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                query = """SELECT DISTINCT(did), timestamp FROM resolution_queue"""
+
+                records = await connection.fetch(query)
+
+                processed_records = [record['did'] for record in records]
+
+                return processed_records
+    except Exception as e:
+        logger.error(f"Error updating didwebs: {e}")
+
+
+async def process_resolution_queue(info):
+    for did, handle, pds in info:
+        try:
+            async with connection_pools["write"].acquire() as connection:
+                async with connection.transaction():
+                    query = """SELECT handle, pds FROM USERS WHERE did = $1"""
+
+                    user_info = await connection.fetch(query, did)
+
+                    old_handle = user_info[0]['handle']
+
+                    old_pds = user_info[0]['pds']
+
+                    if pds != old_pds:
+                        update_pds = True
+
+                    if handle != old_handle:
+                        update_handle = True
+
+                    if update_pds and update_handle:
+                        await connection.execute("""UPDATE users SET handle = $2, pds = $3 WHERE did = $1""", did, handle, pds)
+                    elif update_pds and not update_handle:
+                        await connection.execute("""UPDATE users SET pds = $2 WHERE did = $1""", did, pds)
+                    elif update_handle and not update_pds:
+                        await connection.execute("""UPDATE users SET handle = $2 WHERE did = $1""", did, handle)
+        except Exception as e:
+            logger.error(f"Error updating didwebs: {e}")
+
+
 # ======================================================================================================================
 # ============================================ get database credentials ================================================
 def get_database_config() -> dict:

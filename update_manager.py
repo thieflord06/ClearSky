@@ -97,6 +97,9 @@ async def main():
             logger.info("Users db update finished.")
             await database_handler.delete_new_users_temporary_table()
             await database_handler.process_delete_queue()  # Process the delete count for lists
+            logger.info("Processing resolution queue.")
+            await utils.get_resolution_queue_info()
+            logger.info("Finished processing data.")
         except database_handler.DatabaseConnectionError:
             logger.error("Database connection error")
         except Exception as e:
