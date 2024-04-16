@@ -1689,15 +1689,16 @@ async def retrieve_subscribe_blocks_single_blocklist(client_identifier, page):
                 logger.error(f"Error retrieving mod list from internal API: {e}")
                 mod_list = None
 
-            if mod_list and 'data' in mod_list and 'lists' in mod_list:
-                for item in mod_list['data']['lists']:
-                    url = item['url']
+            if mod_list is not None:
+                if 'data' in mod_list and 'lists' in mod_list['data']:
+                    for item in mod_list['data']['lists']:
+                        url = item['url']
 
-                    list_url.append(url)
+                        list_url.append(url)
 
-                blocklist, count, pages = await utils.process_subscribe_blocks_single(did_identifier, list_url,
-                                                                                      limit=items_per_page,
-                                                                                      offset=offset)
+                    blocklist, count, pages = await utils.process_subscribe_blocks_single(did_identifier, list_url,
+                                                                                          limit=items_per_page,
+                                                                                          offset=offset)
             else:
                 blocklist = None
                 count = 0
