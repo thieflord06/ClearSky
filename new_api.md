@@ -474,6 +474,24 @@
 - **Parameters:** handle or did
 - **Response:**
     ```json
+        {
+            "data":
+                {
+                    "blocklist":
+                        [
+                            {"date_added":"2024-03-11T01:29:10.890000+00:00","handle":"acuarelaazul.bsky.social","list count":15,"list_uri":"at://did:plc:oe5k5kgdudinkw6jpzzfcw4q/app.bsky.graph.list/3kmds77epsk2e","list_url":"https://bsky.app/profile/did:plc:oe5k5kgdudinkw6jpzzfcw4q/lists/3kmdsa2cmuc27","status":true,"subject_did":"did:plc:2b7th5azcseckwqgrq2uyxum"},
+                            {"date_added":"2024-03-11T01:29:10.890000+00:00","handle":"nathaliepenaud.bsky.social","list count":15,"list_uri":"at://did:plc:oe5k5kgdudinkw6jpzzfcw4q/app.bsky.graph.list/3kmds77epsk2e","list_url":"https://bsky.app/profile/did:plc:oe5k5kgdudinkw6jpzzfcw4q/lists/3kmdsa2cmuc27","status":true,"subject_did":"did:plc:sa7vi6iwti6oehwj7hqwhuql"},
+                            {"date_added":"2024-03-11T01:29:10.890000+00:00","handle":"rafikiscope.bsky.social","list count":15,"list_uri":"at://did:plc:oe5k5kgdudinkw6jpzzfcw4q/app.bsky.graph.list/3kmds77epsk2e","list_url":"https://bsky.app/profile/did:plc:oe5k5kgdudinkw6jpzzfcw4q/lists/3kmdsa2cmuc27","status":true,"subject_did":"did:plc:r7hknu5mmrm4rufgkgcl6et4"},
+                            {"date_added":"2024-03-11T01:29:10.890000+00:00","handle":"elosgo.bsky.social","list count":15,"list_uri":"at://did:plc:oe5k5kgdudinkw6jpzzfcw4q/app.bsky.graph.list/3kmds77epsk2e","list_url":"https://bsky.app/profile/did:plc:oe5k5kgdudinkw6jpzzfcw4q/lists/3kmdsa2cmuc27","status":true,"subject_did":"did:plc:byehy3ewhpfk3e47glrhju4y"},
+                            ...
+                        ],
+                    "count":"502",
+                    "pages":6
+                },
+            "identity":"shreyanjain.net",
+            "status":true
+        }
+
 
 ## 22.
 
@@ -483,3 +501,20 @@
 - **Parameters:** handle or did
 - **Response:**
     ```json
+        {
+            "data":
+                {
+                    "blocklist":
+                        [
+                            {"date_added":"2024-02-27T10:54:12.347000+00:00","did":"did:plc:fmnwe2six767bnsxd7qcr55x","handle":"kaeru.bsky.social","list_uri":"at://did:plc:wixdgg4ejykqrsoqgi7c2fk6/app.bsky.graph.list/3jvltmsuhak2j","list_url":"https://bsky.app/profile/did:plc:wixdgg4ejykqrsoqgi7c2fk6/lists/3jvltmsuhak2j","status":true},
+                            {"date_added":"2024-02-12T02:47:20.121000+00:00","did":"did:plc:ky6qvoi6nefhkrtq73k5lu5p","handle":"bunnyofcourage.bsky.social","list_uri":"at://did:plc:wixdgg4ejykqrsoqgi7c2fk6/app.bsky.graph.list/3jvltmsuhak2j","list_url":"https://bsky.app/profile/did:plc:wixdgg4ejykqrsoqgi7c2fk6/lists/3jvltmsuhak2j","status":true},
+                            {"date_added":"2024-02-11T08:02:23.578000+00:00","did":"did:plc:fysguxhym4cjnsykyrlvp67j","handle":"5p34r.bsky.social","list_uri":"at://did:plc:wixdgg4ejykqrsoqgi7c2fk6/app.bsky.graph.list/3jvltmsuhak2j","list_url":"https://bsky.app/profile/did:plc:wixdgg4ejykqrsoqgi7c2fk6/lists/3jvltmsuhak2j","status":false},
+                            {"date_added":"2024-02-07T20:37:09.031000+00:00","did":"did:plc:pv52siaeqdc3ib64nbcm7q3n","handle":"animationiskey.bsky.social","list_uri":"at://did:plc:wixdgg4ejykqrsoqgi7c2fk6/app.bsky.graph.list/3jvltmsuhak2j","list_url":"https://bsky.app/profile/did:plc:wixdgg4ejykqrsoqgi7c2fk6/lists/3jvltmsuhak2j","status":true},
+                            ...
+                        ],
+                    "count":"9",
+                    "pages":1
+                },
+            "identity":"thieflord.dev",
+            "status":true
+        }
