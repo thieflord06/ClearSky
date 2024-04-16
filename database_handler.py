@@ -2970,22 +2970,28 @@ async def process_resolution_queue(info):
 
                     user_info = await connection.fetch(query, did)
 
-                    old_handle = user_info[0]['handle']
+                    if user_info:
+                        old_handle = user_info[0]['handle']
 
-                    old_pds = user_info[0]['pds']
+                        old_pds = user_info[0]['pds']
 
-                    if pds != old_pds:
-                        update_pds = True
+                        if pds != old_pds:
+                            update_pds = True
 
-                    if handle != old_handle:
-                        update_handle = True
+                        if handle != old_handle:
+                            update_handle = True
 
-                    if update_pds and update_handle:
-                        await connection.execute("""UPDATE users SET handle = $2, pds = $3 WHERE did = $1""", did, handle, pds)
-                    elif update_pds and not update_handle:
-                        await connection.execute("""UPDATE users SET pds = $2 WHERE did = $1""", did, pds)
-                    elif update_handle and not update_pds:
-                        await connection.execute("""UPDATE users SET handle = $2 WHERE did = $1""", did, handle)
+                        if update_pds and update_handle:
+                            await connection.execute("""UPDATE users SET handle = $2, pds = $3 WHERE did = $1""", did, handle, pds)
+                        elif update_pds and not update_handle:
+                            await connection.execute("""UPDATE users SET pds = $2 WHERE did = $1""", did, pds)
+                        elif update_handle and not update_pds:
+                            await connection.execute("""UPDATE users SET handle = $2 WHERE did = $1""", did, handle)
+                    else:
+                        try:
+                            await connection.execute("""INSERT INTO users (did, handle, pds) VALUES ($1, $2, $3)""", did, handle, pds)
+                        except Exception as e:
+                            logger.error(f"Error inserting new did:web: {e}")
 
                     pop += 1
                     await connection.execute("delete from resolution_queue where did = $1", did)
