@@ -1815,6 +1815,10 @@ async def auth_get_blocklist(client_identifier, page):
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in auth_get_blocklist: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -1830,6 +1834,10 @@ async def auth_get_single_blocklist(client_identifier, page):
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in auth_get_single_blocklist: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -1844,6 +1852,10 @@ async def auth_get_in_common_blocklist(client_identifier):
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in auth_get_in_common_blocklist: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -1858,6 +1870,10 @@ async def auth_get_in_common_blocked_by(client_identifier):
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in auth_get_in_common_blocked_by: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -1872,6 +1888,10 @@ async def auth_convert_uri_to_url(uri):
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in auth_convert_uri_to_url: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -1886,6 +1906,10 @@ async def auth_get_total_users():
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in auth_get_total_users: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -1900,6 +1924,10 @@ async def auth_get_did_info(client_identifier):
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in auth_get_did_info: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -1914,6 +1942,10 @@ async def auth_get_handle_info(client_identifier):
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in auth_get_handle_info: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -1928,6 +1960,10 @@ async def auth_get_handle_history_info(client_identifier):
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in auth_get_handle_history_info: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -1942,6 +1978,10 @@ async def auth_get_list_info(client_identifier):
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in auth_get_list_info: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -1957,6 +1997,10 @@ async def auth_get_moderation_lists(input_name, page):
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in auth_get_moderation_lists: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -1971,6 +2015,10 @@ async def auth_get_blocked_search(client_identifier, search_identifier):
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in auth_get_blocked_search: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -1985,6 +2033,10 @@ async def auth_get_blocking_search(client_identifier, search_identifier):
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in auth_get_blocking_search: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -1999,6 +2051,10 @@ async def auth_fun_facts():
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in auth_fun_facts: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2013,6 +2069,10 @@ async def auth_funer_facts():
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in auth_funer_facts: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2027,6 +2087,10 @@ async def auth_block_stats():
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in auth_block_stats: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2041,6 +2105,10 @@ async def auth_autocomplete(client_identifier):
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in auth_autocomplete: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2055,6 +2123,10 @@ async def auth_get_internal_status():
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in auth_get_internal_status: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2069,6 +2141,10 @@ async def auth_check_api_keys():
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in auth_check_api_keys: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2083,6 +2159,10 @@ async def auth_dids_per_pds():
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in auth_dids_per_pds: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2098,6 +2178,10 @@ async def auth_subscribe_blocks_blocklist(client_identifier, page):
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in auth_subscribe_blocks_blocklist: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2113,6 +2197,10 @@ async def auth_subscribe_blocks_single_blocklist(client_identifier, page):
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in auth_subscribe_blocks_single_blocklist: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2153,6 +2241,13 @@ async def auth_receive_data(data):
         await store_data(data)
 
         return jsonify({"message": "File received and processed successfully"}), 200
+    except database_handler.DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in auth_receive_data: {e}")
 
@@ -2178,6 +2273,13 @@ async def auth_retrieve_data():
 
             # Send the file as a response
             return send_file(file, as_attachment=True)
+    except database_handler.DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in auth_retrieve_data: {e}")
 
@@ -2195,6 +2297,10 @@ async def anon_get_blocklist(client_identifier, page):
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in anon_get_blocklist: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2209,6 +2315,10 @@ async def anon_get_single_blocklist(client_identifier, page):
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in anon_get_single_blocklist: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2222,6 +2332,10 @@ async def anon_get_in_common_blocklist(client_identifier):
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in anon_get_in_common_blocklist: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2235,6 +2349,10 @@ async def anon_get_in_common_blocked_by(client_identifier):
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in anon_get_in_common_blocked_by: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2248,6 +2366,10 @@ async def anon_convert_uri_to_url(uri):
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in anon_convert_uri_to_url: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2261,6 +2383,10 @@ async def anon_get_total_users():
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in anon_get_total_users: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2274,6 +2400,10 @@ async def anon_get_did_info(client_identifier):
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in anon_get_did_info: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2287,6 +2417,10 @@ async def anon_get_handle_info(client_identifier):
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in anon_get_handle_info: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2300,6 +2434,10 @@ async def anon_get_handle_history_info(client_identifier):
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in anon_get_handle_history_info: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2310,6 +2448,13 @@ async def anon_get_handle_history_info(client_identifier):
 async def anon_get_list_info(client_identifier):
     try:
         return await get_list_info(client_identifier)
+    except database_handler.DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in anon_get_list_info: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2324,6 +2469,10 @@ async def anon_get_moderation_lists(input_name, page):
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in anon_get_moderation_lists: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2337,6 +2486,10 @@ async def anon_get_blocked_search(client_identifier, search_identifier):
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in anon_get_blocked_search: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2350,6 +2503,10 @@ async def anon_get_blocking_search(client_identifier, search_identifier):
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in anon_get_blocking_search: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2363,6 +2520,10 @@ async def anon_fun_facts():
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in anon_fun_facts: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2376,6 +2537,10 @@ async def anon_funer_facts():
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in anon_funer_facts: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2389,6 +2554,10 @@ async def anon_block_stats():
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in anon_block_stats: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2402,6 +2571,10 @@ async def anon_autocomplete(client_identifier):
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in anon_autocomplete: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2415,6 +2588,10 @@ async def anon_get_internal_status():
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in anon_get_internal_status: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2428,6 +2605,10 @@ async def anon_dids_per_pds():
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in anon_dids_per_pds: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2442,6 +2623,10 @@ async def anon_subscribe_blocks_blocklist(client_identifier, page):
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in anon_subscribe_blocks_blocklist: {e}")
         return jsonify({"error": "Internal error"}), 500
@@ -2456,6 +2641,10 @@ async def anon_subscribe_blocks_single_blocklist(client_identifier, page):
     except database_handler.DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in anon_subscribe_blocks_single_blocklist: {e}")
         return jsonify({"error": "Internal error"}), 500
