@@ -171,6 +171,14 @@
 - **Parameters:** handle 1 & handle 2
 - **Response:**
     ```json
+        {
+            "data":
+                  {
+                      "blocked_date":"2024-03-05T22:40:37.498000+00:00",
+                      "handle":"mary.my.id",
+                      "status":true
+                  }
+        }
 
 ## 9.
 
@@ -180,6 +188,15 @@
 - **Parameters:** handle 1 & handle 2
 - **Response:**
     ```json
+        {
+            "data":
+                {
+                    "blocked_date":"2023-10-23T22:17:42.214000+00:00",
+                    "handle":"desir.ee",
+                    "status":true
+                }
+        }
+
 
 ## 10.
 
@@ -364,6 +381,105 @@
 - **Parameters:** None
 - **Response:**
     ```json
+        {
+            "as of":"2024-04-16T01:09:11.058137",
+                "data":
+                    {
+                        "blocked24":
+                            [
+                                {"Handle":"iriepirate21.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:nwjrnf36guvfjfdehfj4kxcp","block_count":320,"did":"did:plc:nwjrnf36guvfjfdehfj4kxcp"},
+                                {"Handle":"kiffboet.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:cbfpkroum2sijzt2gtupmzvr","block_count":176,"did":"did:plc:cbfpkroum2sijzt2gtupmzvr"},
+                                {"Handle":"sb58.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:diplgox44wvs32m2c66uc6pd","block_count":118,"did":"did:plc:diplgox44wvs32m2c66uc6pd"},
+                                {"Handle":"catiadireita.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:p6wzx4xynvlqenobnkhv6uvo","block_count":117,"did":"did:plc:p6wzx4xynvlqenobnkhv6uvo"},
+                                {"Handle":"respost.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:thzbb5omc46drqaiqzxy7rqa","block_count":115,"did":"did:plc:thzbb5omc46drqaiqzxy7rqa"},
+                                {"Handle":"positional.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:xneejsru4m6dres5gr7v6xbg","block_count":112,"did":"did:plc:xneejsru4m6dres5gr7v6xbg"},
+                                {"Handle":"riajsolonarob.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:doixrg35vtfzhyke56qgvtxt","block_count":111,"did":"did:plc:doixrg35vtfzhyke56qgvtxt"},
+                                {"Handle":"direitasnake.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:vqhmn52bbkr2si2mposcay3i","block_count":106,"did":"did:plc:vqhmn52bbkr2si2mposcay3i"},
+                                {"Handle":"alfineteireal.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:x466nsmtdzmp37r5wphul2em","block_count":102,"did":"did:plc:x466nsmtdzmp37r5wphul2em"},
+                                {"Handle":"exbolsonaro.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:e3oym32eei3yhk6rmfuvao3v","block_count":100,"did":"did:plc:e3oym32eei3yhk6rmfuvao3v"},
+                                {"Handle":"kouroumatchingapp.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:xnwbw2t44oazdarjfrjp3kkk","block_count":97,"did":"did:plc:xnwbw2t44oazdarjfrjp3kkk"},
+                                {"Handle":"feet212.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:jgrzlsdahn7jbaswufqgkzxz","block_count":95,"did":"did:plc:jgrzlsdahn7jbaswufqgkzxz"},
+                                {"Handle":"olisvalsaraiva.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:ivy2kntgpptnknlrzblthbq2","block_count":93,"did":"did:plc:ivy2kntgpptnknlrzblthbq2"},
+                                {"Handle":"limpioplayas.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:zr4bhjq4grn2nqxy2k7n2ond","block_count":91,"did":"did:plc:zr4bhjq4grn2nqxy2k7n2ond"},
+                                {"Handle":"alexandrestf.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:2ceohhpudkp67sd7m53vgbru","block_count":89,"did":"did:plc:2ceohhpudkp67sd7m53vgbru"},
+                                {"Handle":"naikumaart.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:ka4cbx4qxi2csnfkhxnd4s4b","block_count":87,"did":"did:plc:ka4cbx4qxi2csnfkhxnd4s4b"},
+                                {"Handle":"peritodigital.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:zvkq5gpsa5egltscqmeorknf","block_count":82,"did":"did:plc:zvkq5gpsa5egltscqmeorknf"},
+                                {"Handle":"s9o.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:ybibukp72x2hj7a5ueav5wsl","block_count":82,"did":"did:plc:ybibukp72x2hj7a5ueav5wsl"},
+                                {"Handle":"koda0702.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:hoyor2vepcc572jhljn7aksl","block_count":81,"did":"did:plc:hoyor2vepcc572jhljn7aksl"},
+                                {"Handle":"luizfelipepa.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:qi5bn6a7by2eni2gr7r7icv2","block_count":80,"did":"did:plc:qi5bn6a7by2eni2gr7r7icv2"}
+                            ],
+                        "blocked_aid":
+                            {
+                                "did:plc:2ceohhpudkp67sd7m53vgbru":"bafkreih3j7xwucs2mwcthndwk6zp7jgacigofiday4ce6oorwwlnxjnhw4",
+                                "did:plc:cbfpkroum2sijzt2gtupmzvr":"bafkreigywh27dc22yau3bhk23zutyqn7lj4wipnljjporynmbz5wt564fe",
+                                "did:plc:diplgox44wvs32m2c66uc6pd":"",
+                                "did:plc:doixrg35vtfzhyke56qgvtxt":"bafkreic5c7n3alh3fchmwuscsfbjrr74lgoef5fjnekykkn462q2rzrurm",
+                                "did:plc:e3oym32eei3yhk6rmfuvao3v":"bafkreia3hpgxdsxk2gx35udxeadafa6wohdgg4vqgagcwx2ubagms6srfu",
+                                "did:plc:hoyor2vepcc572jhljn7aksl":"",
+                                "did:plc:ivy2kntgpptnknlrzblthbq2":"",
+                                "did:plc:jgrzlsdahn7jbaswufqgkzxz":"bafkreihq26obkyo66pk5ekksgnp5r5uzilulxl6jv6o64aji6q372t4wsa",
+                                "did:plc:ka4cbx4qxi2csnfkhxnd4s4b":"bafkreicf66qjctadh5qwkqirbrtnyqr3rsvu4h5wzkjnahfuogxh5syo54",
+                                "did:plc:nwjrnf36guvfjfdehfj4kxcp":"bafkreigj4ee5sn2czey3rmnf6rhxknkna7555aar46pu7e2flgg5psrru4",
+                                "did:plc:p6wzx4xynvlqenobnkhv6uvo":"bafkreie7qm6ff4a5zohtb3b536x34smdvmqz2mxhpezvkjsg3t7raw462q",
+                                "did:plc:qi5bn6a7by2eni2gr7r7icv2":"bafkreigdol6ipw7hi3pt2fudlbo5fgy6vk3wm5n2pmxdypt5yp6yiu5mti",
+                                "did:plc:thzbb5omc46drqaiqzxy7rqa":"bafkreiesdvnrkgwyolreo4jwlp3l4ixd5tpzgft5ss6tgk4sstdflcgy6u",
+                                "did:plc:vqhmn52bbkr2si2mposcay3i":"bafkreie7sbzmvwtgmd5v76o6vy6kjeyeqafqllrgjimmtehdeuixo34sve",
+                                "did:plc:x466nsmtdzmp37r5wphul2em":"bafkreia44st4z5e7wwjoeww4glg4gbdo2tgqqwn52iejoytj7gck2g36ny",
+                                "did:plc:xneejsru4m6dres5gr7v6xbg":"",
+                                "did:plc:xnwbw2t44oazdarjfrjp3kkk":"bafkreibnfgzjz4nn23ents3krszjnelqsd7zdz2rswvqq274o5d6lxf7rq",
+                                "did:plc:ybibukp72x2hj7a5ueav5wsl":"bafkreic6z2qqglkyp4iefvj7lvjizhthfrqdkcskrrfd3sgvlnlitej7hu",
+                                "did:plc:zr4bhjq4grn2nqxy2k7n2ond":"bafkreiem5xwzlfnl2wlreabkedxo473k4wzwo3okctlvsm6ibvqn6mu4cy",
+                                "did:plc:zvkq5gpsa5egltscqmeorknf":""
+                            },
+                        "blockers24":
+                            [
+                                {"Handle":"jimmygresik.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:wvgzdrosihvh23fw3s3vrc2t","block_count":396,"did":"did:plc:wvgzdrosihvh23fw3s3vrc2t"},
+                                {"Handle":"hamandegger.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:wgiw4zvjhfhhubf6dtocjern","block_count":385,"did":"did:plc:wgiw4zvjhfhhubf6dtocjern"},
+                                {"Handle":"fresh-newlook.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:6odst3452scxthx7w3v2tiav","block_count":258,"did":"did:plc:6odst3452scxthx7w3v2tiav"},
+                                {"Handle":"crabcakes455.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:keyxowxtn6f4excmztwdm7ty","block_count":255,"did":"did:plc:keyxowxtn6f4excmztwdm7ty"},
+                                {"Handle":"asaidperson.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:mbwsjp4q4ehbhgjf6xt4qaom","block_count":185,"did":"did:plc:mbwsjp4q4ehbhgjf6xt4qaom"},
+                                {"Handle":"nz1.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:n7cpgjpsbjkwu3kabh5o3xws","block_count":184,"did":"did:plc:n7cpgjpsbjkwu3kabh5o3xws"},
+                                {"Handle":"iran-rn.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:vkof2dfgcttmaslwzmv76fhx","block_count":170,"did":"did:plc:vkof2dfgcttmaslwzmv76fhx"},
+                                {"Handle":"manickian.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:sdzj2amytwzejj3i5ixvfikb","block_count":167,"did":"did:plc:sdzj2amytwzejj3i5ixvfikb"},
+                                {"Handle":"teapotgirl.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:wg5pgjo2xp5eymgu7guskxht","block_count":166,"did":"did:plc:wg5pgjo2xp5eymgu7guskxht"},
+                                {"Handle":"xrleavt.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:cdavaylpqcpa4nu6itqskcr6","block_count":166,"did":"did:plc:cdavaylpqcpa4nu6itqskcr6"},
+                                {"Handle":"claudia10.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:kjfzkvmygiz47sklzq4c373p","block_count":162,"did":"did:plc:kjfzkvmygiz47sklzq4c373p"},
+                                {"Handle":"chrisnasuecia.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:tb7h3hjsmk3mkpi2ey7p2no3","block_count":146,"did":"did:plc:tb7h3hjsmk3mkpi2ey7p2no3"},
+                                {"Handle":"isabelacastro.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:yjlryeay3f5owqqvnvtc4rjw","block_count":144,"did":"did:plc:yjlryeay3f5owqqvnvtc4rjw"},
+                                {"Handle":"kouorz.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:pkmw43mzucdrw5aqcqqmbgyr","block_count":133,"did":"did:plc:pkmw43mzucdrw5aqcqqmbgyr"},
+                                {"Handle":"marciamoura.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:72jvaviwihjxcqbbv2oxevu3","block_count":133,"did":"did:plc:72jvaviwihjxcqbbv2oxevu3"},
+                                {"Handle":"irapua.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:te3znuszc6vsv6t32eu6dhja","block_count":119,"did":"did:plc:te3znuszc6vsv6t32eu6dhja"},
+                                {"Handle":"sonjamaria.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:7bcengteojtq4b2uvtc5lqvu","block_count":118,"did":"did:plc:7bcengteojtq4b2uvtc5lqvu"},
+                                {"Handle":"jessi123.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:7hie2hsrf7sr34o6e7qnyub7","block_count":114,"did":"did:plc:7hie2hsrf7sr34o6e7qnyub7"},
+                                {"Handle":"spaced1999aka.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:qahup5ytjl76lzkbtwmj6ci4","block_count":111,"did":"did:plc:qahup5ytjl76lzkbtwmj6ci4"},
+                                {"Handle":"paulalight.bsky.social","ProfileURL":"https://bsky.app/profile/did:plc:24cnoogaatrubxvqkmoo6v27","block_count":111,"did":"did:plc:24cnoogaatrubxvqkmoo6v27"}
+                            ],
+                        "blockers_aid":
+                            {
+                                "did:plc:24cnoogaatrubxvqkmoo6v27":"bafkreialxjrgorrr6io5s7nxxgmofupmbkokdw3dz2yrcjjbsjgs7he37u",
+                                "did:plc:6odst3452scxthx7w3v2tiav":"bafkreid4znwozgnn5vz7jhk5wsub73dkwnqf3hu4cs7u5njewqiixugi4q",
+                                "did:plc:72jvaviwihjxcqbbv2oxevu3":"bafkreic7o47efe64g37odwyvjm5qfgpw5b3vhfncuvcdnuxkeac7ewh4qq",
+                                "did:plc:7bcengteojtq4b2uvtc5lqvu":"bafkreickinjphkzwkhc4rzqs3lsuvvsdr4cpwdeht7meou7sy2lo2cl6am",
+                                "did:plc:7hie2hsrf7sr34o6e7qnyub7":"bafkreihvssk4fguxikzu54orthodm5ftuxgfv7wpbdyd62b5m3jdrozgdu",
+                                "did:plc:cdavaylpqcpa4nu6itqskcr6":"bafkreidznkiz6uiv53bfvpogmn7bgl2lzhw33gqh45vupvqughcfcarpai",
+                                "did:plc:keyxowxtn6f4excmztwdm7ty":"bafkreibixg7nw4feoz7jogrjkd33inbjvadk3wbxdjt3b36vhny74evilm",
+                                "did:plc:kjfzkvmygiz47sklzq4c373p":"bafkreicufkiisvbr5iub7rg6xrvbd6ho5fetdzw2om5i6qrqczkivnxijq",
+                                "did:plc:mbwsjp4q4ehbhgjf6xt4qaom":"bafkreiha2rexwqiygdbmxprhej36v3kefdww3y2caemdnc64iowr7m3cie",
+                                "did:plc:n7cpgjpsbjkwu3kabh5o3xws":"bafkreie4qhnpx4fdoekb2ymyvc76xp3mjqypbcyuqlpf44cyc2kmpml6ja",
+                                "did:plc:pkmw43mzucdrw5aqcqqmbgyr":"bafkreihypvodpnwccbqlxl4x6e5pw7tt5v3i3eb5bq5nyob4wbsusc3xki",
+                                "did:plc:qahup5ytjl76lzkbtwmj6ci4":"bafkreiarze5mvjidmk5kq6olkmfagtft2zpkkhfona55iubbf2jvosorai",
+                                "did:plc:sdzj2amytwzejj3i5ixvfikb":"bafkreifujrfrkg7sqh2f65gp2bcdqttbvynxjsv25trascq2lmfbbhk4ly",
+                                "did:plc:tb7h3hjsmk3mkpi2ey7p2no3":"bafkreie27wybrjexqqciddhbaen6h47ixgrp6325ezwbhclqszejf7s7xm",
+                                "did:plc:te3znuszc6vsv6t32eu6dhja":"",
+                                "did:plc:vkof2dfgcttmaslwzmv76fhx":"bafkreid3owarkiz4h267ejagds4kxgu3qxj45wbtp4pf75bhku6jcl2xq4",
+                                "did:plc:wg5pgjo2xp5eymgu7guskxht":"bafkreifn2jdeukoyq24bca4te2htakxd3ijvjceqpxh6w24537uuhecvba",
+                                "did:plc:wgiw4zvjhfhhubf6dtocjern":"bafkreibkkfry5co2opt3itgcx3y2dkuqwpy3kzwkmf5b6b7q6i76qutduu",
+                                "did:plc:wvgzdrosihvh23fw3s3vrc2t":"bafkreieukru2l72hdffbnxw722br5x6kexw6wedx5m3exw4wf4kgh6efca",
+                                "did:plc:yjlryeay3f5owqqvnvtc4rjw":"bafkreib5dnce3i4jjtbxbblbjzbagovyr3mjakcl6jnbvtwp6lnzan2xti"
+                            }
+                    }
+        }
+
 
 ## 15.
 
@@ -421,6 +537,26 @@
 - **Parameters:** None
 - **Response:**
     ```json
+        {
+            "block cache last process time":"None",
+            "block cache last update":"Not initialized",
+            "block cache status":"not initialized",
+            "block stats last process time":"0:32:16.842258",
+            "block stats last update":"11 hours 34 minutes ago",
+            "block stats status":"complete",
+            "clearsky backend version":"3.31.6",
+            "current time":"2024-04-16 13:15:51.693664",
+            "db status":"connected",
+            "last update top 24 block":"12 hours 6 minutes ago",
+            "last update top block":"12 hours 7 minutes ago",
+            "read db status":"connected",
+            "redis status":"disconnected",
+            "top 24 blocked status":"complete",
+            "top blocked status":"processing",
+            "uptime":"4 days, 12:49:04.838735",
+            "write db status":"connected"
+        }
+
 
 ## 18.
 
