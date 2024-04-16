@@ -366,7 +366,7 @@ async def resolve_handle_wellknown_atproto(ident):
         return None
 
 
-async def verify_handle(identity):
+async def verify_handle(identity) -> bool:
     handle1 = None
     handle2 = None
     handle3 = None
