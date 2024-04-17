@@ -798,13 +798,15 @@ async def get_did_info(client_identifier):
         status = await preprocess_status(identifier)
 
         if did_identifier and handle_identifier and status:
+            pds = await on_wire.get_pds(did_identifier)
 
             avatar_id = await on_wire.get_avatar_id(did_identifier)
 
             did_data = {"identifier": identifier,
                         "did_identifier": did_identifier,
                         "user_url": f"https://bsky.app/profile/{did_identifier}",
-                        "avatar_url": f"https://cdn.bsky.app/img/avatar/plain/{did_identifier}/{avatar_id}"
+                        "avatar_url": f"https://cdn.bsky.app/img/avatar/plain/{did_identifier}/{avatar_id}",
+                        "PDS": pds
                         }
         else:
             did_data = None
@@ -834,13 +836,15 @@ async def get_handle_info(client_identifier):
         status = await preprocess_status(identifier)
 
         if did_identifier and handle_identifier and status:
+            pds = await on_wire.get_pds(did_identifier)
 
             avatar_id = await on_wire.get_avatar_id(did_identifier)
 
             handle_data = {"identifier": identifier,
                            "handle_identifier": handle_identifier,
                            "user_url": f"https://bsky.app/profile/{did_identifier}",
-                           "avatar_url": f"https://cdn.bsky.app/img/avatar/plain/{did_identifier}/{avatar_id}"
+                           "avatar_url": f"https://cdn.bsky.app/img/avatar/plain/{did_identifier}/{avatar_id}",
+                           "PDS": pds
                            }
         else:
             handle_data = None
