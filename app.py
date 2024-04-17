@@ -299,10 +299,10 @@ async def first_run() -> None:
             tables = await database_handler.tables_exists()
 
             if tables:
-                await database_handler.blocklists_updater()
-                await database_handler.top_24blocklists_updater()
-                await utils.update_block_statistics()
-                await utils.update_total_users()
+                # await database_handler.blocklists_updater()
+                # await database_handler.top_24blocklists_updater()
+                # await utils.update_block_statistics()
+                # await utils.update_total_users()
 
                 break
             else:
@@ -804,7 +804,7 @@ async def get_did_info(client_identifier):
             did_data = {"identifier": identifier,
                         "did_identifier": did_identifier,
                         "user_url": f"https://bsky.app/profile/{did_identifier}",
-                        "avatar_url": f"https://av-cdn.bsky.app/img/avatar/plain/{avatar_id}"
+                        "avatar_url": f"https://cdn.bsky.app/img/avatar/plain/{did_identifier}/{avatar_id}"
                         }
         else:
             did_data = None
