@@ -2948,7 +2948,6 @@ async def update_labeler_data(data) -> None:
                     response = await on_wire.get_labeler_info(did)
 
                     if "error" in response:
-                        await set_labeler_status(did, False)
                         continue
 
                     name = info.get('displayName')

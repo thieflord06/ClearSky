@@ -489,7 +489,7 @@ async def describe_pds(pds) -> bool:
         return False
 
 
-async def get_labeler_info(did) -> Optional[dict[str, str]]:
+async def get_labeler_info(did) -> dict[str, Optional[str]]:
     url = f"https://api.bsky.app/xrpc/app.bsky.actor.getProfile?actor={did}"
 
     logger.debug(url)
@@ -520,8 +520,10 @@ async def get_labeler_info(did) -> Optional[dict[str, str]]:
             elif response.status_code == 400:
                 await database_handler.set_labeler_status(did, False)
 
-                return None
+                return {"error": "error"}
             else:
+                await database_handler.set_labeler_status(did, False)
+
                 return {"error": "error"}
     except Exception:
         logger.warning(f"Failed to get label profile info: {url}")
