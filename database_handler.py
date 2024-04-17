@@ -2951,10 +2951,10 @@ async def update_labeler_data(data) -> None:
                         await set_labeler_status(did, False)
                         continue
 
-                    name = info['displayName']
-                    description = info['description']
+                    name = info.get('displayName')
+                    description = info.get('description')
 
-                    if response['displayName'] != name or response['description'] != description:
+                    if response.get('displayName') != name or response.get('description') != description:
                         await connection.execute('UPDATE labelers SET name = $2, description = $3 WHERE did = $1', did, response['displayName'], response['description'])
     except Exception as e:
         logger.error(f"Error updating labeler data: {e}")
