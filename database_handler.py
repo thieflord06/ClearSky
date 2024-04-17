@@ -2927,7 +2927,7 @@ async def update_labeler_data(data) -> None:
                     response = await on_wire.get_labeler_info(did)
 
                     if "error" in response:
-                        await connection.execute('UPDATE labelers SET status = FALSE WHERE did = $1', did)
+                        await set_labeler_status(did, False)
                         continue
 
                     name = info['displayName']
@@ -3000,6 +3000,15 @@ async def process_resolution_queue(info):
             logger.error(f"Error updating didwebs: {e}")
 
     logger.info(f"Popped {pop} from resolution queue.")
+
+
+async def set_labeler_status(did, status) -> None:
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                await connection.execute('UPDATE labelers SET status = $2 WHERE did = $1', did, status)
+    except Exception as e:
+        logger.error(f"Error updating labeler status: {e}")
 
 
 # ======================================================================================================================

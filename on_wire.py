@@ -515,6 +515,10 @@ async def get_labeler_info(did) -> Optional[dict[str, str]]:
                 data["description"] = description
 
                 return data
+            elif response.status_code == 400:
+                await database_handler.set_labeler_status(did, False)
+
+                return None
             else:
                 return {"error": "error"}
     except Exception:
