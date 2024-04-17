@@ -417,7 +417,7 @@ async def verify_handle(identity) -> bool:
                 else:
                     return False
             else:
-                logger.error(f"validitiy case didnt match for {identity} | at_proto: {at_proto_result} | bsky: {bsky_result} | dns: {dns_result}")
+                logger.error(f"validity case didn't match for {identity} | at_proto: {at_proto_result} | bsky: {bsky_result} | dns: {dns_result}")
 
                 return False
     elif (at_proto_result is not None and "did:web" in at_proto_result) or (bsky_result is not None and "did:web" in bsky_result) or (dns_result is not None and "did:web" in dns_result):
@@ -440,7 +440,7 @@ async def verify_handle(identity) -> bool:
                 else:
                     return False
             else:
-                logger.error(f"validitiy case didnt match for {identity} | at_proto: {at_proto_result} | bsky: {bsky_result} | dns: {dns_result}")
+                logger.error(f"validity case didn't match for {identity} | at_proto: {at_proto_result} | bsky: {bsky_result} | dns: {dns_result}")
 
                 return False
     else:
