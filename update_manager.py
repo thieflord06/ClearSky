@@ -207,7 +207,6 @@ async def main():
                 logger.info(f"Active PDSes: {active}")
                 logger.info(f"Not active PDSes: {not_active}")
                 logger.info("Finished processing data. Exiting.")
-                sys.exit()
             else:
                 logger.info("No PDS info.")
 
@@ -216,6 +215,7 @@ async def main():
 
             logger.info("Updating labeler data.")
             await database_handler.update_labeler_data(labelers)
+            sys.exit()
         except database_handler.DatabaseConnectionError:
             logger.error("Database connection error")
         except Exception as e:
