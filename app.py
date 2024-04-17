@@ -840,7 +840,7 @@ async def get_handle_info(client_identifier):
             handle_data = {"identifier": identifier,
                            "handle_identifier": handle_identifier,
                            "user_url": f"https://bsky.app/profile/{did_identifier}",
-                           "avatar_url": f"https://av-cdn.bsky.app/img/avatar/plain/{avatar_id}"
+                           "avatar_url": f"https://av-cdn.bsky.app/img/avatar/plain/{did_identifier}/{avatar_id}"
                            }
         else:
             handle_data = None
