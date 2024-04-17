@@ -849,14 +849,14 @@ async def crawler_batch(batch_dids, forced=False):
             continue
         handle = await on_wire.resolve_did(did)
 
-        if handle is not None:
+        if handle[0] is not None:
             # Check if the DID and handle combination already exists in the database
-            logger.debug("Did: " + str(did) + " | handle: " + str(handle))
+            logger.debug("Did: " + str(did) + " | handle: " + str(handle[0]))
 
-            if await does_did_and_handle_exist_in_database(did, handle):
-                logger.debug(f"DID {did} with handle {handle} already exists in the database. Skipping...")
+            if await does_did_and_handle_exist_in_database(did, handle[0]):
+                logger.debug(f"DID {did} with handle {handle[0]} already exists in the database. Skipping...")
             else:
-                handles_to_update.append((did, handle))
+                handles_to_update.append((did, handle[0]))
                 handle_count += 1
         else:
             logger.warning(f"DID: {did} not resolved.")
@@ -2438,6 +2438,7 @@ async def update_did_webs() -> None:
     query1 = """UPDATE users SET handle = $2, pds = $3 WHERE did = $1"""
     query2 = """UPDATE users SET pds = $2 WHERE did = $1"""
     query3 = """UPDATE users SET handle = $2 WHERE did = $1"""
+    query4 = """SELECT handle FROM did_web_history WHERE did = $1"""
 
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -2472,7 +2473,27 @@ async def update_did_webs() -> None:
                             except Exception as e:
                                 logger.error(f"Error inserting new did:web: {e}")
 
-                        handle = await on_wire.resolve_did(did)
+                        handles = await on_wire.resolve_did(did)
+                        handle = handles[0] if handles else None
+
+                        try:
+                            if handles:
+                                handles_in_db = await connection.execute(query4, did)
+                            else:
+                                handles_in_db = []
+                        except Exception as e:
+                            logger.error(f"Error getting handles from db: {e}")
+                            handles_in_db = []
+
+                        # Compare handles obtained from on_wire.resolve_did with handles in the database
+                        missing_handles = [h for h in handles if h not in handles_in_db]
+
+                        # Add missing handles to the database
+                        for missing_handle in missing_handles:
+                            try:
+                                await connection.execute("INSERT INTO did_web_history (did, handle, pds) VALUES ($1, $2, $3)", did, missing_handle, pds)
+                            except Exception as e:
+                                logger.error(f"Error adding handle {missing_handle} to the database: {e}")
 
                         pds = await on_wire.resolve_did(did, True)
 

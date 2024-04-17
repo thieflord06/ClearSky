@@ -63,9 +63,9 @@ total_users_start_time = None
 async def resolve_did(did, count, test=False):
     if not test:
         resolved_did = await on_wire.resolve_did(did)
-        if resolved_did is not None:
+        if resolved_did[0] is not None:
 
-            return {'did': did, 'Handle': resolved_did, 'block_count': count, 'ProfileURL': f'https://bsky.app/profile/{did}'}
+            return {'did': did, 'Handle': resolved_did[0], 'block_count': count, 'ProfileURL': f'https://bsky.app/profile/{did}'}
     elif test:
 
         return {'did': did, 'Handle': did, 'block_count': count, 'ProfileURL': f'https://bsky.app/profile/{did}'}
@@ -667,13 +667,13 @@ async def fetch_handles_batch(batch_dids, ad_hoc=False) -> list:
     if not ad_hoc:
         for did in batch_dids:
             handle = await on_wire.resolve_did(did[0].strip())
-            if handle is not None:
-                handles.append((did[0].strip(), handle))
+            if handle[0] is not None:
+                handles.append((did[0].strip(), handle[0]))
     else:
         for did in batch_dids:
             handle = await on_wire.resolve_did(did.strip())
-            if handle is not None:
-                handles.append((did.strip(), handle))
+            if handle[0] is not None:
+                handles.append((did.strip(), handle[0]))
 
     return handles
 
@@ -713,7 +713,7 @@ async def use_handle(identifier):
     if is_did(identifier):
         handle_identifier = await on_wire.resolve_did(identifier)
 
-        return handle_identifier
+        return handle_identifier[0]
     else:
 
         return identifier
@@ -1496,9 +1496,9 @@ async def get_resolution_queue_info():
         else:
             pds = await on_wire.get_pds(did)
 
-        if handle and pds:
+        if handle[0] and pds:
             info = {
-                "handle": handle,
+                "handle": handle[0],
                 "pds": pds
             }
 

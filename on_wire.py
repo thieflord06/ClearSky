@@ -62,9 +62,10 @@ async def resolve_handle(info):  # Take Handle and get DID
     return None
 
 
-async def resolve_did(did, did_web_pds=False) -> Optional[str]:  # Take DID and get handle
+async def resolve_did(did, did_web_pds=False) -> Optional[list]:  # Take DID and get handle
     base_url = "https://plc.directory/"
     url = f"{base_url}{did}"
+    stripped_record = []
 
     max_retries = 5
     retry_count = 0
@@ -89,7 +90,7 @@ async def resolve_did(did, did_web_pds=False) -> Optional[str]:  # Take DID and 
 
                     if "did:web" in did:
                         try:
-                            record = response_json["alsoKnownAs"][0]
+                            record = response_json["alsoKnownAs"]
                         except Exception as e:
                             logger.error(f"Error getting did:web handle: {e} | did: {did} | {url}")
 
@@ -97,9 +98,10 @@ async def resolve_did(did, did_web_pds=False) -> Optional[str]:  # Take DID and 
                     else:
                         record = response_json.get("alsoKnownAs", "")
 
-                    record = str(record)
-                    stripped_record = record.replace("at://", "")
-                    stripped_record = stripped_record.strip("[]").replace("'", "")
+                    for i in record:
+                        # record = str(record)
+                        stripped_record.append(i.replace("at://", ""))
+                        # stripped_record = stripped_record.strip("[]").replace("'", "")
 
                     if did_web_pds:
                         logger.info(f"Getting PDS for {did}")
@@ -426,7 +428,7 @@ async def verify_handle(identity) -> bool:
         elif dns_result is not None and "did:web" in dns_result:
             handle3 = await resolve_did(dns_result)
 
-        if identity == handle1 or identity == handle2 or identity == handle3:
+        if identity == handle1[0] or identity == handle2[0] or identity == handle3[0]:
             if dns_result and bsky_result:
                 if dns_result == bsky_result:
                     return True
