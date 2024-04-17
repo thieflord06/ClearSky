@@ -2479,8 +2479,8 @@ async def update_did_webs() -> None:
                         if not await utils.validate_did_atproto(did) and pds is None and handle is None:
                             logger.warning(f"did:web dead: {did}")
                             await connection.execute("""UPDATE users SET status = FALSE WHERE did = $1""", did)
+                            await connection.execute(""""UPDATE did_web_history SET status = FALSE WHERE did = $1""", did)
                             await connection.execute("""INSERT INTO did_web_history (did, handle, pds, timestamp, status) VALUES ($1, $2, $3, $4, FALSE)""", did, handle, pds, timestamp)
-                            await connection.execute(""""UPDATE resolution_queue SET status = FALSE WHERE did = $1""", did)
                             await connection.execute("""delete from resolution_queue where did = $1""", did)
                             continue
                         else:
