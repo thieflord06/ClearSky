@@ -806,7 +806,7 @@ async def get_did_info(client_identifier):
                         "did_identifier": did_identifier,
                         "user_url": f"https://bsky.app/profile/{did_identifier}",
                         "avatar_url": f"https://cdn.bsky.app/img/avatar/plain/{did_identifier}/{avatar_id}",
-                        "PDS": pds
+                        "pds": pds
                         }
         else:
             did_data = None
@@ -844,7 +844,7 @@ async def get_handle_info(client_identifier):
                            "handle_identifier": handle_identifier,
                            "user_url": f"https://bsky.app/profile/{did_identifier}",
                            "avatar_url": f"https://cdn.bsky.app/img/avatar/plain/{did_identifier}/{avatar_id}",
-                           "PDS": pds
+                           "pds": pds
                            }
         else:
             handle_data = None
