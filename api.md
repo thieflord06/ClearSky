@@ -94,18 +94,19 @@
 - **Endpoint:** `/api/v1/anon/get-did/<handle>`
 - **Method:** `GET`
 - **Description:** Get the DID of a given handle
-- **Parameters:** handle
-- **Response:**
-    ```json
-        {
-            "data":
-                {
-                    "avatar_url":"https://av-cdn.bsky.app/img/avatar/plain/bafkreicbh2mxpza6xhdwfwdvro33jlioue3g4elfp75u3je64dbvjk44la",
-                    "did_identifier":"did:plc:w4xbfzo7kqfes5zb7r6qv3rw",
-                    "identifier":"rudyfraser.com",
-                    "user_url":"https://bsky.app/profile/did:plc:w4xbfzo7kqfes5zb7r6qv3rw"
-                }
-        }
+  - **Parameters:** handle
+    - **Response:**
+        ```json
+            {
+                "data":
+                    {
+                        "avatar_url":"https://av-cdn.bsky.app/img/avatar/plain/bafkreicbh2mxpza6xhdwfwdvro33jlioue3g4elfp75u3je64dbvjk44la",
+                        "did_identifier":"did:plc:w4xbfzo7kqfes5zb7r6qv3rw",
+                        "identifier":"rudyfraser.com",
+                        "pds": "https://shiitake.us-east.host.bsky.network",
+                        "user_url":"https://bsky.app/profile/did:plc:w4xbfzo7kqfes5zb7r6qv3rw"
+                    }
+            }
 
 ### 5.
 
@@ -113,17 +114,18 @@
 - **Method:** `GET`
 - **Description:** Get the handle of a given DID
 - **Parameters:** DID
-- **Response:**
-    ```json
-        {
-            "data":
-                {
-                    "avatar_url":"https://av-cdn.bsky.app/img/avatar/plain/bafkreicbh2mxpza6xhdwfwdvro33jlioue3g4elfp75u3je64dbvjk44la",
-                    "handle_identifier":"rudyfraser.com",
-                    "identifier":"did:plc:w4xbfzo7kqfes5zb7r6qv3rw",
-                    "user_url":"https://bsky.app/profile/did:plc:w4xbfzo7kqfes5zb7r6qv3rw"
-                }
-        }
+  - **Response:**
+      ```json
+          {
+              "data":
+                  {
+                      "avatar_url":"https://av-cdn.bsky.app/img/avatar/plain/bafkreicbh2mxpza6xhdwfwdvro33jlioue3g4elfp75u3je64dbvjk44la",
+                      "handle_identifier":"rudyfraser.com",
+                      "identifier":"did:plc:w4xbfzo7kqfes5zb7r6qv3rw",
+                      "pds": "https://shiitake.us-east.host.bsky.network",
+                      "user_url":"https://bsky.app/profile/did:plc:w4xbfzo7kqfes5zb7r6qv3rw"
+                  }
+          }
 
 ### 6.
 
