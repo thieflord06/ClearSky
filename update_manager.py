@@ -219,6 +219,7 @@ async def main():
             logger.error("Database connection error")
         except Exception as e:
             logger.error(f"Error getting federated pdses: {str(e)}")
+
         sys.exit()
     elif args.count_list_users:
         try:
