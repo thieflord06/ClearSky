@@ -215,6 +215,7 @@ async def main():
 
             logger.info("Updating labeler data.")
             await database_handler.update_labeler_data(labelers)
+            logger.info("Finished processing labeler data.")
         except database_handler.DatabaseConnectionError:
             logger.error("Database connection error")
         except Exception as e:
