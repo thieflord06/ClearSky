@@ -9,36 +9,38 @@
 - **503:** Service Unavailable
 
 ## Pagination:
- `<page:int>`
+`<page:int>`
 - **Value:** Integer 
-- This is a parameter that is used to paginate the results. It is used to specify the page number of the results to be returned. The default value is 1.
+  - This is a parameter that is used to paginate the results. It is used to specify the page number of the results to be returned. The default value is 1.
 
-## 1.
+### Unathenticated endpoints:
+
+### 1.
 
 - **Endpoint:** `/api/v1/anon/blocklist/<handle/did>/<page:int>`
-- **Method:** `GET`
-- **Description:** Get list of users that someone is blocking
-- **Parameters:** handle or did
-- **Response:**
-    ```json
-        {
-        "data":
+    - **Method:** `GET`
+    - **Description:** Get list of users that someone is blocking
+    - **Parameters:** handle or did
+    - **Response:**
+        ```json
             {
-                "blocklist":
-                    [
-                        {"blocked_date":"2024-03-26T16:25:45.414000+00:00","handle":"lowqualityfacts.bsky.social","status":true},
-                        {"blocked_date":"2024-03-17T21:17:44.607000+00:00","handle":"acreepyphilosopher.bsky.social","status":true},
-                        {"blocked_date":"2024-03-14T11:17:43.670000+00:00","handle":"danys.bsky.social","status":true},
-                        ...
-                    ],
-                    "count":"388",
-                    "pages":4
-            },
-                "identity":"rudyfraser.com",
-                "status":true
-        }
+            "data":
+                {
+                    "blocklist":
+                        [
+                            {"blocked_date":"2024-03-26T16:25:45.414000+00:00","handle":"lowqualityfacts.bsky.social","status":true},
+                            {"blocked_date":"2024-03-17T21:17:44.607000+00:00","handle":"acreepyphilosopher.bsky.social","status":true},
+                            {"blocked_date":"2024-03-14T11:17:43.670000+00:00","handle":"danys.bsky.social","status":true},
+                            ...
+                        ],
+                        "count":"388",
+                        "pages":4
+                },
+                    "identity":"rudyfraser.com",
+                    "status":true
+            }
 
-## 2.
+### 2.
 
 - **Endpoint:** `/api/v1/anon/single-blocklist/<handle/did>/<page:int>`
 - **Method:** `GET`
@@ -63,7 +65,7 @@
                     "status":true
         }
 
-## 3.
+### 3.
 
 - **Endpoint:** `/api/v1/anon/get-list/<handle/did>`
 - **Method:** `GET`
@@ -87,7 +89,7 @@
               "identifier":"rudyfraser.com"
           }
 
-## 4.
+### 4.
 
 - **Endpoint:** `/api/v1/anon/get-did/<handle>`
 - **Method:** `GET`
@@ -105,7 +107,7 @@
                 }
         }
 
-## 5.
+### 5.
 
 - **Endpoint:** `/api/v1/anon/get-handle/<did>`
 - **Method:** `GET`
@@ -123,7 +125,7 @@
                 }
         }
 
-## 6.
+### 6.
 
 - **Endpoint:** `/api/v1/anon/get-handle-history/<handle/did>`
 - **Method:** `GET`
@@ -148,7 +150,7 @@
                 }
         }
 
-## 7.
+### 7.
 
 - **Endpoint:** `/api/v1/anon/at-uri/<uri>`
 - **Method:** `GET`
@@ -164,7 +166,7 @@
         }
 
 
-## 8.
+### 8.
 
 - **Endpoint:** `/api/v1/anon/blocklist-search-blocking/<handle1>/<handle2>`
 - **Method:** `GET`
@@ -181,7 +183,7 @@
                   }
         }
 
-## 9.
+### 9.
 
 - **Endpoint:** `/api/v1/anon/blocklist-search-blocked/<handle1>/<handle2>`
 - **Method:** `GET`
@@ -199,7 +201,7 @@
         }
 
 
-## 10.
+### 10.
 
 - **Endpoint:** `/api/v1/anon/get-moderation-list/<name:string>`
 - **Method:** `GET`
@@ -223,7 +225,7 @@
             "input":"dev"
         }
 
-## 11.
+### 11.
 
 - **Endpoint:** `/api/v1/anon/base/autocomplete/<handle:string>`
 - **Method:** `GET`
@@ -242,7 +244,7 @@
                 ]
         }
 
-## 12.
+### 12.
 
 - **Endpoint:** `/api/v1/anon/total-users`
 - **Method:** `GET`
@@ -268,7 +270,7 @@
                 }
         }
 
-## 13.
+### 13.
 
 - **Endpoint:** `/api/v1/anon/lists/fun-facts`
 - **Method:** `GET`
@@ -374,7 +376,7 @@
                     }
         }
 
-## 14.
+### 14.
 
 - **Endpoint:** `/api/v1/anon/lists/funer-facts`
 - **Method:** `GET`
@@ -482,7 +484,7 @@
         }
 
 
-## 15.
+### 15.
 
 - **Endpoint:** `/api/v1/anon/lists/block-stats`
 - **Method:** `GET`
@@ -521,7 +523,7 @@
                     }
         }
 
-## 16.
+### 16.
 
 - **Endpoint:** `/api/v1/anon/in-common-blocklist/<handle/did>`
 - **Method:** `GET`
@@ -530,7 +532,7 @@
 - **Response:**
     ```json
 
-## 17.
+### 17.
 
 - **Endpoint:** `/api/v1/anon/base/internal/status/process-status`
 - **Method:** `GET`
@@ -559,7 +561,7 @@
         }
 
 
-## 18.
+### 18.
 
 - **Endpoint:** `/api/v1/anon/in-common-blocked-by/<handle/did>`
 - **Method:** `GET`
@@ -568,7 +570,7 @@
 - **Response:**
     ```json
 
-## 19.
+### 19.
 
 - **Endpoint:** `/api/v1/anon/lists/dids-per-pds`
 - **Method:** `GET`
@@ -587,7 +589,7 @@
                 }
         }
 
-## 20.
+### 20.
 
 - **Endpoint:** `/api/v1/anon/validation/validate-handle/<handle>`
 - **Method:** `GET`
@@ -604,7 +606,7 @@
         }
 
 
-## 21.
+### 21.
 
 - **Endpoint:** `/api/v1/anon/subscribe-blocks-blocklist/<handle/did>/<page:int>`
 - **Method:** `GET`
@@ -631,7 +633,7 @@
         }
 
 
-## 22.
+### 22.
 
 - **Endpoint:** `/api/v1/anon/subscribe-blocks-single-blocklist/<handle/did>/<page:int>`
 - **Method:** `GET`
