@@ -3170,6 +3170,6 @@ async def redis_connected() -> bool:
     except aioredis.ConnectionError:
         logger.error(f"Could not connect to Redis.")
     except Exception as e:
-        logger.error(f"An error occured connecting to Redis: {e}")
+        logger.error(f"An error occurred connecting to Redis: {e}")
     finally:
         await redis_conn.close()
