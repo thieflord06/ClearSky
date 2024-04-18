@@ -15,6 +15,7 @@ import pytz
 import on_wire
 import math
 import functools
+from errors import NotFound, BadRequest
 
 # ======================================================================================================================
 # ===================================================  global variables ================================================
@@ -2617,6 +2618,34 @@ async def set_status_code(pds, status_code) -> None:
             async with connection.transaction():
                 query = """UPDATE pds SET last_status_code = $2 WHERE pds = $1"""
                 await connection.execute(query, pds, status_code)
+    except Exception as e:
+        logger.error(f"Error updating status code: {e}")
+
+
+@check_db_connection("write")
+async def get_block_row(uri) -> Optional[dict]:
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                query = """SELECT user_did, blocked_did, block_date, cid, uri
+                            FROM blocklists
+                            WHERE uri = $1"""
+
+                record = await connection.fetch(query, uri)
+
+                if record:
+                    result = record[0]
+                    response = {
+                        "user did": result['user_did'],
+                        "blocked did": result['blocked_did'],
+                        "block date": result['block_date'],
+                        "cid": result['cid'],
+                        "uri": result['uri']
+                    }
+
+                    return response
+                else:
+                    raise NotFound
     except Exception as e:
         logger.error(f"Error updating status code: {e}")
 

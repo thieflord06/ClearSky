@@ -84,18 +84,42 @@ async def uri_sanitization(uri) -> Optional[str]:
                 url = await utils.list_uri_to_url(uri)
 
                 return url
-            else:
-                url = None
+            elif "app.bsky.feed.post" in uri:
+                base_url = "https://bsky.app/profile"
+                did_start = uri.find("did:")
+                did_end = uri.find("/", did_start)
+                did = uri[did_start:did_end]
+                rkey = uri.split("/")[-1]
+                url = f"{base_url}/{did}/post/{rkey}"
 
                 return url
+            elif "app.bsky.actor.profile" in uri:
+                base_url = "https://bsky.app/profile"
+                did_start = uri.find("did:")
+                did_end = uri.find("/", did_start)
+                did = uri[did_start:did_end]
+                url = f"{base_url}/{did}"
+
+                return url
+            elif "app.bsky.feed.generator" in uri:
+                base_url = "https://bsky.app/profile"
+                did_start = uri.find("did:")
+                did_end = uri.find("/", did_start)
+                did = uri[did_start:did_end]
+                rkey = uri.split("/")[-1]
+                url = f"{base_url}/{did}/feed/{rkey}"
+
+                return url
+            elif "app.bsky.graph.block" in uri:
+                response = await database_handler.get_block_row(uri)
+
+                return response
+            else:
+                raise NotFound
         else:
-            url = None
-
-            return url
+            raise BadRequest
     else:
-        url = None
-
-        return url
+        raise BadRequest
 
 
 async def pre_process_identifier(identifier):
