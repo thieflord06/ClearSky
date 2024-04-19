@@ -6,6 +6,14 @@
     <title>File Upload and Download</title>
 </head>
 <body>
+    <h1>File Upload</h1>
+    <form id="uploadForm" action="/api/v1/anon/data-transaction/receive" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" accept=".csv">
+        <button type="submit">Upload File</button>
+    </form>
+
+    <hr>
+
     <h1>File Download</h1>
     <button id="getListButton">Get List</button>
 
