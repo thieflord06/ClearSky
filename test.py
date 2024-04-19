@@ -5,7 +5,6 @@ import urllib
 import urllib.parse
 import httpx
 from datetime import datetime
-
 import app
 import utils
 from config_helper import logger, limiter
@@ -201,7 +200,7 @@ async def verify_handle(identity):
         elif dns_result is not None and "did:web" in dns_result:
             handle3 = await resolve_did(dns_result)
 
-        if identity == handle1 or identity == handle2 or identity == handle3:
+        if identity == handle1[0] or identity == handle2[0] or identity == handle3[0]:
             if dns_result and bsky_result:
                 if dns_result == bsky_result:
                     return True
@@ -418,6 +417,20 @@ async def main():
     # logger.info(result)
     # await database_handler.update_did_webs()
 
-    await utils.get_resolution_queue_info()
+    # await utils.get_resolution_queue_info()
+    # #
+    # logger.info("Getting label information.")
+    # labelers = await database_handler.get_labelers()
+    # #
+    # logger.info("Updating labeler data.")
+    # await database_handler.update_labeler_data(labelers)
+
+    # result = await resolve_did("did:plc:qwopp46kocaqyadn2yz7gh6t", did_web_pds=False)
+    #
+    # print(result[0])
+
+    # await verify_handle("thieflord.dev")
+
+    await database_handler.get_block_row('at://did:plc:vmdqzixzv3o7zw6bn233gb4s/app.bsky.graph.block/3kc7atxkmsp2u')
 if __name__ == '__main__':
     asyncio.run(main())

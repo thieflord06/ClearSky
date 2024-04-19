@@ -550,7 +550,7 @@ async def main():
         # api_endpoint = "https://api.clearsky.services/api/v1/anon/lists/funer-facts"
         # api_endpoint = "https://api.clearsky.services/api/v1/anon/lists/block-stats"
         # api_endpoint = "https://api.clearsky.services/api/v1/anon/base/autocomplete/thi"
-        api_endpoint = "http://localhost/api/v1/anon/get-moderation-list/dev"
+        api_endpoint = "https://api.clearsky.services/api/v1/anon/at-uri/at://did:plc:synka4gchwjmophklcsndndf/app.bsky.feed.post/3klnptzxy3b2f"
 
         try:
             logger.info(f"API endpoint: {api_endpoint}")
