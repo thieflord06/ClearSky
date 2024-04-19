@@ -14,7 +14,7 @@ time_interval = 300  # 60 seconds = 1 minute
 limiter = AsyncLimiter(rate_limit, time_interval)
 
 
-def remove_file_handler_from_config(config_file_path):
+def remove_file_handler_from_config(config_file_path: str) -> None:
     configure = configparser.ConfigParser()
     configure.read(config_file_path)
 
@@ -48,7 +48,7 @@ def remove_file_handler_from_config(config_file_path):
     print("Console logging only.")
 
 
-def read_config():
+def read_config() -> configparser.ConfigParser:
     config = configparser.ConfigParser()
 
     if os.path.exists(ini_file):
@@ -60,7 +60,7 @@ def read_config():
     return config
 
 
-def update_config_based_on_os(config, temp=False):
+def update_config_based_on_os(config: configparser.ConfigParser, temp: bool = False) -> str:
     args = None
     log_dir = None
     log_name = None
@@ -101,7 +101,7 @@ def update_config_based_on_os(config, temp=False):
         raise
 
 
-def create_log_directory(log_dir, configer):
+def create_log_directory(log_dir: str, configer: configparser.ConfigParser) -> None:
     try:
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
@@ -140,7 +140,7 @@ def create_log_directory(log_dir, configer):
                 os.makedirs(log_dir)
 
 
-def configure_logging():
+def configure_logging() -> logging.Logger:
     try:
         logging.config.fileConfig(ini_file)
         logger = logging.getLogger()
