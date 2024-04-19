@@ -15,7 +15,7 @@ import pytz
 import on_wire
 import math
 import functools
-from errors import NotFound, BadRequest
+from errors import NotFound, BadRequest, DatabaseConnectionError
 
 # ======================================================================================================================
 # ===================================================  global variables ================================================
@@ -163,10 +163,6 @@ async def check_database_connection(db):
     else:
         logger.error(f"Database connection pool for {db} does not exist.")
         return False
-
-
-class DatabaseConnectionError(Exception):
-    pass
 
 
 def check_db_connection(*dbs):

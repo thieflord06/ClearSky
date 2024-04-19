@@ -6,3 +6,7 @@ class BadRequest(Exception):
 
 class NotFound(Exception):
     pass
+
+
+class DatabaseConnectionError(Exception):
+    pass

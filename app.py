@@ -20,7 +20,7 @@ import aiohttp
 import functools
 import csv
 from typing import Optional
-from errors import BadRequest, NotFound
+from errors import BadRequest, NotFound, DatabaseConnectionError
 
 # ======================================================================================================================
 # ======================================== global variables // Set up logging ==========================================
@@ -1841,7 +1841,7 @@ async def verify_handle(client_identifier):
 async def auth_get_blocklist(client_identifier, page):
     try:
         return await get_blocklist(client_identifier, page)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -1860,7 +1860,7 @@ async def auth_get_blocklist(client_identifier, page):
 async def auth_get_single_blocklist(client_identifier, page):
     try:
         return await get_single_blocklist(client_identifier, page)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -1878,7 +1878,7 @@ async def auth_get_single_blocklist(client_identifier, page):
 async def auth_get_in_common_blocklist(client_identifier):
     try:
         return await get_in_common_blocklist(client_identifier)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -1896,7 +1896,7 @@ async def auth_get_in_common_blocklist(client_identifier):
 async def auth_get_in_common_blocked_by(client_identifier):
     try:
         return await get_in_common_blocked(client_identifier)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -1914,7 +1914,7 @@ async def auth_get_in_common_blocked_by(client_identifier):
 async def auth_convert_uri_to_url(uri):
     try:
         return await convert_uri_to_url(uri)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -1932,7 +1932,7 @@ async def auth_convert_uri_to_url(uri):
 async def auth_get_total_users():
     try:
         return await get_total_users()
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -1950,7 +1950,7 @@ async def auth_get_total_users():
 async def auth_get_did_info(client_identifier):
     try:
         return await get_did_info(client_identifier)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -1968,7 +1968,7 @@ async def auth_get_did_info(client_identifier):
 async def auth_get_handle_info(client_identifier):
     try:
         return await get_handle_info(client_identifier)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -1986,7 +1986,7 @@ async def auth_get_handle_info(client_identifier):
 async def auth_get_handle_history_info(client_identifier):
     try:
         return await get_handle_history_info(client_identifier)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2004,7 +2004,7 @@ async def auth_get_handle_history_info(client_identifier):
 async def auth_get_list_info(client_identifier):
     try:
         return await get_list_info(client_identifier)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2023,7 +2023,7 @@ async def auth_get_list_info(client_identifier):
 async def auth_get_moderation_lists(input_name, page):
     try:
         return await get_moderation_lists(input_name, page)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2041,7 +2041,7 @@ async def auth_get_moderation_lists(input_name, page):
 async def auth_get_blocked_search(client_identifier, search_identifier):
     try:
         return await get_blocked_search(client_identifier, search_identifier)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2059,7 +2059,7 @@ async def auth_get_blocked_search(client_identifier, search_identifier):
 async def auth_get_blocking_search(client_identifier, search_identifier):
     try:
         return await get_blocking_search(client_identifier, search_identifier)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2077,7 +2077,7 @@ async def auth_get_blocking_search(client_identifier, search_identifier):
 async def auth_fun_facts():
     try:
         return await fun_facts()
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2095,7 +2095,7 @@ async def auth_fun_facts():
 async def auth_funer_facts():
     try:
         return await funer_facts()
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2113,7 +2113,7 @@ async def auth_funer_facts():
 async def auth_block_stats():
     try:
         return await block_stats()
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2131,7 +2131,7 @@ async def auth_block_stats():
 async def auth_autocomplete(client_identifier):
     try:
         return await autocomplete(client_identifier)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2149,7 +2149,7 @@ async def auth_autocomplete(client_identifier):
 async def auth_get_internal_status():
     try:
         return await get_internal_status()
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2167,7 +2167,7 @@ async def auth_get_internal_status():
 async def auth_check_api_keys():
     try:
         return await check_api_keys()
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2185,7 +2185,7 @@ async def auth_check_api_keys():
 async def auth_dids_per_pds():
     try:
         return await retrieve_dids_per_pds()
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2204,7 +2204,7 @@ async def auth_dids_per_pds():
 async def auth_subscribe_blocks_blocklist(client_identifier, page):
     try:
         return await retrieve_subscribe_blocks_blocklist(client_identifier, page)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2223,7 +2223,7 @@ async def auth_subscribe_blocks_blocklist(client_identifier, page):
 async def auth_subscribe_blocks_single_blocklist(client_identifier, page):
     try:
         return await retrieve_subscribe_blocks_single_blocklist(client_identifier, page)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2240,7 +2240,7 @@ async def auth_subscribe_blocks_single_blocklist(client_identifier, page):
 async def auth_validate_handle(client_identifier):
     try:
         return await verify_handle(client_identifier)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2270,7 +2270,7 @@ async def auth_receive_data(data):
         await store_data(data)
 
         return jsonify({"message": "File received and processed successfully"}), 200
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2302,7 +2302,7 @@ async def auth_retrieve_data():
 
             # Send the file as a response
             return send_file(file, as_attachment=True)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2323,7 +2323,7 @@ async def auth_retrieve_data():
 async def anon_get_blocklist(client_identifier, page):
     try:
         return await get_blocklist(client_identifier, page)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2341,7 +2341,7 @@ async def anon_get_blocklist(client_identifier, page):
 async def anon_get_single_blocklist(client_identifier, page):
     try:
         return await get_single_blocklist(client_identifier, page)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2358,7 +2358,7 @@ async def anon_get_single_blocklist(client_identifier, page):
 async def anon_get_in_common_blocklist(client_identifier):
     try:
         return await get_in_common_blocklist(client_identifier)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2375,7 +2375,7 @@ async def anon_get_in_common_blocklist(client_identifier):
 async def anon_get_in_common_blocked_by(client_identifier):
     try:
         return await get_in_common_blocked(client_identifier)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2392,7 +2392,7 @@ async def anon_get_in_common_blocked_by(client_identifier):
 async def anon_convert_uri_to_url(uri):
     try:
         return await convert_uri_to_url(uri)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2409,7 +2409,7 @@ async def anon_convert_uri_to_url(uri):
 async def anon_get_total_users():
     try:
         return await get_total_users()
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2426,7 +2426,7 @@ async def anon_get_total_users():
 async def anon_get_did_info(client_identifier):
     try:
         return await get_did_info(client_identifier)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2443,7 +2443,7 @@ async def anon_get_did_info(client_identifier):
 async def anon_get_handle_info(client_identifier):
     try:
         return await get_handle_info(client_identifier)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2460,7 +2460,7 @@ async def anon_get_handle_info(client_identifier):
 async def anon_get_handle_history_info(client_identifier):
     try:
         return await get_handle_history_info(client_identifier)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2477,7 +2477,7 @@ async def anon_get_handle_history_info(client_identifier):
 async def anon_get_list_info(client_identifier):
     try:
         return await get_list_info(client_identifier)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2495,7 +2495,7 @@ async def anon_get_list_info(client_identifier):
 async def anon_get_moderation_lists(input_name, page):
     try:
         return await get_moderation_lists(input_name, page)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2512,7 +2512,7 @@ async def anon_get_moderation_lists(input_name, page):
 async def anon_get_blocked_search(client_identifier, search_identifier):
     try:
         return await get_blocked_search(client_identifier, search_identifier)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2529,7 +2529,7 @@ async def anon_get_blocked_search(client_identifier, search_identifier):
 async def anon_get_blocking_search(client_identifier, search_identifier):
     try:
         return await get_blocking_search(client_identifier, search_identifier)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2546,7 +2546,7 @@ async def anon_get_blocking_search(client_identifier, search_identifier):
 async def anon_fun_facts():
     try:
         return await fun_facts()
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2563,7 +2563,7 @@ async def anon_fun_facts():
 async def anon_funer_facts():
     try:
         return await funer_facts()
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2580,7 +2580,7 @@ async def anon_funer_facts():
 async def anon_block_stats():
     try:
         return await block_stats()
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2597,7 +2597,7 @@ async def anon_block_stats():
 async def anon_autocomplete(client_identifier):
     try:
         return await autocomplete(client_identifier)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2614,7 +2614,7 @@ async def anon_autocomplete(client_identifier):
 async def anon_get_internal_status():
     try:
         return await get_internal_status()
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2631,7 +2631,7 @@ async def anon_get_internal_status():
 async def anon_dids_per_pds():
     try:
         return await retrieve_dids_per_pds()
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2649,7 +2649,7 @@ async def anon_dids_per_pds():
 async def anon_subscribe_blocks_blocklist(client_identifier, page):
     try:
         return await retrieve_subscribe_blocks_blocklist(client_identifier, page)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2667,7 +2667,7 @@ async def anon_subscribe_blocks_blocklist(client_identifier, page):
 async def anon_subscribe_blocks_single_blocklist(client_identifier, page):
     try:
         return await retrieve_subscribe_blocks_single_blocklist(client_identifier, page)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:
@@ -2684,7 +2684,7 @@ async def anon_subscribe_blocks_single_blocklist(client_identifier, page):
 async def anon_validate_handle(client_identifier):
     try:
         return await verify_handle(client_identifier)
-    except database_handler.DatabaseConnectionError:
+    except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
     except BadRequest:

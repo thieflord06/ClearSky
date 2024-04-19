@@ -10,6 +10,7 @@ import asyncio
 import app
 import utils
 import os
+from errors import DatabaseConnectionError
 
 # python update_manager.py --crawler // Update all info
 # python update_manager.py --crawler-forced // Force update all info
@@ -100,7 +101,7 @@ async def main():
             logger.info("Processing resolution queue.")
             await utils.get_resolution_queue_info()
             logger.info("Finished processing data.")
-        except database_handler.DatabaseConnectionError:
+        except DatabaseConnectionError:
             logger.error("Database connection error")
         except Exception as e:
             logger.error(f"Error updating users: {str(e)}")
@@ -130,7 +131,7 @@ async def main():
             await database_handler.crawl_all(quarter=quarter_value, total_crawlers=total_crawlers)
             await database_handler.delete_temporary_table(quarter_value)
             logger.info("Crawl fetch finished.")
-        except database_handler.DatabaseConnectionError:
+        except DatabaseConnectionError:
             logger.error("Database connection error")
             quarter_value = config.get("environment", "quarter")
             await database_handler.delete_temporary_table(quarter_value)
@@ -162,7 +163,7 @@ async def main():
             await database_handler.crawl_all(forced=True, quarter=quarter_value)
             await database_handler.delete_temporary_table(quarter_value)
             logger.info("Crawl forced fetch finished.")
-        except database_handler.DatabaseConnectionError:
+        except DatabaseConnectionError:
             logger.error("Database connection error")
             quarter_value = config.get("environment", "quarter")
             await database_handler.delete_temporary_table(quarter_value)
@@ -193,7 +194,7 @@ async def main():
                         logger.info(f"Updated PDS for {did} PDS:{pds}")
 
             logger.info("Finished processing data.")
-        except database_handler.DatabaseConnectionError:
+        except DatabaseConnectionError:
             logger.error("Database connection error")
         except Exception as e:
             logger.error(f"Error updating did pds service information: {str(e)}")
@@ -216,7 +217,7 @@ async def main():
             logger.info("Updating labeler data.")
             await database_handler.update_labeler_data(labelers)
             logger.info("Finished processing labeler data.")
-        except database_handler.DatabaseConnectionError:
+        except DatabaseConnectionError:
             logger.error("Database connection error")
         except Exception as e:
             logger.error(f"Error getting federated pdses: {str(e)}")
@@ -228,7 +229,7 @@ async def main():
             await database_handler.update_mutelist_count()
             logger.info("Count subscribe list users requested.")
             await database_handler.update_subscribe_list_count()
-        except database_handler.DatabaseConnectionError:
+        except DatabaseConnectionError:
             logger.error("Database connection error")
         except Exception as e:
             logger.error(f"Error counting list users: {str(e)}")
