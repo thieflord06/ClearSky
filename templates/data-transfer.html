@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload and Download</title>
+</head>
+<body>
+    <h1>File Download</h1>
+    <button id="getListButton">Get List</button>
+
+    <div id="fileList"></div>
+
+    <script>
+        // Function to create download buttons for each file
+        function createDownloadButton(filename) {
+            const button = document.createElement('button');
+            button.textContent = `Download ${filename}`;
+            button.addEventListener('click', () => {
+                window.location.href = `/api/v1/anon/data-transaction/retrieve?retrieveLists=true&file=${filename}`;
+            });
+            return button;
+        }
+
+        // Function to populate file list
+        function populateFileList(files) {
+            const fileListDiv = document.getElementById('fileList');
+            fileListDiv.innerHTML = '';
+
+            if (files.length === 0) {
+                fileListDiv.textContent = 'No files available for download.';
+            } else {
+                fileListDiv.textContent = 'Select a file to download:';
+                files.forEach(filename => {
+                    const button = createDownloadButton(filename);
+                    fileListDiv.appendChild(button);
+                });
+            }
+        }
+
+        // Event listener for "Get List" button
+        document.getElementById('getListButton').addEventListener('click', () => {
+            fetch('/api/v1/anon/data-transaction/query?list=true')
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else if (response.status === 404) {
+                        throw new Error('No lists available.');
+                    } else {
+                        throw new Error('Failed to fetch file list.');
+                    }
+                })
+                .then(data => {
+                    populateFileList(data.data);
+                })
+                .catch(error => {
+                    console.error('Error fetching file list:', error);
+                    const fileListDiv = document.getElementById('fileList');
+                    fileListDiv.textContent = error.message;
+                });
+        });
+    </script>
+</body>
+</html>

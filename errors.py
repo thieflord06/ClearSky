@@ -10,3 +10,7 @@ class NotFound(Exception):
 
 class DatabaseConnectionError(Exception):
     pass
+
+
+class NoFileProvided(Exception):
+    pass

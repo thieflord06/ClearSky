@@ -20,7 +20,7 @@ import aiohttp
 import functools
 import csv
 from typing import Optional
-from errors import BadRequest, NotFound, DatabaseConnectionError
+from errors import BadRequest, NotFound, DatabaseConnectionError, NoFileProvided
 
 # ======================================================================================================================
 # ======================================== global variables // Set up logging ==========================================
@@ -323,10 +323,10 @@ async def first_run() -> None:
             tables = await database_handler.tables_exists()
 
             if tables:
-                await database_handler.blocklists_updater()
-                await database_handler.top_24blocklists_updater()
-                await utils.update_block_statistics()
-                await utils.update_total_users()
+                # await database_handler.blocklists_updater()
+                # await database_handler.top_24blocklists_updater()
+                # await utils.update_block_statistics()
+                # await utils.update_total_users()
 
                 break
             else:
@@ -486,6 +486,15 @@ async def index():
         session['session_number'] = generate_session_number()
 
     return await render_template('index.html')
+
+
+@app.route('/fediverse', methods=['GET'])
+async def fediverse():
+    # Generate a new session number and store it in the session
+    if 'session_number' not in session:
+        session['session_number'] = generate_session_number()
+
+    return await render_template('data-transfer.html')
 
 
 @app.route('/images/favicon.png', methods=['GET'])
@@ -1785,19 +1794,29 @@ async def store_data(data) -> None:
             writer = csv.DictWriter(file, fieldnames=header)
             writer.writeheader()
             writer.writerows(data)
+    else:
+        raise BadRequest
 
 
-async def retrieve_csv_data(filename):
+async def retrieve_csv_data(retrieve_lists, file_name=None):
     root_path = os.getcwd()
-    path = f"{root_path}/data/{filename}"
 
-    with open(path, 'r', newline='') as file:
-        csv_content = file.read()
+    if retrieve_lists == "true" and file_name is not None:
+        path = f"{root_path}/data/{file_name}"
 
-    return csv_content
+        if os.path.exists(path):
+
+            with open(path, 'r', newline='') as file:
+                csv_content = file.read()
+
+            return csv_content
+        else:
+            raise NotFound
+    else:
+        raise BadRequest
 
 
-async def retrieve_csv_files_info():
+async def retrieve_csv_files_info(arg) -> jsonify:
     root_path = os.getcwd()
     path = f"{root_path}/data"
 
@@ -1805,14 +1824,21 @@ async def retrieve_csv_files_info():
 
     files_info = []
 
-    for csv_file in files:
-        file_info = {
-            'file name': csv_file
-        }
+    try:
+        if arg == "true":
+            for csv_file in files:
+                files_info.append(csv_file)
 
-        files_info.append(file_info)
+            if not files_info:
+                raise NotFound
 
-    return files_info
+            data = {
+                "data": files_info
+            }
+
+            return jsonify(data)
+    except AttributeError:
+        raise BadRequest
 
 
 async def verify_handle(client_identifier) -> jsonify:
@@ -2254,20 +2280,20 @@ async def auth_validate_handle(client_identifier) -> jsonify:
 
 @app.route('/api/v1/auth/data-transaction/receive', methods=['POST'])
 @rate_limit(1, timedelta(seconds=2))
-async def auth_receive_data(data) -> jsonify:
+async def auth_receive_data() -> jsonify:
     try:
         # Check if the request contains a file
         if 'file' not in request.files:
-            return jsonify({"error": "No file provided"}), 400
+            raise NoFileProvided
 
         # Get the file from the request
         file = request.files
 
         # Check if the file has a valid filename
         if file == '':
-            return jsonify({"error": "No file selected"}), 400
+            raise NoFileProvided
 
-        await store_data(data)
+        await store_data(file)
 
         return jsonify({"message": "File received and processed successfully"}), 200
     except DatabaseConnectionError:
@@ -2277,6 +2303,8 @@ async def auth_receive_data(data) -> jsonify:
         return jsonify({"error": "Invalid request"}), 400
     except NotFound:
         return jsonify({"error": "Not found"}), 404
+    except NoFileProvided:
+        return jsonify({"error": "No file provided"}), 400
     except Exception as e:
         logger.error(f"Error in auth_receive_data: {e}")
 
@@ -2287,21 +2315,41 @@ async def auth_receive_data(data) -> jsonify:
 @rate_limit(1, timedelta(seconds=2))
 async def auth_retrieve_data() -> jsonify:
     try:
-        get_list = request.args.get('list')
         retrieve_lists = request.args.get('retrieveLists')
         file_name = request.args.get('file')  # need to validate the file name
+    except AttributeError:
+        return jsonify({"error": "Invalid request"}), 400
 
-        if get_list == "assemble":
-            files_info = await retrieve_csv_files_info()
-
-            return files_info
-
+    try:
         if retrieve_lists == "true" and file_name is not None:
             # Assuming retrieve_csv_data() returns the file path of the CSV file
             file = await retrieve_csv_data(file_name)
 
             # Send the file as a response
             return send_file(file, as_attachment=True)
+    except DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
+    except Exception as e:
+        logger.error(f"Error in auth_retrieve_data: {e}")
+
+        return jsonify({"error": "Internal error"}), 500
+
+
+@app.route('/api/v1/auth/data-transaction/query', methods=['GET'])
+@rate_limit(1, timedelta(seconds=2))
+async def auth_query_data() -> jsonify:
+    try:
+        get_list = request.args.get('list')
+    except AttributeError:
+        return jsonify({"error": "Invalid request"}), 400
+
+    try:
+        return await retrieve_csv_files_info(get_list)
     except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
@@ -2693,6 +2741,91 @@ async def anon_validate_handle(client_identifier) -> jsonify:
         return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in anon_validate_handle: {e}")
+        return jsonify({"error": "Internal error"}), 500
+
+
+@app.route('/api/v1/anon/data-transaction/receive', methods=['POST'])
+@rate_limit(1, timedelta(seconds=2))
+async def anon_receive_data() -> jsonify:
+    try:
+        # Check if the request contains a file
+        if 'file' not in request.files:
+            raise NoFileProvided
+
+        # Get the file from the request
+        file = request.files
+
+        # Check if the file has a valid filename
+        if file == '':
+            raise NoFileProvided
+
+        await store_data(file)
+
+        return jsonify({"message": "File received and processed successfully"}), 200
+    except DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
+    except NoFileProvided:
+        return jsonify({"error": "No file provided"}), 400
+    except Exception as e:
+        logger.error(f"Error in auth_receive_data: {e}")
+
+        return jsonify({"error": "Internal error"}), 500
+
+
+@app.route('/api/v1/anon/data-transaction/retrieve', methods=['GET'])
+@rate_limit(1, timedelta(seconds=2))
+async def anon_retrieve_data() -> jsonify:
+    try:
+        retrieve_lists = request.args.get('retrieveLists')
+        file_name = request.args.get('file')  # need to validate the file name
+    except AttributeError:
+        return jsonify({"error": "Invalid request"}), 400
+
+    try:
+        if retrieve_lists == "true" and file_name is not None:
+            # Assuming retrieve_csv_data() returns the file path of the CSV file
+            file = await retrieve_csv_data(file_name)
+
+            # Send the file as a response
+            return send_file(file, as_attachment=True)
+    except DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
+    except Exception as e:
+        logger.error(f"Error in auth_retrieve_data: {e}")
+
+        return jsonify({"error": "Internal error"}), 500
+
+
+@app.route('/api/v1/anon/data-transaction/query', methods=['GET'])
+@rate_limit(1, timedelta(seconds=2))
+async def anon_query_data() -> jsonify:
+    try:
+        get_list = request.args.get('list')
+    except AttributeError:
+        return jsonify({"error": "Invalid request"}), 400
+
+    try:
+        return await retrieve_csv_files_info(get_list)
+    except DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
+    except Exception as e:
+        logger.error(f"Error in auth_retrieve_data: {e}")
+
         return jsonify({"error": "Internal error"}), 500
 
 
