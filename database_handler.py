@@ -2855,9 +2855,9 @@ async def get_user_count(get_active=True) -> int:
     async with connection_pools["read"].acquire() as connection:
         if get_active:
             count = await connection.fetchval("""SELECT COUNT(*) 
-            FROM users 
-            JOIN pds ON users.pds = pds.pds 
-            WHERE users.status IS TRUE AND pds.status IS TRUE""")
+                                                FROM users 
+                                                JOIN pds ON users.pds = pds.pds 
+                                                WHERE users.status IS TRUE AND pds.status IS TRUE""")
         else:
             count = await connection.fetchval("""SELECT COUNT(*) FROM users JOIN pds ON users.pds = pds.pds WHERE pds.status is TRUE""")
         return count
@@ -2876,7 +2876,12 @@ async def get_single_user_blocks(ident, limit=100, offset=0):
     try:
         # Execute the SQL query to get all the user_dids that have the specified did/ident in their blocklist
         async with connection_pools["read"].acquire() as connection:
-            result = await connection.fetch('SELECT DISTINCT b.user_did, b.block_date, u.handle, u.status FROM blocklists AS b JOIN users as u ON b.user_did = u.did WHERE b.blocked_did = $1 ORDER BY block_date DESC LIMIT $2 OFFSET $3', ident, limit, offset)
+            result = await connection.fetch('''SELECT DISTINCT b.user_did, b.block_date, u.handle, u.status 
+                                                FROM blocklists AS b 
+                                                JOIN users as u ON b.user_did = u.did 
+                                                WHERE b.blocked_did = $1 
+                                                ORDER BY block_date DESC LIMIT $2 OFFSET $3''', ident, limit, offset)
+
             count = await connection.fetchval('SELECT COUNT(DISTINCT user_did) FROM blocklists WHERE blocked_did = $1', ident)
 
             block_list = []
