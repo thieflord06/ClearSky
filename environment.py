@@ -4,7 +4,7 @@ from config_helper import config, logger
 import os
 
 
-def get_api_var():
+def get_api_var() -> str:
     if not os.getenv('CLEAR_SKY'):
         api_environment = config.get("environment", "api")
         if not api_environment:
