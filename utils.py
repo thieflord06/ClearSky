@@ -60,7 +60,7 @@ total_users_start_time = None
 
 # ======================================================================================================================
 # ============================================= Features functions =====================================================
-async def resolve_did(did, count, test=False):
+async def resolve_did(did: str, count: int, test: bool = False):
     if not test:
         resolved_did = await on_wire.resolve_did(did)
         if resolved_did[0] is not None:
@@ -327,7 +327,7 @@ async def update_total_users():
     return active_count, total_count, deleted_count
 
 
-async def get_all_users(pds):
+async def get_all_users(pds) -> set:
     base_url = f"{pds}/xrpc/"
     limit = 1000
     cursor = None

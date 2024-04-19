@@ -2,7 +2,7 @@
 
 import asyncio
 import os
-from typing import Optional
+from typing import Optional, Tuple, List
 import asyncpg
 import config_helper
 import utils
@@ -1546,7 +1546,7 @@ async def update_top_block_list_table(entries, list_type):
 
 
 @check_db_connection("write")
-async def get_top_blocks_list():
+async def get_top_blocks_list() -> Tuple[List[Tuple[str, int]], List[Tuple[str, int]]]:
     try:
         async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
