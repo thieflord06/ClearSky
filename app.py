@@ -160,14 +160,14 @@ async def pre_process_identifier(identifier):
     return did_identifier, handle_identifier
 
 
-async def preprocess_status(identifier):
+async def preprocess_status(identifier) -> bool:
     try:
         persona, status = await database_handler.identifier_exists_in_db(identifier)
         logger.debug(f"persona: {persona} status: {status}")
     except AttributeError:
         logger.error("db connection issue.")
 
-        return None
+        raise DatabaseConnectionError
 
     if persona is True and status is True:
 
@@ -179,7 +179,7 @@ async def preprocess_status(identifier):
     elif status is False and persona is False:
         logger.info(f"{identifier}: does not exist.")
 
-        return None
+        raise NotFound
     else:
         logger.info(f"Error page loaded for resolution failure using: {identifier}")
 
@@ -847,7 +847,7 @@ async def get_did_info(client_identifier):
     return jsonify(data)
 
 
-async def get_handle_info(client_identifier):
+async def get_handle_info(client_identifier) -> jsonify:
     session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
 
@@ -885,7 +885,7 @@ async def get_handle_info(client_identifier):
     return jsonify(data)
 
 
-async def get_handle_history_info(client_identifier):
+async def get_handle_history_info(client_identifier) -> jsonify:
     session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
 
@@ -919,7 +919,7 @@ async def get_handle_history_info(client_identifier):
     return jsonify(data)
 
 
-async def get_list_info(client_identifier):
+async def get_list_info(client_identifier) -> jsonify:
     session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
 
@@ -953,7 +953,7 @@ async def get_list_info(client_identifier):
     return jsonify(data)
 
 
-async def get_moderation_lists(input_name, page):
+async def get_moderation_lists(input_name, page) -> jsonify:
     session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
 
@@ -983,7 +983,7 @@ async def get_moderation_lists(input_name, page):
     return jsonify(data)
 
 
-async def get_blocked_search(client_identifier, search_identifier):
+async def get_blocked_search(client_identifier, search_identifier) -> jsonify:
     api_key = request.headers.get('X-API-Key')
     session_ip = await get_ip()
 
@@ -1021,7 +1021,7 @@ async def get_blocked_search(client_identifier, search_identifier):
     return jsonify(data)
 
 
-async def get_blocking_search(client_identifier, search_identifier):
+async def get_blocking_search(client_identifier, search_identifier) -> jsonify:
     api_key = request.headers.get('X-API-Key')
     session_ip = await get_ip()
 
@@ -1059,7 +1059,7 @@ async def get_blocking_search(client_identifier, search_identifier):
     return jsonify(data)
 
 
-async def fun_facts():
+async def fun_facts() -> jsonify:
     global fun_start_time
 
     api_key = request.headers.get('X-API-Key')
@@ -1143,7 +1143,7 @@ async def fun_facts():
     return jsonify(data)
 
 
-async def funer_facts():
+async def funer_facts() -> jsonify:
     global funer_start_time
 
     session_ip = await get_ip()
@@ -1226,7 +1226,7 @@ async def funer_facts():
     return jsonify(data)
 
 
-async def block_stats():
+async def block_stats() -> jsonify:
     global block_stats_app_start_time
 
     session_ip = await get_ip()
@@ -1447,7 +1447,7 @@ async def block_stats():
     return jsonify(data)
 
 
-async def autocomplete(client_identifier):
+async def autocomplete(client_identifier) -> jsonify:
     session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
 
@@ -1491,7 +1491,7 @@ async def autocomplete(client_identifier):
             return jsonify({'suggestions': matching_handles})
 
 
-async def get_internal_status():
+async def get_internal_status() -> jsonify:
     api_key = request.headers.get('X-API-Key')
     session_ip = await get_ip()
 
@@ -1585,7 +1585,7 @@ async def get_internal_status():
     return jsonify(status)
 
 
-async def check_api_keys():
+async def check_api_keys() -> jsonify:
     api_key = request.headers.get('X-API-Key')
     session_ip = await get_ip()
 
@@ -1622,7 +1622,7 @@ async def check_api_keys():
     return jsonify(status)
 
 
-async def retrieve_dids_per_pds():
+async def retrieve_dids_per_pds() -> jsonify:
     result = await database_handler.get_dids_per_pds()
 
     data = {"data": result}
@@ -1630,7 +1630,7 @@ async def retrieve_dids_per_pds():
     return jsonify(data)
 
 
-async def retrieve_subscribe_blocks_blocklist(client_identifier, page):
+async def retrieve_subscribe_blocks_blocklist(client_identifier: str, page: int) -> jsonify:
     session_ip = await get_ip()
     try:
         api_key = request.headers.get('X-API-Key')
@@ -1679,7 +1679,7 @@ async def retrieve_subscribe_blocks_blocklist(client_identifier, page):
     return jsonify(data)
 
 
-async def retrieve_subscribe_blocks_single_blocklist(client_identifier, page):
+async def retrieve_subscribe_blocks_single_blocklist(client_identifier, page) -> jsonify:
     values = await get_var_info()
 
     api_key = values.get('api_key')
@@ -1815,7 +1815,7 @@ async def retrieve_csv_files_info():
     return files_info
 
 
-async def verify_handle(client_identifier):
+async def verify_handle(client_identifier) -> jsonify:
     identity = await sanitization(client_identifier)
     is_handle = utils.is_handle(identity)
 
@@ -1838,7 +1838,7 @@ async def verify_handle(client_identifier):
 @app.route('/api/v1/auth/blocklist/<client_identifier>/<int:page>', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
-async def auth_get_blocklist(client_identifier, page):
+async def auth_get_blocklist(client_identifier, page) -> jsonify:
     try:
         return await get_blocklist(client_identifier, page)
     except DatabaseConnectionError:
@@ -1857,7 +1857,7 @@ async def auth_get_blocklist(client_identifier, page):
 @app.route('/api/v1/auth/single-blocklist/<client_identifier>/<int:page>', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
-async def auth_get_single_blocklist(client_identifier, page):
+async def auth_get_single_blocklist(client_identifier, page) -> jsonify:
     try:
         return await get_single_blocklist(client_identifier, page)
     except DatabaseConnectionError:
@@ -1875,7 +1875,7 @@ async def auth_get_single_blocklist(client_identifier, page):
 @app.route('/api/v1/auth/in-common-blocklist/<client_identifier>', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
-async def auth_get_in_common_blocklist(client_identifier):
+async def auth_get_in_common_blocklist(client_identifier) -> jsonify:
     try:
         return await get_in_common_blocklist(client_identifier)
     except DatabaseConnectionError:
@@ -1893,7 +1893,7 @@ async def auth_get_in_common_blocklist(client_identifier):
 @app.route('/api/v1/auth/in-common-blocked-by/<client_identifier>', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
-async def auth_get_in_common_blocked_by(client_identifier):
+async def auth_get_in_common_blocked_by(client_identifier) -> jsonify:
     try:
         return await get_in_common_blocked(client_identifier)
     except DatabaseConnectionError:
@@ -1911,7 +1911,7 @@ async def auth_get_in_common_blocked_by(client_identifier):
 @app.route('/api/v1/auth/at-uri/<path:uri>', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
-async def auth_convert_uri_to_url(uri):
+async def auth_convert_uri_to_url(uri) -> jsonify:
     try:
         return await convert_uri_to_url(uri)
     except DatabaseConnectionError:
@@ -1929,7 +1929,7 @@ async def auth_convert_uri_to_url(uri):
 @app.route('/api/v1/auth/total-users', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
-async def auth_get_total_users():
+async def auth_get_total_users() -> jsonify:
     try:
         return await get_total_users()
     except DatabaseConnectionError:
@@ -1947,7 +1947,7 @@ async def auth_get_total_users():
 @app.route('/api/v1/auth/get-did/<client_identifier>', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
-async def auth_get_did_info(client_identifier):
+async def auth_get_did_info(client_identifier) -> jsonify:
     try:
         return await get_did_info(client_identifier)
     except DatabaseConnectionError:
@@ -1965,7 +1965,7 @@ async def auth_get_did_info(client_identifier):
 @app.route('/api/v1/auth/get-handle/<client_identifier>', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
-async def auth_get_handle_info(client_identifier):
+async def auth_get_handle_info(client_identifier) -> jsonify:
     try:
         return await get_handle_info(client_identifier)
     except DatabaseConnectionError:
@@ -1983,7 +1983,7 @@ async def auth_get_handle_info(client_identifier):
 @app.route('/api/v1/auth/get-handle-history/<client_identifier>', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
-async def auth_get_handle_history_info(client_identifier):
+async def auth_get_handle_history_info(client_identifier) -> jsonify:
     try:
         return await get_handle_history_info(client_identifier)
     except DatabaseConnectionError:
@@ -2001,7 +2001,7 @@ async def auth_get_handle_history_info(client_identifier):
 @app.route('/api/v1/auth/get-list/<client_identifier>', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
-async def auth_get_list_info(client_identifier):
+async def auth_get_list_info(client_identifier) -> jsonify:
     try:
         return await get_list_info(client_identifier)
     except DatabaseConnectionError:
@@ -2020,7 +2020,7 @@ async def auth_get_list_info(client_identifier):
 @app.route('/api/v1/auth/get-moderation-list/<string:input_name>/<int:page>', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
-async def auth_get_moderation_lists(input_name, page):
+async def auth_get_moderation_lists(input_name, page) -> jsonify:
     try:
         return await get_moderation_lists(input_name, page)
     except DatabaseConnectionError:
@@ -2038,7 +2038,7 @@ async def auth_get_moderation_lists(input_name, page):
 @app.route('/api/v1/auth/blocklist-search-blocked/<client_identifier>/<search_identifier>', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
-async def auth_get_blocked_search(client_identifier, search_identifier):
+async def auth_get_blocked_search(client_identifier, search_identifier) -> jsonify:
     try:
         return await get_blocked_search(client_identifier, search_identifier)
     except DatabaseConnectionError:
@@ -2056,7 +2056,7 @@ async def auth_get_blocked_search(client_identifier, search_identifier):
 @app.route('/api/v1/auth/blocklist-search-blocking/<client_identifier>/<search_identifier>', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
-async def auth_get_blocking_search(client_identifier, search_identifier):
+async def auth_get_blocking_search(client_identifier, search_identifier) -> jsonify:
     try:
         return await get_blocking_search(client_identifier, search_identifier)
     except DatabaseConnectionError:
@@ -2074,7 +2074,7 @@ async def auth_get_blocking_search(client_identifier, search_identifier):
 @app.route('/api/v1/auth/lists/fun-facts', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
-async def auth_fun_facts():
+async def auth_fun_facts() -> jsonify:
     try:
         return await fun_facts()
     except DatabaseConnectionError:
@@ -2092,7 +2092,7 @@ async def auth_fun_facts():
 @app.route('/api/v1/auth/lists/funer-facts', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
-async def auth_funer_facts():
+async def auth_funer_facts() -> jsonify:
     try:
         return await funer_facts()
     except DatabaseConnectionError:
@@ -2110,7 +2110,7 @@ async def auth_funer_facts():
 @app.route('/api/v1/auth/lists/block-stats', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
-async def auth_block_stats():
+async def auth_block_stats() -> jsonify:
     try:
         return await block_stats()
     except DatabaseConnectionError:
@@ -2128,7 +2128,7 @@ async def auth_block_stats():
 @app.route('/api/v1/auth/base/autocomplete/<client_identifier>', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
-async def auth_autocomplete(client_identifier):
+async def auth_autocomplete(client_identifier) -> jsonify:
     try:
         return await autocomplete(client_identifier)
     except DatabaseConnectionError:
@@ -2146,7 +2146,7 @@ async def auth_autocomplete(client_identifier):
 @app.route('/api/v1/auth/base/internal/status/process-status', methods=['GET'])
 @api_key_required("INTERNALSERVER")
 @rate_limit(30, timedelta(seconds=1))
-async def auth_get_internal_status():
+async def auth_get_internal_status() -> jsonify:
     try:
         return await get_internal_status()
     except DatabaseConnectionError:
@@ -2164,7 +2164,7 @@ async def auth_get_internal_status():
 @app.route('/api/v1/auth/base/internal/api-check', methods=['GET'])
 @api_key_required("INTERNALSERVER")
 @rate_limit(30, timedelta(seconds=1))
-async def auth_check_api_keys():
+async def auth_check_api_keys() -> jsonify:
     try:
         return await check_api_keys()
     except DatabaseConnectionError:
@@ -2182,7 +2182,7 @@ async def auth_check_api_keys():
 @app.route('/api/v1/auth/lists/dids-per-pds', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
-async def auth_dids_per_pds():
+async def auth_dids_per_pds() -> jsonify:
     try:
         return await retrieve_dids_per_pds()
     except DatabaseConnectionError:
@@ -2201,7 +2201,7 @@ async def auth_dids_per_pds():
 @app.route('/api/v1/auth/subscribe-blocks-blocklist/<client_identifier>/<int:page>', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
-async def auth_subscribe_blocks_blocklist(client_identifier, page):
+async def auth_subscribe_blocks_blocklist(client_identifier, page) -> jsonify:
     try:
         return await retrieve_subscribe_blocks_blocklist(client_identifier, page)
     except DatabaseConnectionError:
@@ -2220,7 +2220,7 @@ async def auth_subscribe_blocks_blocklist(client_identifier, page):
 @app.route('/api/v1/auth/subscribe-blocks-single-blocklist/<client_identifier>/<int:page>', methods=['GET'])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
-async def auth_subscribe_blocks_single_blocklist(client_identifier, page):
+async def auth_subscribe_blocks_single_blocklist(client_identifier, page) -> jsonify:
     try:
         return await retrieve_subscribe_blocks_single_blocklist(client_identifier, page)
     except DatabaseConnectionError:
@@ -2237,7 +2237,7 @@ async def auth_subscribe_blocks_single_blocklist(client_identifier, page):
 
 @app.route('/api/v1/auth/validation/validate-handle/<client_identifier>', methods=['GET'])
 @rate_limit(30, timedelta(seconds=1))
-async def auth_validate_handle(client_identifier):
+async def auth_validate_handle(client_identifier) -> jsonify:
     try:
         return await verify_handle(client_identifier)
     except DatabaseConnectionError:
@@ -2254,7 +2254,7 @@ async def auth_validate_handle(client_identifier):
 
 @app.route('/api/v1/auth/data-transaction/receive', methods=['POST'])
 @rate_limit(1, timedelta(seconds=2))
-async def auth_receive_data(data):
+async def auth_receive_data(data) -> jsonify:
     try:
         # Check if the request contains a file
         if 'file' not in request.files:
@@ -2285,7 +2285,7 @@ async def auth_receive_data(data):
 
 @app.route('/api/v1/auth/data-transaction/retrieve', methods=['GET'])
 @rate_limit(1, timedelta(seconds=2))
-async def auth_retrieve_data():
+async def auth_retrieve_data() -> jsonify:
     try:
         get_list = request.args.get('list')
         retrieve_lists = request.args.get('retrieveLists')
@@ -2320,7 +2320,7 @@ async def auth_retrieve_data():
 @app.route('/api/v1/anon/blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
 @app.route('/api/v1/anon/blocklist/<client_identifier>/<int:page>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
-async def anon_get_blocklist(client_identifier, page):
+async def anon_get_blocklist(client_identifier, page) -> jsonify:
     try:
         return await get_blocklist(client_identifier, page)
     except DatabaseConnectionError:
@@ -2338,7 +2338,7 @@ async def anon_get_blocklist(client_identifier, page):
 @app.route('/api/v1/anon/single-blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
 @app.route('/api/v1/anon/single-blocklist/<client_identifier>/<int:page>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
-async def anon_get_single_blocklist(client_identifier, page):
+async def anon_get_single_blocklist(client_identifier, page) -> jsonify:
     try:
         return await get_single_blocklist(client_identifier, page)
     except DatabaseConnectionError:
@@ -2355,7 +2355,7 @@ async def anon_get_single_blocklist(client_identifier, page):
 
 @app.route('/api/v1/anon/in-common-blocklist/<client_identifier>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
-async def anon_get_in_common_blocklist(client_identifier):
+async def anon_get_in_common_blocklist(client_identifier) -> jsonify:
     try:
         return await get_in_common_blocklist(client_identifier)
     except DatabaseConnectionError:
@@ -2372,7 +2372,7 @@ async def anon_get_in_common_blocklist(client_identifier):
 
 @app.route('/api/v1/anon/in-common-blocked-by/<client_identifier>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
-async def anon_get_in_common_blocked_by(client_identifier):
+async def anon_get_in_common_blocked_by(client_identifier) -> jsonify:
     try:
         return await get_in_common_blocked(client_identifier)
     except DatabaseConnectionError:
@@ -2389,7 +2389,7 @@ async def anon_get_in_common_blocked_by(client_identifier):
 
 @app.route('/api/v1/anon/at-uri/<path:uri>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
-async def anon_convert_uri_to_url(uri):
+async def anon_convert_uri_to_url(uri) -> jsonify:
     try:
         return await convert_uri_to_url(uri)
     except DatabaseConnectionError:
@@ -2406,7 +2406,7 @@ async def anon_convert_uri_to_url(uri):
 
 @app.route('/api/v1/anon/total-users', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
-async def anon_get_total_users():
+async def anon_get_total_users() -> jsonify:
     try:
         return await get_total_users()
     except DatabaseConnectionError:
@@ -2423,7 +2423,7 @@ async def anon_get_total_users():
 
 @app.route('/api/v1/anon/get-did/<client_identifier>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
-async def anon_get_did_info(client_identifier):
+async def anon_get_did_info(client_identifier) -> jsonify:
     try:
         return await get_did_info(client_identifier)
     except DatabaseConnectionError:
@@ -2440,7 +2440,7 @@ async def anon_get_did_info(client_identifier):
 
 @app.route('/api/v1/anon/get-handle/<client_identifier>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
-async def anon_get_handle_info(client_identifier):
+async def anon_get_handle_info(client_identifier) -> jsonify:
     try:
         return await get_handle_info(client_identifier)
     except DatabaseConnectionError:
@@ -2457,7 +2457,7 @@ async def anon_get_handle_info(client_identifier):
 
 @app.route('/api/v1/anon/get-handle-history/<client_identifier>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
-async def anon_get_handle_history_info(client_identifier):
+async def anon_get_handle_history_info(client_identifier) -> jsonify:
     try:
         return await get_handle_history_info(client_identifier)
     except DatabaseConnectionError:
@@ -2474,7 +2474,7 @@ async def anon_get_handle_history_info(client_identifier):
 
 @app.route('/api/v1/anon/get-list/<client_identifier>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
-async def anon_get_list_info(client_identifier):
+async def anon_get_list_info(client_identifier) -> jsonify:
     try:
         return await get_list_info(client_identifier)
     except DatabaseConnectionError:
@@ -2492,7 +2492,7 @@ async def anon_get_list_info(client_identifier):
 @app.route('/api/v1/anon/get-moderation-list/<string:input_name>', defaults={'page': 1}, methods=['GET'])
 @app.route('/api/v1/anon/get-moderation-list/<string:input_name>/<int:page>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
-async def anon_get_moderation_lists(input_name, page):
+async def anon_get_moderation_lists(input_name, page) -> jsonify:
     try:
         return await get_moderation_lists(input_name, page)
     except DatabaseConnectionError:
@@ -2509,7 +2509,7 @@ async def anon_get_moderation_lists(input_name, page):
 
 @app.route('/api/v1/anon/blocklist-search-blocked/<client_identifier>/<search_identifier>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
-async def anon_get_blocked_search(client_identifier, search_identifier):
+async def anon_get_blocked_search(client_identifier, search_identifier) -> jsonify:
     try:
         return await get_blocked_search(client_identifier, search_identifier)
     except DatabaseConnectionError:
@@ -2526,7 +2526,7 @@ async def anon_get_blocked_search(client_identifier, search_identifier):
 
 @app.route('/api/v1/anon/blocklist-search-blocking/<client_identifier>/<search_identifier>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
-async def anon_get_blocking_search(client_identifier, search_identifier):
+async def anon_get_blocking_search(client_identifier, search_identifier) -> jsonify:
     try:
         return await get_blocking_search(client_identifier, search_identifier)
     except DatabaseConnectionError:
@@ -2543,7 +2543,7 @@ async def anon_get_blocking_search(client_identifier, search_identifier):
 
 @app.route('/api/v1/anon/lists/fun-facts', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
-async def anon_fun_facts():
+async def anon_fun_facts() -> jsonify:
     try:
         return await fun_facts()
     except DatabaseConnectionError:
@@ -2560,7 +2560,7 @@ async def anon_fun_facts():
 
 @app.route('/api/v1/anon/lists/funer-facts', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
-async def anon_funer_facts():
+async def anon_funer_facts() -> jsonify:
     try:
         return await funer_facts()
     except DatabaseConnectionError:
@@ -2577,7 +2577,7 @@ async def anon_funer_facts():
 
 @app.route('/api/v1/anon/lists/block-stats', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
-async def anon_block_stats():
+async def anon_block_stats() -> jsonify:
     try:
         return await block_stats()
     except DatabaseConnectionError:
@@ -2594,7 +2594,7 @@ async def anon_block_stats():
 
 @app.route('/api/v1/anon/base/autocomplete/<client_identifier>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
-async def anon_autocomplete(client_identifier):
+async def anon_autocomplete(client_identifier) -> jsonify:
     try:
         return await autocomplete(client_identifier)
     except DatabaseConnectionError:
@@ -2611,7 +2611,7 @@ async def anon_autocomplete(client_identifier):
 
 @app.route('/api/v1/anon/base/internal/status/process-status', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
-async def anon_get_internal_status():
+async def anon_get_internal_status() -> jsonify:
     try:
         return await get_internal_status()
     except DatabaseConnectionError:
@@ -2628,7 +2628,7 @@ async def anon_get_internal_status():
 
 @app.route('/api/v1/anon/lists/dids-per-pds', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
-async def anon_dids_per_pds():
+async def anon_dids_per_pds() -> jsonify:
     try:
         return await retrieve_dids_per_pds()
     except DatabaseConnectionError:
@@ -2646,7 +2646,7 @@ async def anon_dids_per_pds():
 @app.route('/api/v1/anon/subscribe-blocks-blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
 @app.route('/api/v1/anon/subscribe-blocks-blocklist/<client_identifier>/<int:page>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
-async def anon_subscribe_blocks_blocklist(client_identifier, page):
+async def anon_subscribe_blocks_blocklist(client_identifier: str, page: int) -> jsonify:
     try:
         return await retrieve_subscribe_blocks_blocklist(client_identifier, page)
     except DatabaseConnectionError:
@@ -2664,7 +2664,7 @@ async def anon_subscribe_blocks_blocklist(client_identifier, page):
 @app.route('/api/v1/anon/subscribe-blocks-single-blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
 @app.route('/api/v1/anon/subscribe-blocks-single-blocklist/<client_identifier>/<int:page>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
-async def anon_subscribe_blocks_single_blocklist(client_identifier, page):
+async def anon_subscribe_blocks_single_blocklist(client_identifier, page) -> jsonify:
     try:
         return await retrieve_subscribe_blocks_single_blocklist(client_identifier, page)
     except DatabaseConnectionError:
@@ -2681,7 +2681,7 @@ async def anon_subscribe_blocks_single_blocklist(client_identifier, page):
 
 @app.route('/api/v1/anon/validation/validate-handle/<client_identifier>', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
-async def anon_validate_handle(client_identifier):
+async def anon_validate_handle(client_identifier) -> jsonify:
     try:
         return await verify_handle(client_identifier)
     except DatabaseConnectionError:
