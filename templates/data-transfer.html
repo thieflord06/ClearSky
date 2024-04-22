@@ -23,7 +23,7 @@
         // Function to create download buttons for each file
         function createDownloadButton(filename) {
             const button = document.createElement('button');
-            button.textContent = `Download ${filename}`;
+            button.textContent = `${filename}`;
             button.addEventListener('click', () => {
                 window.location.href = `/api/v1/anon/data-transaction/retrieve?retrieveLists=true&file=${filename}`;
             });
