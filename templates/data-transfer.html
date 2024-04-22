@@ -6,6 +6,7 @@
     <title>File Upload and Download</title>
 </head>
 <body>
+    <img src="CleardayLarge.png" alt="ClearSky Logo" style="width: 150px; height: auto;">
     <h1>File Upload</h1>
     <form id="uploadForm" enctype="multipart/form-data">
         <input type="file" name="file" accept=".csv">
@@ -41,6 +42,8 @@
             })
             .then(response => {
                 if (response.ok) {
+                    // Reset the form after successful upload
+                    document.getElementById('uploadForm').reset();
                     return response.json();
                 } else {
                     throw new Error('Failed to upload file.');
