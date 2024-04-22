@@ -792,9 +792,9 @@ async def get_total_users():
     formatted_total_count = '{:,}'.format(total_count)
     formatted_deleted_count = '{:,}'.format(deleted_count)
 
-    logger.info(f"{session_ip} > {api_key} | total users count: {formatted_total_count}")
-    logger.info(f"{session_ip} > {api_key} | total active users count: {formatted_active_count}")
-    logger.info(f"{session_ip} > {api_key} | total deleted users count: {formatted_deleted_count}")
+    logger.debug(f"{session_ip} > {api_key} | total users count: {formatted_total_count}")
+    logger.debug(f"{session_ip} > {api_key} | total active users count: {formatted_active_count}")
+    logger.debug(f"{session_ip} > {api_key} | total deleted users count: {formatted_deleted_count}")
 
     count_data = {
         "active_count": {
