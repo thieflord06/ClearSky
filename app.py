@@ -1,5 +1,5 @@
 # app.py
-
+import socket
 import sys
 import quart
 from quart import Quart, render_template, request, session, jsonify, send_file
@@ -1767,6 +1767,16 @@ async def retrieve_subscribe_blocks_single_blocklist(client_identifier, page) ->
     return jsonify(data)
 
 
+async def get_data_storage_path():
+    if socket.gethostname() == "localhost":
+        root_path = os.getcwd()
+        path = f"{root_path}/data"
+    else:
+        path = "/var/data"
+
+    return path
+
+
 async def file_validation(file) -> bool:
     _, extension = os.path.splitext(file)
 
@@ -1784,8 +1794,9 @@ async def store_data(data) -> None:
     if file_validation(data):
         # Write JSON data to a file
         filename = "fedi.csv"
-        root_path = os.getcwd()
-        path = f"{root_path}/data/{filename}"
+
+        pre_path = await get_data_storage_path()
+        path = f"{pre_path}/{filename}"
 
         # Extracting the header from the first row of data
         header = list(data[0].keys())
@@ -1799,7 +1810,7 @@ async def store_data(data) -> None:
 
 
 async def retrieve_csv_data(retrieve_lists, file_name=None):
-    root_path = os.getcwd()
+    root_path = await get_data_storage_path()
 
     if retrieve_lists == "true" and file_name is not None:
         path = f"{root_path}/data/{file_name}"
@@ -1817,8 +1828,7 @@ async def retrieve_csv_data(retrieve_lists, file_name=None):
 
 
 async def retrieve_csv_files_info(arg) -> jsonify:
-    root_path = os.getcwd()
-    path = f"{root_path}/data"
+    path = await get_data_storage_path()
 
     files = os.listdir(path)
 
