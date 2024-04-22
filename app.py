@@ -1779,8 +1779,8 @@ async def get_data_storage_path():
     return path
 
 
-async def file_validation(file) -> bool:
-    _, extension = os.path.splitext(file)
+async def filename_validation(filename) -> bool:
+    _, extension = os.path.splitext(filename)
 
     if extension:
         if extension.lower() == '.csv':
@@ -1791,23 +1791,42 @@ async def file_validation(file) -> bool:
         return False
 
 
-async def store_data(data, file_name: str) -> None:
-    logger.info(f"")
+async def file_content_validation(file_content) -> bool:
+    try:
+        # Attempt to decode the file content as CSV
+        decoded_content = file_content.decode('utf-8')
+        csv.reader(decoded_content.splitlines())
+        return True
+    except csv.Error:
+        return False
 
-    if file_validation(data):
-        # Write JSON data to a file
-        filename = file_name
+
+async def store_data(data, file_name: str) -> None:
+    logger.info(f"Data upload for file: {file_name}")
+
+    name_validated = await filename_validation(file_name)
+
+    content_validated = await file_content_validation(data)
+
+    if name_validated and content_validated:
+        # Prepare to read data as a CSV
+        data_io = io.StringIO(data.decode('utf-8'))
+        reader = csv.reader(data_io)
+
+        # Extract the header row
+        header = next(reader)
+
+        # Check if the header is valid
+        if not header:
+            raise BadRequest("Invalid CSV file format. No header row found.")
 
         pre_path = await get_data_storage_path()
-        path = f"{pre_path}/{filename}"
-
-        # Extracting the header from the first row of data
-        header = list(data[0].keys())
+        path = f"{pre_path}/{file_name}"
 
         with open(path, 'w') as file:
-            writer = csv.DictWriter(file, fieldnames=header)
-            writer.writeheader()
-            writer.writerows(data)
+            writer = csv.writer(file)
+            writer.writerow(header)
+            writer.writerows(reader)
     else:
         raise BadRequest
 
@@ -2788,20 +2807,27 @@ async def anon_receive_data() -> jsonify:
     logger.info(f"data list file upload request: {session_ip} - {api_key}")
 
     try:
-        file_name = request.args.get('file')
+        file_name = request.args.get('filename')
 
         # Check if the request contains a file
-        if not request.args.get('file'):
+        if not file_name:
             raise BadRequest
 
+        # Check if files were sent in the request
+        files = await request.files
+        if 'file' not in files:
+            raise BadRequest("No file provided.")
+
         # Get the file from the request
-        file = request.files
+        file_storage = files['file']
 
-        # Check if the file has a valid filename
-        if not file:
-            raise NoFileProvided
+        if file_name != file_storage.filename:
+            raise BadRequest()
 
-        await store_data(file, file_name)
+        # Read the content of the file
+        file_content = file_storage.read()
+
+        await store_data(file_content, file_name)
 
         return jsonify({"message": "File received and processed successfully"}), 200
     except DatabaseConnectionError:
@@ -2814,7 +2840,7 @@ async def anon_receive_data() -> jsonify:
     except NoFileProvided:
         return jsonify({"error": "No file provided"}), 400
     except Exception as e:
-        logger.error(f"Error in auth_receive_data: {e}")
+        logger.error(f"Error in receive_data: {e}")
 
         return jsonify({"error": "Internal error"}), 500
 
