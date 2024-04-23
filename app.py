@@ -497,6 +497,15 @@ async def fediverse():
     return await render_template('data-transfer.html')
 
 
+@app.route('/fedi-delete-request', methods=['GET'])
+async def fedi_delete_request():
+    # Generate a new session number and store it in the session
+    if 'session_number' not in session:
+        session['session_number'] = generate_session_number()
+
+    return await render_template('fedi-delete-request.html')
+
+
 @app.route('/images/favicon.png', methods=['GET'])
 async def favicon1():
     return await quart.send_from_directory('images', 'favicon.png')
