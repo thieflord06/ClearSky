@@ -8,7 +8,7 @@ import sys
 from aiolimiter import AsyncLimiter
 
 ini_file = "config.ini"
-
+upload_limit_mb = 1
 rate_limit = 2500  # Requests per minute
 time_interval = 300  # 60 seconds = 1 minute
 limiter = AsyncLimiter(rate_limit, time_interval)
