@@ -243,26 +243,38 @@
             if (Object.keys(files).length === 0) {
                 fileListDiv.textContent = 'No files available for download.';
             } else {
-                fileListDiv.textContent = 'Select a file to download:';
-                fileListDiv.style.marginBottom = '15px';
                 fileListDiv.style.textAlign = 'center';
 
-                // Sort files by listType
-                const sortedFiles = Object.entries(files).sort((a, b) => {
-                    const listTypeA = a[1]['List Type'] || ''; // Handle the case when listType is not provided
-                    const listTypeB = b[1]['List Type'] || ''; // Handle the case when listType is not provided
-                    return listTypeA.localeCompare(listTypeB);
-                });
+                // Group files by list type
+                const groupedFiles = {};
 
-                sortedFiles.forEach(([filename, file]) => {
-                    const button = createDownloadButton(filename);
-                    const fileDiv = document.createElement('div');
-                    fileDiv.appendChild(button);
-                    const descriptionDiv = document.createElement('div');
-                    descriptionDiv.innerHTML = `<strong>Author:</strong> ${file.Author || 'None'} <strong>Description:</strong> ${file.Description || 'None'} <strong>Appeal:</strong> ${file.Appeal || 'None'} <strong>Type:</strong> ${file['List Type'] || 'None'}`;
-                    fileDiv.appendChild(descriptionDiv);
-                    fileListDiv.appendChild(fileDiv);
-                });
+                for (const filename in files) {
+                    const file = files[filename];
+                    const listType = file['List Type'] || 'None';
+                    if (!groupedFiles[listType]) {
+                        groupedFiles[listType] = [];
+                    }
+                    groupedFiles[listType].push({ filename, file });
+                }
+
+                // Display files for each group
+                for (const listType in groupedFiles) {
+                    const filesForType = groupedFiles[listType];
+                    if (filesForType.length > 0) {
+                        const typeHeading = document.createElement('h3');
+                        typeHeading.textContent = `Files for ${listType}`;
+                        fileListDiv.appendChild(typeHeading);
+                        filesForType.forEach(({ filename, file }) => {
+                            const button = createDownloadButton(filename);
+                            const fileDiv = document.createElement('div');
+                            fileDiv.appendChild(button);
+                            const descriptionDiv = document.createElement('div');
+                            descriptionDiv.innerHTML = `<strong>Author:</strong> ${file.Author || 'None'} <strong>Description:</strong> ${file.Description || 'None'} <strong>Appeal:</strong> ${file.Appeal || 'None'} <strong>Type:</strong> ${file['List Type'] || 'None'}`;
+                            fileDiv.appendChild(descriptionDiv);
+                            fileListDiv.appendChild(fileDiv);
+                        });
+                    }
+                }
             }
         }
 
