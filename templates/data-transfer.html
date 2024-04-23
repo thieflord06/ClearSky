@@ -188,7 +188,29 @@
             const button = document.createElement('button');
             button.textContent = `${filename}`;
             button.addEventListener('click', () => {
-                window.location.href = getAPIDomain() + `retrieve?retrieveLists=true&file=${filename}`;
+                fetch(getAPIDomain() + `retrieve?retrieveLists=true&file=${filename}`)
+                    .then(response => {
+                        if (response.ok) {
+                            // If response is successful, initiate file download
+                            response.blob().then(blob => {
+                                const url = window.URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = filename;
+                                document.body.appendChild(a);
+                                a.click();
+                                window.URL.revokeObjectURL(url);
+                            });
+                        } else if (response.status === 429) {
+                            throw new Error('Rate limit exceeded. Please try again later.');
+                        } else {
+                            throw new Error('Failed to retrieve file.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error downloading file:', error);
+                        alert(error.message); // Display error message to the user
+                    });
             });
             return button;
         }
@@ -217,6 +239,8 @@
                         return response.json();
                     } else if (response.status === 404) {
                         throw new Error('No lists available.');
+                    } else if (response.status === 429) {
+                        throw new Error('Please try again.');
                     } else {
                         throw new Error('Failed to fetch file list.');
                     }
