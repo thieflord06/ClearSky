@@ -242,48 +242,74 @@
             return button;
         }
 
-        // Function to populate file list
-        function populateFileList(files) {
-            const fileListDiv = document.getElementById('fileList');
-            fileListDiv.innerHTML = '';
+    // Function to populate file list
+    function populateFileList(files) {
+        const fileListDiv = document.getElementById('fileList');
+        fileListDiv.innerHTML = '';
 
-            if (Object.keys(files).length === 0) {
-                fileListDiv.textContent = 'No files available for download.';
-            } else {
-                fileListDiv.style.textAlign = 'center';
+        if (Object.keys(files).length === 0) {
+            fileListDiv.textContent = 'No files available for download.';
+        } else {
+            fileListDiv.style.textAlign = 'center';
 
-                // Group files by list type
-                const groupedFiles = {};
+            // Group files by list type
+            const groupedFiles = {};
 
-                for (const filename in files) {
-                    const file = files[filename];
-                    const listType = file['List Type'] || 'None';
-                    if (!groupedFiles[listType]) {
-                        groupedFiles[listType] = [];
-                    }
-                    groupedFiles[listType].push({ filename, file });
+            for (const filename in files) {
+                const file = files[filename];
+                const listType = file['List Type'] || 'None';
+                if (!groupedFiles[listType]) {
+                    groupedFiles[listType] = [];
                 }
+                groupedFiles[listType].push({ filename, file });
+            }
 
-                // Display files for each group
-                for (const listType in groupedFiles) {
-                    const filesForType = groupedFiles[listType];
-                    if (filesForType.length > 0) {
-                        const typeHeading = document.createElement('h3');
-                        typeHeading.textContent = `${listType} type lists`;
-                        fileListDiv.appendChild(typeHeading);
-                        filesForType.forEach(({ filename, file }) => {
-                            const button = createDownloadButton(filename);
-                            const fileDiv = document.createElement('div');
-                            fileDiv.appendChild(button);
-                            const descriptionDiv = document.createElement('div');
-                            descriptionDiv.innerHTML = `<strong>Author:</strong> ${file.Author || 'None'} <strong>Description:</strong> ${file.Description || 'None'} <strong>Appeal:</strong> ${file.Appeal || 'None'} <strong>Type:</strong> ${file['List Type'] || 'None'}`;
-                            fileDiv.appendChild(descriptionDiv);
-                            fileListDiv.appendChild(fileDiv);
-                        });
+            // Sort files within each group based on author, description, and appeal
+            for (const listType in groupedFiles) {
+                const filesForType = groupedFiles[listType];
+
+                // Custom sorting function
+                filesForType.sort((a, b) => {
+                    // If both files have all fields filled out, sort by author, then description, then appeal
+                    if (a.file.Author && a.file.Description && a.file.Appeal && b.file.Author && b.file.Description && b.file.Appeal) {
+                        if (a.file.Author !== b.file.Author) {
+                            return a.file.Author.localeCompare(b.file.Author);
+                        } else if (a.file.Description !== b.file.Description) {
+                            return a.file.Description.localeCompare(b.file.Description);
+                        } else {
+                            return a.file.Appeal.localeCompare(b.file.Appeal);
+                        }
                     }
+                    // If one file has all fields filled out and the other doesn't, prioritize the filled one
+                    else if (a.file.Author && a.file.Description && a.file.Appeal) {
+                        return -1;
+                    } else if (b.file.Author && b.file.Description && b.file.Appeal) {
+                        return 1;
+                    }
+                    // If none of the files have all fields filled out, sort alphabetically by author
+                    else {
+                        return (a.file.Author || '').localeCompare(b.file.Author || '');
+                    }
+                });
+
+                if (filesForType.length > 0) {
+                    const typeHeading = document.createElement('h3');
+                    typeHeading.textContent = `${listType} type lists`;
+                    fileListDiv.appendChild(typeHeading);
+                    filesForType.forEach(({ filename, file }) => {
+                        const button = createDownloadButton(filename);
+                        const fileDiv = document.createElement('div');
+                        fileDiv.appendChild(button);
+                        const descriptionDiv = document.createElement('div');
+                        descriptionDiv.innerHTML = `<strong>Author:</strong> ${file.Author || 'None'} <strong>Description:</strong> ${file.Description || 'None'} <strong>Appeal:</strong> ${file.Appeal || 'None'} <strong>Type:</strong> ${file['List Type'] || 'None'}`;
+                        fileDiv.appendChild(descriptionDiv);
+                        fileListDiv.appendChild(fileDiv);
+                    });
                 }
             }
         }
+    }
+
 
         // Function to fetch file list
         function getFileList() {
