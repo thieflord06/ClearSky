@@ -220,14 +220,20 @@
             const fileListDiv = document.getElementById('fileList');
             fileListDiv.innerHTML = '';
 
-            if (files.length === 0) {
+            if (Object.keys(files).length === 0) {
                 fileListDiv.textContent = 'No files available for download.';
             } else {
                 fileListDiv.textContent = 'Select a file to download:';
-                files.forEach(filename => {
+                for (const filename in files) {
+                    const file = files[filename];
                     const button = createDownloadButton(filename);
-                    fileListDiv.appendChild(button);
-                });
+                    const fileDiv = document.createElement('div');
+                    fileDiv.appendChild(button);
+                    const descriptionDiv = document.createElement('div');
+                    descriptionDiv.textContent = `Author: ${file.Author || 'None'}, Description: ${file.Description || 'None'}, Appeal: ${file.Appeal || 'None'}`;
+                    fileDiv.appendChild(descriptionDiv);
+                    fileListDiv.appendChild(fileDiv);
+                }
             }
         }
 

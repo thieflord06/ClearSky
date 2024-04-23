@@ -323,10 +323,10 @@ async def first_run() -> None:
             tables = await database_handler.tables_exists()
 
             if tables:
-                await database_handler.blocklists_updater()
-                await database_handler.top_24blocklists_updater()
-                await utils.update_block_statistics()
-                await utils.update_total_users()
+                # await database_handler.blocklists_updater()
+                # await database_handler.top_24blocklists_updater()
+                # await utils.update_block_statistics()
+                # await utils.update_total_users()
 
                 break
             else:
@@ -1801,7 +1801,7 @@ async def file_content_validation(file_content) -> bool:
         return False
 
 
-async def store_data(data, file_name: str, author: str, description: str, appeal: str) -> None:
+async def store_data(data, file_name: str, author: str = None, description: str = None, appeal: str = None) -> None:
     logger.info(f"Data upload for file: {file_name}")
 
     name_validated = await filename_validation(file_name)
@@ -1866,12 +1866,15 @@ async def retrieve_csv_files_info(arg) -> jsonify:
 
     files = os.listdir(path)
 
-    files_info = []
+    files_info = {}
 
     try:
         if arg == "true":
             for csv_file in files:
-                files_info.append(csv_file)
+                if csv_file.endswith('.csv'):
+                    metadata = await read_metadata(csv_file)
+                    files_info[csv_file] = metadata
+                    # files_info.update({"filename": csv_file, "metadata": metadata})
 
             if not files_info:
                 raise NotFound
@@ -1883,6 +1886,21 @@ async def retrieve_csv_files_info(arg) -> jsonify:
             return jsonify(data)
     except AttributeError:
         raise BadRequest
+
+
+async def read_metadata(csv_file):
+    base_path = await get_data_storage_path()
+
+    metadata_file_path = os.path.join(base_path, f"{csv_file}.metadata")
+    metadata = {}
+
+    if os.path.exists(metadata_file_path):
+        with open(metadata_file_path, 'r') as metadata_file:
+            for line in metadata_file:
+                key, value = line.strip().split(':', 1)
+                metadata[key.strip()] = value.strip()
+
+    return metadata
 
 
 async def verify_handle(client_identifier) -> jsonify:
@@ -2840,13 +2858,21 @@ async def anon_receive_data() -> jsonify:
     logger.info(f"data list file upload request: {session_ip} - {api_key}")
 
     try:
-        file_name = request.args.get('filename')
+        file_name = await request.form
+        file_name = file_name.get('filename')
 
         # Retrieve additional fields
-        author = request.form.get('author')
-        description = request.form.get('description')
-        appeal = request.form.get('appealsProcess')
+        author = await request.form
+        author = author.get('author')
 
+        description = await request.form
+        description = description.get('description')
+
+        appeal = await request.form
+        appeal = appeal.get('appealsProcess')
+
+        if file_name is None:
+            file_name = request.args.get('filename')
         if author is None:
             author = request.args.get('author')
         if description is None:
