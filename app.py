@@ -2331,20 +2331,44 @@ async def auth_receive_data() -> jsonify:
     logger.info(f"data list file upload request: {session_ip} - {api_key}")
 
     try:
-        file_name = request.args.get('file')
+        file_name = request.args.get('filename')
 
-        # Check if the request contains a file
-        if not request.args.get('file'):
+        # Retrieve additional fields
+        author = request.form.get('author')
+        description = request.form.get('description')
+        appeal = request.form.get('appealsProcess')
+
+        if author is None:
+            author = request.args.get('author')
+        if description is None:
+            description = request.args.get('description')
+        if appeal is None:
+            appeal = request.args.get('appealsProcess')
+
+        if len(author) > 100 or len(description) > 300 or len(appeal) > 500:
+            logger.warning(
+                f"Data too long: Author: {len(author)}, Description: {len(description)}, Appeal: {len(appeal)}")
             raise BadRequest
 
+        # Check if the request contains a file
+        if not file_name:
+            raise BadRequest
+
+        # Check if files were sent in the request
+        files = await request.files
+        if 'file' not in files:
+            raise BadRequest("No file provided.")
+
         # Get the file from the request
-        file = request.files
+        file_storage = files['file']
 
-        # Check if the file has a valid filename
-        if not file:
-            raise NoFileProvided
+        if file_name != file_storage.filename:
+            raise BadRequest()
 
-        await store_data(file, file_name)
+        # Read the content of the file
+        file_content = file_storage.read()
+
+        await store_data(file_content, file_name, author, description, appeal)
 
         return jsonify({"message": "File received and processed successfully"}), 200
     except DatabaseConnectionError:
@@ -2357,7 +2381,7 @@ async def auth_receive_data() -> jsonify:
     except NoFileProvided:
         return jsonify({"error": "No file provided"}), 400
     except Exception as e:
-        logger.error(f"Error in auth_receive_data: {e}")
+        logger.error(f"Error in receive_data: {e}")
 
         return jsonify({"error": "Internal error"}), 500
 
