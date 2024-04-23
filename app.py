@@ -1820,7 +1820,7 @@ async def does_file_exist(file_path) -> bool:
         return False
 
 
-async def store_data(data, file_name: str, author: str = None, description: str = None, appeal: str = None) -> None:
+async def store_data(data, file_name: str, author: str = None, description: str = None, appeal: str = None, list_type: str = None) -> None:
     base_path = await get_data_storage_path()
 
     # Define the file paths for the data file and metadata file
@@ -1860,6 +1860,7 @@ async def store_data(data, file_name: str, author: str = None, description: str 
             metadata_file.write(f"Author: {author}\n")
             metadata_file.write(f"Description: {description}\n")
             metadata_file.write(f"Appeal: {appeal}\n")
+            metadata_file.write(f"List Type: {list_type}\n")
 
         size_validated = await filesize_validation(data_file_path)
 
@@ -1907,7 +1908,6 @@ async def retrieve_csv_files_info(arg) -> jsonify:
                 if csv_file.endswith('.csv'):
                     metadata = await read_metadata(csv_file)
                     files_info[csv_file] = metadata
-                    # files_info.update({"filename": csv_file, "metadata": metadata})
 
             if not files_info:
                 raise NotFound
@@ -2382,23 +2382,38 @@ async def auth_receive_data() -> jsonify:
     logger.info(f"data list file upload request: {session_ip} - {api_key}")
 
     try:
-        file_name = request.args.get('filename')
+        file_name = await request.form
+        file_name = file_name.get('filename')
 
         # Retrieve additional fields
-        author = request.form.get('author')
-        description = request.form.get('description')
-        appeal = request.form.get('appealsProcess')
+        author = await request.form
+        author = author.get('author')
 
+        description = await request.form
+        description = description.get('description')
+
+        appeal = await request.form
+        appeal = appeal.get('appealsProcess')
+
+        list_type = await request.form
+        list_type = list_type.get('listType')
+
+        if file_name is None:
+            file_name = request.args.get('filename')
         if author is None:
             author = request.args.get('author')
         if description is None:
             description = request.args.get('description')
         if appeal is None:
             appeal = request.args.get('appealsProcess')
+        if list_type is None:
+            list_type = request.args.get('listType')
+
+        if not list_type.lower().strip() == 'user' or 'domain':
+            raise BadRequest
 
         if len(author) > 100 or len(description) > 300 or len(appeal) > 500:
-            logger.warning(
-                f"Data too long: Author: {len(author)}, Description: {len(description)}, Appeal: {len(appeal)}")
+            logger.warning(f"Data too long: Author: {len(author)}, Description: {len(description)}, Appeal: {len(appeal)}")
             raise BadRequest
 
         # Check if the request contains a file
@@ -2416,10 +2431,14 @@ async def auth_receive_data() -> jsonify:
         if file_name != file_storage.filename:
             raise BadRequest()
 
-        # Read the content of the file
-        file_content = file_storage.read()
+        try:
+            # Read the content of the file
+            file_content = file_storage.read()
+        except Exception as e:
+            logger.error(f"Error reading file content, probably not a csv: {file_name} {e}")
+            raise BadRequest()
 
-        await store_data(file_content, file_name, author, description, appeal)
+        await store_data(file_content, file_name, author, description, appeal, list_type)
 
         return jsonify({"message": "File received and processed successfully"}), 200
     except DatabaseConnectionError:
@@ -2429,10 +2448,12 @@ async def auth_receive_data() -> jsonify:
         return jsonify({"error": "Invalid request"}), 400
     except NotFound:
         return jsonify({"error": "Not found"}), 404
-    except FileNameExists:
-        return jsonify({"error": "File name already exists"}), 409
     except NoFileProvided:
         return jsonify({"error": "No file provided"}), 400
+    except FileNameExists:
+        return jsonify({"error": "File name already exists"}), 409
+    except ExceedsFileSizeLimit:
+        return jsonify({"error": "File size limit exceeded."}), 413
     except Exception as e:
         logger.error(f"Error in receive_data: {e}")
 
@@ -2906,6 +2927,9 @@ async def anon_receive_data() -> jsonify:
         appeal = await request.form
         appeal = appeal.get('appealsProcess')
 
+        list_type = await request.form
+        list_type = list_type.get('listType')
+
         if file_name is None:
             file_name = request.args.get('filename')
         if author is None:
@@ -2914,6 +2938,11 @@ async def anon_receive_data() -> jsonify:
             description = request.args.get('description')
         if appeal is None:
             appeal = request.args.get('appealsProcess')
+        if list_type is None:
+            list_type = request.args.get('listType')
+
+        if list_type.lower().strip() not in ['user', 'domain']:
+            raise BadRequest
 
         if len(author) > 100 or len(description) > 300 or len(appeal) > 500:
             logger.warning(f"Data too long: Author: {len(author)}, Description: {len(description)}, Appeal: {len(appeal)}")
@@ -2941,7 +2970,7 @@ async def anon_receive_data() -> jsonify:
             logger.error(f"Error reading file content, probably not a csv: {file_name} {e}")
             raise BadRequest()
 
-        await store_data(file_content, file_name, author, description, appeal)
+        await store_data(file_content, file_name, author, description, appeal, list_type)
 
         return jsonify({"message": "File received and processed successfully"}), 200
     except DatabaseConnectionError:
