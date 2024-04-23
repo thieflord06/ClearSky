@@ -262,7 +262,7 @@
                     const filesForType = groupedFiles[listType];
                     if (filesForType.length > 0) {
                         const typeHeading = document.createElement('h3');
-                        typeHeading.textContent = `Files for ${listType}`;
+                        typeHeading.textContent = `${listType} type lists`;
                         fileListDiv.appendChild(typeHeading);
                         filesForType.forEach(({ filename, file }) => {
                             const button = createDownloadButton(filename);
