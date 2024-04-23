@@ -2821,14 +2821,18 @@ async def anon_receive_data() -> jsonify:
         # Retrieve additional fields
         author = request.form.get('author')
         description = request.form.get('description')
-        appeals_process = request.form.get('appealsProcess')
+        appeal = request.form.get('appealsProcess')
 
         if author is None:
             author = request.args.get('author')
         if description is None:
             description = request.args.get('description')
-        if appeals_process is None:
+        if appeal is None:
             appeal = request.args.get('appealsProcess')
+
+        if len(author) > 100 or len(description) > 300 or len(appeal) > 500:
+            logger.warning(f"Data too long: Author: {len(author)}, Description: {len(description)}, Appeal: {len(appeal)}")
+            raise BadRequest
 
         # Check if the request contains a file
         if not file_name:
