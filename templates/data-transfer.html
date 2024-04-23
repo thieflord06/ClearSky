@@ -139,11 +139,11 @@
                 <option value="domain">Domain</option>
             </select>
             <label for="author">Author:<span id="authorCharsLeft" style="color: gray; font-size: 0.8em;"></span></label>
-            <input type="text" id="author" name="author" maxlength="100" oninput="updateCharsLeft('author', 100)">
+            <input type="text" id="author" name="author" placeholder="handle/name/email/organization/etc." maxlength="100" oninput="updateCharsLeft('author', 100)">
             <label for="description">Description:<span id="descriptionCharsLeft" style="color: gray; font-size: 0.8em;"></span></label>
-            <textarea id="description" name="description" maxlength="300" oninput="updateCharsLeft('description', 300)"></textarea>
+            <textarea id="description" name="description" placeholder="A short description of the lists content." maxlength="300" oninput="updateCharsLeft('description', 300)"></textarea>
             <label for="appealsProcess">Appeals Process:<span id="appealsProcessCharsLeft" style="color: gray; font-size: 0.8em;"></span></label>
-            <textarea id="appealsProcess" name="appealsProcess" maxlength="500" oninput="updateCharsLeft('appealsProcess', 500)"></textarea>
+            <textarea id="appealsProcess" name="appealsProcess" placeholder="A description of how someone can appeal the content of this list." maxlength="500" oninput="updateCharsLeft('appealsProcess', 500)"></textarea>
             <button type="button" onclick="uploadFile()">Upload File</button>
         </form>
 

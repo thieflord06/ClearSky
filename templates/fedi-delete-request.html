@@ -143,7 +143,7 @@
 
     <form id="deleteRequestForm">
         <label for="name">Name:<span id="nameCharsLeft"></span></label>
-        <input type="text" id="name" maxlength="100" oninput="updateCharsLeft('name', 100)" name="name" required>
+        <input type="text" id="name" maxlength="100" placeholder="name/email/organization/etc." oninput="updateCharsLeft('name', 100)" name="name" required>
 
         <label for="handle">Handle:<span id="handleCharsLeft"></span></label>
         <input type="text" id="handle" maxlength="100" oninput="updateCharsLeft('handle', 100)" name="handle" required>
@@ -154,10 +154,10 @@
         </select>
 
         <label for="reason">Reason:<span id="reasonCharsLeft"></span></label>
-        <textarea id="reason" maxlength="1000" oninput="updateCharsLeft('reason', 1000)" name="reason" required></textarea>
+        <textarea id="reason" maxlength="1000" placeholder="Please detail why you believe this list should be removed." oninput="updateCharsLeft('reason', 1000)" name="reason" required></textarea>
 
         <label for="contactEmail">Contact Email:<span id="contactEmailCharsLeft"></span></label>
-        <input type="email" id="contactEmail" maxlength="100" oninput="updateCharsLeft('contactEmail', 100)" name="contactEmail" required>
+        <input type="email" id="contactEmail" maxlength="100" placeholder="Email you can be reached at." oninput="updateCharsLeft('contactEmail', 100)" name="contactEmail" required>
 
         <button type="submit">Submit Request</button>
     </form>
