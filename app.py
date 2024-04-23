@@ -1801,7 +1801,7 @@ async def file_content_validation(file_content) -> bool:
         return False
 
 
-async def store_data(data, file_name: str) -> None:
+async def store_data(data, file_name: str, author: str, description: str, appeal: str) -> None:
     logger.info(f"Data upload for file: {file_name}")
 
     name_validated = await filename_validation(file_name)
@@ -1820,13 +1820,22 @@ async def store_data(data, file_name: str) -> None:
         if not header:
             raise BadRequest("Invalid CSV file format. No header row found.")
 
-        pre_path = await get_data_storage_path()
-        path = f"{pre_path}/{file_name}"
+        base_path = await get_data_storage_path()
 
-        with open(path, 'w') as file:
+        # Define the file paths for the data file and metadata file
+        data_file_path = os.path.join(base_path, file_name)
+        metadata_file_path = os.path.join(base_path, f"{file_name}.metadata")
+
+        with open(data_file_path, 'w') as file:
             writer = csv.writer(file)
             writer.writerow(header)
             writer.writerows(reader)
+
+        # Write metadata to the metadata file
+        with open(metadata_file_path, 'w') as metadata_file:
+            metadata_file.write(f"Author: {author}\n")
+            metadata_file.write(f"Description: {description}\n")
+            metadata_file.write(f"Appeal: {appeal}\n")
     else:
         raise BadRequest
 
@@ -2809,6 +2818,18 @@ async def anon_receive_data() -> jsonify:
     try:
         file_name = request.args.get('filename')
 
+        # Retrieve additional fields
+        author = request.form.get('author')
+        description = request.form.get('description')
+        appeals_process = request.form.get('appealsProcess')
+
+        if author is None:
+            author = request.args.get('author')
+        if description is None:
+            description = request.args.get('description')
+        if appeals_process is None:
+            appeal = request.args.get('appealsProcess')
+
         # Check if the request contains a file
         if not file_name:
             raise BadRequest
@@ -2827,7 +2848,7 @@ async def anon_receive_data() -> jsonify:
         # Read the content of the file
         file_content = file_storage.read()
 
-        await store_data(file_content, file_name)
+        await store_data(file_content, file_name, author, description, appeal)
 
         return jsonify({"message": "File received and processed successfully"}), 200
     except DatabaseConnectionError:
