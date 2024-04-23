@@ -1717,7 +1717,7 @@ async def update_did_service(data, label_data):
                                 logger.info(f"Updated pds for: {record[0]} | from {old_pds} to {record[2]}")
                             else:
                                 await connection.execute(pop, record[0])
-                                logger.info(f"pop: {record[0]}")
+                                logger.debug(f"pop: {record[0]}")
                                 pop_count += 1
                                 logger.debug("Up to date.")
                                 continue
