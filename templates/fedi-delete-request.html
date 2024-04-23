@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fediverse Upload/Download</title>
+    <title>Fediverse Delete Request</title>
     <style>
         /* Style adjustments for mobile devices */
         body {
@@ -138,7 +138,7 @@
         </a>
     </div>
 
-    <h1>Delete List Request</h1>
+    <h1>Fedi Delete List Request</h1>
 
     <form id="deleteRequestForm">
         <label for="name">Name:</label>
@@ -211,6 +211,24 @@
             const mailtoURL = `mailto:fedideleterequest@clearsky.app?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
             window.location.href = mailtoURL;
+        }
+
+        function updateCharsLeft(inputId, maxLength) {
+            const input = document.getElementById(inputId);
+            const charsLeftSpan = document.getElementById(inputId + 'CharsLeft');
+            const charsLeft = maxLength - input.value.length;
+            charsLeftSpan.textContent = charsLeft + ' characters left';
+        }
+
+        // Function to set the logo based on current time
+        function setLogo() {
+            const currentTime = new Date().getHours();
+            const logoImage = document.getElementById('logoImage');
+            if (currentTime >= 6 && currentTime < 18) {
+                logoImage.src = 'CleardayLarge.png'; // Daytime logo
+            } else {
+                logoImage.src = 'ClearnightLarge.png'; // Nighttime logo
+            }
         }
 
         // Call populateListOptions function when the page loads
