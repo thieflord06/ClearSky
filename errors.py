@@ -14,3 +14,7 @@ class DatabaseConnectionError(Exception):
 
 class NoFileProvided(Exception):
     pass
+
+
+class FileNameExists(Exception):
+    pass

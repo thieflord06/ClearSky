@@ -20,7 +20,7 @@ import aiohttp
 import functools
 import csv
 from typing import Optional
-from errors import BadRequest, NotFound, DatabaseConnectionError, NoFileProvided
+from errors import BadRequest, NotFound, DatabaseConnectionError, NoFileProvided, FileNameExists
 
 # ======================================================================================================================
 # ======================================== global variables // Set up logging ==========================================
@@ -1813,14 +1813,32 @@ async def filesize_validation(file) -> bool:
         return True
 
 
+async def does_file_exist(file_path) -> bool:
+    if os.path.exists(file_path):
+        return True
+    else:
+        return False
+
+
 async def store_data(data, file_name: str, author: str = None, description: str = None, appeal: str = None) -> None:
+    base_path = await get_data_storage_path()
+
+    # Define the file paths for the data file and metadata file
+    data_file_path = os.path.join(base_path, file_name)
+    metadata_file_path = os.path.join(base_path, f"{file_name}.metadata")
+
     logger.info(f"Data upload for file: {file_name}")
 
     name_validated = await filename_validation(file_name)
 
     content_validated = await file_content_validation(data)
 
-    if name_validated and content_validated:
+    file_exists = await does_file_exist(data_file_path)
+
+    if file_exists:
+        raise FileNameExists()
+
+    if name_validated and content_validated and not file_exists:
         # Prepare to read data as a CSV
         data_io = io.StringIO(data.decode('utf-8'))
         reader = csv.reader(data_io)
@@ -1831,12 +1849,6 @@ async def store_data(data, file_name: str, author: str = None, description: str 
         # Check if the header is valid
         if not header:
             raise BadRequest("Invalid CSV file format. No header row found.")
-
-        base_path = await get_data_storage_path()
-
-        # Define the file paths for the data file and metadata file
-        data_file_path = os.path.join(base_path, file_name)
-        metadata_file_path = os.path.join(base_path, f"{file_name}.metadata")
 
         with open(data_file_path, 'w') as file:
             writer = csv.writer(file)
@@ -2417,6 +2429,8 @@ async def auth_receive_data() -> jsonify:
         return jsonify({"error": "Invalid request"}), 400
     except NotFound:
         return jsonify({"error": "Not found"}), 404
+    except FileNameExists:
+        return jsonify({"error": "File name already exists"}), 409
     except NoFileProvided:
         return jsonify({"error": "No file provided"}), 400
     except Exception as e:
@@ -2935,6 +2949,8 @@ async def anon_receive_data() -> jsonify:
         return jsonify({"error": "Not found"}), 404
     except NoFileProvided:
         return jsonify({"error": "No file provided"}), 400
+    except FileNameExists:
+        return jsonify({"error": "File name already exists"}), 409
     except Exception as e:
         logger.error(f"Error in receive_data: {e}")
 
