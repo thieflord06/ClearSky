@@ -13,7 +13,7 @@ import database_handler
 import on_wire
 import utils
 import config_helper
-from config_helper import logger
+from config_helper import logger, upload_limit_mb
 from environment import get_api_var
 import aiocron
 import aiohttp
@@ -1796,9 +1796,21 @@ async def file_content_validation(file_content) -> bool:
         # Attempt to decode the file content as CSV
         decoded_content = file_content.decode('utf-8')
         csv.reader(decoded_content.splitlines())
+
         return True
     except csv.Error:
+
         return False
+
+
+async def filesize_validation(file) -> bool:
+    file_size_bytes = os.path.getsize(file)
+    file_size_mb = file_size_bytes / (1024 * 1024)
+
+    if file_size_mb > upload_limit_mb:
+        return False
+    else:
+        return True
 
 
 async def store_data(data, file_name: str, author: str = None, description: str = None, appeal: str = None) -> None:
@@ -1836,6 +1848,15 @@ async def store_data(data, file_name: str, author: str = None, description: str 
             metadata_file.write(f"Author: {author}\n")
             metadata_file.write(f"Description: {description}\n")
             metadata_file.write(f"Appeal: {appeal}\n")
+
+        size_validated = await filesize_validation(data_file_path)
+
+        if not size_validated:
+            logger.warning(f"File size exceeded for file: {file_name}")
+            os.remove(data_file_path)
+            os.remove(metadata_file_path)
+
+            raise BadRequest()
     else:
         raise BadRequest
 
