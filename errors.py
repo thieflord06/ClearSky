@@ -18,3 +18,7 @@ class NoFileProvided(Exception):
 
 class FileNameExists(Exception):
     pass
+
+
+class ExceedsFileSizeLimit(Exception):
+    pass

@@ -171,6 +171,8 @@
                     return response.json();
                 } else if (response.status === 409) {
                     throw new Error('File conflict: A file with the same name already exists.');
+                } else if (response.status === 413) {
+                    throw new Error('File conflict: File size limit exceeded/.');
                 } else {
                     throw new Error('Failed to upload file.');
                 }

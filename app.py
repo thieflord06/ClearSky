@@ -20,7 +20,7 @@ import aiohttp
 import functools
 import csv
 from typing import Optional
-from errors import BadRequest, NotFound, DatabaseConnectionError, NoFileProvided, FileNameExists
+from errors import BadRequest, NotFound, DatabaseConnectionError, NoFileProvided, FileNameExists, ExceedsFileSizeLimit
 
 # ======================================================================================================================
 # ======================================== global variables // Set up logging ==========================================
@@ -1868,7 +1868,7 @@ async def store_data(data, file_name: str, author: str = None, description: str 
             os.remove(data_file_path)
             os.remove(metadata_file_path)
 
-            raise BadRequest()
+            raise ExceedsFileSizeLimit()
     else:
         raise BadRequest
 
@@ -2951,6 +2951,8 @@ async def anon_receive_data() -> jsonify:
         return jsonify({"error": "No file provided"}), 400
     except FileNameExists:
         return jsonify({"error": "File name already exists"}), 409
+    except ExceedsFileSizeLimit:
+        return jsonify({"error": "File size limit exceeded."}), 413
     except Exception as e:
         logger.error(f"Error in receive_data: {e}")
 
