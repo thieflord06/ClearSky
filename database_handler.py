@@ -1730,7 +1730,7 @@ async def update_did_service(data, label_data):
                                 await connection.execute(insert_query, record[0], record[1], record[2], record[3], False)
 
                             await connection.execute(pop, record[0])
-                            logger.info(f"pop: {record[0]}")
+                            logger.debug(f"pop: {record[0]}")
                             pop_count += 1
 
                     if label_data:
@@ -1779,11 +1779,11 @@ async def update_did_service(data, label_data):
 
                                     logger.debug(f"Updated endpoint for: {label['did']} | from {old_endpoint} to {label['endpoint']}")
                                     await connection.execute(pop, label['did'])
-                                    logger.info(f"pop: {label['did']}")
+                                    logger.debug(f"pop: {label['did']}")
                                     pop_count += 1
                                 else:
                                     await connection.execute(pop, label['did'])
-                                    logger.info(f"pop: {label['did']}")
+                                    logger.debug(f"pop: {label['did']}")
                                     pop_count += 1
                                     logger.debug("Up to date.")
                             else:
