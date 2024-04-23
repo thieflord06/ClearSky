@@ -2934,8 +2934,12 @@ async def anon_receive_data() -> jsonify:
         if file_name != file_storage.filename:
             raise BadRequest()
 
-        # Read the content of the file
-        file_content = file_storage.read()
+        try:
+            # Read the content of the file
+            file_content = file_storage.read()
+        except Exception as e:
+            logger.error(f"Error reading file content, probably not a csv: {file_name} {e}")
+            raise BadRequest()
 
         await store_data(file_content, file_name, author, description, appeal)
 
