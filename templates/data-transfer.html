@@ -3,22 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>File Upload and Download</title>
+    <title>Fediverse Upload/Download</title>
+    <style>
+        /* Style adjustments for mobile devices */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            font-size: 2em;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+        text-align: center;
+        }
+
+        form {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box; /* Ensure padding and border are included in width */
+        }
+
+        .copyright {
+            position: fixed; /* Fixed positioning */
+            bottom: 10px; /* 10 pixels from the bottom */
+            right: 10px; /* 10 pixels from the right */
+            color: #888; /* Copyright text color */
+            font-size: 14px; /* Font size */
+        }
+
+        .logo-container {
+            text-align: center; /* Center align the content */
+            padding: 10px; /* Add some padding around the logo */
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #fileList {
+            max-width: 400px;
+            margin: 20px auto;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+        }
+
+        #getListButton {
+            display: block;
+            width: fit-content; /* Adjust width to content size */
+            margin: 0 auto; /* Center horizontally */
+            margin-top: 20px; /* Add some top margin for spacing */
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #getListButton:hover {
+            background-color: #0056b3;
+        }
+
+        /* Media query for smaller screens */
+        @media screen and (max-width: 600px) {
+            h1 {
+                font-size: 1.5em;
+            }
+        }
+    </style>
 </head>
 <body>
-    <img src="CleardayLarge.png" alt="ClearSky Logo" style="width: 150px; height: auto;">
-    <h1>File Upload</h1>
-    <form id="uploadForm" enctype="multipart/form-data">
-        <input type="file" name="file" accept=".csv">
-        <button type="button" onclick="uploadFile()">Upload File</button>
-    </form>
+    <div class="logo-container">
+        <a href="index.html">
+            <img id="logoImage" alt="ClearSky Logo" style="width: 350px; height: auto;">
+        </a>
+    </div>
+    <h1>Fediverse Block List Repo</h1>
+        <h2>File Upload</h2>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <input type="file" name="file" accept=".csv" style="margin-bottom: 10px;">
+            <label for="author">Author:<span id="authorCharsLeft" style="color: gray; font-size: 0.8em;"></span></label>
+            <input type="text" id="author" name="author" maxlength="100" oninput="updateCharsLeft('author', 100)">
+            <label for="description">Description:<span id="descriptionCharsLeft" style="color: gray; font-size: 0.8em;"></span></label>
+            <textarea id="description" name="description" maxlength="300" oninput="updateCharsLeft('description', 300)"></textarea>
+            <label for="appealsProcess">Appeals Process:<span id="appealsProcessCharsLeft" style="color: gray; font-size: 0.8em;"></span></label>
+            <textarea id="appealsProcess" name="appealsProcess" maxlength="500" oninput="updateCharsLeft('appealsProcess', 500)"></textarea>
+            <button type="button" onclick="uploadFile()">Upload File</button>
+        </form>
 
     <hr>
 
-    <h1>File Download</h1>
-    <button id="getListButton" onclick="getFileList()">Get List</button>
+    <h2>File Download</h2>
+    <button id="getListButton" onclick="getFileList()">Get List(s)</button>
 
     <div id="fileList"></div>
+
+    <div class="copyright">&copy; Bluethernal LLC</div>
 
     <script>
         // Function to get API domain based on server's domain
@@ -33,10 +150,17 @@
 
         // Function to upload file
         function uploadFile() {
-            const formData = new FormData(document.getElementById('uploadForm'));
+            const formData = new FormData();
             const fileInput = document.querySelector('input[type="file"]');
-            const filename = fileInput.files[0].name;
-            fetch(getAPIDomain() + `receive?filename=${filename}`, {
+            const file = fileInput.files[0];
+            const filename = file.name;
+            formData.append('file', file);
+            formData.append('filename', filename);
+            formData.append('author', document.getElementById('author').value);
+            formData.append('description', document.getElementById('description').value);
+            formData.append('appealsProcess', document.getElementById('appealsProcess').value);
+
+            fetch(getAPIDomain() + 'receive', {
                 method: 'POST',
                 body: formData
             })
@@ -106,6 +230,27 @@
                     fileListDiv.textContent = error.message;
                 });
         }
+
+        function updateCharsLeft(inputId, maxLength) {
+            const input = document.getElementById(inputId);
+            const charsLeftSpan = document.getElementById(inputId + 'CharsLeft');
+            const charsLeft = maxLength - input.value.length;
+            charsLeftSpan.textContent = charsLeft + ' characters left';
+        }
+
+        // Function to set the logo based on current time
+        function setLogo() {
+            const currentTime = new Date().getHours();
+            const logoImage = document.getElementById('logoImage');
+            if (currentTime >= 6 && currentTime < 18) {
+                logoImage.src = 'CleardayLarge.png'; // Daytime logo
+            } else {
+                logoImage.src = 'ClearnightLarge.png'; // Nighttime logo
+            }
+        }
+
+        // Call setLogo function when the page loads
+        setLogo();
     </script>
 </body>
 </html>
