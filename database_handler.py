@@ -997,7 +997,7 @@ async def get_all_users_db(run_update=False, get_dids=False, init_db_run=False, 
 
                         for did in dids_deactivated:
                             await connection.execute("""UPDATE users SET status = FALSE WHERE did = $1""", did)
-                            await connection.execute("delete from resolution_queue where did = $1", did)  # Remove the DID from the resolution queue
+                            # await connection.execute("delete from resolution_queue where did = $1", did)  # Remove the DID from the resolution queue
                             count += 1
                             logger.debug(f"DIDs deactivated: {count}")
 
@@ -1027,8 +1027,8 @@ async def get_all_users_db(run_update=False, get_dids=False, init_db_run=False, 
                                             f"Inserted batch {i // batch_size + 1} of {len(records) // batch_size + 1} batches.")
                                     except Exception as e:
                                         logger.error(f"Error inserting batch {i // batch_size + 1}: {str(e)}")
-                                for did in batch_data:
-                                    await connection.execute("delete from resolution_queue where did = $1", did[0])  # Remove the DID from the resolution queue
+                                # for did in batch_data:
+                                    # await connection.execute("delete from resolution_queue where did = $1", did[0])  # Remove the DID from the resolution queue
                 else:
                     logger.warning(f"No users in {pds} or could not get users.")
 
@@ -1366,7 +1366,7 @@ async def update_user_handles(handles_to_update):
                 SET handle = EXCLUDED.handle
             ''')
 
-            await connection.execute("delete from resolution_queue where did = $1", did)  # Remove the DID from the resolution queue
+            # await connection.execute("delete from resolution_queue where did = $1", did)  # Remove the DID from the resolution queue
 
         logger.info(f"Updated {len(handles_to_update)} handles in the database.")
 
@@ -1686,7 +1686,7 @@ async def update_did_service(data, label_data):
     pop_count = 0
     logger.info("Updating services information for batch.")
 
-    pop = "delete from resolution_queue where did = $1"
+    # pop = "delete from resolution_queue where did = $1"
 
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -1702,24 +1702,24 @@ async def update_did_service(data, label_data):
                                 insert_pds_query = """UPDATE users SET created_date = $2, pds = $3 WHERE did = $1"""
 
                                 await connection.execute(insert_pds_query, record[0], record[1], record[2])
-                                await connection.execute(pop, record[0])
-                                logger.debug(f"pop: {record[0]}")
-                                pop_count += 1
+                                # await connection.execute(pop, record[0])
+                                # logger.debug(f"pop: {record[0]}")
+                                # pop_count += 1
                             elif did_exists[0]["pds"] != record[2]:
                                 old_pds = did_exists[0]["pds"]
                                 update_query = """UPDATE users SET pds = $2 WHERE did = $1"""
 
                                 await connection.execute(update_query, record[0], record[2])
-                                await connection.execute(pop, record[0])
-                                logger.debug(f"pop: {record[0]}")
-                                pop_count += 1
+                                # await connection.execute(pop, record[0])
+                                # logger.debug(f"pop: {record[0]}")
+                                # pop_count += 1
 
                                 logger.info(f"Updated pds for: {record[0]} | from {old_pds} to {record[2]}")
                             else:
-                                await connection.execute(pop, record[0])
-                                logger.debug(f"pop: {record[0]}")
-                                pop_count += 1
-                                logger.debug("Up to date.")
+                                # await connection.execute(pop, record[0])
+                                # logger.debug(f"pop: {record[0]}")
+                                # pop_count += 1
+                                # logger.debug("Up to date.")
                                 continue
                         else:
                             insert_query = """INSERT INTO users (did, created_date, pds, handle, status) VALUES ($1, $2, $3, $4, $5)"""
@@ -1729,9 +1729,9 @@ async def update_did_service(data, label_data):
                             else:
                                 await connection.execute(insert_query, record[0], record[1], record[2], record[3], False)
 
-                            await connection.execute(pop, record[0])
-                            logger.debug(f"pop: {record[0]}")
-                            pop_count += 1
+                            # await connection.execute(pop, record[0])
+                            # logger.debug(f"pop: {record[0]}")
+                            # pop_count += 1
 
                     if label_data:
                         for label in label_data:
@@ -1746,9 +1746,9 @@ async def update_did_service(data, label_data):
                                     insert_label_query = """UPDATE labelers SET created_date = $2, endpoint = $3 WHERE did = $1"""
 
                                     await connection.execute(insert_label_query, label["did"], label["endpoint"], label["createdAt"])
-                                    await connection.execute(pop, label["did"])
-                                    logger.debug(f"pop: {label['did']}")
-                                    pop_count += 1
+                                    # await connection.execute(pop, label["did"])
+                                    # logger.debug(f"pop: {label['did']}")
+                                    # pop_count += 1
                                 elif not did_exists[0].get("name"):
                                     insert_label_query = """UPDATE labelers SET name = $2 WHERE did = $1"""
 
@@ -1778,18 +1778,18 @@ async def update_did_service(data, label_data):
                                     await connection.execute(update_query, label["did"], label["endpoint"])
 
                                     logger.debug(f"Updated endpoint for: {label['did']} | from {old_endpoint} to {label['endpoint']}")
-                                    await connection.execute(pop, label['did'])
-                                    logger.debug(f"pop: {label['did']}")
-                                    pop_count += 1
+                                    # await connection.execute(pop, label['did'])
+                                    # logger.debug(f"pop: {label['did']}")
+                                    # pop_count += 1
                                 else:
-                                    await connection.execute(pop, label['did'])
-                                    logger.debug(f"pop: {label['did']}")
-                                    pop_count += 1
+                                    # await connection.execute(pop, label['did'])
+                                    # logger.debug(f"pop: {label['did']}")
+                                    # pop_count += 1
                                     logger.debug("Up to date.")
                             else:
                                 insert_label_query = """INSERT INTO labelers (did, endpoint, created_date, name, description) VALUES ($1, $2, $3, $4, $5)"""
                                 await connection.execute(insert_label_query, label["did"], label["endpoint"], label["createdAt"], display_name, description)
-                                await connection.execute(pop, label["did"])
+                                # await connection.execute(pop, label["did"])
                                 logger.debug(f"pop: {label['did']}")
                                 pop_count += 1
 
