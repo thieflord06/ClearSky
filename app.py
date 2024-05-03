@@ -2922,6 +2922,8 @@ async def anon_receive_data() -> jsonify:
 
     logger.info(f"data list file upload request: {session_ip} - {api_key}")
 
+    return jsonify({"error": "Not Implemented"}), 501
+
     try:
         file_name = await request.form
         file_name = file_name.get('filename')
@@ -3009,6 +3011,8 @@ async def anon_retrieve_data() -> jsonify:
 
     logger.info(f"data list file request: {session_ip} - {api_key}")
 
+    return jsonify({"error": "Not Implemented"}), 501
+
     try:
         retrieve_lists = request.args.get('retrieveLists')
         file_name = request.args.get('file')  # need to validate the file name
@@ -3049,6 +3053,8 @@ async def anon_query_data() -> jsonify:
     api_key = request.headers.get('X-API-Key')
 
     logger.info(f"data list query request: {session_ip} - {api_key}")
+
+    return jsonify({"error": "Not Implemented"}), 501
 
     try:
         get_list = request.args.get('list')
