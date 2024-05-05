@@ -1,4 +1,5 @@
 # app.py
+
 import io
 import sys
 import quart
@@ -122,7 +123,7 @@ async def uri_sanitization(uri) -> Optional[str]:
         raise BadRequest
 
 
-async def pre_process_identifier(identifier) -> Optional[tuple][str, str]:
+async def pre_process_identifier(identifier) -> (Optional[str], Optional[str]):
     did_identifier = None
     handle_identifier = None
 
@@ -323,10 +324,10 @@ async def first_run() -> None:
             tables = await database_handler.tables_exists()
 
             if tables:
-                # await database_handler.blocklists_updater()
-                # await database_handler.top_24blocklists_updater()
-                # await utils.update_block_statistics()
-                # await utils.update_total_users()
+                await database_handler.blocklists_updater()
+                await database_handler.top_24blocklists_updater()
+                await utils.update_block_statistics()
+                await utils.update_total_users()
 
                 break
             else:
