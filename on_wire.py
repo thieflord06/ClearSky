@@ -7,6 +7,7 @@ import httpx
 from config_helper import logger, limiter
 import dns.resolver
 import database_handler
+from errors import InternalServerError
 
 
 # ======================================================================================================================
@@ -349,7 +350,21 @@ async def resolve_handle_wellknown_atproto(ident):
             async with httpx.AsyncClient() as client:
                 response = await client.get(url)
                 if response.status_code == 200:
-                    response_json = response.json()
+                    try:
+                        response_json = response.json()
+                    except Exception as e:
+                        logger.error(f"Error getting json response: {e}")
+                        try:
+                            response_json = response.text.strip()
+                        except Exception as e:
+                            logger.error(f"Error getting response from text: {e}")
+
+                            try:
+                                response_json = response.content
+                            except Exception as e:
+                                logger.error(f"Error getting response from content: {e}")
+
+                                raise InternalServerError
 
                     return response_json
                 if response.status_code == 400:
@@ -428,7 +443,11 @@ async def verify_handle(identity) -> bool:
         elif dns_result is not None and "did:web" in dns_result:
             handle3 = await resolve_did(dns_result)
 
-        if identity == handle1[0] or identity == handle2[0] or identity == handle3[0]:
+        handle1 = handle1[0] if handle1 else None
+        handle2 = handle2[0] if handle2 else None
+        handle3 = handle3[0] if handle3 else None
+
+        if identity == handle1 or identity == handle2 or identity == handle3:
             if dns_result and bsky_result:
                 if dns_result == bsky_result:
                     return True

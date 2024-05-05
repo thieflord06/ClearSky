@@ -22,3 +22,7 @@ class FileNameExists(Exception):
 
 class ExceedsFileSizeLimit(Exception):
     pass
+
+
+class InternalServerError(Exception):
+    pass
