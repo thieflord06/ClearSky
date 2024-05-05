@@ -162,6 +162,9 @@ async def pre_process_identifier(identifier) -> (Optional[str], Optional[str]):
 
 
 async def preprocess_status(identifier) -> bool:
+    if not identifier:
+        return False
+    
     try:
         persona, status = await database_handler.identifier_exists_in_db(identifier)
         logger.debug(f"persona: {persona} status: {status}")
@@ -576,7 +579,7 @@ async def get_blocklist(client_identifier, page):
 
     if identifier:
         did_identifier, handle_identifier = await pre_process_identifier(identifier)
-        status = await preprocess_status(identifier)
+        status = await preprocess_status(did_identifier)
 
         if did_identifier and handle_identifier and status:
 
@@ -621,7 +624,7 @@ async def get_single_blocklist(client_identifier, page):
 
     if identifier:
         did_identifier, handle_identifier = await pre_process_identifier(identifier)
-        status = await preprocess_status(identifier)
+        status = await preprocess_status(did_identifier)
 
         if did_identifier and handle_identifier and status:
             items_per_page = 100
@@ -666,7 +669,7 @@ async def get_in_common_blocklist(client_identifier):
 
     if identifier:
         did_identifier, handle_identifier = await pre_process_identifier(identifier)
-        status = await preprocess_status(identifier)
+        status = await preprocess_status(did_identifier)
 
         if did_identifier and handle_identifier and status:
 
@@ -702,7 +705,7 @@ async def get_in_common_blocked(client_identifier):
 
     if identifier:
         did_identifier, handle_identifier = await pre_process_identifier(identifier)
-        status = await preprocess_status(identifier)
+        status = await preprocess_status(did_identifier)
 
         if not not_implemented:
             if did_identifier and handle_identifier and status:
@@ -838,7 +841,7 @@ async def get_did_info(client_identifier):
 
     if identifier:
         did_identifier, handle_identifier = await pre_process_identifier(identifier)
-        status = await preprocess_status(identifier)
+        status = await preprocess_status(did_identifier)
 
         if did_identifier and handle_identifier and status:
             pds = await on_wire.get_pds(did_identifier)
@@ -876,7 +879,7 @@ async def get_handle_info(client_identifier) -> jsonify:
 
     if identifier:
         did_identifier, handle_identifier = await pre_process_identifier(identifier)
-        status = await preprocess_status(identifier)
+        status = await preprocess_status(did_identifier)
 
         if did_identifier and handle_identifier and status:
             pds = await on_wire.get_pds(did_identifier)
@@ -914,7 +917,7 @@ async def get_handle_history_info(client_identifier) -> jsonify:
 
     if identifier:
         did_identifier, handle_identifier = await pre_process_identifier(identifier)
-        status = await preprocess_status(identifier)
+        status = await preprocess_status(did_identifier)
 
         if did_identifier and handle_identifier and status:
 
@@ -948,7 +951,7 @@ async def get_list_info(client_identifier) -> jsonify:
 
     if identifier:
         did_identifier, handle_identifier = await pre_process_identifier(identifier)
-        status = await preprocess_status(identifier)
+        status = await preprocess_status(did_identifier)
 
         if did_identifier and handle_identifier and status:
 
@@ -1662,7 +1665,7 @@ async def retrieve_subscribe_blocks_blocklist(client_identifier: str, page: int)
 
     if identifier:
         did_identifier, handle_identifier = await pre_process_identifier(identifier)
-        status = await preprocess_status(identifier)
+        status = await preprocess_status(did_identifier)
 
         if did_identifier and handle_identifier and status:
 
@@ -1715,7 +1718,7 @@ async def retrieve_subscribe_blocks_single_blocklist(client_identifier, page) ->
 
     if identifier:
         did_identifier, handle_identifier = await pre_process_identifier(identifier)
-        status = await preprocess_status(identifier)
+        status = await preprocess_status(did_identifier)
 
         if did_identifier and handle_identifier and status:
 
