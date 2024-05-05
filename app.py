@@ -122,13 +122,13 @@ async def uri_sanitization(uri) -> Optional[str]:
         raise BadRequest
 
 
-async def pre_process_identifier(identifier):
+async def pre_process_identifier(identifier) -> Optional[tuple][str, str]:
     did_identifier = None
     handle_identifier = None
 
     if not identifier:  # If form is submitted without anything in the identifier return intentional error
 
-        return None, None
+        return did_identifier, handle_identifier
 
     # Check if did or handle exists before processing
     if utils.is_did(identifier):
