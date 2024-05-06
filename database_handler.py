@@ -15,7 +15,7 @@ import pytz
 import on_wire
 import math
 import functools
-from errors import NotFound, BadRequest, DatabaseConnectionError
+from errors import NotFound, DatabaseConnectionError
 
 # ======================================================================================================================
 # ===================================================  global variables ================================================

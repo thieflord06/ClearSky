@@ -524,9 +524,9 @@ async def main():
         # api_endpoint = "https://api.staging.clearsky.services/api/v1/anon/lists/fun-facts"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/blocklist-search-blocking/test.tennis.thieflord.dev/alechiaval.bsky.social"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/lists/block-stats"
-        # api_endpoint = "https://api.clearsky.services/api/v1/anon/blocklist/did:plc:yk4dd2qkboz2yv6tpubpc6co"
+        # api_endpoint = "http://localhost/api/v1/anon/blocklist/did:plc:g6siaz6zgxndohrxdeg6a2bd"
         # api_endpoint = "https://api.staging.clearsky.services/api/v1/anon/single-blocklist/did:plc:yk4dd2qkboz2yv6tpubpc6co"
-        # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/anon/single-blocklist/boykisser.expert"
+        # api_endpoint = "https://api.clearsky.services/api/v1/anon/single-blocklist/mapconsuela.bsky.social"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/anon/total-users"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/get-did/thieflord.dev"
         # api_endpoint = "https://api.clearsky.services/api/v1/anon/get-handle/thieflord.dev"
@@ -550,7 +550,9 @@ async def main():
         # api_endpoint = "https://api.clearsky.services/api/v1/anon/lists/funer-facts"
         # api_endpoint = "https://api.clearsky.services/api/v1/anon/lists/block-stats"
         # api_endpoint = "https://api.clearsky.services/api/v1/anon/base/autocomplete/thi"
-        api_endpoint = "https://api.clearsky.services/api/v1/anon/at-uri/at://did:plc:synka4gchwjmophklcsndndf/app.bsky.feed.post/3klnptzxy3b2f"
+        # api_endpoint = "https://api.clearsky.services/api/v1/anon/at-uri/at://did:plc:synka4gchwjmophklcsndndf/app.bsky.feed.post/3klnptzxy3b2f"
+        # api_endpoint = "https://api.staging.clearsky.services/api/v1/anon/data-transaction/query"
+        api_endpoint = "http://localhost/api/v1/anon/validation/validate-handle/new.blockenheimer.click"
 
         try:
             logger.info(f"API endpoint: {api_endpoint}")
