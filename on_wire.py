@@ -126,7 +126,7 @@ async def resolve_did(did, did_web_pds=False) -> Optional[list]:  # Take DID and
 
                         await asyncio.sleep(sleep_time)
 
-                    return stripped_record
+                    return stripped_record if stripped_record else None
                 elif response.status_code == 429:
                     logger.warning("Too many requests, pausing.")
                     await asyncio.sleep(10)
