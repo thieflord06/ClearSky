@@ -667,17 +667,22 @@ async def fetch_handles_batch(batch_dids, ad_hoc=False) -> list:
     if not ad_hoc:
         for did in batch_dids:
             handle = await on_wire.resolve_did(did[0].strip())
-            if handle[0] is not None:
-                handles.append((did[0].strip(), handle[0]))
-            else:
+            try:
+                if handle[0] is not None:
+                    handles.append((did[0].strip(), handle[0]))
+            except Exception as e:
+                logger.error(f"Error: {e}")
                 continue
     else:
         for did in batch_dids:
             handle = await on_wire.resolve_did(did.strip())
-            if handle[0] is not None:
-                handles.append((did.strip(), handle[0]))
-            else:
+            try:
+                if handle[0] is not None:
+                    handles.append((did.strip(), handle[0]))
+            except Exception as e:
+                logger.error(f"Error: {e}")
                 continue
+
 
     return handles
 
