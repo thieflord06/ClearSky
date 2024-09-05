@@ -2990,17 +2990,26 @@ async def update_labeler_data(data) -> None:
         logger.error(f"Error updating labeler data: {e}")
 
 
-async def get_resolution_queue() -> Optional[list]:
+async def get_resolution_queue(batch_size: int = 0, offset: int = 0, batching=False) -> Optional[list]:
     try:
         async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
-                query = """SELECT DISTINCT(did), timestamp FROM resolution_queue"""
+                if batching:
+                    query = """SELECT DISTINCT(did), timestamp FROM resolution_queue ORDER BY timestamp LIMIT $1 OFFSET $2"""
 
-                records = await connection.fetch(query)
+                    records = await connection.fetch(query, batch_size, offset)
 
-                processed_records = [record['did'] for record in records]
+                    processed_records = [record['did'] for record in records]
 
-                return processed_records
+                    return processed_records
+                else:
+                    query = """SELECT DISTINCT(did), timestamp FROM resolution_queue"""
+
+                    records = await connection.fetch(query)
+
+                    processed_records = [record['did'] for record in records]
+
+                    return processed_records
     except Exception as e:
         logger.error(f"Error updating didwebs: {e}")
 

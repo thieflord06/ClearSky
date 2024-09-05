@@ -1496,10 +1496,43 @@ def batch_queue(queue, batch_size):
         yield queue[i:i + batch_size]
 
 
-async def get_resolution_queue_info():
+async def get_resolution_queue_info(batching=False):
     count = 0
     queue_info = {}
-    resolution_queue = await database_handler.get_resolution_queue()
+    batch_size = 1000
+    offset = 0
+
+    if batching:
+        while True:
+            resolution_queue = await database_handler.get_resolution_queue(offset, batch_size)
+            offset += batch_size
+
+            for batch in batch_queue(resolution_queue, BATCH_SIZE):
+                count += 1
+                # batch_count = math.ceil(len(resolution_queue) / BATCH_SIZE)
+
+                logger.info(f"Processing batch {count}.")
+
+                for did in batch:
+                    handle = await on_wire.resolve_did(did)
+
+                    if "did:web:" in did:
+                        pds = await on_wire.resolve_did(did, True)
+                    else:
+                        pds = await on_wire.get_pds(did)
+
+                    if handle[0] and pds:
+                        info = {
+                            "handle": handle[0],
+                            "pds": pds
+                        }
+
+                        queue_info[did] = info
+
+                if queue_info:
+                    await database_handler.process_resolution_queue(queue_info)
+    else:
+        resolution_queue = await database_handler.get_resolution_queue()
 
     if not resolution_queue:
         logger.info("Nothing in queue.")

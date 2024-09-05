@@ -111,7 +111,7 @@ async def main():
     elif args.process_resolution_queue:
         try:
             logger.info("Processing resolution queue.")
-            await utils.get_resolution_queue_info()
+            await utils.get_resolution_queue_info(True)
             logger.info("Finished processing data.")
         except DatabaseConnectionError:
             logger.error("Database connection error")
