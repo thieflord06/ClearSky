@@ -28,6 +28,8 @@ async def main():
     parser.add_argument('--update-all-did-pds-service-info', action='store_true', help='get past dids and service info')
     parser.add_argument('--get-federated-pdses', action='store_true', help='Validate PDSes')
     parser.add_argument('--count-list-users', action='store_true', help='Count list users')
+    parser.add_argument('--process-resolution-queue', action='store_true', help='Process resolution queue')
+
     args = parser.parse_args()
     try:
         await database_handler.create_connection_pool("read")
@@ -106,6 +108,15 @@ async def main():
         except Exception as e:
             logger.error(f"Error updating users: {str(e)}")
         sys.exit()
+    elif args.process_resolution_queue:
+        try:
+            logger.info("Processing resolution queue.")
+            await utils.get_resolution_queue_info()
+            logger.info("Finished processing data.")
+        except DatabaseConnectionError:
+            logger.error("Database connection error")
+        except Exception as e:
+            logger.error(f"Error processing resolution queue: {str(e)}")
     elif args.crawler:
         try:
             if not os.getenv('CLEAR_SKY'):
