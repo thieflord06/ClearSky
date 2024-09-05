@@ -157,6 +157,22 @@ def configure_logging() -> logging.Logger:
         raise
 
 
+def check_override():
+    config_file = read_config()
+    try:
+        override = config_file.get("override", "override").lower()
+        if override == "true":
+            override = True
+            print(f"Override is set, using config file variables.")
+        else:
+            print("Override not set.")
+            override = False
+    except Exception:
+        override = False
+
+    return override
+
+
 # Set up log files and directories for entire project from config.ini
 config = read_config()
 log_dir = update_config_based_on_os(config)
