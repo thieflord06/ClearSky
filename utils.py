@@ -57,6 +57,8 @@ total_users_process_time = None
 total_users_last_update = None
 total_users_start_time = None
 
+BATCH_SIZE = 1000
+
 
 # ======================================================================================================================
 # ============================================= Features functions =====================================================
@@ -1489,27 +1491,42 @@ async def list_uri_to_url(uri):
     return list_full_url
 
 
+def batch_queue(queue, batch_size):
+    for i in range(0, len(queue), batch_size):
+        yield queue[i:i + batch_size]
+
+
 async def get_resolution_queue_info():
+    count = 0
     queue_info = {}
     resolution_queue = await database_handler.get_resolution_queue()
 
     if not resolution_queue:
         logger.info("Nothing in queue.")
 
-    for did in resolution_queue:
-        handle = await on_wire.resolve_did(did)
+        return
 
-        if "did:web:" in did:
-            pds = await on_wire.resolve_did(did, True)
-        else:
-            pds = await on_wire.get_pds(did)
+    for batch in batch_queue(resolution_queue, BATCH_SIZE):
+        count += 1
+        batch_count = math.ceil(len(resolution_queue) / BATCH_SIZE)
 
-        if handle[0] and pds:
-            info = {
-                "handle": handle[0],
-                "pds": pds
-            }
+        logger.info(f"Processing batch {count} of {batch_count}.")
 
-            queue_info[did] = info
-    if queue_info:
-        await database_handler.process_resolution_queue(queue_info)
+        for did in batch:
+            handle = await on_wire.resolve_did(did)
+
+            if "did:web:" in did:
+                pds = await on_wire.resolve_did(did, True)
+            else:
+                pds = await on_wire.get_pds(did)
+
+            if handle[0] and pds:
+                info = {
+                    "handle": handle[0],
+                    "pds": pds
+                }
+
+                queue_info[did] = info
+
+        if queue_info:
+            await database_handler.process_resolution_queue(queue_info)
