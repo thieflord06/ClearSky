@@ -160,7 +160,7 @@ def configure_logging() -> logging.Logger:
 def check_override():
     config_file = read_config()
     try:
-        override = config_file.get("override", "override").lower()
+        override = config_file.get("override", "override", fallback=None).lower()
         if override == "true":
             override = True
             print(f"Override is set, using config file variables.")
