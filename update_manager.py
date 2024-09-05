@@ -18,6 +18,7 @@ from errors import DatabaseConnectionError
 # python update_manager.py --update-all-did-pds-service-info // get past dids and service info
 # python update_manager.py --get-federated-pdses // validate PDSes
 # python update_manager.py --count-list-users // count list users
+# python update_manager.py --process-resolution-queue // process resolution queue
 
 
 async def main():
