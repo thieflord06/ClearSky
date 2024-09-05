@@ -16,6 +16,7 @@ import on_wire
 import math
 import functools
 from errors import NotFound, DatabaseConnectionError
+from config_helper import check_override
 
 # ======================================================================================================================
 # ===================================================  global variables ================================================
@@ -3063,9 +3064,9 @@ async def set_labeler_status(did, status) -> None:
 
 # ======================================================================================================================
 # ============================================ get database credentials ================================================
-def get_database_config() -> dict:
+def get_database_config(ovride=False) -> dict:
     try:
-        if not os.getenv('CLEAR_SKY'):
+        if not os.getenv('CLEAR_SKY') or ovride:
             logger.info("Database connection: Using config.ini.")
             read_pg_user = config.get("database_read", "pg_user")
             read_pg_password = config.get("database_read", "pg_password")
@@ -3074,14 +3075,14 @@ def get_database_config() -> dict:
             write_pg_user = config.get("database_write", "pg_user")
             write_pg_password = config.get("database_write", "pg_password")
             write_pg_host = config.get("database_write", "pg_host")
-            write_pg_database = config.get("databas_write", "pg_database")
+            write_pg_database = config.get("database_write", "pg_database")
             redis_host = config.get("redis", "host")
             redis_port = config.get("redis", "port")
             redis_username = config.get("redis", "username")
             redis_password = config.get("redis", "password")
             redis_key_name = config.get("redis", "autocomplete")
-            use_local_db = config.get("database", "use_local")
-            local_db = config.get("database_local", "local_db_connection")
+            use_local_db = config.get("database", "use_local", fallback=False)
+            local_db = config.get("database_local", "local_db_connection", fallback=False)
         else:
             logger.info("Database connection: Using environment variables.")
             read_pg_user = os.environ.get("READ_PG_USER")
@@ -3123,8 +3124,14 @@ def get_database_config() -> dict:
 
 config = config_helper.read_config()
 
+
+override = check_override()
+
 # Get the database configuration
-database_config = get_database_config()
+if override:
+    database_config = get_database_config(True)
+else:
+    database_config = get_database_config()
 
 # Now you can access the configuration values using dictionary keys
 read_pg_user = database_config["read_user"]
