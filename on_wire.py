@@ -139,7 +139,7 @@ async def resolve_did(did, did_web_pds=False) -> Optional[list]:  # Take DID and
                     logger.debug(error_message)
 
                     if "DID not registered" in error_message.lower():
-                        logger.warning("User not found. Skipping...")
+                        await database_handler.deactivate_user(did)
 
                         return None
                     elif "DID not available" in error_message.lower():

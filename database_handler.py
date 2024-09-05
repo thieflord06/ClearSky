@@ -3062,6 +3062,15 @@ async def set_labeler_status(did, status) -> None:
         logger.error(f"Error updating labeler status: {e}")
 
 
+async def deactivate_user(user) -> None:
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                await connection.execute('UPDATE users SET status = FALSE WHERE did = $1', user)
+    except Exception as e:
+        logger.error(f"Error deactivating user: {e}")
+
+
 # ======================================================================================================================
 # ============================================ get database credentials ================================================
 def get_database_config(ovride=False) -> dict:
