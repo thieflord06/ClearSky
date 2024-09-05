@@ -117,6 +117,7 @@ async def main():
             logger.error("Database connection error")
         except Exception as e:
             logger.error(f"Error processing resolution queue: {str(e)}")
+        sys.exit()
     elif args.crawler:
         try:
             if not os.getenv('CLEAR_SKY'):
