@@ -1501,9 +1501,35 @@ async def get_resolution_queue_info(batching=False):
     queue_info = {}
     batch_size = 1000
     offset = 0
+    total_handles_updated = 0
 
     if batching:
         while True:
+
+            all_dids = await database_handler.get_dids_without_handles()
+
+            if all_dids:
+                total_dids = len(all_dids)
+                async with database_handler.connection_pools["write"].acquire() as connection:
+                    async with connection.transaction():
+                        # Concurrently process batches and update the handles
+                        for i in range(0, total_dids, batch_size):
+                            logger.info("Getting batch to resolve.")
+                            batch_dids = all_dids[i:i + batch_size]
+
+                            # Process the batch asynchronously
+                            batch_handles_updated = await database_handler.process_batch(batch_dids, True, None,
+                                                                                         batch_size)
+                            total_handles_updated += batch_handles_updated
+
+                            # Log progress for the current batch
+                            logger.info(f"Handles updated: {total_handles_updated}/{total_dids}")
+                            logger.info(f"First few DIDs in the batch: {batch_dids[:5]}")
+
+                            # Pause after each batch of handles resolved
+                            logger.info("Pausing...")
+                            await asyncio.sleep(60)  # Pause for 60 seconds
+
             resolution_queue = await database_handler.get_resolution_queue(offset, batch_size)
             offset += batch_size
 

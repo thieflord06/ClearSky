@@ -1438,7 +1438,8 @@ async def process_batch(batch_dids, ad_hoc, table, batch_size):
                     # Update the temporary table with the last processed DID
                     last_processed_did = handle_batch[-1][0]  # Assuming DID is the first element in each tuple
                     logger.debug("Last processed DID: " + str(last_processed_did))
-                    await update_temporary_table(last_processed_did, table)
+                    if table:
+                        await update_temporary_table(last_processed_did, table)
 
                     break
                 except asyncpg.ConnectionDoesNotExistError as e:
@@ -2990,14 +2991,14 @@ async def update_labeler_data(data) -> None:
         logger.error(f"Error updating labeler data: {e}")
 
 
-async def get_resolution_queue(batch_size: int = 0, offset: int = 0, batching=False) -> Optional[list]:
+async def get_resolution_queue(batch_size: int = 0, batching=False) -> Optional[list]:
     try:
         async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
                 if batching:
-                    query = """SELECT DISTINCT(did), timestamp FROM resolution_queue ORDER BY timestamp LIMIT $1 OFFSET $2"""
+                    query = """SELECT DISTINCT(did), timestamp FROM resolution_queue ORDER BY timestamp LIMIT $1"""
 
-                    records = await connection.fetch(query, batch_size, offset)
+                    records = await connection.fetch(query, batch_size)
 
                     processed_records = [record['did'] for record in records]
 

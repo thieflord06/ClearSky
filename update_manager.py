@@ -29,7 +29,7 @@ async def main():
     parser.add_argument('--update-all-did-pds-service-info', action='store_true', help='get past dids and service info')
     parser.add_argument('--get-federated-pdses', action='store_true', help='Validate PDSes')
     parser.add_argument('--count-list-users', action='store_true', help='Count list users')
-    parser.add_argument('--process-resolution-queue', action='store_true', help='Process resolution queue')
+    parser.add_argument('--process-resolution-queue', action='store_true', help='Process resolution queue and dids with no handles')
 
     args = parser.parse_args()
     try:
