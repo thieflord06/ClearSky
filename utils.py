@@ -1509,7 +1509,10 @@ async def get_resolution_queue_info(batching=False):
             all_dids = await database_handler.get_dids_without_handles()
 
             if all_dids:
+                logger.info("Updating dids with no handles.")
+
                 total_dids = len(all_dids)
+
                 async with database_handler.connection_pools["write"].acquire() as connection:
                     async with connection.transaction():
                         # Concurrently process batches and update the handles
@@ -1531,32 +1534,32 @@ async def get_resolution_queue_info(batching=False):
                             await asyncio.sleep(60)  # Pause for 60 seconds
 
             resolution_queue = await database_handler.get_resolution_queue(offset, batch_size)
-            offset += batch_size
 
-            for batch in batch_queue(resolution_queue, BATCH_SIZE):
-                count += 1
-                # batch_count = math.ceil(len(resolution_queue) / BATCH_SIZE)
+            if resolution_queue:
+                for batch in batch_queue(resolution_queue, BATCH_SIZE):
+                    count += 1
+                    # batch_count = math.ceil(len(resolution_queue) / BATCH_SIZE)
 
-                logger.info(f"Processing batch {count}.")
+                    logger.info(f"Processing batch {count}.")
 
-                for did in batch:
-                    handle = await on_wire.resolve_did(did)
+                    for did in batch:
+                        handle = await on_wire.resolve_did(did)
 
-                    if "did:web:" in did:
-                        pds = await on_wire.resolve_did(did, True)
-                    else:
-                        pds = await on_wire.get_pds(did)
+                        if "did:web:" in did:
+                            pds = await on_wire.resolve_did(did, True)
+                        else:
+                            pds = await on_wire.get_pds(did)
 
-                    if handle[0] and pds:
-                        info = {
-                            "handle": handle[0],
-                            "pds": pds
-                        }
+                        if handle[0] and pds:
+                            info = {
+                                "handle": handle[0],
+                                "pds": pds
+                            }
 
-                        queue_info[did] = info
+                            queue_info[did] = info
 
-                if queue_info:
-                    await database_handler.process_resolution_queue(queue_info)
+                    if queue_info:
+                        await database_handler.process_resolution_queue(queue_info)
     else:
         resolution_queue = await database_handler.get_resolution_queue()
 
