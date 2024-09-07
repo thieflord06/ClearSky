@@ -626,7 +626,7 @@ async def get_dids_without_handles():
     try:
         async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
-                query = "SELECT did FROM users WHERE handle IS NULL"
+                query = "SELECT did FROM users WHERE handle IS NULL and status is TRUE"
                 rows = await connection.fetch(query)
                 dids_without_handles = [record['did'] for record in rows]
                 return dids_without_handles
