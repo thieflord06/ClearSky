@@ -133,7 +133,22 @@ async def resolve_did(did, did_web_pds=False) -> Optional[list]:  # Take DID and
                 elif response.status_code == 404:
                     logger.warning(f"404 not found: {did}")
 
-                    return None
+                    error_message = response_json.get("message", "")
+                    logger.debug(error_message)
+
+                    if "did not registered" in error_message.lower():
+                        await database_handler.deactivate_user(did)
+
+                        return None
+                    elif "did not available" in error_message.lower():
+                        logger.warning("User not found. Skipping...")
+
+                        return None
+                    else:
+                        error_message = response_json.get("message", "")
+                        logger.warning(error_message)
+
+                        return None
                 else:
                     error_message = response_json.get("message", "")
                     logger.debug(error_message)
@@ -142,7 +157,7 @@ async def resolve_did(did, did_web_pds=False) -> Optional[list]:  # Take DID and
                         await database_handler.deactivate_user(did)
 
                         return None
-                    elif "DID not available" in error_message.lower():
+                    elif "did not available" in error_message.lower():
                         logger.warning("User not found. Skipping...")
 
                         return None
