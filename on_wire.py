@@ -138,7 +138,7 @@ async def resolve_did(did, did_web_pds=False) -> Optional[list]:  # Take DID and
                     error_message = response_json.get("message", "")
                     logger.debug(error_message)
 
-                    if "DID not registered" in error_message.lower():
+                    if "did not registered" in error_message.lower():
                         await database_handler.deactivate_user(did)
 
                         return None
