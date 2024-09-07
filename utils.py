@@ -1500,7 +1500,6 @@ async def get_resolution_queue_info(batching=False):
     count = 0
     queue_info = {}
     batch_size = 1000
-    offset = 0
     total_handles_updated = 0
 
     if batching:
@@ -1533,7 +1532,9 @@ async def get_resolution_queue_info(batching=False):
                             logger.info("Pausing...")
                             await asyncio.sleep(60)  # Pause for 60 seconds
 
-            resolution_queue = await database_handler.get_resolution_queue(batching, True)
+                total_handles_updated = 0
+
+            resolution_queue = await database_handler.get_resolution_queue(batch_size, True)
 
             if resolution_queue:
                 for batch in batch_queue(resolution_queue, BATCH_SIZE):
