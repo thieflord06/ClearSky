@@ -1420,35 +1420,32 @@ async def process_batch(batch_dids, ad_hoc, batch_size):
 
         if handles_to_update:
             # only_handles = []
-            while True:
-                try:
-                    # Update the database with the batch of handles
-                    logger.info("committing batch.")
-                    async with connection_pools["write"].acquire() as connection:
-                        async with connection.transaction():
-                            await update_user_handles(handles_to_update)
-                            total_handles_updated += len(handles_to_update)
+            try:
+                # Update the database with the batch of handles
+                logger.info("committing batch.")
+                async with connection_pools["write"].acquire() as connection:
+                    async with connection.transaction():
+                        await update_user_handles(handles_to_update)
+                        total_handles_updated += len(handles_to_update)
 
-                    # for did, handle in handles_to_update:
-                    #     only_handles.append(handle)
+                # for did, handle in handles_to_update:
+                #     only_handles.append(handle)
 
-                    # logger.info("Adding new prefixes.")
-                    # await add_new_prefixes(only_handles)
+                # logger.info("Adding new prefixes.")
+                # await add_new_prefixes(only_handles)
 
-                    # Update the temporary table with the last processed DID
-                    # last_processed_did = handle_batch[-1][0]  # Assuming DID is the first element in each tuple
-                    # logger.debug("Last processed DID: " + str(last_processed_did))
-                    # if table:
-                    #     await update_temporary_table(last_processed_did, table)
-                    #
-                    # break
-                except asyncpg.ConnectionDoesNotExistError as e:
-                    logger.warning("Connection error, retrying in 30 seconds...")
-                    await asyncio.sleep(30)  # Retry after 60 seconds
-                except Exception as e:
-                    # Handle other exceptions as needed
-                    logger.error(f"Error during batch update: {e}")
-                    break  # Break the loop on other exceptions
+                # Update the temporary table with the last processed DID
+                # last_processed_did = handle_batch[-1][0]  # Assuming DID is the first element in each tuple
+                # logger.debug("Last processed DID: " + str(last_processed_did))
+                # if table:
+                #     await update_temporary_table(last_processed_did, table)
+            except asyncpg.ConnectionDoesNotExistError as e:
+                logger.warning("Connection error, retrying in 30 seconds...")
+                await asyncio.sleep(30)  # Retry after 60 seconds
+            except Exception as e:
+                # Handle other exceptions as needed
+                logger.error(f"Error during batch update: {e}")
+                break  # Break the loop on other exceptions
 
     return total_handles_updated
 
