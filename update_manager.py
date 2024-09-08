@@ -99,7 +99,7 @@ async def main():
                         await asyncio.sleep(60)  # Pause for 60 seconds
 
             logger.info("Users db update finished.")
-            await database_handler.delete_new_users_temporary_table()
+            # await database_handler.delete_new_users_temporary_table()
             await database_handler.process_delete_queue()  # Process the delete count for lists
             logger.info("Processing resolution queue.")
             # await utils.get_resolution_queue_info()
