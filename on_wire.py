@@ -148,6 +148,8 @@ async def resolve_did(did, did_web_pds=False) -> Optional[list]:  # Take DID and
                         error_message = response_json.get("message", "")
                         logger.warning(error_message)
 
+                        await database_handler.deactivate_user(did)
+
                         return None
                 else:
                     error_message = response_json.get("message", "")
