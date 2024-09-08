@@ -1520,8 +1520,7 @@ async def get_resolution_queue_info(batching=False):
                             batch_dids = all_dids[i:i + batch_size]
 
                             # Process the batch asynchronously
-                            batch_handles_updated = await database_handler.process_batch(batch_dids, True, None,
-                                                                                         batch_size)
+                            batch_handles_updated = await database_handler.process_batch(batch_dids, True, batch_size)
                             total_handles_updated += batch_handles_updated
 
                             # Log progress for the current batch

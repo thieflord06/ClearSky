@@ -1391,7 +1391,7 @@ async def add_new_prefixes(handles):
 
 
 @check_db_connection("write")
-async def process_batch(batch_dids, ad_hoc, table, batch_size):
+async def process_batch(batch_dids, ad_hoc, batch_size):
     batch_handles_and_dids = await utils.fetch_handles_batch(batch_dids, ad_hoc)
     logger.info("Batch resolved.")
 
@@ -1436,12 +1436,12 @@ async def process_batch(batch_dids, ad_hoc, table, batch_size):
                     # await add_new_prefixes(only_handles)
 
                     # Update the temporary table with the last processed DID
-                    last_processed_did = handle_batch[-1][0]  # Assuming DID is the first element in each tuple
-                    logger.debug("Last processed DID: " + str(last_processed_did))
-                    if table:
-                        await update_temporary_table(last_processed_did, table)
-
-                    break
+                    # last_processed_did = handle_batch[-1][0]  # Assuming DID is the first element in each tuple
+                    # logger.debug("Last processed DID: " + str(last_processed_did))
+                    # if table:
+                    #     await update_temporary_table(last_processed_did, table)
+                    #
+                    # break
                 except asyncpg.ConnectionDoesNotExistError as e:
                     logger.warning("Connection error, retrying in 30 seconds...")
                     await asyncio.sleep(30)  # Retry after 60 seconds

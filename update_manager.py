@@ -32,6 +32,7 @@ async def main():
     parser.add_argument('--process-resolution-queue', action='store_true', help='Process resolution queue and dids with no handles')
 
     args = parser.parse_args()
+
     try:
         await database_handler.create_connection_pool("read")
         await database_handler.create_connection_pool("write")
@@ -51,33 +52,32 @@ async def main():
             total_dids = len(all_dids)
             batch_size = 500
             total_handles_updated = 0
-            table = "new_users_temporary_table"
 
-            # Check if there is a last processed DID in the temporary table
-            async with database_handler.connection_pools["write"].acquire() as connection:
-                async with connection.transaction():
-                    try:
-                        query = "SELECT last_processed_did FROM new_users_temporary_table"
-                        last_processed_did = await connection.fetchval(query)
-                    except asyncpg.UndefinedTableError:
-                        logger.warning("Temporary table doesn't exist.")
-                        last_processed_did = None
-                    except Exception as e:
-                        last_processed_did = None
-                        logger.error(f"Exception getting from db: {str(e)}")
-
-            if not last_processed_did:
-                await database_handler.create_new_users_temporary_table()
-
-            if last_processed_did:
-                # Find the index of the last processed DID in the list
-                start_index = next((i for i, (did) in enumerate(all_dids) if did == last_processed_did), None)
-                if start_index is None:
-                    logger.warning(
-                        f"Last processed DID '{last_processed_did}' not found in the list. Starting from the beginning.")
-                else:
-                    logger.info(f"Resuming processing from DID: {last_processed_did}")
-                    all_dids = all_dids[start_index:]
+            # # Check if there is a last processed DID in the temporary table
+            # async with database_handler.connection_pools["write"].acquire() as connection:
+            #     async with connection.transaction():
+            #         try:
+            #             query = "SELECT last_processed_did FROM new_users_temporary_table"
+            #             last_processed_did = await connection.fetchval(query)
+            #         except asyncpg.UndefinedTableError:
+            #             logger.warning("Temporary table doesn't exist.")
+            #             last_processed_did = None
+            #         except Exception as e:
+            #             last_processed_did = None
+            #             logger.error(f"Exception getting from db: {str(e)}")
+            #
+            # if not last_processed_did:
+            #     await database_handler.create_new_users_temporary_table()
+            #
+            # if last_processed_did:
+            #     # Find the index of the last processed DID in the list
+            #     start_index = next((i for i, (did) in enumerate(all_dids) if did == last_processed_did), None)
+            #     if start_index is None:
+            #         logger.warning(
+            #             f"Last processed DID '{last_processed_did}' not found in the list. Starting from the beginning.")
+            #     else:
+            #         logger.info(f"Resuming processing from DID: {last_processed_did}")
+            #         all_dids = all_dids[start_index:]
 
             async with database_handler.connection_pools["write"].acquire() as connection:
                 async with connection.transaction():
@@ -87,7 +87,7 @@ async def main():
                         batch_dids = all_dids[i:i + batch_size]
 
                         # Process the batch asynchronously
-                        batch_handles_updated = await database_handler.process_batch(batch_dids, True, table, batch_size)
+                        batch_handles_updated = await database_handler.process_batch(batch_dids, True, batch_size)
                         total_handles_updated += batch_handles_updated
 
                         # Log progress for the current batch
