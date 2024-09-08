@@ -1526,7 +1526,7 @@ async def get_resolution_queue_info(batching=False):
 
                             # Log progress for the current batch
                             logger.info(f"Handles updated: {total_handles_updated}/{total_dids}")
-                            logger.info(f"First few DIDs in the batch: {batch_dids[:5]}")
+                            logger.debug(f"First few DIDs in the batch: {batch_dids[:5]}")
 
                             # Pause after each batch of handles resolved
                             logger.info("Pausing...")
