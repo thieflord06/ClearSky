@@ -1,6 +1,5 @@
 # update_manager.py
 
-import asyncpg
 import database_handler
 import on_wire
 from config_helper import logger, config
