@@ -639,17 +639,17 @@ async def get_dids_without_handles():
 @check_db_connection("write")
 async def get_pdses():
     # update PDS table with unique PDSes from users table
-    try:
-        async with connection_pools["write"].acquire() as connection:
-            async with connection.transaction():
-                query = """INSERT INTO pds (pds) 
-                            SELECT DISTINCT pds
-                            FROM users
-                            WHERE pds IS NOT NULL
-                            ON CONFLICT (pds) DO NOTHING"""
-                await connection.execute(query)
-    except Exception as e:
-        logger.error(f"Error inserting PDSes: {e}")
+    # try:
+    #     async with connection_pools["write"].acquire() as connection:
+    #         async with connection.transaction():
+    #             query = """INSERT INTO pds (pds)
+    #                         SELECT DISTINCT pds
+    #                         FROM users
+    #                         WHERE pds IS NOT NULL
+    #                         ON CONFLICT (pds) DO NOTHING"""
+    #             await connection.execute(query)
+    # except Exception as e:
+    #     logger.error(f"Error inserting PDSes: {e}")
 
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -974,35 +974,49 @@ async def get_all_users_db(run_update=False, get_dids=False, init_db_run=False, 
 
             # Get all DIDs
             for pds in pdses:
+                active_dids_in_pds = set()
+                inactive_dids_in_pds = set()
+
                 pds_dids = await utils.get_all_users(pds)
                 if pds_dids:
-                    logger.info(f"{len(pds_dids)} users in {pds}")
+                    for did in pds_dids:
+                        if did.get('status'):
+                            active_dids_in_pds.add(did.get('did'))
+                        else:
+                            inactive_dids_in_pds.add((did.get('did'), did.get('status'), did.get('reason')))
+
+                    logger.info(f"{len(active_dids_in_pds)} user(s) in {pds}")
 
                     current_true_pds_records = await connection.fetch('SELECT did FROM users WHERE PDS = $1 AND status = TRUE', pds)
                     current_true_pds_set = set(record["did"] for record in current_true_pds_records)
 
                     logger.info("Getting DIDs to deactivate.")
-                    dids_deactivated = current_true_pds_set - set(pds_dids)
 
-                    logger.info("Getting new DIDs.")
-                    new_dids = set(pds_dids) - current_true_pds_set
+                    # Find the DIDs in the database that are no longer active in the new list
+                    dids_to_deactivate = current_true_pds_set - active_dids_in_pds
+
+                    # Find new DIDs to add
+                    new_dids = active_dids_in_pds - current_true_pds_set
 
                     logger.info(f"Total new DIDs: {len(new_dids)}")
+                    logger.info(f"Total DIDs to deactivate: {len(dids_to_deactivate)}")
 
                     total_dids += len(pds_records)
 
-                    if dids_deactivated:
+                    if dids_to_deactivate:
                         count = 0
 
-                        logger.info(f"deactivating {len(dids_deactivated)} dids in {pds}.")
+                        logger.info(f"deactivating {len(dids_to_deactivate)} dids in {pds}.")
 
-                        for did in dids_deactivated:
-                            await connection.execute("""UPDATE users SET status = FALSE WHERE did = $1""", did)
+                        for did in dids_to_deactivate:
+                            reason = next((item[2] for item in inactive_dids_in_pds if item[0] == did),
+                                          None)
+                            await connection.execute("""UPDATE users SET status = FALSE, reason = $2 WHERE did = $1""", did, reason)
                             # await connection.execute("delete from resolution_queue where did = $1", did)  # Remove the DID from the resolution queue
                             count += 1
                             logger.debug(f"DIDs deactivated: {count}")
 
-                        logger.info(f"{str(len(dids_deactivated))} dids deactivated in {pds}.")
+                        logger.info(f"{str(len(dids_to_deactivate))} dids deactivated in {pds}.")
 
                     if init_db_run:
                         if new_dids:

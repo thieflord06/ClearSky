@@ -329,11 +329,11 @@ async def update_total_users():
     return active_count, total_count, deleted_count
 
 
-async def get_all_users(pds) -> set:
+async def get_all_users(pds) -> (list, bool):
     base_url = f"{pds}/xrpc/"
     limit = 1000
     cursor = None
-    records = set()
+    records = []
     count = 0
     full_url = None
 
@@ -378,7 +378,7 @@ async def get_all_users(pds) -> set:
                         break
                     repos = response_json.get("repos", [])
                     for repo in repos:
-                        records.add(repo["did"])
+                        records.append({"did": repo.get("did"), "status": repo.get("active", True), "reason": repo.get("status", None)})
 
                     cursor = response_json.get("cursor")
                     if not cursor:
