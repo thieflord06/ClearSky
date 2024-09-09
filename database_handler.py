@@ -637,6 +637,21 @@ async def get_dids_without_handles():
 
 
 @check_db_connection("write")
+async def get_dids_without_handles_and_are_not_active():
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                query = "SELECT did FROM users WHERE handle IS NULL and status is FALSE"
+                rows = await connection.fetch(query)
+                dids_without_handles = [record['did'] for record in rows]
+                return dids_without_handles
+    except Exception as e:
+        logger.error(f"Error retrieving DIDs without handles: {e}")
+
+        return []
+
+
+@check_db_connection("write")
 async def get_pdses():
     # update PDS table with unique PDSes from users table
     # try:

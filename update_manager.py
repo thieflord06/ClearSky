@@ -43,12 +43,18 @@ async def main():
         try:
             logger.info("Users db update dids only requested.")
             await database_handler.get_all_users_db(True, False, init_db_run=True)
+
             logger.info("Users db updated dids finished.")
 
             logger.info("Users db update requested.")
+
             all_dids = await database_handler.get_dids_without_handles()
+            dids_no_handles_and_inactive = await database_handler.get_dids_without_handles_and_are_not_active()
+
             logger.info("Update users handles requested.")
+
             total_dids = len(all_dids)
+            total_dids_no_handles_and_inactive = len(dids_no_handles_and_inactive)
             batch_size = 500
             total_handles_updated = 0
 
@@ -84,6 +90,22 @@ async def main():
                     for i in range(0, total_dids, batch_size):
                         logger.info("Getting batch to resolve.")
                         batch_dids = all_dids[i:i + batch_size]
+
+                        # Process the batch asynchronously
+                        batch_handles_updated = await database_handler.process_batch(batch_dids, True, batch_size)
+                        total_handles_updated += batch_handles_updated
+
+                        # Log progress for the current batch
+                        logger.info(f"Handles updated: {total_handles_updated}/{total_dids}")
+                        logger.debug(f"First few DIDs in the batch: {batch_dids[:5]}")
+
+                        # Pause after each batch of handles resolved
+                        logger.info("Pausing...")
+                        await asyncio.sleep(60)  # Pause for 60 seconds
+
+                    for i in range(0, total_dids_no_handles_and_inactive, batch_size):
+                        logger.info("Getting batch to resolve.")
+                        batch_dids = dids_no_handles_and_inactive[i:i + batch_size]
 
                         # Process the batch asynchronously
                         batch_handles_updated = await database_handler.process_batch(batch_dids, True, batch_size)
