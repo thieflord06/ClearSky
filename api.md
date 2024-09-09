@@ -660,3 +660,11 @@
                 "identity":"thieflord.dev",
                 "status":true
             }
+
+### 23.
+
+- **Endpoint:** `/api/v1/anon/images/logo`
+  - **Method:** `GET`
+    - **Description:** Get the logo image
+    - **Parameters:** None
+    - **Response:** png
