@@ -431,6 +431,10 @@ async def main():
 
     # await verify_handle("thieflord.dev")
 
-    await database_handler.get_block_row('at://did:plc:vmdqzixzv3o7zw6bn233gb4s/app.bsky.graph.block/3kc7atxkmsp2u')
+    # await database_handler.get_block_row('at://did:plc:vmdqzixzv3o7zw6bn233gb4s/app.bsky.graph.block/3kc7atxkmsp2u')
+
+    # await utils.get_resolution_queue_info(True)
+
+    await database_handler.get_all_users_db(True, False, init_db_run=True)
 if __name__ == '__main__':
     asyncio.run(main())
