@@ -450,7 +450,8 @@ async def test_push():
 
 async def main():
     def auth():
-        api_key = "CLEARSKYtestd121ascmkdneaorSDno32"
+        # api_key = "CLEARSKYtestd121ascmkdneaorSDno32"
+        api_key = "CLEARSKYprodtest67890asdfghjklqw"
 
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/base/internal/status/process-status"
         # api_endpoint = "http://localhost/api/v1/base/internal/status/process-status"
@@ -475,7 +476,8 @@ async def main():
         # api_endpoint = "http://localhost/api/v1/get-moderation-list/gaminsdfvf"
         # api_endpoint = "http://localhost/api/v1/auth/blocklist/rudyfraser.com"
         # api_endpoint = "http://localhost/api/v1/auth/base/internal/api-check?key_type="
-        api_endpoint = "http://localhost/api/v1/base/internal/status/process-status"
+        # api_endpoint = "http://localhost/api/v1/base/internal/status/process-status"
+        api_endpoint = "https://clearsky.app/api/v1/base/internal/status/process-status"
 
         # Define the headers with the API key
         headers = {'X-API-Key': f'{api_key}'}
@@ -552,7 +554,8 @@ async def main():
         # api_endpoint = "https://api.clearsky.services/api/v1/anon/base/autocomplete/thi"
         # api_endpoint = "https://api.clearsky.services/api/v1/anon/at-uri/at://did:plc:synka4gchwjmophklcsndndf/app.bsky.feed.post/3klnptzxy3b2f"
         # api_endpoint = "https://api.staging.clearsky.services/api/v1/anon/data-transaction/query"
-        api_endpoint = "http://localhost/api/v1/anon/validation/validate-handle/new.blockenheimer.click"
+        # api_endpoint = "http://localhost/api/v1/anon/validation/validate-handle/new.blockenheimer.click"
+        api_endpoint = "https://clearsky.app/api/v1/base/internal/status/process-status"
 
         try:
             logger.info(f"API endpoint: {api_endpoint}")
