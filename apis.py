@@ -101,6 +101,11 @@ async def contact():
     return await render_template('contact.html')
 
 
+@api_blueprint.route('/api/v1/anon/images/logo', methods=['GET'])
+@rate_limit(5, timedelta(seconds=1))
+async def anon_get_logo():
+    return await send_from_directory('images', 'CleardayLarge.png')
+
 # ======================================================================================================================
 # ===================================================== APIs ===========================================================
 
