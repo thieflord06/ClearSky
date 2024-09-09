@@ -621,6 +621,6 @@ async def get_pds(identifier):
 
             continue
     if retry_count == max_retries:
-        logger.warning("Could not get handle history for: " + identifier)
+        logger.warning("Could not get PDS for: " + identifier)
 
         return None
