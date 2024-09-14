@@ -125,7 +125,7 @@ async def schedule_stats_update() -> None:
     logger.info("Scheduled stats update complete.")
 
 
-@aiocron.crontab('0 */4 * * *')  # Every 12 hours
+@aiocron.crontab('0 */1 * * *')  # Every 12 hours
 async def schedule_total_users_update() -> None:
     logger.info("Starting scheduled total users update.")
 
