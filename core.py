@@ -495,7 +495,8 @@ async def get_total_users():
         "deleted_count": {
             "value": formatted_deleted_count,
             "displayName": "Deleted Users",
-        }
+        },
+        "as of": utils.total_users_as_of_time
     }
 
     data = {"data": count_data}

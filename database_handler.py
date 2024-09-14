@@ -43,6 +43,7 @@ top_blocks_process_time = None
 top_24_blocks_process_time = None
 top_blocked_as_of_time = None
 top_24_blocked_as_of_time = None
+total_users_as_of_time = None
 
 users_table = "users"
 blocklist_table = "blocklists"

@@ -56,6 +56,7 @@ block_stats_as_of_time = None
 total_users_process_time = None
 total_users_last_update = None
 total_users_start_time = None
+total_users_as_of_time = None
 
 BATCH_SIZE = 1000
 
@@ -298,6 +299,7 @@ async def update_total_users():
     global total_users_process_time
     global total_users_last_update
     global total_users_start_time
+    global total_users_as_of_time
 
     logger.info("Updating total users.")
 
@@ -323,6 +325,8 @@ async def update_total_users():
     total_users_last_update = end_time
 
     total_users_start_time = None
+
+    total_users_as_of_time = datetime.now().isoformat()
 
     logger.info("Total users update complete.")
 
