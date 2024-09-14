@@ -669,3 +669,11 @@
     - **Description:** Get the logo image
     - **Parameters:** None
     - **Response:** png
+
+### 24.
+
+- **Endpoint:** `/api/v1/anon/images/icon`
+  - **Method:** `GET`
+    - **Description:** Get the icon image
+    - **Parameters:** None
+    - **Response:** png
