@@ -12,7 +12,7 @@ from config_helper import logger, config
 blocklist_24_failed = asyncio.Event()
 blocklist_failed = asyncio.Event()
 runtime = datetime.now()
-version = "3.32.8"
+version = "3.32.9"
 default_push_server = "https://ui.staging.clearsky.app"
 
 
