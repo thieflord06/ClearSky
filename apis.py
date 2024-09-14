@@ -115,13 +115,13 @@ async def anon_get_icon():
 
 @api_blueprint.route('/api/v1/auth/images/logo', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
-async def anon_get_logo():
+async def auth_get_logo():
     return await send_from_directory('images', 'Clearskylogo.png')
 
 
 @api_blueprint.route('/api/v1/auth/images/icon', methods=['GET'])
 @rate_limit(5, timedelta(seconds=1))
-async def anon_get_icon():
+async def auth_get_icon():
     return await send_from_directory('images', 'favicon32.png')
 
 
