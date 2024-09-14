@@ -125,6 +125,15 @@ async def schedule_stats_update() -> None:
     logger.info("Scheduled stats update complete.")
 
 
+@aiocron.crontab('0 */4 * * *')  # Every 12 hours
+async def schedule_total_users_update() -> None:
+    logger.info("Starting scheduled total users update.")
+
+    await utils.update_total_users()
+
+    logger.info("Scheduled total users update complete.")
+
+
 def api_key_required(key_type) -> callable:
     def decorator(func) -> callable:
         @functools.wraps(func)
