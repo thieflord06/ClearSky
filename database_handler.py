@@ -683,6 +683,33 @@ async def get_pdses():
 
 
 @check_db_connection("write")
+async def get_dids_without_pdses() -> List[str]:
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                query = "SELECT did FROM users WHERE pds IS NULL"
+                rows = await connection.fetch(query)
+                dids_without_pdses = [record['did'] for record in rows]
+
+                return dids_without_pdses
+    except Exception as e:
+        logger.error(f"Error retrieving DIDs without PDSes: {e}")
+
+        return []
+
+
+@check_db_connection("write")
+async def update_did_pds(did, pds):
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                query = "UPDATE users SET pds = $1 WHERE did = $2"
+                await connection.execute(query, pds, did)
+    except Exception as e:
+        logger.error(f"Error updating PDS for DID {did}: {e}")
+
+
+@check_db_connection("write")
 async def blocklist_search(search_list, lookup, switch):
     async with connection_pools["write"].acquire() as connection:
         async with connection.transaction():
@@ -2883,10 +2910,14 @@ async def get_user_handle(did) -> Optional[str]:
 async def get_user_count(get_active=True) -> int:
     async with connection_pools["read"].acquire() as connection:
         if get_active:
-            count = await connection.fetchval("""SELECT COUNT(*) 
-                                                FROM users 
-                                                JOIN pds ON users.pds = pds.pds 
+            count = await connection.fetchval("""SELECT COUNT(*)
+                                                FROM users
+                                                JOIN pds ON users.pds = pds.pds
                                                 WHERE users.status IS TRUE AND pds.status IS TRUE""")
+
+            # count = await connection.fetchval("""SELECT COUNT(*)
+            #                                     FROM users
+            #                                     WHERE users.status IS TRUE""")
         else:
             count = await connection.fetchval("""SELECT COUNT(*) FROM users JOIN pds ON users.pds = pds.pds WHERE pds.status is TRUE""")
         return count

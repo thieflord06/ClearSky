@@ -1565,6 +1565,14 @@ async def get_resolution_queue_info(batching=False):
                     if queue_info:
                         await database_handler.process_resolution_queue(queue_info)
                         queue_info.clear()
+
+            dids_without_pdses = await database_handler.get_dids_without_pdses()
+
+            for did in dids_without_pdses:
+                pds = await on_wire.get_pds(did)
+
+                if pds:
+                    await database_handler.update_did_pds(did, pds)
     else:
         resolution_queue = await database_handler.get_resolution_queue()
 
