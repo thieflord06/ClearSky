@@ -1500,145 +1500,117 @@ def batch_queue(queue, batch_size):
         yield queue[i:i + batch_size]
 
 
-async def get_resolution_queue_info(batching=False):
+async def get_resolution_queue_info():
     count = 0
     queue_info = {}
     batch_size = 1000
     total_handles_updated = 0
 
-    if batching:
-        while True:
+    while True:
 
-            all_dids = await database_handler.get_dids_without_handles()
+        all_dids = await database_handler.get_dids_without_handles()
 
-            if all_dids:
-                logger.info("Updating dids with no handles.")
+        if all_dids:
+            logger.info("Updating dids with no handles.")
 
-                total_dids = len(all_dids)
+            total_dids = len(all_dids)
 
-                async with database_handler.connection_pools["write"].acquire() as connection:
-                    async with connection.transaction():
-                        # Concurrently process batches and update the handles
-                        for i in range(0, total_dids, batch_size):
-                            logger.info("Getting batch to resolve.")
-                            batch_dids = all_dids[i:i + batch_size]
+            async with database_handler.connection_pools["write"].acquire() as connection:
+                async with connection.transaction():
+                    # Concurrently process batches and update the handles
+                    for i in range(0, total_dids, batch_size):
+                        logger.info("Getting batch to resolve.")
+                        batch_dids = all_dids[i:i + batch_size]
 
-                            # Process the batch asynchronously
-                            batch_handles_updated = await database_handler.process_batch(batch_dids, True, batch_size)
-                            total_handles_updated += batch_handles_updated
+                        # Process the batch asynchronously
+                        batch_handles_updated = await database_handler.process_batch(batch_dids, True, batch_size)
+                        total_handles_updated += batch_handles_updated
 
-                            # Log progress for the current batch
-                            logger.info(f"Handles updated: {total_handles_updated}/{total_dids}")
-                            logger.debug(f"First few DIDs in the batch: {batch_dids[:5]}")
+                        # Log progress for the current batch
+                        logger.info(f"Handles updated: {total_handles_updated}/{total_dids}")
+                        logger.debug(f"First few DIDs in the batch: {batch_dids[:5]}")
 
-                            # Pause after each batch of handles resolved
-                            logger.info("Pausing...")
-                            await asyncio.sleep(60)  # Pause for 60 seconds
+                        # Pause after each batch of handles resolved
+                        logger.info("Pausing...")
+                        await asyncio.sleep(60)  # Pause for 60 seconds
 
-                total_handles_updated = 0
+            total_handles_updated = 0
 
-            resolution_queue = await database_handler.get_resolution_queue(batch_size, True)
+        resolution_queue = await database_handler.get_resolution_queue(batch_size, True)
 
-            if resolution_queue:
-                for batch in batch_queue(resolution_queue, BATCH_SIZE):
-                    count += 1
-                    # batch_count = math.ceil(len(resolution_queue) / BATCH_SIZE)
+        if resolution_queue:
+            for batch in batch_queue(resolution_queue, BATCH_SIZE):
+                count += 1
+                # batch_count = math.ceil(len(resolution_queue) / BATCH_SIZE)
 
-                    logger.info(f"Processing batch {count}.")
+                logger.info(f"Processing batch {count}.")
 
-                    for did in batch:
-                        handle = await on_wire.resolve_did(did)
+                for did in batch:
+                    handle = await on_wire.resolve_did(did)
 
-                        if "did:web:" in did:
-                            pds = await on_wire.resolve_did(did, True)
-                        else:
-                            pds = await on_wire.get_pds(did)
+                    if "did:web:" in did:
+                        pds = await on_wire.resolve_did(did, True)
+                    else:
+                        pds = await on_wire.get_pds(did)
 
-                        if handle[0] and pds:
-                            info = {
-                                "handle": handle[0],
-                                "pds": pds
-                            }
+                    if handle[0] and pds:
+                        info = {
+                            "handle": handle[0],
+                            "pds": pds
+                        }
 
-                            queue_info[did] = info
+                        queue_info[did] = info
 
-                    if queue_info:
-                        await database_handler.process_resolution_queue(queue_info)
-                        queue_info.clear()
+                if queue_info:
+                    await database_handler.process_resolution_queue(queue_info)
+                    queue_info.clear()
 
-            # Checks for dids without PDSes and adds them
-            dids_without_pdses = await database_handler.get_dids_without_pdses()
+        # Checks for dids without PDSes and adds them
+        logger.info("Checking for DIDs without PDSes.")
 
-            for did in dids_without_pdses:
-                pds = await on_wire.get_pds(did)
+        dids_without_pdses = await database_handler.get_dids_without_pdses()
 
-                if pds:
-                    await database_handler.update_did_pds(did, pds)
+        for did in dids_without_pdses:
+            pds = await on_wire.get_pds(did)
 
-            # Checks for dids without status and adds them
-            dids_without_status = await database_handler.get_dids_with_no_status()
+            if pds:
+                await database_handler.update_did_pds(did, pds)
 
-            for did in dids_without_status:
-                pds = await database_handler.get_pds(did)
+        # Checks for dids without status and adds them
+        logger.info("Checking for DIDs without status.")
+        dids_without_status = await database_handler.get_dids_with_no_status()
 
-                if pds:
-                    info = await on_wire.get_status(did, pds)
+        for did in dids_without_status:
+            pds = await database_handler.get_pds(did)
 
-                    if info:
-                        await database_handler.update_did_status(did, info)
+            if pds:
+                info = await on_wire.get_status(did, pds)
 
-            # Checks for new PDSes not in PDS table and adds them
-            new_pdses = await database_handler.get_new_pdses()
+                if info:
+                    await database_handler.update_did_status(did, info)
 
-            if new_pdses:
-                new_list = []
+        # Checks for new PDSes not in PDS table and adds them
+        logger.info("Checking for new PDSes.")
+        new_pdses = await database_handler.get_new_pdses()
 
-                for pds in new_pdses:
-                    if pds is None or pds == "unknown":
-                        continue
+        if new_pdses:
+            new_list = []
 
-                    new_list.append(pds)
+            for pds in new_pdses:
+                if pds is None or pds == "unknown":
+                    continue
 
-                    await database_handler.add_new_pdses(new_list)
+                new_list.append(pds)
 
-            # Checks for dids without created date and adds them
-            dids_without_created_date = await database_handler.get_dids_without_created_date()
+                await database_handler.add_new_pdses(new_list)
 
-            if dids_without_created_date:
-                for did in dids_without_created_date:
-                    created_date = await on_wire.get_created_date(did)
+        # Checks for dids without created date and adds them
+        logger.info("Checking for DIDs without created date.")
+        dids_without_created_date = await database_handler.get_dids_without_created_date()
 
-                    if created_date:
-                        await database_handler.update_did_created_date(did, created_date)
-    else:
-        resolution_queue = await database_handler.get_resolution_queue()
+        if dids_without_created_date:
+            for did in dids_without_created_date:
+                created_date = await on_wire.get_created_date(did)
 
-    if not resolution_queue:
-        logger.info("Nothing in queue.")
-
-        return
-
-    for batch in batch_queue(resolution_queue, BATCH_SIZE):
-        count += 1
-        batch_count = math.ceil(len(resolution_queue) / BATCH_SIZE)
-
-        logger.info(f"Processing batch {count} of {batch_count}.")
-
-        for did in batch:
-            handle = await on_wire.resolve_did(did)
-
-            if "did:web:" in did:
-                pds = await on_wire.resolve_did(did, True)
-            else:
-                pds = await on_wire.get_pds(did)
-
-            if handle[0] and pds:
-                info = {
-                    "handle": handle[0],
-                    "pds": pds
-                }
-
-                queue_info[did] = info
-
-        if queue_info:
-            await database_handler.process_resolution_queue(queue_info)
+                if created_date:
+                    await database_handler.update_did_created_date(did, created_date)
