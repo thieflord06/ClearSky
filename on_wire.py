@@ -698,41 +698,49 @@ async def get_status(did, pds):  # Take Handle and get DID
     max_retries = 5
     retry_count = 0
 
-    while retry_count < max_retries:
-        try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(full_url)
-                response_json = response.json()
+    if "https://" in pds:
+        while retry_count < max_retries:
+            try:
+                async with httpx.AsyncClient() as client:
+                    response = await client.get(full_url)
+                    response_json = response.json()
 
-                if response.status_code == 200:
-                    status = response_json.get("active")
-                    reason = response_json.get("status")
+                    if response.status_code == 200:
+                        status = response_json.get("active")
+                        reason = response_json.get("status")
 
-                    result = {"status": status, "reason": reason}
+                        result = {"status": status, "reason": reason}
 
-                    return result
-                elif response.status_code == 400:
-                    status = False
-                    reason = None
+                        return result
+                    elif response.status_code == 400:
+                        status = False
+                        reason = None
 
-                    result = {"status": status, "reason": reason}
+                        result = {"status": status, "reason": reason}
 
-                    return result
-                else:
-                    status = False
-                    reason = None
+                        return result
+                    else:
+                        status = False
+                        reason = None
 
-                    result = {"status": status, "reason": reason}
+                        result = {"status": status, "reason": reason}
 
-                    return result
-        except Exception as e:
-            retry_count += 1
-            logger.error(f"Error occurred while making the API call: {e}")
+                        return result
+            except Exception as e:
+                retry_count += 1
+                logger.error(f"Error occurred while making the API call: {e}")
 
-    if retry_count == max_retries:
-        logger.warning(f"Resolve error for: {did} after multiple retries.")
+        if retry_count == max_retries:
+            logger.warning(f"Resolve error for: {did} after multiple retries.")
 
-        status = None
+            status = None
+            reason = None
+
+            result = {"status": status, "reason": reason}
+
+            return result
+    else:
+        status = False
         reason = None
 
         result = {"status": status, "reason": reason}
