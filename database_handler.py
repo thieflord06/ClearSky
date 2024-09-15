@@ -683,6 +683,33 @@ async def get_pdses():
 
 
 @check_db_connection("write")
+async def get_pds(did):
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                query = "SELECT pds FROM users WHERE did = $1"
+                pds = await connection.fetchval(query, did)
+
+                return pds
+    except Exception as e:
+        logger.error(f"Error retrieving PDS for DID {did}: {e}")
+
+        return None
+
+
+@check_db_connection("write")
+async def update_did_status(did, info) -> None:
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                query = "UPDATE users SET status = $1, reason = $2 WHERE did = $3"
+
+                await connection.execute(query, info.get("status"), info.get("reason"), did)
+    except Exception as e:
+        logger.error(f"Error updating status for DID {info['did']}: {e}")
+
+
+@check_db_connection("write")
 async def get_dids_without_pdses() -> List[str]:
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -2923,6 +2950,57 @@ async def get_user_count(get_active=True) -> int:
         return count
 
 
+@check_db_connection("write")
+async def get_dids_with_no_status() -> Optional[list]:
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                query = """SELECT did FROM users WHERE status IS NULL"""
+                dids = await connection.fetch(query)
+
+                records = [record['did'] for record in dids]
+
+                return records
+    except Exception as e:
+        logger.error(f"Error getting dids with no status: {e}")
+
+        return None
+
+
+@check_db_connection("write")
+async def get_new_pdses() -> Optional[list]:
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                query = """SELECT DISTINCT users.pds
+                            FROM users
+                            LEFT JOIN pds ON users.pds = pds.pds
+                            WHERE pds.pds IS NULL;
+                            """
+                pdses = await connection.fetch(query)
+
+                records = [record['pds'] for record in pdses]
+
+                return records
+    except Exception as e:
+        logger.error(f"Error getting new pdses: {e}")
+
+        return None
+
+
+@check_db_connection("write")
+async def add_new_pdses(pdses) -> None:
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                for pds in pdses:
+                    query = """INSERT INTO pds (pds) VALUES ($1)"""
+
+                    await connection.execute(query, pds)
+    except Exception as e:
+        logger.error(f"Error getting new pdses: {e}")
+
+
 @check_db_connection("read")
 async def get_deleted_users_count() -> int:
     async with connection_pools["read"].acquire() as connection:
@@ -3119,6 +3197,31 @@ async def process_resolution_queue(info):
             logger.error(f"Error updating didwebs: {e}")
 
     logger.info(f"Popped {pop} from resolution queue.")
+
+
+async def get_dids_without_created_date() -> Optional[list]:
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                query = """SELECT did FROM users WHERE created_date IS NULL"""
+                dids = await connection.fetch(query)
+
+                records = [record['did'] for record in dids]
+
+                return records
+    except Exception as e:
+        logger.error(f"Error getting dids without created date: {e}")
+
+        return None
+
+
+async def update_did_created_date(did, created_date) -> None:
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                await connection.execute("UPDATE users SET created_date = $1 WHERE did = $2", created_date, did)
+    except Exception as e:
+        logger.error(f"Error updating did created date: {e}")
 
 
 async def set_labeler_status(did, status) -> None:

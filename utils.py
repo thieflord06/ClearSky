@@ -1566,6 +1566,7 @@ async def get_resolution_queue_info(batching=False):
                         await database_handler.process_resolution_queue(queue_info)
                         queue_info.clear()
 
+            # Checks for dids without PDSes and adds them
             dids_without_pdses = await database_handler.get_dids_without_pdses()
 
             for did in dids_without_pdses:
@@ -1573,6 +1574,42 @@ async def get_resolution_queue_info(batching=False):
 
                 if pds:
                     await database_handler.update_did_pds(did, pds)
+
+            # Checks for dids without status and adds them
+            dids_without_status = await database_handler.get_dids_with_no_status()
+
+            for did in dids_without_status:
+                pds = database_handler.get_pds(did)
+
+                if pds:
+                    info = await on_wire.get_status(did, pds)
+
+                    if info:
+                        await database_handler.update_did_status(did, info)
+
+            # Checks for new PDSes not in PDS table and adds them
+            new_pdses = await database_handler.get_new_pdses()
+
+            if new_pdses:
+                new_list = []
+
+                for pds in new_pdses:
+                    if pds is None or pds == "unknown":
+                        continue
+
+                    new_list.append(pds)
+
+                    await database_handler.add_new_pdses(new_list)
+
+            # Checks for dids without created date and adds them
+            dids_without_created_date = await database_handler.get_dids_without_created_date()
+
+            if dids_without_created_date:
+                for did in dids_without_created_date:
+                    created_date = await on_wire.get_created_date(did)
+
+                    if created_date:
+                        await database_handler.update_did_created_date(did, created_date)
     else:
         resolution_queue = await database_handler.get_resolution_queue()
 
