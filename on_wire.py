@@ -660,6 +660,8 @@ async def get_created_date(identifier):
 
                 return created_at_value
         elif response.status_code == 429:
+            retry_count += 1
+
             logger.warning("Received 429 Too Many Requests. Retrying after 30 seconds...")
             await asyncio.sleep(30)  # Retry after 60 seconds
         elif response.status_code == 400:
@@ -669,11 +671,14 @@ async def get_created_date(identifier):
                 if error_message == "InvalidRequest" and "Could not find repo" in message:
                     logger.warning("Could not find repo: " + str(identifier))
 
-                    return None
+                    return "unknown"
             except KeyError:
                 return None
+        elif response.status_code == 404:
+            return "unknown"
         else:
             retry_count += 1
+
             logger.warning("Error during API call. Status code: %s", response.status_code)
             await asyncio.sleep(5)
 
