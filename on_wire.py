@@ -719,6 +719,12 @@ async def get_status(did, pds):  # Take Handle and get DID
                         result = {"status": status, "reason": reason}
 
                         return result
+                    elif response.status_code == 429:
+                        retry_count += 1
+
+                        logger.warning(f"Received 429 Too Many Requests. Retrying after 60 seconds...{full_url}")
+
+                        await asyncio.sleep(60)  # Retry after 60 seconds
                     else:
                         status = False
                         reason = None
