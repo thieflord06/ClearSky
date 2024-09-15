@@ -1579,7 +1579,7 @@ async def get_resolution_queue_info(batching=False):
             dids_without_status = await database_handler.get_dids_with_no_status()
 
             for did in dids_without_status:
-                pds = database_handler.get_pds(did)
+                pds = await database_handler.get_pds(did)
 
                 if pds:
                     info = await on_wire.get_status(did, pds)
