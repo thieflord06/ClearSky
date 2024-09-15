@@ -1507,7 +1507,6 @@ async def get_resolution_queue_info():
     total_handles_updated = 0
 
     while True:
-
         all_dids = await database_handler.get_dids_without_handles()
 
         if all_dids:
@@ -1541,7 +1540,6 @@ async def get_resolution_queue_info():
         if resolution_queue:
             for batch in batch_queue(resolution_queue, BATCH_SIZE):
                 count += 1
-                # batch_count = math.ceil(len(resolution_queue) / BATCH_SIZE)
 
                 logger.info(f"Processing batch {count}.")
 
