@@ -689,7 +689,7 @@ async def get_created_date(identifier):
         return None
 
 
-async def get_status(did, pds):  # Take Handle and get DID
+async def get_status(did, pds) -> Optional[dict]:  # Take Handle and get DID
     base_url = f"{pds}/xrpc/"
     url = urllib.parse.urljoin(base_url, "com.atproto.sync.getRepoStatus")
     params = {
@@ -712,6 +712,8 @@ async def get_status(did, pds):  # Take Handle and get DID
 
                     if response.status_code == 200:
                         status = response_json.get("active")
+                        if status:
+                            status = True
                         reason = response_json.get("status")
 
                         result = {"status": status, "reason": reason}
