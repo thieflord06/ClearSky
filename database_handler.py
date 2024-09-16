@@ -3207,7 +3207,8 @@ async def get_dids_without_created_date() -> Optional[list]:
 
 
 async def update_did_created_date(did, created_date) -> None:
-    created_date = datetime.strptime(created_date, '%Y-%m-%dT%H:%M:%S.%fZ')
+    if "unknown" not in created_date:
+        created_date = datetime.strptime(created_date, '%Y-%m-%dT%H:%M:%S.%fZ')
 
     try:
         async with connection_pools["write"].acquire() as connection:
