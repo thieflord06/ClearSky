@@ -1537,7 +1537,7 @@ async def get_resolution_queue_info():
 
         resolution_queue = await database_handler.get_resolution_queue(batch_size)
 
-        if resolution_queue:
+        if resolution_queue:  # TODO: add check for created_date and update if it doesn't exist
             for batch in batch_queue(resolution_queue, BATCH_SIZE):
                 count += 1
 
