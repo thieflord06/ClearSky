@@ -3175,17 +3175,28 @@ async def process_resolution_queue(info):
                             await connection.execute("""UPDATE users SET pds = $2 WHERE did = $1""", did, pds)
                         elif update_handle and not update_pds:
                             await connection.execute("""UPDATE users SET handle = $2 WHERE did = $1""", did, handle)
+
+                        if "did:web" in did:
+                            if update_pds or update_handle:
+                                await connection.execute(
+                                    """INSERT INTO did_web_history (did, handle, pds, timestamp) VALUES ($1, $2, $3, $4)""",
+                                    did, handle, pds, datetime.now())
                     else:
                         try:
                             await connection.execute("""INSERT INTO users (did, handle, pds) VALUES ($1, $2, $3)""", did, handle, pds)
+
+                            if "did:web" in did:
+                                await connection.execute(
+                                    """INSERT INTO did_web_history (did, handle, pds, timestamp) VALUES ($1, $2, $3, $4)""",
+                                    did, handle, pds, datetime.now())
                         except Exception as e:
-                            logger.error(f"Error inserting new did:web: {e}")
+                            logger.error(f"Error inserting new did {e}")
 
                     pop += 1
                     await connection.execute("delete from resolution_queue where did = $1", did)
 
         except Exception as e:
-            logger.error(f"Error updating didwebs: {e}")
+            logger.error(f"Error updating dids {e}")
 
     logger.info(f"Popped {pop} from resolution queue.")
 
