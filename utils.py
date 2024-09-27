@@ -1537,7 +1537,7 @@ async def get_resolution_queue_info():
 
         resolution_queue = await database_handler.get_resolution_queue(batch_size)
 
-        if resolution_queue:  # TODO: add check for created_date and update if it doesn't exist
+        if resolution_queue:  # TODO: add check for created_date and update if it doesn't exist / it's currently doing this when it checks for null created_date below, is it necessary to add here?
             for batch in batch_queue(resolution_queue, BATCH_SIZE):
                 count += 1
 
@@ -1608,7 +1608,10 @@ async def get_resolution_queue_info():
 
         if dids_without_created_date:
             for did in dids_without_created_date:
-                created_date = await on_wire.get_created_date(did)
+                if "did:web" in did:
+                    continue
+                else:
+                    created_date = await on_wire.get_created_date(did)
 
                 if created_date:
                     await database_handler.update_did_created_date(did, created_date)
