@@ -3219,6 +3219,9 @@ async def process_resolution_queue(info):
 
 
 async def check_did_web_changes(did):
+    update_pds = False
+    update_handle = False
+
     try:
         async with connection_pools["write"].acquire() as connection:
             async with connection.transaction():
