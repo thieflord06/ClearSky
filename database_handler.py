@@ -2349,7 +2349,7 @@ async def get_mutelists(ident) -> Optional[list]:
             INNER JOIN mutelists_users AS mu ON ml.uri = mu.list_uri
             INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle
             LEFT JOIN mutelists_user_count AS mc ON ml.uri = mc.list_uri
-            WHERE mu.subject_did = $1
+            WHERE mu.subject_did = $1 AND u.status = TRUE
             """
             try:
                 mute_lists = await connection.fetch(query, ident)
