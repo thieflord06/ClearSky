@@ -84,7 +84,11 @@ async def resolve_did(did, did_web_pds=False) -> Optional[list]:  # Take DID and
                 async with httpx.AsyncClient() as client:
                     response = await client.get(url)
 
-                response_json = response.json()
+                try:
+                    response_json = response.json()
+                except Exception:
+                    response_json = None
+
                 logger.debug("response: " + str(response_json))
 
                 if response.status_code == 200:
@@ -133,8 +137,11 @@ async def resolve_did(did, did_web_pds=False) -> Optional[list]:  # Take DID and
                 elif response.status_code == 404:
                     logger.warning(f"404 not found: {did}")
 
-                    error_message = response_json.get("message", "")
-                    logger.debug(error_message)
+                    if response_json:
+                        error_message = response_json.get("message", "")
+                        logger.debug(error_message)
+                    else:
+                        error_message = ""
 
                     if "did not registered" in error_message.lower():
                         await database_handler.deactivate_user(did)
@@ -145,7 +152,6 @@ async def resolve_did(did, did_web_pds=False) -> Optional[list]:  # Take DID and
 
                         return None
                     else:
-                        error_message = response_json.get("message", "")
                         logger.warning(error_message)
 
                         await database_handler.deactivate_user(did)

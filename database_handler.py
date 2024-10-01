@@ -3232,8 +3232,10 @@ async def check_did_web_changes(did):
                 pds = await on_wire.resolve_did(did, True)
                 handle = await on_wire.resolve_did(did)
 
-                if len(handle) > 1:
-                    handle = handle[0]
+                if not handle or not pds:
+                    return
+
+                handle = handle[0]
 
                 if user_info:
                     old_handle = user_info[0]['handle']
