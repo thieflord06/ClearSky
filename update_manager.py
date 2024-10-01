@@ -201,6 +201,13 @@ async def main():
                         await database_handler.update_pds(did, pds)
                         logger.info(f"Updated PDS for {did} PDS:{pds}")
 
+            # Check if did:webs handle or pds has changed
+            did_webs = await database_handler.get_did_webs()
+
+            if did_webs:
+                for did in did_webs:
+                    await database_handler.check_did_web_changes(did)
+
             logger.info("Finished processing data.")
         except DatabaseConnectionError:
             logger.error("Database connection error")
