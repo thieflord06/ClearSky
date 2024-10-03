@@ -154,7 +154,7 @@ async def resolve_did(did, did_web_pds=False) -> Optional[list]:  # Take DID and
                     else:
                         logger.warning(error_message)
 
-                        await database_handler.deactivate_user(did)
+                        # await database_handler.deactivate_user(did)
 
                         return None
                 elif response.status_code == 523:
