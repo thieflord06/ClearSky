@@ -1539,10 +1539,6 @@ async def get_resolution_queue_info():
 
         if resolution_queue:  # TODO: add check for created_date and update if it doesn't exist / it's currently doing this when it checks for null created_date below, is it necessary to add here?
             for batch in batch_queue(resolution_queue, BATCH_SIZE):
-                count += 1
-
-                logger.info(f"Processing batch {count}.")
-
                 for did in batch:
                     handle = await on_wire.resolve_did(did)
 
@@ -1596,7 +1592,7 @@ async def get_resolution_queue_info():
 
             for pds in new_pdses:
                 if pds is None or pds == "unknown":
-                    continue
+                    continueget_resolution_queue_info
 
                 new_list.append(pds)
 
