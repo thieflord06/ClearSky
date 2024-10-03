@@ -157,6 +157,10 @@ async def resolve_did(did, did_web_pds=False) -> Optional[list]:  # Take DID and
                         await database_handler.deactivate_user(did)
 
                         return None
+                elif response.status_code == 523:
+                    logger.warning("Origin is unreachable")
+
+                    return None
                 else:
                     error_message = response_json.get("message", "")
                     logger.debug(error_message)
