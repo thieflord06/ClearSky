@@ -3244,9 +3244,9 @@ async def check_did_web_changes(did):
 
                         timestamp = datetime.now()
 
-                        query = """UPDATE did_web_history SET status = FALSE AND timestamp = $2 AND reason = $3 WHERE did = $1"""
+                        query = """UPDATE did_web_history SET status = FALSE AND timestamp = $2 WHERE did = $1"""
 
-                        await connection.execute(query, did, timestamp, "unresponsive")
+                        await connection.execute(query, did, timestamp)
 
                     return
 
