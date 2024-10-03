@@ -1501,7 +1501,6 @@ def batch_queue(queue, batch_size):
 
 
 async def get_resolution_queue_info():
-    count = 0
     queue_info = {}
     batch_size = 1000
     total_handles_updated = 0
@@ -1538,6 +1537,8 @@ async def get_resolution_queue_info():
         resolution_queue = await database_handler.get_resolution_queue(batch_size)
 
         if resolution_queue:  # TODO: add check for created_date and update if it doesn't exist / it's currently doing this when it checks for null created_date below, is it necessary to add here?
+            logger.info("Processing resolution queue.")
+
             for batch in batch_queue(resolution_queue, BATCH_SIZE):
                 for did in batch:
                     handle = await on_wire.resolve_did(did)
@@ -1592,7 +1593,7 @@ async def get_resolution_queue_info():
 
             for pds in new_pdses:
                 if pds is None or pds == "unknown":
-                    continueget_resolution_queue_info
+                    continue
 
                 new_list.append(pds)
 
