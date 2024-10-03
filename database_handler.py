@@ -3232,7 +3232,22 @@ async def check_did_web_changes(did):
                 pds = await on_wire.resolve_did(did, True)
                 handle = await on_wire.resolve_did(did)
 
-                if not handle or not pds:
+                if not handle and not pds:
+                    query = """SELECT status FROM users WHERE did = $1"""
+
+                    status = await connection.fetchval(query, did)
+
+                    if status:
+                        query = """UPDATE users SET status = FALSE AND reason = $2 WHERE did = $1"""
+
+                        await connection.execute(query, did, "unresponsive")
+
+                        timestamp = datetime.now()
+
+                        query = """UPDATE did_web_history SET status = FALSE AND timestamp = $2 AND reason = $3 WHERE did = $1"""
+
+                        await connection.execute(query, did, timestamp, "unresponsive")
+
                     return
 
                 handle = handle[0]
