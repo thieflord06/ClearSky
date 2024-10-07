@@ -3196,16 +3196,16 @@ async def process_resolution_queue(info):
                         if "did:web" in did:
                             if update_pds or update_handle:
                                 await connection.execute(
-                                    """INSERT INTO did_web_history (did, handle, pds, timestamp) VALUES ($1, $2, $3, $4)""",
+                                    """INSERT INTO did_web_history (did, handle, pds, timestamp, status) VALUES ($1, $2, $3, $4, $5)""",
                                     did, handle, pds, datetime.now())
                     else:
                         try:
-                            await connection.execute("""INSERT INTO users (did, handle, pds) VALUES ($1, $2, $3)""", did, handle, pds)
+                            await connection.execute("""INSERT INTO users (did, handle, pds) VALUES ($1, $2, $3)""", did, handle, pds, True)
 
                             if "did:web" in did:
                                 await connection.execute(
-                                    """INSERT INTO did_web_history (did, handle, pds, timestamp) VALUES ($1, $2, $3, $4)""",
-                                    did, handle, pds, datetime.now())
+                                    """INSERT INTO did_web_history (did, handle, pds, timestamp, status) VALUES ($1, $2, $3, $4, $5)""",
+                                    did, handle, pds, datetime.now(), True)
                         except Exception as e:
                             logger.error(f"Error inserting new did {e}")
 
@@ -3280,8 +3280,8 @@ async def check_did_web_changes(did):
                     if "did:web" in did:
                         if update_pds or update_handle:
                             await connection.execute(
-                                """INSERT INTO did_web_history (did, handle, pds, timestamp) VALUES ($1, $2, $3, $4)""",
-                                did, handle, pds, datetime.now())
+                                """INSERT INTO did_web_history (did, handle, pds, timestamp, status) VALUES ($1, $2, $3, $4, $5)""",
+                                did, handle, pds, datetime.now(), True)
                 else:
                     try:
                         await connection.execute("""INSERT INTO users (did, handle, pds) VALUES ($1, $2, $3)""", did,
@@ -3289,8 +3289,8 @@ async def check_did_web_changes(did):
 
                         if "did:web" in did:
                             await connection.execute(
-                                """INSERT INTO did_web_history (did, handle, pds, timestamp) VALUES ($1, $2, $3, $4)""",
-                                did, handle, pds, datetime.now())
+                                """INSERT INTO did_web_history (did, handle, pds, timestamp, status) VALUES ($1, $2, $3, $4, $5)""",
+                                did, handle, pds, datetime.now(), True)
                     except Exception as e:
                         logger.error(f"Error inserting new did {e}")
     except Exception as e:
