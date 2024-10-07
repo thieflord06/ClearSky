@@ -3237,11 +3237,7 @@ async def check_did_web_changes(did):
                 status = await connection.fetchval(query1, did)
 
                 if not handle and not pds:
-                    # query1 = """SELECT status FROM users WHERE did = $1"""
-                    #
-                    # status = await connection.fetchval(query1, did)
-
-                    if status:
+                    if status is True:
                         query2 = """UPDATE users SET status = FALSE, reason = $2 WHERE did = $1"""
 
                         await connection.execute(query2, did, "unresponsive")
@@ -3250,16 +3246,16 @@ async def check_did_web_changes(did):
 
                         await connection.execute(query3, did, False, datetime.now())
 
-                    return
+                        return
+                elif handle or pds:
+                    if status is False:
+                        query4 = """UPDATE users SET status = TRUE WHERE did = $1"""
 
-                if status:
-                    query4 = """UPDATE users SET status = TRUE WHERE did = $1"""
+                        await connection.execute(query4, did)
 
-                    await connection.execute(query4, did)
+                        query5 = """INSERT INTO did_web_history (did, status, timestamp) VALUES ($1, $2, $3)"""
 
-                    query5 = """INSERT INTO did_web_history (did, status, timestamp) VALUES ($1, $2, $3)"""
-
-                    await connection.execute(query5, did, True, datetime.now())
+                        await connection.execute(query5, did, True, datetime.now())
 
                 handle = handle[0]
 
