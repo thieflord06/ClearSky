@@ -138,6 +138,34 @@ async def create_connection_pool(db):
                     logger.error("db connection issue.")
 
                     return False
+    elif "cursor" in db:
+        # Acquire the lock before creating the connection pool
+        async with db_lock:
+            if db not in connection_pools:
+                try:
+                    cursor_connection_pool = await asyncpg.create_pool(
+                        user=cursor_pg_user,
+                        password=cursor_pg_password,
+                        host=cursor_pg_host,
+                        database=cursor_pg_database
+                    )
+
+                    connection_pools[db] = cursor_connection_pool
+
+                    return True
+                except OSError:
+                    logger.error("Network connection issue. db connection not established.")
+
+                    return False
+                except (asyncpg.exceptions.InvalidAuthorizationSpecificationError,
+                        asyncpg.exceptions.CannotConnectNowError):
+                    logger.error("db connection issue.")
+
+                    return False
+                except asyncpg.InvalidAuthorizationSpecificationError:
+                    logger.error("db connection issue.")
+
+                    return False
     else:
         logger.error("No db connection made.")
         return False
@@ -3346,6 +3374,21 @@ async def deactivate_user(user) -> None:
         logger.error(f"Error deactivating user: {e}")
 
 
+async def get_cursor_recall():
+    try:
+        async with connection_pools["cursor"].acquire() as connection:
+            async with connection.transaction():
+                query = """SELECT * FROM cursor_storage WHERE service = 'clearsky.cursors'"""
+
+                records = await connection.fetch(query)
+
+                return records
+    except Exception as e:
+        logger.error(f"Error getting cursor recall: {e}")
+
+        return None
+
+
 # ======================================================================================================================
 # ============================================ get database credentials ================================================
 def get_database_config(ovride=False) -> dict:
@@ -3367,6 +3410,10 @@ def get_database_config(ovride=False) -> dict:
             redis_key_name = config.get("redis", "autocomplete")
             use_local_db = config.get("database", "use_local", fallback=False)
             local_db = config.get("database_local", "local_db_connection", fallback=False)
+            cursor_pg_user = config.get("database_cursor", "pg_user")
+            cursor_pg_password = config.get("database_cursor", "pg_password")
+            cursor_pg_host = config.get("database_cursor", "pg_host")
+            cursor_pg_database = config.get("database_cursor", "pg_database")
         else:
             logger.info("Database connection: Using environment variables.")
             read_pg_user = os.environ.get("READ_PG_USER")
@@ -3384,6 +3431,10 @@ def get_database_config(ovride=False) -> dict:
             redis_key_name = os.environ.get("REDIS_AUTOCOMPLETE")
             use_local_db = os.environ.get("USE_LOCAL_DB")
             local_db = os.environ.get("LOCAL_DB_CONNECTION")
+            cursor_pg_user = os.environ.get("CURSOR_PG_USER")
+            cursor_pg_password = os.environ.get("CURSOR_PG_PASSWORD")
+            cursor_pg_host = os.environ.get("CURSOR_PG_HOST")
+            cursor_pg_database = os.environ.get("CURSOR_PG_DATABASE")
 
         return {
             "read_user": read_pg_user,
@@ -3400,7 +3451,11 @@ def get_database_config(ovride=False) -> dict:
             "redis_password": redis_password,
             "redis_autocomplete": redis_key_name,
             "use_local_db": use_local_db,
-            "local_db": local_db
+            "local_db": local_db,
+            "cursor_user": cursor_pg_user,
+            "cursor_password": cursor_pg_password,
+            "cursor_host": cursor_pg_host,
+            "cursor_database": cursor_pg_database
         }
     except Exception:
         logger.error("Database connection information not present: Set environment variables or config.ini")
@@ -3426,6 +3481,10 @@ write_pg_user = database_config["write_user"]
 write_pg_password = database_config["write_password"]
 write_pg_host = database_config["write_host"]
 write_pg_database = database_config["write_database"]
+cursor_pg_user = database_config["cursor_user"]
+cursor_pg_password = database_config["cursor_password"]
+cursor_pg_host = database_config["cursor_host"]
+cursor_pg_database = database_config["cursor_database"]
 redis_host = database_config["redis_host"]
 redis_port = database_config["redis_port"]
 redis_username = database_config["redis_username"]

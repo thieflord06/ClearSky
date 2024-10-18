@@ -26,7 +26,9 @@ block_stats_app_start_time = None
 db_connected = None
 read_db_connected = None
 write_db_connected = None
+cursor_db_connected = None
 db_pool_acquired = asyncio.Event()
+cursor_pool_acquired = asyncio.Event()
 
 
 # ======================================================================================================================
@@ -93,7 +95,7 @@ async def uri_sanitization(uri) -> Optional[str]:
 
 
 async def initialize() -> None:
-    global read_db_connected, write_db_connected
+    global read_db_connected, write_db_connected, cursor_db_connected
     global db_pool_acquired
 
     utils.total_users_status.set()
@@ -103,10 +105,9 @@ async def initialize() -> None:
 
     read_db_connected = await database_handler.create_connection_pool("read")  # Creates connection pool for db if connection made
     write_db_connected = await database_handler.create_connection_pool("write")
+    cursor_db_connected = await database_handler.create_connection_pool("cursor")
 
     log_warning_once = True
-
-    db_pool_acquired.set()
 
     if not await database_handler.redis_connected():
         logger.warning("Redis not connected.")
@@ -139,6 +140,16 @@ async def initialize() -> None:
 
                 logger.info("Waiting for db connection.")
                 await asyncio.sleep(30)
+    else:
+        db_pool_acquired.set()
+
+        logger.info("Initialized.")
+
+    if not cursor_db_connected:
+        logger.error("Cursor connection not established.")
+    else:
+        logger.info("Cursor connection established.")
+        cursor_pool_acquired.set()
 
 
 async def pre_process_identifier(identifier) -> (Optional[str], Optional[str]):
@@ -1249,6 +1260,11 @@ async def get_internal_status() -> jsonify:
     else:
         write_db_status = "connected"
 
+    if cursor_pool_acquired.is_set():
+        cursor_db_status = "connected"
+    else:
+        cursor_db_status = "disconnected"
+
     now = datetime.now()
     uptime = now - runtime
 
@@ -1274,7 +1290,8 @@ async def get_internal_status() -> jsonify:
         "current time": str(datetime.now()),
         "write db status": write_db_status,
         "read db status": read_db_status,
-        "db status": db_status
+        "db status": db_status,
+        "cursor db status": cursor_db_status
     }
 
     logger.info(f">> System status result returned: {session_ip} - {api_key}")
@@ -1639,3 +1656,22 @@ async def verify_handle(client_identifier) -> jsonify:
         response = {"data": {"valid": "false"}, "identity": identity}
 
     return jsonify(response)
+
+
+async def cursor_recall_status():
+    response = None
+    db_response = {}
+
+    cursor = await database_handler.get_cursor_recall()
+
+    if cursor:
+        for service, current_cursor, start_cursor, touched, interval, interval_cursor, commit_time in cursor:
+            db_response[interval] = {
+                            "service": service, "current cursor": current_cursor, "start cursor": start_cursor, "touched": touched, "interval cursor": interval_cursor, "commit time": commit_time
+                        }
+
+            response = {"data": db_response}
+
+        return response
+
+    return None
