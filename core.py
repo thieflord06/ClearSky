@@ -1673,5 +1673,7 @@ async def cursor_recall_status():
             response = {"data": db_response}
 
         return response
+    else:
+        response = {"data": None}
 
-    return None
+    return response
