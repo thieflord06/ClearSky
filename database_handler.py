@@ -3385,8 +3385,7 @@ async def get_cursor_recall():
                 return records
     except Exception as e:
         logger.error(f"Error getting cursor recall: {e}")
-
-        return None
+        raise DatabaseConnectionError
 
 
 # ======================================================================================================================

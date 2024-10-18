@@ -1662,7 +1662,11 @@ async def cursor_recall_status():
     response = None
     db_response = {}
 
-    cursor = await database_handler.get_cursor_recall()
+    try:
+        cursor = await database_handler.get_cursor_recall()
+    except DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
 
     if cursor:
         for service, current_cursor, start_cursor, touched, interval, interval_cursor, commit_time in cursor:
