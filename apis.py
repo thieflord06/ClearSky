@@ -1257,7 +1257,7 @@ async def anon_query_data() -> jsonify:
 
 
 @api_blueprint.route('/api/v1/anon/cursor-recall/status', methods=['GET'])
-@rate_limit(1, timedelta(seconds=2))
+@rate_limit(5, timedelta(seconds=2))
 async def anon_cursor_recall() -> jsonify:
     session_ip = await get_ip()
     api_key = request.headers.get('X-API-Key')
