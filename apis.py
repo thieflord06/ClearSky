@@ -10,7 +10,7 @@ from core import logger, request, get_blocklist, get_single_blocklist, get_in_co
     get_list_info, get_moderation_lists, get_blocked_search, get_blocking_search, fun_facts, funer_facts, \
     block_stats, autocomplete, get_internal_status, check_api_keys, retrieve_dids_per_pds, \
     retrieve_subscribe_blocks_blocklist, retrieve_subscribe_blocks_single_blocklist, verify_handle, store_data, \
-    retrieve_csv_data, retrieve_csv_files_info, api_key_required, cursor_recall_status
+    retrieve_csv_data, retrieve_csv_files_info, api_key_required, cursor_recall_status, time_behind
 
 api_blueprint = Blueprint('api', __name__)
 
@@ -713,6 +713,28 @@ async def auth_query_data() -> jsonify:
         return jsonify({"error": "Internal error"}), 500
 
 
+@api_blueprint.route('/api/v1/auth/status/time-behind', methods=['GET'])
+@rate_limit(30, timedelta(seconds=2))
+async def auth_time_behind() -> jsonify:
+    session_ip = await get_ip()
+    api_key = request.headers.get('X-API-Key')
+
+    logger.info(f"time behind request: {session_ip} - {api_key}")
+
+    try:
+        return await time_behind()
+    except DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
+    except Exception as e:
+        logger.error(f"Error in time_behind: {e}")
+        return jsonify({"error": "Internal error"}), 500
+
+
 # ======================================================================================================================
 # ========================================== Unauthenticated API Endpoints =============================================
 @api_blueprint.route('/api/v1/anon/blocklist/<client_identifier>', defaults={'page': 1}, methods=['GET'])
@@ -1276,5 +1298,27 @@ async def anon_cursor_recall() -> jsonify:
     except Exception as e:
         logger.error(f"Error in cursor_recall_status: {e}")
         return jsonify({"error": "Internal error"})
+
+
+@api_blueprint.route('/api/v1/anon/status/time-behind', methods=['GET'])
+@rate_limit(5, timedelta(seconds=2))
+async def anon_time_behind() -> jsonify:
+    session_ip = await get_ip()
+    api_key = request.headers.get('X-API-Key')
+
+    logger.info(f"time behind request: {session_ip} - {api_key}")
+
+    try:
+        return await time_behind()
+    except DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
+    except Exception as e:
+        logger.error(f"Error in time_behind: {e}")
+        return jsonify({"error": "Internal error"}), 500
 # ======================================================================================================================
 # ===================================================== V2 =============================================================

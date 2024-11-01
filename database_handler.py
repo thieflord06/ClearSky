@@ -3388,6 +3388,20 @@ async def get_cursor_recall():
         raise DatabaseConnectionError
 
 
+async def get_cursor_time():
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                query = """SELECT timestamp FROM subscriptionstate WHERE service = 'firehose.clearsky.services'"""
+
+                records = await connection.fetchval(query)
+
+                return records
+    except Exception as e:
+        logger.error(f"Error getting cursor time: {e}")
+        raise DatabaseConnectionError
+
+
 # ======================================================================================================================
 # ============================================ get database credentials ================================================
 def get_database_config(ovride=False) -> dict:
