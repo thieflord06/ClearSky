@@ -1732,3 +1732,5 @@ async def time_behind():
             return response
     else:
         response = {"data": "unknown"}
+
+        return response
