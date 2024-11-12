@@ -87,6 +87,15 @@ async def uri_sanitization(uri) -> Optional[str]:
                 response = await database_handler.get_block_row(uri)
 
                 return response
+            elif "app.bsky.graph.starterpack" in uri:
+                base_url = "https://bsky.app/starter-pack"
+                did_start = uri.find("did:")
+                did_end = uri.find("/", did_start)
+                did = uri[did_start:did_end]
+                rkey = uri.split("/")[-1]
+                url = f"{base_url}/{did}/{rkey}"
+
+                return url
             else:
                 raise NotFound
         else:
