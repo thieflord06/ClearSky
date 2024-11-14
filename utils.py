@@ -1332,6 +1332,12 @@ async def get_federated_pdses():
                     await database_handler.update_pds_status(pds, True)
                     processed_pds[pds] = True  # Mark PDS as processed
                     attempt = 0
+                else:
+                    logger.warning(f"PDS: {pds} not valid.")
+                    not_active += 1
+                    if attempt == 0:
+                        await database_handler.update_pds_status(pds, False)
+                    attempt += 1
             except AttributeError:
                 try:
                     error = response_json.get("error", [])
