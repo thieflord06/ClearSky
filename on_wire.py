@@ -624,6 +624,9 @@ async def get_pds(identifier):
                     return None
             except KeyError:
                 return None
+        elif response.status_code == 404:
+            logger.warning("404 not found: " + str(identifier))
+            return None
         else:
             retry_count += 1
             logger.warning("Error during API call. Status code: %s", response.status_code)
