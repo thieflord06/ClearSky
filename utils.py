@@ -676,6 +676,7 @@ async def fetch_handles_batch(batch_dids, ad_hoc=False) -> list:
 
             if not handle:
                 logger.warning(f"Could not resolve handle for: {did[0].strip()}")
+                await database_handler.deactivate_user(did[0].strip())
                 continue
 
             handles.append((did[0].strip(), handle[0]))
