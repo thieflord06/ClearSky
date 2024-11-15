@@ -177,8 +177,12 @@ async def pre_process_identifier(identifier) -> (Optional[str], Optional[str]):
                 did_identifier = identifier
                 handle_identifier = await asyncio.wait_for(utils.use_handle(identifier), timeout=5)
             except asyncio.TimeoutError:
-                handle_identifier = None
+                # handle_identifier = None
                 logger.warning("resolution failed, possible connection issue.")
+                did_identifier = identifier
+                handle_identifier = await database_handler.get_user_handle(identifier)
+                if handle_identifier is not None:
+                    logger.info(f"resolved did using db")
         else:
             did_identifier = identifier
             handle_identifier = await database_handler.get_user_handle(identifier)
@@ -188,8 +192,12 @@ async def pre_process_identifier(identifier) -> (Optional[str], Optional[str]):
                 handle_identifier = identifier
                 did_identifier = await asyncio.wait_for(utils.use_did(identifier), timeout=5)
             except asyncio.TimeoutError:
-                did_identifier = None
+                # did_identifier = None
                 logger.warning("resolution failed, possible connection issue.")
+                handle_identifier = identifier
+                did_identifier = await database_handler.get_user_did(identifier)
+                if did_identifier is not None:
+                    logger.info(f"resolved handle using db")
         else:
             handle_identifier = identifier
             did_identifier = await database_handler.get_user_did(identifier)
