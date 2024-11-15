@@ -1576,7 +1576,10 @@ async def get_resolution_queue_info():
         dids_without_pdses = await database_handler.get_dids_without_pdses()
 
         for did in dids_without_pdses:
-            pds = await on_wire.get_pds(did)
+            if "did:web:" in did:
+                pds = await on_wire.resolve_did(did, True)
+            else:
+                pds = await on_wire.get_pds(did)
 
             if pds:
                 await database_handler.update_did_pds(did, pds)
