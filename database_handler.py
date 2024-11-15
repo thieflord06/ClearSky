@@ -3402,6 +3402,17 @@ async def get_cursor_time():
         raise DatabaseConnectionError
 
 
+async def pop_resolution_queue(did):
+    try:
+        async with connection_pools["write"].acquire() as connection:
+            async with connection.transaction():
+                await connection.execute("delete from resolution_queue where did = $1", did)
+    except Exception as e:
+        logger.error(f"Error popping {did} from resolution queue: {e}")
+
+        return None
+
+
 # ======================================================================================================================
 # ============================================ get database credentials ================================================
 def get_database_config(ovride=False) -> dict:

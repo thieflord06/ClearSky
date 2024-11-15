@@ -1564,7 +1564,7 @@ async def get_resolution_queue_info():
 
                             queue_info[did] = info
                     else:
-                        await connection.execute("delete from resolution_queue where did = $1", did)
+                        await database_handler.pop_resolution_queue(did)
 
                 if queue_info:
                     await database_handler.process_resolution_queue(queue_info)
