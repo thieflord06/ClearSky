@@ -100,9 +100,9 @@ async def first_run() -> None:
             tables = await database_handler.tables_exists()
 
             if tables:
-                await database_handler.blocklists_updater()
-                await database_handler.top_24blocklists_updater()
-                await utils.update_block_statistics()
+                # await database_handler.blocklists_updater()
+                # await database_handler.top_24blocklists_updater()
+                # await utils.update_block_statistics()
                 await utils.update_total_users()
 
                 break
@@ -117,15 +117,15 @@ async def first_run() -> None:
 async def schedule_stats_update() -> None:
     logger.info("Starting scheduled stats update.")
 
-    await database_handler.blocklists_updater()
-    await database_handler.top_24blocklists_updater()
-    await utils.update_block_statistics()
+    # await database_handler.blocklists_updater()
+    # await database_handler.top_24blocklists_updater()
+    # await utils.update_block_statistics()
     await utils.update_total_users()
 
     logger.info("Scheduled stats update complete.")
 
 
-@aiocron.crontab('0 */1 * * *')  # Every 12 hours
+@aiocron.crontab('*/10 * * * *')  # Every 10 mins
 async def schedule_total_users_update() -> None:
     logger.info("Starting scheduled total users update.")
 
