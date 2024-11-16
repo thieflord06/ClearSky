@@ -1703,51 +1703,57 @@ async def cursor_recall_status():
 
 async def time_behind():
     try:
-        cursor_time_behind = await database_handler.get_cursor_time()
+        cursor_time_behind, override = await database_handler.get_cursor_time()
     except DatabaseConnectionError:
         logger.error("Database connection error")
+
         return jsonify({"error": "Connection error"}), 503
 
-    if cursor_time_behind:
-        current_time = datetime.now(pytz.utc)
-        commit_time = cursor_time_behind
-        difference = current_time - commit_time
+    if override is None:
+        if cursor_time_behind:
+            current_time = datetime.now(pytz.utc)
+            commit_time = cursor_time_behind
+            difference = current_time - commit_time
 
-        if abs(difference.total_seconds()) < 61:
-            logger.info(f"cursor in sync: ~{difference.total_seconds()} seconds")
+            if abs(difference.total_seconds()) < 61:
+                logger.info(f"cursor in sync: ~{difference.total_seconds()} seconds")
 
-            response = {"data": {"time behind": "in sync"}}
+                response = {"data": {"time behind": "in sync"}}
 
-            return response
-        else:
-            seconds = int(difference.total_seconds())
-            minutes = (seconds / 60)
-            hours = minutes // 60
-            remaining_minutes = minutes % 60
-            remaining_seconds = seconds % 60
-
-            if hours > 0 and remaining_minutes > 0:
-                if hours == 1:
-                    time_behind = f"{int(hours)} hour {int(remaining_minutes)} minutes"
-                else:
-                    time_behind = f"{int(hours)} hours {int(remaining_minutes)} minutes"
-            elif hours > 0:
-                if hours == 1:
-                    time_behind = f"{int(hours)} hour"
-                else:
-                    time_behind = f"{int(hours)} hours"
-            elif minutes > 0:
-                if minutes >= 1:
-                    time_behind = f"{int(minutes)} minutes {int(remaining_seconds)} seconds"
-                else:
-                    time_behind = f"{int(seconds)} seconds"
+                return response
             else:
-                time_behind = "error"
+                seconds = int(difference.total_seconds())
+                minutes = (seconds / 60)
+                hours = minutes // 60
+                remaining_minutes = minutes % 60
+                remaining_seconds = seconds % 60
 
-            response = {"data": {"time behind": time_behind}}
+                if hours > 0 and remaining_minutes > 0:
+                    if hours == 1:
+                        time_behind = f"{int(hours)} hour {int(remaining_minutes)} minutes"
+                    else:
+                        time_behind = f"{int(hours)} hours {int(remaining_minutes)} minutes"
+                elif hours > 0:
+                    if hours == 1:
+                        time_behind = f"{int(hours)} hour"
+                    else:
+                        time_behind = f"{int(hours)} hours"
+                elif minutes > 0:
+                    if minutes >= 1:
+                        time_behind = f"{int(minutes)} minutes {int(remaining_seconds)} seconds"
+                    else:
+                        time_behind = f"{int(seconds)} seconds"
+                else:
+                    time_behind = "error"
+
+                response = {"data": {"time behind": time_behind}}
+
+                return response
+        else:
+            response = {"data": "unknown"}
 
             return response
     else:
-        response = {"data": "unknown"}
+        response = {"data": {"time behind": f"{override}"}}
 
         return response
