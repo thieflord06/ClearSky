@@ -728,7 +728,12 @@ async def use_handle(identifier):
     if is_did(identifier):
         handle_identifier = await on_wire.resolve_did(identifier)
 
-        return handle_identifier[0]
+        if handle_identifier is None:
+            return_ident = "null"
+
+            return return_ident
+        else:
+            return handle_identifier[0]
     else:
 
         return identifier
