@@ -87,7 +87,9 @@ async def resolve_did(did, did_web_pds=False) -> Optional[list]:  # Take DID and
                 try:
                     response_json = response.json()
                 except Exception:
-                    response_json = None
+                    logger.warning(f"Error getting JSON response: {url} ")
+
+                    return None
 
                 logger.debug("response: " + str(response_json))
 
@@ -135,7 +137,7 @@ async def resolve_did(did, did_web_pds=False) -> Optional[list]:  # Take DID and
                     logger.warning("Too many requests, pausing.")
                     await asyncio.sleep(10)
                 elif response.status_code == 404:
-                    logger.warning(f"404 not found: {did}")
+                    logger.warning(f"404 not found: {did} | {url}")
 
                     if response_json:
                         error_message = response_json.get("message", "")
@@ -152,8 +154,7 @@ async def resolve_did(did, did_web_pds=False) -> Optional[list]:  # Take DID and
 
                         return None
                     else:
-                        logger.warning(error_message)
-
+                        # logger.warning(error_message)
                         # await database_handler.deactivate_user(did)
 
                         return None

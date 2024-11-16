@@ -1794,7 +1794,7 @@ async def get_top_blocks():
 
 @check_db_connection("write")
 async def update_did_service(data, label_data):
-    pop_count = 0
+    # pop_count = 0
     logger.info("Updating services information for batch.")
 
     # pop = "delete from resolution_queue where did = $1"
@@ -1901,10 +1901,10 @@ async def update_did_service(data, label_data):
                                 insert_label_query = """INSERT INTO labelers (did, endpoint, created_date, name, description) VALUES ($1, $2, $3, $4, $5)"""
                                 await connection.execute(insert_label_query, label["did"], label["endpoint"], label["createdAt"], display_name, description)
                                 # await connection.execute(pop, label["did"])
-                                logger.debug(f"pop: {label['did']}")
-                                pop_count += 1
+                                # logger.debug(f"pop: {label['did']}")
+                                # pop_count += 1
 
-                logger.info(f"Popped {pop_count} times from resolution queue.")
+                # logger.info(f"Popped {pop_count} times from resolution queue.")
     except Exception as e:
         logger.error("Error retrieving/inserting labeler data to db", e)
 
