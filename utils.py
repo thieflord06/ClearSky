@@ -728,7 +728,7 @@ async def use_handle(identifier):
     if is_did(identifier):
         handle_identifier = await on_wire.resolve_did(identifier)
 
-        if handle_identifier is None:
+        if handle_identifier is None:  # If the DID is not found, return null // Being done because UI is sending handles in did format
             return_ident = "null"
 
             return return_ident
