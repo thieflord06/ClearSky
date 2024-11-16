@@ -1538,7 +1538,7 @@ async def get_resolution_queue_info():
 
                         # Pause after each batch of handles resolved
                         logger.info("Pausing...")
-                        await asyncio.sleep(60)  # Pause for 60 seconds
+                        # await asyncio.sleep(60)  # Pause for 60 seconds
 
             total_handles_updated = 0
 
