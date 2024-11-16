@@ -3396,6 +3396,13 @@ async def get_cursor_time():
 
                 records = await connection.fetchval(query)
 
+                query2 = """SELECT response FROM subscriptionstate WHERE service = 'firehose.clearsky.services.override'"""
+
+                records2 = await connection.fetchval(query2)
+
+                if records2 is not None:
+                    records = records2
+
                 return records
     except Exception as e:
         logger.error(f"Error getting cursor time: {e}")
