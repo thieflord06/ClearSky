@@ -294,7 +294,7 @@ async def update_block_statistics():
             number_blocked_greater_than_1000, average_number_of_blocked, total_users)
 
 
-async def update_total_users():
+async def update_total_users() -> (int, int, int):
     global total_users_status
     global total_users_process_time
     global total_users_last_update

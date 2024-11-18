@@ -117,16 +117,36 @@ async def first_run() -> None:
 async def schedule_stats_update() -> None:
     logger.info("Starting scheduled stats update.")
 
-    # await database_handler.blocklists_updater()
-    # await database_handler.top_24blocklists_updater()
-    # await utils.update_block_statistics()
-    await utils.update_total_users()
+    # if database_handler.blocklist_updater_status.is_set():
+    #     logger.warning("Blocklist updater is already running.")
+    # else:
+    #     await database_handler.blocklists_updater()
+    #
+    # if database_handler.blocklist_24_updater_status.is_set():
+    #     logger.warning("Top 24 blocklist updater is already running.")
+    # else:
+    #     await database_handler.top_24blocklists_updater()
+    #
+    # if utils.block_stats_status.is_set():
+    #     logger.warning("Block stats updater is already running.")
+    # else:
+    #     await utils.update_block_statistics()
+
+    if utils.total_users_status.is_set():
+        logger.warning("Total users updater is already running.")
+    else:
+        await utils.update_total_users()
 
     logger.info("Scheduled stats update complete.")
 
 
 @aiocron.crontab('*/10 * * * *')  # Every 10 mins
 async def schedule_total_users_update() -> None:
+    if utils.total_users_status.is_set():
+        logger.warning("Total users updater is already running.")
+
+        return
+
     logger.info("Starting scheduled total users update.")
 
     await utils.update_total_users()
