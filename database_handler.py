@@ -3400,6 +3400,9 @@ async def get_cursor_time():
 
                 records2 = await connection.fetchval(query2)
 
+                if not records2:
+                    records2 = None
+
                 return records, records2
     except Exception as e:
         logger.error(f"Error getting cursor time: {e}")

@@ -1709,7 +1709,7 @@ async def time_behind():
 
         return jsonify({"error": "Connection error"}), 503
 
-    if override is None:
+    if override is None or not override:
         if cursor_time_behind:
             current_time = datetime.now(pytz.utc)
             commit_time = cursor_time_behind
