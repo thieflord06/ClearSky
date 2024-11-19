@@ -75,7 +75,7 @@ async def main():
 
                         # Pause after each batch of handles resolved
                         logger.info("Pausing...")
-                        await asyncio.sleep(60)  # Pause for 60 seconds
+                        await asyncio.sleep(15)  # Pause for 60 seconds
 
                     for i in range(0, total_dids_no_handles_and_inactive, batch_size):
                         logger.info("Getting batch to resolve.")
@@ -91,7 +91,7 @@ async def main():
 
                         # Pause after each batch of handles resolved
                         logger.info("Pausing...")
-                        await asyncio.sleep(60)  # Pause for 60 seconds
+                        await asyncio.sleep(15)  # Pause for 60 seconds
 
             logger.info("Users db update finished.")
             # await database_handler.delete_new_users_temporary_table()
