@@ -1,6 +1,7 @@
 # core.py
 import pytz
-
+import requests
+import helpers
 import utils
 import on_wire
 import os
@@ -11,7 +12,7 @@ import asyncio
 import functools
 import database_handler
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 from environment import get_api_var
 from quart import request, jsonify, session
 from config_helper import logger, upload_limit_mb
@@ -1702,6 +1703,8 @@ async def cursor_recall_status():
 
 
 async def time_behind():
+    lag_time_delta = timedelta(seconds=0)
+
     try:
         cursor_time_behind, override = await database_handler.get_cursor_time()
     except DatabaseConnectionError:
@@ -1709,11 +1712,36 @@ async def time_behind():
 
         return jsonify({"error": "Connection error"}), 503
 
+    try:
+        rep_api_key, resource, api_url = await helpers.get_replication_lag_api_key()
+
+        if rep_api_key and resource and api_url:
+            headers = {
+                "Authorization": f"Bearer {rep_api_key}"
+            }
+
+            params = {
+                "resource": resource
+            }
+
+            response = requests.get(api_url, headers=headers, params=params)
+
+            if response.status_code == 200:
+                replication_lag = response.json()
+                if replication_lag:
+                    lag_time = replication_lag[0].get('values')[-1].get('value')
+                    lag_time_delta = timedelta(milliseconds=lag_time)
+            else:
+                print("Failed to fetch replication lag:", response.status_code, response.text)
+    except Exception as e:
+        logger.error(f"Error fetching replication lag: {e}")
+        lag_time_delta = timedelta(seconds=0)
+
     if override is None or not override:
         if cursor_time_behind:
             current_time = datetime.now(pytz.utc)
             commit_time = cursor_time_behind
-            difference = current_time - commit_time
+            difference = current_time - commit_time + lag_time_delta
 
             if abs(difference.total_seconds()) < 61:
                 logger.info(f"cursor in sync: ~{difference.total_seconds()} seconds")

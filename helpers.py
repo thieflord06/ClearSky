@@ -77,6 +77,23 @@ async def get_ip_address():
         return ip_address, port_address
 
 
+async def get_replication_lag_api_key():
+    if not os.environ.get('CLEAR_SKY'):
+        logger.info("Replication lag: Using config.ini")
+        api_key = config.get("environment", "replication_lag_key")
+        resource = config.get("environment", "replication_resource")
+        replication_lag_api_url = config.get("environment", "replication_lag_api_url")
+
+        return api_key, resource, replication_lag_api_url
+    else:
+        logger.info("Replication lag: Using environment variables.")
+        api_key = os.environ.get('CLEAR_SKY_REPLICATION_LAG')
+        resource = os.environ.get('CLEAR_SKY_REPLICATION_RESOURCE')
+        replication_lag_api_url = os.environ.get('CLEAR_SKY_REPLICATION_LAG_API_URL')
+
+        return api_key, resource, replication_lag_api_url
+
+
 async def get_var_info() -> dict[str, str]:
     config_api_key = config.get("environment", "api_key")
     config_self_server = config.get("environment", "self_server")
