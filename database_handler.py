@@ -17,6 +17,7 @@ import math
 import functools
 from errors import NotFound, DatabaseConnectionError
 from config_helper import check_override
+import random
 
 # ======================================================================================================================
 # ===================================================  global variables ================================================
@@ -56,6 +57,14 @@ last_created_table = "last_did_created_date"
 
 # ======================================================================================================================
 # ========================================= database handling functions ================================================
+def get_connection_pool(query_type: str):
+    if query_type == "read":
+        return random.choice(["read", "write"])
+    elif query_type == "write":
+        return "write"
+    else:
+        raise ValueError("Invalid query type. Use 'read' or 'write'.")
+    
 async def create_connection_pool(db):
     global connection_pools
 
@@ -226,7 +235,8 @@ async def populate_redis_with_handles():
             offset = 0
             batch_count = 0
             while True:
-                async with connection_pools["read"].acquire() as connection:
+                pool_name = get_connection_pool(query_type)
+                async with connection_pools[pool_name].acquire() as connection:
                     async with connection.transaction():
                         logger.info("Transferring handles to cache.")
                         # Query all handles from the database
@@ -332,7 +342,8 @@ async def retrieve_autocomplete_handles(query):
 
 async def find_handles(value):
     try:
-        async with connection_pools["read"].acquire() as connection:
+        pool_name = get_connection_pool(query_type)
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 logger.debug(f"{value}")
 
@@ -365,7 +376,8 @@ async def find_handles(value):
 
 @check_db_connection("read")
 async def count_users_table():
-    async with connection_pools["read"].acquire() as connection:
+    pool_name = get_connection_pool(query_type)
+    async with connection_pools[pool_name].acquire() as connection:
         # Execute the SQL query to count the rows in the "users" table
         return await connection.fetchval('SELECT COUNT(*) FROM users WHERE status is TRUE')
 
@@ -373,7 +385,8 @@ async def count_users_table():
 @check_db_connection("read")
 async def get_blocklist(ident, limit=100, offset=0):
     try:
-        async with connection_pools["read"].acquire() as connection:
+        pool_name = get_connection_pool(query_type)
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query = """SELECT DISTINCT b.blocked_did, b.block_date, u.handle, u.status 
                 FROM blocklists AS b JOIN users AS u ON b.blocked_did = u.did 
@@ -403,7 +416,8 @@ async def get_subscribe_blocks(ident, limit=100, offset=0):
     data_list = []
 
     try:
-        async with connection_pools["read"].acquire() as connection:
+        pool_name = get_connection_pool(query_type)
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query_1 = """SELECT mu.subject_did, u.handle, s.date_added, u.status, s.list_uri, m.url, sc.user_count
                                 FROM subscribe_blocklists AS s
@@ -461,7 +475,8 @@ async def get_subscribe_blocks_single(ident, list_of_lists, limit=100, offset=0)
     total_count = 0
 
     try:
-        async with connection_pools["read"].acquire() as connection:
+        pool_name = get_connection_pool(query_type)
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query_1 = """SELECT s.did, u.handle, s.date_added, u.status, s.list_uri, m.url, sc.user_count
                                 FROM subscribe_blocklists AS s
@@ -521,7 +536,8 @@ async def get_subscribe_blocks_single(ident, list_of_lists, limit=100, offset=0)
 @check_db_connection("read")
 async def get_listitem_url(uri):
     try:
-        async with connection_pools["read"].acquire() as connection:
+        pool_name = get_connection_pool(query_type)
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query = "SELECT list_uri FROM mutelist_users WHERE listitem_uri = $1"
                 list_uri = await connection.fetchval(query, uri)
@@ -544,7 +560,8 @@ async def get_listitem_url(uri):
 @check_db_connection("read")
 async def get_moderation_list(name, limit=100, offset=0):
     try:
-        async with connection_pools["read"].acquire() as connection:
+        pool_name = get_connection_pool(query_type)
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 search_string = f'%{name}%'
 
@@ -630,7 +647,8 @@ async def get_moderation_list(name, limit=100, offset=0):
 @check_db_connection("read")
 async def get_listblock_url(uri):
     try:
-        async with connection_pools["read"].acquire() as connection:
+        pool_name = get_connection_pool(query_type)
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query = "SELECT list_uri FROM subscribe_blocklists WHERE uri = $1"
                 list_uri = await connection.fetchval(query, uri)
@@ -1751,7 +1769,8 @@ async def get_top_blocks():
 
     logger.info("Getting top blocks from db.")
     try:
-        async with connection_pools["read"].acquire() as connection:
+        pool_name = get_connection_pool(query_type)
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
 
                 # Insert the new row with the given last_processed_did
@@ -1944,7 +1963,8 @@ async def check_last_created_did_date():
 @check_db_connection("read")
 async def get_block_stats():
     try:
-        async with connection_pools["read"].acquire() as connection:
+        pool_name = get_connection_pool(query_type)
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 logger.info("Getting block statistics.")
 
@@ -2070,7 +2090,8 @@ async def get_top24_blocks():
 
     logger.info("Getting top 24 blocks from db.")
     try:
-        async with connection_pools["read"].acquire() as connection:
+        pool_name = get_connection_pool(query_type)
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
 
                 # Insert the new row with the given last_processed_did
@@ -2109,7 +2130,8 @@ async def get_top24_blocks():
 async def get_similar_blocked_by(user_did):
     global all_blocks_cache
 
-    async with connection_pools["read"].acquire() as connection:
+    pool_name = get_connection_pool(query_type)
+    async with connection_pools[pool_name].acquire() as connection:
         blocked_by_users = await connection.fetch(
             'SELECT user_did FROM blocklists WHERE blocked_did = $1', user_did)
 
@@ -2121,7 +2143,8 @@ async def get_similar_blocked_by(user_did):
 
         block_cache_status.set()
 
-        async with connection_pools["read"].acquire() as connection:
+        pool_name = get_connection_pool(query_type)
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 # Fetch all blocklists except for the specified user's blocklist
                 all_blocklists_rows = await connection.fetch(
@@ -2172,7 +2195,8 @@ async def get_similar_blocked_by(user_did):
     percentages = [percentage for user, percentage in top_similar_users]
     status_list = []
     for user, percentage in top_similar_users:
-        async with connection_pools["read"].acquire() as connection:
+        pool_name = get_connection_pool(query_type)
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 status = await connection.fetch(
                     'SELECT status FROM users WHERE did = $1', user)
@@ -2196,7 +2220,8 @@ async def get_similar_users(user_did):
 
         block_cache_status.set()
 
-        async with connection_pools["read"].acquire() as connection:
+        pool_name = get_connection_pool(query_type)
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 # Fetch all blocklists except for the specified user's blocklist
                 all_blocklists_rows = await connection.fetch(
@@ -2264,7 +2289,8 @@ async def get_similar_users(user_did):
     percentages = [percentage for user, percentage in top_similar_users]
     status_list = []
     for user, percentage in top_similar_users:
-        async with connection_pools["read"].acquire() as connection:
+        pool_name = get_connection_pool(query_type)
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 status = await connection.fetchval(
                     'SELECT status FROM users WHERE did = $1', user)
@@ -2369,7 +2395,8 @@ async def top_24blocklists_updater():
 
 @check_db_connection("read")
 async def get_mutelists(ident) -> Optional[list]:
-    async with connection_pools["read"].acquire() as connection:
+    pool_name = get_connection_pool(query_type)
+    async with connection_pools[pool_name].acquire() as connection:
         async with connection.transaction():
             query = """
             SELECT ml.url, u.handle, u.status, ml.name, ml.description, ml.created_date, mu.date_added, mc.user_count
@@ -2405,7 +2432,8 @@ async def get_mutelists(ident) -> Optional[list]:
 
 @check_db_connection("read")
 async def check_api_key(api_environment, key_type, key_value) -> bool:
-    async with connection_pools["read"].acquire() as connection:
+    pool_name = get_connection_pool(query_type)
+    async with connection_pools[pool_name].acquire() as connection:
         async with connection.transaction():
             query = """SELECT valid FROM API WHERE key = $3 environment = $1 AND access_type LIKE '%' || $2 || '%'"""
 
@@ -2698,7 +2726,8 @@ async def get_dids_per_pds() -> Optional[dict]:
     data_dict = {}
 
     try:
-        async with connection_pools["read"].acquire() as connection:
+        pool_name = get_connection_pool(query_type)
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query = """SELECT users.pds, COUNT(did) AS did_count
                             FROM users
@@ -2899,7 +2928,8 @@ async def process_delete_queue() -> None:
 
 @check_db_connection("read")
 async def identifier_exists_in_db(identifier):
-    async with connection_pools["read"].acquire() as connection:
+    pool_name = get_connection_pool(query_type)
+    async with connection_pools[pool_name].acquire() as connection:
         if utils.is_did(identifier):
             results = await connection.fetch('SELECT did, status FROM users WHERE did = $1', identifier)
 
@@ -2947,7 +2977,8 @@ async def identifier_exists_in_db(identifier):
 
 @check_db_connection("read")
 async def get_user_did(handle) -> Optional[str]:
-    async with connection_pools["read"].acquire() as connection:
+    pool_name = get_connection_pool(query_type)
+    async with connection_pools[pool_name].acquire() as connection:
         did = await connection.fetchval('SELECT did FROM users WHERE handle = $1 AND status is True', handle)
 
     return did
@@ -2955,7 +2986,8 @@ async def get_user_did(handle) -> Optional[str]:
 
 @check_db_connection("read")
 async def get_user_handle(did) -> Optional[str]:
-    async with connection_pools["read"].acquire() as connection:
+    pool_name = get_connection_pool(query_type)
+    async with connection_pools[pool_name].acquire() as connection:
         handle = await connection.fetchval('SELECT handle FROM users WHERE did = $1', did)
 
     return handle
@@ -2963,7 +2995,8 @@ async def get_user_handle(did) -> Optional[str]:
 
 @check_db_connection("read")
 async def get_user_count(get_active=True) -> int:
-    async with connection_pools["read"].acquire() as connection:
+    pool_name = get_connection_pool(query_type)
+    async with connection_pools[pool_name].acquire() as connection:
         if get_active:
             count = await connection.fetchval("""SELECT COUNT(*)
                                                 FROM users
@@ -3048,7 +3081,8 @@ async def add_new_pdses(pdses) -> None:
 
 @check_db_connection("read")
 async def get_deleted_users_count() -> int:
-    async with connection_pools["read"].acquire() as connection:
+    pool_name = get_connection_pool(query_type)
+    async with connection_pools[pool_name].acquire() as connection:
         count = await connection.fetchval('SELECT COUNT(*) FROM USERS JOIN pds ON users.pds = pds.pds WHERE pds.status is TRUE AND users.status is FALSE')
 
         return count
@@ -3058,7 +3092,8 @@ async def get_deleted_users_count() -> int:
 async def get_single_user_blocks(ident, limit=100, offset=0):
     try:
         # Execute the SQL query to get all the user_dids that have the specified did/ident in their blocklist
-        async with connection_pools["read"].acquire() as connection:
+        pool_name = get_connection_pool(query_type)
+        async with connection_pools[pool_name].acquire() as connection:
             result = await connection.fetch('''SELECT DISTINCT b.user_did, b.block_date, u.handle, u.status 
                                                 FROM blocklists AS b 
                                                 JOIN users as u ON b.user_did = u.did 
@@ -3098,7 +3133,8 @@ async def get_single_user_blocks(ident, limit=100, offset=0):
 async def get_did_web_handle_history(identifier) -> Optional[list]:
     handle_history = []
     try:
-        async with connection_pools["read"].acquire() as connection:
+        pool_name = get_connection_pool(query_type)
+        async with connection_pools[pool_name].acquire() as connection:
             history = await connection.fetch('SELECT handle, pds, timestamp FROM did_web_history WHERE did = $1', identifier)
 
             if history is None:
