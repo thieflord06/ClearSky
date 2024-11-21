@@ -3384,14 +3384,17 @@ def get_database_config(ovride=False) -> dict:
             db_config["write_keyword"] = write_keyword
 
             for key, value in os.environ.items():
-                if key.startswith("CLEARSKY_DATABASE_"):
+                if key.startswith("CLEARSKY_DATABASE"):
                     db_type = key
 
+                    name_parts = key.split("_")
+                    name = name_parts[3]
+
                     db_config[db_type] = {
-                        "user": os.environ.get(f"{db_type}USER"),
-                        "password": os.environ.get(f"{db_type}PASSWORD"),
-                        "host": os.environ.get(f"{db_type}HOST"),
-                        "database": os.environ.get(f"{db_type}NAME")
+                        "user": os.environ.get(f"CLEARSKY_DATABASE_USR_{name}_USER"),
+                        "password": os.environ.get(f"CLEARSKY_DATABASE_PW_{name}_PASSWORD"),
+                        "host": os.environ.get(f"CLEARSKY_DATABASE_H_{name}_HOST"),
+                        "database": os.environ.get(f"CLEARSKY_DATABASE_DB_{name}_NAME")
                     }
 
         logger.info(f"Database configuration: {db_config}")
