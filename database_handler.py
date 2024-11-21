@@ -74,23 +74,24 @@ async def create_connection_pools(databaseConfig):
 
     async with db_lock:
         for db, configg in databaseConfig.items():
-            if db not in connection_pools:
-                try:
-                    connection_pool = await asyncpg.create_pool(
-                        user=configg['pg_user'],
-                        password=configg['pg_password'],
-                        host=configg.get('pg_host', 'localhost'),
-                        database=configg['pg_database']
-                    )
-                    connection_pools[db] = connection_pool
-                    logger.info(f"Connection pool created for {db}")
-                except OSError:
-                    logger.error(f"Network connection issue. db connection not established for {db}.")
-                except (asyncpg.exceptions.InvalidAuthorizationSpecificationError,
-                        asyncpg.exceptions.CannotConnectNowError):
-                    logger.error(f"db connection issue for {db}.")
-                except asyncpg.InvalidAuthorizationSpecificationError:
-                    logger.error(f"db connection issue for {db}.")
+            if "database" in db:
+                if db not in connection_pools:
+                    try:
+                        connection_pool = await asyncpg.create_pool(
+                            user=configg['user'],
+                            password=configg['password'],
+                            host=configg.get('host', 'localhost'),
+                            database=configg['database']
+                        )
+                        connection_pools[db] = connection_pool
+                        logger.info(f"Connection pool created for {db}")
+                    except OSError:
+                        logger.error(f"Network connection issue. db connection not established for {db}.")
+                    except (asyncpg.exceptions.InvalidAuthorizationSpecificationError,
+                            asyncpg.exceptions.CannotConnectNowError):
+                        logger.error(f"db connection issue for {db}.")
+                    except asyncpg.InvalidAuthorizationSpecificationError:
+                        logger.error(f"db connection issue for {db}.")
 
     return connection_pools
 
