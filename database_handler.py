@@ -290,7 +290,6 @@ async def find_handles(value):
         return None
 
 
-@check_db_connection("read")
 async def count_users_table():
     pool_name = get_connection_pool("read")
     async with connection_pools[pool_name].acquire() as connection:
@@ -298,7 +297,6 @@ async def count_users_table():
         return await connection.fetchval('SELECT COUNT(*) FROM users WHERE status is TRUE')
 
 
-@check_db_connection("read")
 async def get_blocklist(ident, limit=100, offset=0):
     try:
         pool_name = get_connection_pool("read")
@@ -327,7 +325,6 @@ async def get_blocklist(ident, limit=100, offset=0):
         return None, None
 
 
-@check_db_connection("read")
 async def get_subscribe_blocks(ident, limit=100, offset=0):
     data_list = []
 
@@ -384,7 +381,6 @@ async def get_subscribe_blocks(ident, limit=100, offset=0):
         return None, None
 
 
-@check_db_connection("read")
 async def get_subscribe_blocks_single(ident, list_of_lists, limit=100, offset=0):
     data_list = []
     total_data = []
@@ -449,7 +445,6 @@ async def get_subscribe_blocks_single(ident, list_of_lists, limit=100, offset=0)
         return None, None
 
 
-@check_db_connection("read")
 async def get_listitem_url(uri):
     try:
         pool_name = get_connection_pool("read")
@@ -473,7 +468,6 @@ async def get_listitem_url(uri):
         return None
 
 
-@check_db_connection("read")
 async def get_moderation_list(name, limit=100, offset=0):
     try:
         pool_name = get_connection_pool("read")
@@ -560,7 +554,6 @@ async def get_moderation_list(name, limit=100, offset=0):
     return lists, pages
 
 
-@check_db_connection("read")
 async def get_listblock_url(uri):
     try:
         pool_name = get_connection_pool("read")
@@ -584,7 +577,6 @@ async def get_listblock_url(uri):
         return None
 
 
-@check_db_connection("write")
 async def get_dids_without_handles():
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -599,7 +591,6 @@ async def get_dids_without_handles():
         return []
 
 
-@check_db_connection("write")
 async def get_dids_without_handles_and_are_not_active():
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -614,7 +605,6 @@ async def get_dids_without_handles_and_are_not_active():
         return []
 
 
-@check_db_connection("write")
 async def get_pdses():
     # update PDS table with unique PDSes from users table that aren't already in PDS table
     try:
@@ -644,7 +634,6 @@ async def get_pdses():
         return None
 
 
-@check_db_connection("write")
 async def get_pds(did):
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -659,7 +648,6 @@ async def get_pds(did):
         return None
 
 
-@check_db_connection("write")
 async def update_did_status(did, info) -> None:
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -671,7 +659,6 @@ async def update_did_status(did, info) -> None:
         logger.error(f"Error updating status for DID {info['did']}: {e}")
 
 
-@check_db_connection("write")
 async def get_dids_without_pdses() -> List[str]:
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -687,7 +674,6 @@ async def get_dids_without_pdses() -> List[str]:
         return []
 
 
-@check_db_connection("write")
 async def update_did_pds(did, pds):
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -698,7 +684,6 @@ async def update_did_pds(did, pds):
         logger.error(f"Error updating PDS for DID {did}: {e}")
 
 
-@check_db_connection("write")
 async def blocklist_search(search_list, lookup, switch):
     async with connection_pools["write"].acquire() as connection:
         async with connection.transaction():
@@ -785,7 +770,6 @@ async def crawl_all_retry_batch(batch_dids, forced=False):
     logger.error(f"Failed to process batch after {max_retries} retries.")
 
 
-@check_db_connection("write")
 async def crawl_all(forced=False, quarter=None, total_crawlers=None):
     all_dids = await get_all_users_db(False, True, quarter=quarter, total_crawlers=total_crawlers)
     total_dids = len(all_dids)
@@ -963,7 +947,6 @@ async def crawler_batch(batch_dids, forced=False):
     return total_items_updated
 
 
-@check_db_connection("write")
 async def get_quarter_of_users_db(quarter_number, total_crawlers=4):
     async with connection_pools["write"].acquire() as connection:
         logger.info(f"Getting quarter {quarter_number} of dids.")
@@ -984,7 +967,6 @@ async def get_quarter_of_users_db(quarter_number, total_crawlers=4):
         return records
 
 
-@check_db_connection("write")
 async def get_all_users_db(run_update=False, get_dids=False, init_db_run=False, quarter=None, total_crawlers=None):
     batch_size = 10000
     pds_records = set()
@@ -1083,7 +1065,6 @@ async def get_all_users_db(run_update=False, get_dids=False, init_db_run=False, 
             logger.info(f"Total PDSes processed: {len(pdses)}")
 
 
-@check_db_connection("write")
 async def update_blocklist_table(ident, blocked_data, forced=False):
     counter = 0
 
@@ -1162,7 +1143,6 @@ async def update_blocklist_table(ident, blocked_data, forced=False):
                 return counter
 
 
-@check_db_connection("write")
 async def update_subscribe_table(ident, subscribelists_data, forced=False):
     subscribe_list_counter = 0
 
@@ -1227,7 +1207,6 @@ async def update_subscribe_table(ident, subscribelists_data, forced=False):
                 return subscribe_list_counter
 
 
-@check_db_connection("write")
 async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, forced=False):
     list_counter = 0
     user_counter = 0
@@ -1359,7 +1338,6 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, fo
                 return counter
 
 
-@check_db_connection("write")
 async def does_did_and_handle_exist_in_database(did, handle):
     max_retries = 5
     for retry in range(max_retries):
@@ -1382,7 +1360,6 @@ async def does_did_and_handle_exist_in_database(did, handle):
             return False
 
 
-@check_db_connection("write")
 async def update_user_handles(handles_to_update):
     async with connection_pools["write"].acquire() as connection:
         async with connection.transaction():
@@ -1418,7 +1395,6 @@ async def update_user_handles(handles_to_update):
         logger.info(f"Updated {len(handles_to_update)} handles in the database.")
 
 
-@check_db_connection("write")
 async def add_new_prefixes(handles):
     for handle in handles:
         async with connection_pools["write"].acquire() as connection:
@@ -1436,7 +1412,6 @@ async def add_new_prefixes(handles):
                     logger.error(f"Error updating prefixes: {e}")
 
 
-@check_db_connection("write")
 async def process_batch(batch_dids, ad_hoc, batch_size):
     batch_handles_and_dids = await utils.fetch_handles_batch(batch_dids, ad_hoc)
     logger.info("Batch resolved.")
@@ -1496,7 +1471,6 @@ async def process_batch(batch_dids, ad_hoc, batch_size):
     return total_handles_updated
 
 
-@check_db_connection("write")
 async def create_temporary_table(table):
     try:
         logger.info(f"Creating temp table: {table}")
@@ -1513,7 +1487,6 @@ async def create_temporary_table(table):
         logger.error(f"Error creating temporary table: {table} %s", e)
 
 
-@check_db_connection("write")
 async def create_new_users_temporary_table():
     try:
         logger.info("Creating temp table.")
@@ -1530,7 +1503,6 @@ async def create_new_users_temporary_table():
         logger.error("Error creating temporary table: %s", e)
 
 
-@check_db_connection("write")
 async def update_24_hour_block_list_table(entries, list_type):
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -1548,7 +1520,6 @@ async def update_24_hour_block_list_table(entries, list_type):
         logger.error("Error updating top block table: %s", e)
 
 
-@check_db_connection("write")
 async def truncate_top_blocks_table():
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -1560,7 +1531,6 @@ async def truncate_top_blocks_table():
         logger.error("Error updating top block table: %s", e)
 
 
-@check_db_connection("write")
 async def truncate_top24_blocks_table():
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -1572,7 +1542,6 @@ async def truncate_top24_blocks_table():
         logger.error("Error updating top block table: %s", e)
 
 
-@check_db_connection("write")
 async def update_top_block_list_table(entries, list_type):
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -1590,7 +1559,6 @@ async def update_top_block_list_table(entries, list_type):
         logger.error("Error updating top block table: %s", e)
 
 
-@check_db_connection("write")
 async def get_top_blocks_list() -> Tuple[List[Tuple[str, int]], List[Tuple[str, int]]]:
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -1607,7 +1575,6 @@ async def get_top_blocks_list() -> Tuple[List[Tuple[str, int]], List[Tuple[str, 
         return [], []
 
 
-@check_db_connection("write")
 async def get_24_hour_block_list():
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -1624,7 +1591,6 @@ async def get_24_hour_block_list():
         return [], []
 
 
-@check_db_connection("write")
 async def delete_temporary_table(table):
     if table:
         try:
@@ -1636,7 +1602,6 @@ async def delete_temporary_table(table):
             logger.error("Error deleting temporary table: %s", e)
 
 
-@check_db_connection("write")
 async def delete_new_users_temporary_table():
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -1647,7 +1612,6 @@ async def delete_new_users_temporary_table():
         logger.error("Error deleting temporary table: %s", e)
 
 
-@check_db_connection("write")
 async def update_temporary_table(last_processed_did, table):
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -1663,7 +1627,6 @@ async def update_temporary_table(last_processed_did, table):
         logger.error("Error updating temporary table: %s", e)
 
 
-@check_db_connection("write")
 async def update_new_users_temporary_table(last_processed_did):
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -1678,7 +1641,6 @@ async def update_new_users_temporary_table(last_processed_did):
         logger.error("Error updating temporary table: %s", e)
 
 
-@check_db_connection("read")
 async def get_top_blocks():
     blocked_results = []
     blockers_results = []
@@ -1727,7 +1689,6 @@ async def get_top_blocks():
         logger.error("Error retrieving data from db", e)
 
 
-@check_db_connection("write")
 async def update_did_service(data, label_data):
     # pop_count = 0
     logger.info("Updating services information for batch.")
@@ -1844,7 +1805,6 @@ async def update_did_service(data, label_data):
         logger.error("Error retrieving/inserting labeler data to db", e)
 
 
-@check_db_connection("write")
 async def update_last_created_did_date(last_created):
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -1860,7 +1820,6 @@ async def update_last_created_did_date(last_created):
         logger.error("Error updating temporary table: %s", e)
 
 
-@check_db_connection("write")
 async def check_last_created_did_date():
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -1876,7 +1835,6 @@ async def check_last_created_did_date():
         return None
 
 
-@check_db_connection("read")
 async def get_block_stats():
     try:
         pool_name = get_connection_pool("read")
@@ -1999,7 +1957,6 @@ async def get_block_stats():
         logger.error(f"Error retrieving data from db: {e}")
 
 
-@check_db_connection("read")
 async def get_top24_blocks():
     blocked_results = []
     blockers_results = []
@@ -2042,7 +1999,6 @@ async def get_top24_blocks():
         logger.error("Error retrieving data from db", e)
 
 
-@check_db_connection("read")
 async def get_similar_blocked_by(user_did):
     global all_blocks_cache
 
@@ -2122,7 +2078,6 @@ async def get_similar_blocked_by(user_did):
     return users, percentages, status_list
 
 
-@check_db_connection("read")
 async def get_similar_users(user_did):
     global all_blocks_cache
     global all_blocks_process_time
@@ -2309,7 +2264,6 @@ async def top_24blocklists_updater():
     return top_blocked_24, top_blockers_24, blocked_aid_24, blocker_aid_24
 
 
-@check_db_connection("read")
 async def get_mutelists(ident) -> Optional[list]:
     pool_name = get_connection_pool("read")
     async with connection_pools[pool_name].acquire() as connection:
@@ -2346,7 +2300,6 @@ async def get_mutelists(ident) -> Optional[list]:
             return lists
 
 
-@check_db_connection("read")
 async def check_api_key(api_environment, key_type, key_value) -> bool:
     pool_name = get_connection_pool("read")
     async with connection_pools[pool_name].acquire() as connection:
@@ -2379,7 +2332,6 @@ async def wait_for_redis() -> None:
             await asyncio.sleep(30)
 
 
-@check_db_connection("write")
 async def tables_exists() -> bool:
     async with connection_pools["write"].acquire() as connection:
         async with connection.transaction():
@@ -2408,7 +2360,6 @@ async def tables_exists() -> bool:
                 return False
 
 
-@check_db_connection("write")
 async def get_unique_did_to_pds() -> Optional[list]:
     logger.info("Getting unique did to pds.")
 
@@ -2440,7 +2391,6 @@ async def get_unique_did_to_pds() -> Optional[list]:
         return None
 
 
-@check_db_connection("write")
 async def update_pds_status(pds, status) -> None:
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -2451,7 +2401,6 @@ async def update_pds_status(pds, status) -> None:
         logger.error(f"Error updating pds status: {e}")
 
 
-@check_db_connection("write")
 async def update_pds(did, pds) -> None:
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -2465,7 +2414,6 @@ async def update_pds(did, pds) -> None:
         logger.error(f"Error updating pds: {e}")
 
 
-@check_db_connection("write")
 async def get_didwebs_without_pds() -> Optional[list]:
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -2482,7 +2430,6 @@ async def get_didwebs_without_pds() -> Optional[list]:
         return None
 
 
-@check_db_connection("write")
 async def update_did_webs() -> None:
     pop = 0
     did_webs_in_queue = None
@@ -2589,7 +2536,6 @@ async def update_did_webs() -> None:
         logger.error(f"Error updating didwebs: {e}")
 
 
-@check_db_connection("write")
 async def get_didwebs_pdses() -> Optional[list]:
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -2606,7 +2552,6 @@ async def get_didwebs_pdses() -> Optional[list]:
         return None
 
 
-@check_db_connection("write")
 async def get_api_keys(environment, key_type, key) -> Optional[dict]:
     if not key and not key_type and not environment:
         logger.error("Missing required parameters for API verification.")
@@ -2637,7 +2582,6 @@ async def get_api_keys(environment, key_type, key) -> Optional[dict]:
                 return None
 
 
-@check_db_connection("read")
 async def get_dids_per_pds() -> Optional[dict]:
     data_dict = {}
 
@@ -2663,7 +2607,6 @@ async def get_dids_per_pds() -> Optional[dict]:
         return None
 
 
-@check_db_connection("write")
 async def set_status_code(pds, status_code) -> None:
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -2674,7 +2617,6 @@ async def set_status_code(pds, status_code) -> None:
         logger.error(f"Error updating status code: {e}")
 
 
-@check_db_connection("write")
 async def get_block_row(uri) -> Optional[dict]:
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -2702,7 +2644,6 @@ async def get_block_row(uri) -> Optional[dict]:
         logger.error(f"Error updating status code: {e}")
 
 
-@check_db_connection("write")
 async def update_mutelist_count() -> None:
     limit = 100
     offset = 0
@@ -2743,7 +2684,6 @@ async def update_mutelist_count() -> None:
         logger.error(f"Error updating mutelist count (general): {e}")
 
 
-@check_db_connection("write")
 async def update_subscribe_list_count() -> None:
     limit = 100
     offset = 0
@@ -2784,7 +2724,6 @@ async def update_subscribe_list_count() -> None:
         logger.error(f"Error updating mutelist count (general): {e}")
 
 
-@check_db_connection("write")
 async def process_delete_queue() -> None:
     logger.info("Processing delete queue.")
 
@@ -2842,7 +2781,6 @@ async def process_delete_queue() -> None:
         logger.error(f"Error processing delete queue: {e}")
 
 
-@check_db_connection("read")
 async def identifier_exists_in_db(identifier):
     pool_name = get_connection_pool("read")
     async with connection_pools[pool_name].acquire() as connection:
@@ -2891,7 +2829,6 @@ async def identifier_exists_in_db(identifier):
     return ident, status
 
 
-@check_db_connection("read")
 async def get_user_did(handle) -> Optional[str]:
     pool_name = get_connection_pool("read")
     async with connection_pools[pool_name].acquire() as connection:
@@ -2900,7 +2837,6 @@ async def get_user_did(handle) -> Optional[str]:
     return did
 
 
-@check_db_connection("read")
 async def get_user_handle(did) -> Optional[str]:
     pool_name = get_connection_pool("read")
     async with connection_pools[pool_name].acquire() as connection:
@@ -2909,7 +2845,6 @@ async def get_user_handle(did) -> Optional[str]:
     return handle
 
 
-@check_db_connection("read")
 async def get_user_count(get_active=True) -> int:
     pool_name = get_connection_pool("read")
     async with connection_pools[pool_name].acquire() as connection:
@@ -2927,7 +2862,6 @@ async def get_user_count(get_active=True) -> int:
         return count
 
 
-@check_db_connection("write")
 async def get_dids_with_no_status() -> Optional[list]:
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -2944,7 +2878,6 @@ async def get_dids_with_no_status() -> Optional[list]:
         return None
 
 
-@check_db_connection("write")
 async def get_new_pdses() -> Optional[list]:
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -2965,7 +2898,6 @@ async def get_new_pdses() -> Optional[list]:
         return None
 
 
-@check_db_connection("write")
 async def get_did_webs() -> Optional[list]:
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -2982,7 +2914,6 @@ async def get_did_webs() -> Optional[list]:
         return None
 
 
-@check_db_connection("write")
 async def add_new_pdses(pdses) -> None:
     try:
         async with connection_pools["write"].acquire() as connection:
@@ -2995,7 +2926,6 @@ async def add_new_pdses(pdses) -> None:
         logger.error(f"Error getting new pdses: {e}")
 
 
-@check_db_connection("read")
 async def get_deleted_users_count() -> int:
     pool_name = get_connection_pool("read")
     async with connection_pools[pool_name].acquire() as connection:
@@ -3004,7 +2934,6 @@ async def get_deleted_users_count() -> int:
         return count
 
 
-@check_db_connection("read")
 async def get_single_user_blocks(ident, limit=100, offset=0):
     try:
         # Execute the SQL query to get all the user_dids that have the specified did/ident in their blocklist
@@ -3073,7 +3002,6 @@ async def get_did_web_handle_history(identifier) -> Optional[list]:
         return None
 
 
-@check_db_connection("write")
 async def get_labelers() -> dict[str, dict[str, str]]:
     data = {}
 
@@ -3104,7 +3032,6 @@ async def get_labelers() -> dict[str, dict[str, str]]:
         return {}
 
 
-@check_db_connection("write")
 async def update_labeler_data(data) -> None:
     try:
         async with connection_pools["write"].acquire() as connection:
