@@ -3388,10 +3388,9 @@ def get_database_config(ovride=False) -> dict:
                     db_type = key
                     # param = param.lower()
                     if db_type not in db_config:
-                        db_config[db_type] = {}
-                    db_config[db_type] = value
+                        db_config[db_type] = value
                     # db_config[db_type][param] = value
-
+        logger.info(db_config)
         return db_config
     except Exception as e:
         logger.error("Database connection information not present: Set environment variables or config.ini")
@@ -3410,7 +3409,6 @@ else:
 
 # Initialize a round-robin iterator for read databases
 read_keyword = database_config["read_keyword"]
-logger.info(f"Read keyword: {read_keyword}")
 read_dbs = [db for db in database_config if read_keyword in db]
 read_db_iterator = itertools.cycle(read_dbs)
 
