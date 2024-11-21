@@ -78,6 +78,8 @@ async def create_connection_pools(database_configg):
 
     async with db_lock:
         for db, configg in database_configg.items():
+            if "clearsky_database" in db.lower() and "db" not in db.lower():
+                continue
             if "database" in db.lower():
                 if db not in connection_pools:
                     try:
@@ -3389,10 +3391,10 @@ def get_database_config(ovride=False) -> dict:
                     name = name_parts[3]
 
                     db_config[db_type] = {
-                        "user": os.environ.get(f"CLEARSKY_DATABASE_USR_{name}_USER"),
-                        "password": os.environ.get(f"CLEARSKY_DATABASE_PW_{name}_PASSWORD"),
-                        "host": os.environ.get(f"CLEARSKY_DATABASE_H_{name}_HOST"),
-                        "database": os.environ.get(f"CLEARSKY_DATABASE_DB_{name}_DATABASE")
+                        "user": os.environ.get(f"CLEARSKY_DATABASE_USR_{name}"),
+                        "password": os.environ.get(f"CLEARSKY_DATABASE_PW_{name}"),
+                        "host": os.environ.get(f"CLEARSKY_DATABASE_H_{name}"),
+                        "database": os.environ.get(f"CLEARSKY_DATABASE_DB_{name}")
                     }
 
         return db_config
@@ -3413,7 +3415,14 @@ else:
 
 # Initialize a round-robin iterator for read databases
 read_keyword = database_config["read_keyword"]
-read_dbs = [db for db in database_config if f"{read_keyword}_database" in db.lower()]
+
+# Extract database names from the config file
+config_db_names = [db for db in database_config if f"database_{read_keyword}" in db.lower()]
+
+# Extract database names from the environment variables
+env_db_names = [key for key in os.environ if key.startswith("CLEARSKY_DATABASE") and f"db_{read_keyword}" in key.lower()]
+
+read_dbs = config_db_names + env_db_names
 logger.info(f"Read databases: {read_dbs}")
 read_db_iterator = itertools.cycle(read_dbs)
 
