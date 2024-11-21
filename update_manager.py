@@ -33,8 +33,10 @@ async def main():
     args = parser.parse_args()
 
     try:
-        await database_handler.create_connection_pool("read")
-        await database_handler.create_connection_pool("write")
+        dbs_connected = await database_handler.create_connection_pools(database_handler.database_config)
+
+        for db in dbs_connected:
+            logger.info(f"{db} connected.")
     except Exception as e:
         logger.error(f"Error creating connection pool: {str(e)}")
         sys.exit()

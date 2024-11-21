@@ -18,7 +18,7 @@ import functools
 from errors import NotFound, DatabaseConnectionError
 from apis import api_blueprint
 from helpers import blocklist_24_failed, blocklist_failed, get_ip, get_ip_address, get_var_info, version
-from core import read_db_connected, write_db_connected, initialize, db_pool_acquired
+from core import initialize, db_pool_acquired, dbs_connected
 
 # ======================================================================================================================
 # ======================================== global variables // Set up logging ==========================================
@@ -93,7 +93,7 @@ async def first_run() -> None:
         await asyncio.sleep(5)
 
     while True:
-        if read_db_connected and write_db_connected:
+        if dbs_connected:
             blocklist_24_failed.clear()
             blocklist_failed.clear()
 

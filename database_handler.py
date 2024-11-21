@@ -17,7 +17,7 @@ import math
 import functools
 from errors import NotFound, DatabaseConnectionError
 from config_helper import check_override
-import random
+import itertools
 
 # ======================================================================================================================
 # ===================================================  global variables ================================================
@@ -58,127 +58,41 @@ last_created_table = "last_did_created_date"
 # ======================================================================================================================
 # ========================================= database handling functions ================================================
 def get_connection_pool(db_type="read"):
+    write = "write"
+
     if db_type == "read":
-        return random.choice(["read", "write"])
-    elif "read" == "write":
-        return "write"
+        return next(read_db_iterator)
     else:
-        raise ValueError("Invalid query type. Use 'read' or 'write'.")
+        for db in database_config:
+            if database_config["write_keyword"] in db:
+                write = db
+        return write
 
 
-async def create_connection_pool(db):
+async def create_connection_pools(databaseConfig):
     global connection_pools
 
-    if "local" in db:
-        async with db_lock:
+    async with db_lock:
+        for db, configg in databaseConfig.items():
             if db not in connection_pools:
                 try:
-                    local_connection_pool = await asyncpg.create_pool(
-                        user=write_pg_user,
-                        password=write_pg_password,
-                        database=database_config["local_db"]
+                    connection_pool = await asyncpg.create_pool(
+                        user=configg['pg_user'],
+                        password=configg['pg_password'],
+                        host=configg.get('pg_host', 'localhost'),
+                        database=configg['pg_database']
                     )
-
-                    connection_pools[db] = local_connection_pool
-
-                    return True
+                    connection_pools[db] = connection_pool
+                    logger.info(f"Connection pool created for {db}")
                 except OSError:
-                    logger.error("Network connection issue. db connection not established.")
-
-                    return False
+                    logger.error(f"Network connection issue. db connection not established for {db}.")
                 except (asyncpg.exceptions.InvalidAuthorizationSpecificationError,
                         asyncpg.exceptions.CannotConnectNowError):
-                    # Handle specific exceptions that indicate a connection issue
-                    logger.error("db connection issue.")
-
-                    return False
-    elif "write" in db:
-        # Acquire the lock before creating the connection pool
-        async with db_lock:
-            if db not in connection_pools:
-                try:
-                    write_connection_pool = await asyncpg.create_pool(
-                        user=write_pg_user,
-                        password=write_pg_password,
-                        host=write_pg_host,
-                        database=write_pg_database
-                    )
-
-                    connection_pools[db] = write_connection_pool
-
-                    return True
-                except OSError:
-                    logger.error("Network connection issue. db connection not established.")
-
-                    return False
-                except (asyncpg.exceptions.InvalidAuthorizationSpecificationError,
-                        asyncpg.exceptions.CannotConnectNowError):
-                    logger.error("db connection issue.")
-
-                    return False
+                    logger.error(f"db connection issue for {db}.")
                 except asyncpg.InvalidAuthorizationSpecificationError:
-                    logger.error("db connection issue.")
+                    logger.error(f"db connection issue for {db}.")
 
-                    return False
-    elif "read" in db:
-        # Acquire the lock before creating the connection pool
-        async with db_lock:
-            if db not in connection_pools:
-                try:
-                    read_connection_pool = await asyncpg.create_pool(
-                        user=read_pg_user,
-                        password=read_pg_password,
-                        host=read_pg_host,
-                        database=read_pg_database
-                    )
-
-                    connection_pools[db] = read_connection_pool
-
-                    return True
-                except OSError:
-                    logger.error("Network connection issue. db connection not established.")
-
-                    return False
-                except (asyncpg.exceptions.InvalidAuthorizationSpecificationError,
-                        asyncpg.exceptions.CannotConnectNowError):
-                    logger.error("db connection issue.")
-
-                    return False
-                except asyncpg.InvalidAuthorizationSpecificationError:
-                    logger.error("db connection issue.")
-
-                    return False
-    elif "cursor" in db:
-        # Acquire the lock before creating the connection pool
-        async with db_lock:
-            if db not in connection_pools:
-                try:
-                    cursor_connection_pool = await asyncpg.create_pool(
-                        user=cursor_pg_user,
-                        password=cursor_pg_password,
-                        host=cursor_pg_host,
-                        database=cursor_pg_database
-                    )
-
-                    connection_pools[db] = cursor_connection_pool
-
-                    return True
-                except OSError:
-                    logger.error("Network connection issue. db connection not established.")
-
-                    return False
-                except (asyncpg.exceptions.InvalidAuthorizationSpecificationError,
-                        asyncpg.exceptions.CannotConnectNowError):
-                    logger.error("db connection issue.")
-
-                    return False
-                except asyncpg.InvalidAuthorizationSpecificationError:
-                    logger.error("db connection issue.")
-
-                    return False
-    else:
-        logger.error("No db connection made.")
-        return False
+    return connection_pools
 
 
 async def check_database_connection(db):
@@ -3460,73 +3374,95 @@ async def pop_resolution_queue(did):
 # ======================================================================================================================
 # ============================================ get database credentials ================================================
 def get_database_config(ovride=False) -> dict:
+    db_config = {}
+
     try:
         if not os.getenv('CLEAR_SKY') or ovride:
             logger.info("Database connection: Using config.ini.")
-            read_pg_user = config.get("database_read", "pg_user")
-            read_pg_password = config.get("database_read", "pg_password")
-            read_pg_host = config.get("database_read", "pg_host")
-            read_pg_database = config.get("database_read", "pg_database")
-            write_pg_user = config.get("database_write", "pg_user")
-            write_pg_password = config.get("database_write", "pg_password")
-            write_pg_host = config.get("database_write", "pg_host")
-            write_pg_database = config.get("database_write", "pg_database")
+
             redis_host = config.get("redis", "host")
             redis_port = config.get("redis", "port")
             redis_username = config.get("redis", "username")
             redis_password = config.get("redis", "password")
             redis_key_name = config.get("redis", "autocomplete")
+
+            db_config['redis'] = {
+                'host': redis_host,
+                'port': redis_port,
+                'username': redis_username,
+                'password': redis_password,
+                'autocomplete': redis_key_name
+            }
+
             use_local_db = config.get("database", "use_local", fallback=False)
-            local_db = config.get("database_local", "local_db_connection", fallback=False)
-            cursor_pg_user = config.get("database_cursor", "pg_user")
-            cursor_pg_password = config.get("database_cursor", "pg_password")
-            cursor_pg_host = config.get("database_cursor", "pg_host")
-            cursor_pg_database = config.get("database_cursor", "pg_database")
+
+            db_config["use_local_db"] = use_local_db
+
+            read_keyword = config.get("environment", "read_keyword", fallback="read")
+
+            db_config["read_keyword"] = read_keyword
+
+            write_keyword = config.get("environment", "write_keyword", fallback="write")
+
+            db_config["write_keyword"] = write_keyword
+
+            for section in config.sections():
+                if section.startswith("database."):
+                    # db_type = section.split(".")[1]
+                    db_type = section
+                    db_config[db_type] = {
+                        "user": config.get(section, "pg_user",
+                                           fallback=os.getenv(f"CLEARSKY_DATABASE_{db_type.upper()}_USER")),
+                        "password": config.get(section, "pg_password",
+                                               fallback=os.getenv(f"CLEARSKY_DATABASE_{db_type.upper()}_PASSWORD")),
+                        "host": config.get(section, "pg_host",
+                                           fallback=os.getenv(f"CLEARSKY_DATABASE_{db_type.upper()}_HOST")),
+                        "database": config.get(section, "pg_database",
+                                               fallback=os.getenv(f"CLEARSKY_DATABASE_{db_type.upper()}_NAME"))
+                    }
         else:
             logger.info("Database connection: Using environment variables.")
-            read_pg_user = os.environ.get("READ_PG_USER")
-            read_pg_password = os.environ.get("READ_PG_PASSWORD")
-            read_pg_host = os.environ.get("READ_PG_HOST")
-            read_pg_database = os.environ.get("READ_PG_DATABASE")
-            write_pg_user = os.environ.get("WRITE_PG_USER")
-            write_pg_password = os.environ.get("WRITE_PG_PASSWORD")
-            write_pg_host = os.environ.get("WRITE_PG_HOST")
-            write_pg_database = os.environ.get("WRITE_PG_DATABASE")
+
             redis_host = os.environ.get("REDIS_HOST")
             redis_port = os.environ.get("REDIS_PORT")
             redis_username = os.environ.get("REDIS_USERNAME")
             redis_password = os.environ.get("REDIS_PASSWORD")
             redis_key_name = os.environ.get("REDIS_AUTOCOMPLETE")
-            use_local_db = os.environ.get("USE_LOCAL_DB")
-            local_db = os.environ.get("LOCAL_DB_CONNECTION")
-            cursor_pg_user = os.environ.get("CURSOR_PG_USER")
-            cursor_pg_password = os.environ.get("CURSOR_PG_PASSWORD")
-            cursor_pg_host = os.environ.get("CURSOR_PG_HOST")
-            cursor_pg_database = os.environ.get("CURSOR_PG_DATABASE")
 
-        return {
-            "read_user": read_pg_user,
-            "read_password": read_pg_password,
-            "read_host": read_pg_host,
-            "read_database": read_pg_database,
-            "write_user": write_pg_user,
-            "write_password": write_pg_password,
-            "write_host": write_pg_host,
-            "write_database": write_pg_database,
-            "redis_host": redis_host,
-            "redis_port": redis_port,
-            "redis_username": redis_username,
-            "redis_password": redis_password,
-            "redis_autocomplete": redis_key_name,
-            "use_local_db": use_local_db,
-            "local_db": local_db,
-            "cursor_user": cursor_pg_user,
-            "cursor_password": cursor_pg_password,
-            "cursor_host": cursor_pg_host,
-            "cursor_database": cursor_pg_database
-        }
-    except Exception:
+            db_config['redis'] = {
+                'host': redis_host,
+                'port': redis_port,
+                'username': redis_username,
+                'password': redis_password,
+                'autocomplete': redis_key_name
+            }
+
+            use_local_db = os.environ.get("USE_LOCAL_DB")
+
+            db_config["use_local_db"] = use_local_db
+
+            read_keyword = os.environ.get("READ_KEYWORD")
+
+            db_config["read_keyword"] = read_keyword
+
+            write_keyword = os.environ.get("WRITE_KEYWORD")
+
+            db_config["write_keyword"] = write_keyword
+
+            for key, value in os.environ.items():
+                if key.startswith("CLEARSKY_DATABASE_"):
+                    # _, db_type, param = key.split("_", 2)
+                    # db_type = db_type.lower()
+                    db_type = key
+                    param = param.lower()
+                    if db_type not in db_config:
+                        db_config[db_type] = {}
+                    db_config[db_type][param] = value
+
+        return db_config
+    except Exception as e:
         logger.error("Database connection information not present: Set environment variables or config.ini")
+        logger.error(f"Error: {e}")
 
 
 config = config_helper.read_config()
@@ -3540,30 +3476,15 @@ if override:
 else:
     database_config = get_database_config()
 
-# Now you can access the configuration values using dictionary keys
-read_pg_user = database_config["read_user"]
-read_pg_password = database_config["read_password"]
-read_pg_host = database_config["read_host"]
-read_pg_database = database_config["read_database"]
-write_pg_user = database_config["write_user"]
-write_pg_password = database_config["write_password"]
-write_pg_host = database_config["write_host"]
-write_pg_database = database_config["write_database"]
-cursor_pg_user = database_config["cursor_user"]
-cursor_pg_password = database_config["cursor_password"]
-cursor_pg_host = database_config["cursor_host"]
-cursor_pg_database = database_config["cursor_database"]
-redis_host = database_config["redis_host"]
-redis_port = database_config["redis_port"]
-redis_username = database_config["redis_username"]
-redis_password = database_config["redis_password"]
-redis_key_name = database_config["redis_autocomplete"]
+# Initialize a round-robin iterator for read databases
+read_dbs = [db for db in database_config if database_config["read_keyword"] in db]
+read_db_iterator = itertools.cycle(read_dbs)
 
-if redis_username == "none":
+if database_config['redis']['username'] == "none":
     logger.warning("Using failover redis.")
-    redis_conn = aioredis.from_url(f"redis://{redis_host}:{redis_port}", password=redis_password)
+    redis_conn = aioredis.from_url(f"redis://{database_config['redis']['host']}:{database_config['redis']['port']}", password=database_config['redis']['password'])
 else:
-    redis_conn = aioredis.from_url(f"rediss://{redis_username}:{redis_password}@{redis_host}:{redis_port}")
+    redis_conn = aioredis.from_url(f"rediss://{database_config['redis']['username']}:{database_config['redis']['password']}@{database_config['redis']['host']}:{database_config['redis']['port']}")
 
 
 async def local_db() -> bool:

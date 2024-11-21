@@ -25,12 +25,8 @@ fun_start_time = None
 funer_start_time = None
 total_start_time = None
 block_stats_app_start_time = None
-db_connected = None
-read_db_connected = None
-write_db_connected = None
-cursor_db_connected = None
+dbs_connected = None
 db_pool_acquired = asyncio.Event()
-cursor_pool_acquired = asyncio.Event()
 
 
 # ======================================================================================================================
@@ -106,17 +102,15 @@ async def uri_sanitization(uri) -> Optional[str]:
 
 
 async def initialize() -> None:
-    global read_db_connected, write_db_connected, cursor_db_connected
-    global db_pool_acquired
+    global db_pool_acquired, dbs_connected
 
     utils.total_users_status.set()
     utils.block_stats_status.set()
     database_handler.blocklist_updater_status.set()
     database_handler.blocklist_24_updater_status.set()
 
-    read_db_connected = await database_handler.create_connection_pool("read")  # Creates connection pool for db if connection made
-    write_db_connected = await database_handler.create_connection_pool("write")
-    cursor_db_connected = await database_handler.create_connection_pool("cursor")
+    # Creates connection pool for dbs if connection made
+    dbs_connected = await database_handler.create_connection_pools(database_handler.database_config)
 
     log_warning_once = True
 
@@ -127,12 +121,11 @@ async def initialize() -> None:
 
     logger.info("Initialized.")
 
-    if not read_db_connected and not write_db_connected:
+    if not dbs_connected:
         while True:
-            read_db_connected = await database_handler.create_connection_pool("read")
-            write_db_connected = await database_handler.create_connection_pool("write")
+            dbs_connected = await database_handler.create_connection_pools(database_handler.database_config)
 
-            if read_db_connected and write_db_connected:
+            if dbs_connected:
                 db_pool_acquired.set()
 
                 if not log_warning_once:
@@ -156,11 +149,14 @@ async def initialize() -> None:
 
         logger.info("Initialized.")
 
-    if not cursor_db_connected:
-        logger.error("Cursor connection not established.")
-    else:
-        logger.info("Cursor connection established.")
-        cursor_pool_acquired.set()
+    for db in dbs_connected:
+        logger.info(f"{db} connected.")
+
+    # if not cursor_db_connected:
+    #     logger.error("Cursor connection not established.")
+    # else:
+    #     logger.info("Cursor connection established.")
+    #     cursor_pool_acquired.set()
 
 
 async def pre_process_identifier(identifier) -> (Optional[str], Optional[str]):
@@ -794,7 +790,7 @@ async def fun_facts() -> jsonify:
 
     logger.info(f"<< Fun facts requested: {session_ip} - {api_key}")
 
-    if not read_db_connected and write_db_connected:
+    if not dbs_connected:
         logger.error("Database connection is not live.")
 
         message = "db not connected"
@@ -878,7 +874,7 @@ async def funer_facts() -> jsonify:
 
     logger.info(f"<< Funer facts requested: {session_ip} - {api_key}")
 
-    if not read_db_connected and write_db_connected:
+    if not dbs_connected:
         logger.error("Database connection is not live.")
 
         message = "db not connected"
@@ -961,7 +957,7 @@ async def block_stats() -> jsonify:
 
     logger.info(f"<< Requesting block statistics: {session_ip} - {api_key}")
 
-    if not read_db_connected and write_db_connected:
+    if not dbs_connected:
         logger.error("Database connection is not live.")
 
         message = "db not connected"
@@ -1199,7 +1195,7 @@ async def autocomplete(client_identifier) -> jsonify:
         if database_handler.redis_connection:
             matching_handles = await database_handler.retrieve_autocomplete_handles(
                 query_without_at)  # Use redis, failover db
-        elif read_db_connected:
+        elif dbs_connected:
             matching_handles = await database_handler.find_handles(query_without_at)  # Only use db
         else:
             matching_handles = None
@@ -1219,6 +1215,7 @@ async def autocomplete(client_identifier) -> jsonify:
 
 
 async def get_internal_status() -> jsonify:
+    status = {}
     api_key = request.headers.get('X-API-Key')
     session_ip = await get_ip()
 
@@ -1227,7 +1224,7 @@ async def get_internal_status() -> jsonify:
     if utils.block_stats_status.is_set():
         stats_status = "processing"
     else:
-        if not read_db_connected and write_db_connected:
+        if not dbs_connected:
             stats_status = "waiting"
         else:
             stats_status = "complete"
@@ -1262,27 +1259,11 @@ async def get_internal_status() -> jsonify:
             block_cache_status = "not initialized"
         else:
             block_cache_status = "In memory"
-    if not read_db_connected and not write_db_connected:
-        db_status = "disconnected"
-    elif not read_db_connected and write_db_connected:
-        db_status = "degraded: read db disconnected"
-    elif read_db_connected and not write_db_connected:
-        db_status = "degraded: write db disconnected"
-    else:
-        db_status = "connected"
-    if not read_db_connected:
-        read_db_status = "disconnected"
-    else:
-        read_db_status = "connected"
-    if not write_db_connected:
-        write_db_status = "disconnected"
-    else:
-        write_db_status = "connected"
 
-    if cursor_pool_acquired.is_set():
-        cursor_db_status = "connected"
-    else:
-        cursor_db_status = "disconnected"
+    if dbs_connected:
+        for db in dbs_connected:
+            resource = db
+            status[resource] = "connected"
 
     now = datetime.now()
     uptime = now - runtime
@@ -1292,26 +1273,20 @@ async def get_internal_status() -> jsonify:
     top_24_block_last_update = await get_time_since(database_handler.last_update_top_24_block)
     all_blocks_last_update = await get_time_since(database_handler.all_blocks_last_update)
 
-    status = {
-        "clearsky backend version": version,
-        "uptime": str(uptime),
-        "block stats status": stats_status,
-        "block stats last process time": str(utils.block_stats_process_time),
-        "block stats last update": str(block_stats_last_update),
-        "top blocked status": top_blocked_status,
-        "last update top block": str(top_block_last_update),
-        "top 24 blocked status": top_24_blocked_status,
-        "last update top 24 block": str(top_24_block_last_update),
-        "redis status": redis_status,
-        "block cache status": block_cache_status,
-        "block cache last process time": str(database_handler.all_blocks_process_time),
-        "block cache last update": str(all_blocks_last_update),
-        "current time": str(datetime.now()),
-        "write db status": write_db_status,
-        "read db status": read_db_status,
-        "db status": db_status,
-        "cursor db status": cursor_db_status
-    }
+    status["block stats last update"] = block_stats_last_update
+    status["top block last update"] = top_block_last_update
+    status["top 24 block last update"] = top_24_block_last_update
+    status["block cache last update"] = all_blocks_last_update
+    status["current time"] = str(datetime.now())
+    status["clearsky backend version"] = version
+    status["uptime"] = str(uptime)
+    status["block stats status"] = stats_status
+    status["top blocked status"] = top_blocked_status
+    status["top 24 blocked status"] = top_24_blocked_status
+    status["redis status"] = redis_status
+    status["block cache status"] = block_cache_status
+    status["block stats last process time"] = str(utils.block_stats_process_time)
+    status["block cache status"] = str(database_handler.all_blocks_process_time)
 
     logger.info(f">> System status result returned: {session_ip} - {api_key}")
 
