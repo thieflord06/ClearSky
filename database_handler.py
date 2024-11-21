@@ -69,11 +69,11 @@ def get_connection_pool(db_type="read"):
         return write
 
 
-async def create_connection_pools(databaseConfig):
+async def create_connection_pools(database_configg):
     global connection_pools
 
     async with db_lock:
-        for db, configg in databaseConfig.items():
+        for db, configg in database_configg.items():
             if isinstance(configg, dict) and "database" in db.lower():
                 if db not in connection_pools:
                     try:
