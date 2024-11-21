@@ -77,7 +77,7 @@ async def get_ip_address():
         return ip_address, port_address
 
 
-async def get_replication_lag_api_key():
+async def get_replication_lag_api_key():  # TODO Need to add dynamic resources for multiple replcation lag calculation
     if not os.environ.get('CLEAR_SKY'):
         logger.info("Replication lag: Using config.ini")
         api_key = config.get("environment", "replication_lag_key")
@@ -87,7 +87,7 @@ async def get_replication_lag_api_key():
         return api_key, resource, replication_lag_api_url
     else:
         logger.info("Replication lag: Using environment variables.")
-        api_key = os.environ.get('CLEAR_SKY_REPLICATION_LAG')
+        api_key = os.environ.get('CLEAR_SKY_REPLICATION_LAG_KEY')
         resource = os.environ.get('CLEAR_SKY_REPLICATION_RESOURCE')
         replication_lag_api_url = os.environ.get('CLEAR_SKY_REPLICATION_LAG_API_URL')
 
