@@ -59,12 +59,15 @@ last_created_table = "last_did_created_date"
 # ========================================= database handling functions ================================================
 def get_connection_pool(db_type="read"):
     write = "write"
+    write_keyword = database_config["write_keyword"]
+    logger.info(f"first write keyword: {write_keyword}")
 
     if db_type == "read":
         return next(read_db_iterator)
     else:
         for db in database_config:
             if database_config["write_keyword"] in db:
+                logger.info(f"write keyword: {database_config["write_keyword"]}")
                 write = db
         return write
 
@@ -93,6 +96,7 @@ async def create_connection_pools(database_configg):
                     except asyncpg.InvalidAuthorizationSpecificationError:
                         logger.error(f"db connection issue for {db}.")
 
+    logger.info(f"Connection pools: {connection_pools}")
     return connection_pools
 
 
@@ -3396,7 +3400,6 @@ def get_database_config(ovride=False) -> dict:
 
 config = config_helper.read_config()
 
-
 override = check_override()
 
 # Get the database configuration
@@ -3406,7 +3409,9 @@ else:
     database_config = get_database_config()
 
 # Initialize a round-robin iterator for read databases
-read_dbs = [db for db in database_config if database_config["read_keyword"] in db]
+read_keyword = database_config["read_keyword"]
+logger.info(f"Read keyword: {read_keyword}")
+read_dbs = [db for db in database_config if read_keyword in db]
 read_db_iterator = itertools.cycle(read_dbs)
 
 if database_config['redis']['username'] == "none":
