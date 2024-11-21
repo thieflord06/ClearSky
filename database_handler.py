@@ -3455,10 +3455,11 @@ def get_database_config(ovride=False) -> dict:
                     # _, db_type, param = key.split("_", 2)
                     # db_type = db_type.lower()
                     db_type = key
-                    param = param.lower()
+                    # param = param.lower()
                     if db_type not in db_config:
                         db_config[db_type] = {}
-                    db_config[db_type][param] = value
+                    db_config[db_type] = value
+                    # db_config[db_type][param] = value
 
         return db_config
     except Exception as e:
