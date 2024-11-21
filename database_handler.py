@@ -54,6 +54,8 @@ mute_lists_table = "mutelists"
 mute_lists_users_table = "mutelists_users"
 last_created_table = "last_did_created_date"
 
+database_config = None
+
 
 # ======================================================================================================================
 # ========================================= database handling functions ================================================
@@ -77,7 +79,7 @@ async def create_connection_pools(database_configg):
 
     async with db_lock:
         for db, configg in database_configg.items():
-            if isinstance(configg, dict) and "database" in db.lower():
+            if "database" in db.lower():
                 if db not in connection_pools:
                     try:
                         connection_pool = await asyncpg.create_pool(
@@ -3383,14 +3385,11 @@ def get_database_config(ovride=False) -> dict:
 
             for key, value in os.environ.items():
                 if key.startswith("CLEARSKY_DATABASE_"):
-                    # _, db_type, param = key.split("_", 2)
-                    # db_type = db_type.lower()
                     db_type = key
-                    # param = param.lower()
+
                     if db_type not in db_config:
                         db_config[db_type] = value
-                    # db_config[db_type][param] = value
-        logger.info(db_config)
+
         return db_config
     except Exception as e:
         logger.error("Database connection information not present: Set environment variables or config.ini")
