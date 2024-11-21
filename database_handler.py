@@ -3394,7 +3394,7 @@ def get_database_config(ovride=False) -> dict:
                         "user": os.environ.get(f"CLEARSKY_DATABASE_USR_{name}_USER"),
                         "password": os.environ.get(f"CLEARSKY_DATABASE_PW_{name}_PASSWORD"),
                         "host": os.environ.get(f"CLEARSKY_DATABASE_H_{name}_HOST"),
-                        "database": os.environ.get(f"CLEARSKY_DATABASE_DB_{name}_NAME")
+                        "database": os.environ.get(f"CLEARSKY_DATABASE_DB_{name}_DATABASE")
                     }
 
         logger.info(f"Database configuration: {db_config}")
