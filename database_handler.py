@@ -74,7 +74,7 @@ async def create_connection_pools(databaseConfig):
 
     async with db_lock:
         for db, configg in databaseConfig.items():
-            if "database" in db.lower():
+            if isinstance(configg, dict) and "database" in db.lower():
                 if db not in connection_pools:
                     try:
                         connection_pool = await asyncpg.create_pool(
