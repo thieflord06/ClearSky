@@ -150,12 +150,6 @@ async def initialize() -> None:
     for db in dbs_connected:
         logger.info(f"{db} connected.")
 
-    # if not cursor_db_connected:
-    #     logger.error("Cursor connection not established.")
-    # else:
-    #     logger.info("Cursor connection established.")
-    #     cursor_pool_acquired.set()
-
 
 async def pre_process_identifier(identifier) -> (Optional[str], Optional[str]):
     did_identifier = None
