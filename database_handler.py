@@ -3390,6 +3390,8 @@ def get_database_config(ovride=False) -> dict:
                     if db_type not in db_config:
                         db_config[db_type] = value
 
+        logger.info(f"Database configuration: {db_config}")
+
         return db_config
     except Exception as e:
         logger.error("Database connection information not present: Set environment variables or config.ini")
