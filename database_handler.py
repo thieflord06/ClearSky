@@ -64,9 +64,9 @@ def get_connection_pool(db_type="read"):
         return next(read_db_iterator)
     else:
         for db in database_config:
-            if "clearsky_database" in db.lower() and "db" not in db.lower() or db.lower() == "write_keyword":
+            if ("clearsky_database" in db.lower() and "db" not in db.lower()) or db.lower() == "write_keyword":
                 continue
-            if database_config["write_keyword"] in db.lower():
+            if database_config["write_keyword"] in db.lower() or ("db" in db.lower() and database_config["write_keyword"] in db.lower()):
                 logger.info(f"write keyword: {database_config["write_keyword"]}")
                 write = db
 
