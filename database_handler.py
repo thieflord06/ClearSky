@@ -61,16 +61,15 @@ database_config = None
 # ========================================= database handling functions ================================================
 def get_connection_pool(db_type="read"):
     write = "write"
-    write_keyword = database_config["write_keyword"]
-    logger.info(f"first write keyword: {write_keyword}")
 
     if db_type == "read":
         return next(read_db_iterator)
     else:
         for db in database_config:
-            if database_config["write_keyword"] in db:
+            if database_config["write_keyword"] in db.lower():
                 logger.info(f"write keyword: {database_config["write_keyword"]}")
                 write = db
+
         return write
 
 
@@ -3414,7 +3413,8 @@ else:
 
 # Initialize a round-robin iterator for read databases
 read_keyword = database_config["read_keyword"]
-read_dbs = [db for db in database_config if read_keyword in db]
+read_dbs = [db for db in database_config if read_keyword in db.lower()]
+logger.info(f"Read databases: {read_dbs}")
 read_db_iterator = itertools.cycle(read_dbs)
 
 if database_config['redis']['username'] == "none":
