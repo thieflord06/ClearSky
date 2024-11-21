@@ -109,8 +109,10 @@ async def initialize() -> None:
     database_handler.blocklist_updater_status.set()
     database_handler.blocklist_24_updater_status.set()
 
+    database_config = database_handler.get_database_config()
+
     # Creates connection pool for dbs if connection made
-    dbs_connected = await database_handler.create_connection_pools(database_handler.database_config)
+    dbs_connected = await database_handler.create_connection_pools(database_config)
 
     log_warning_once = True
 
@@ -121,7 +123,7 @@ async def initialize() -> None:
 
     if dbs_connected is None:
         while True:
-            dbs_connected = await database_handler.create_connection_pools(database_handler.database_config)
+            dbs_connected = await database_handler.create_connection_pools(database_config)
 
             if dbs_connected:
                 db_pool_acquired.set()
