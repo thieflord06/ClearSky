@@ -119,9 +119,7 @@ async def initialize() -> None:
     else:
         database_handler.redis_connection = True
 
-    logger.info("Initialized.")
-
-    if not dbs_connected:
+    if dbs_connected is None:
         while True:
             dbs_connected = await database_handler.create_connection_pools(database_handler.database_config)
 
@@ -147,7 +145,7 @@ async def initialize() -> None:
     else:
         db_pool_acquired.set()
 
-        logger.info("Initialized.")
+    logger.info("Initialized.")
 
     for db in dbs_connected:
         logger.info(f"{db} connected.")
