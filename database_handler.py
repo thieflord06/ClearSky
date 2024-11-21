@@ -66,11 +66,17 @@ def get_connection_pool(db_type="read"):
         return next(read_db_iterator)
     else:
         for db in database_config:
+            if "clearsky_database" in db.lower() and "db" not in db.lower():
+                continue
             if database_config["write_keyword"] in db.lower():
                 logger.info(f"write keyword: {database_config["write_keyword"]}")
                 write = db
 
-        return write
+                logger.info(f"write keyword: {database_config["write_keyword"]}")
+
+                return write
+
+            logger.error("No write db found.")
 
 
 async def create_connection_pools(database_configg):
@@ -3423,7 +3429,7 @@ config_db_names = [db for db in database_config if f"database_{read_keyword}" in
 env_db_names = [key for key in os.environ if key.startswith("CLEARSKY_DATABASE") and f"db_{read_keyword}" in key.lower()]
 
 read_dbs = config_db_names + env_db_names
-logger.info(f"Read databases: {read_dbs}")
+
 read_db_iterator = itertools.cycle(read_dbs)
 
 if database_config['redis']['username'] == "none":
