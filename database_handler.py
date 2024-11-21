@@ -3413,7 +3413,7 @@ else:
 
 # Initialize a round-robin iterator for read databases
 read_keyword = database_config["read_keyword"]
-read_dbs = [db for db in database_config if read_keyword in db.lower() and "database" in db.lower()]
+read_dbs = [db for db in database_config if f"{read_keyword}_database" in db.lower()]
 logger.info(f"Read databases: {read_dbs}")
 read_db_iterator = itertools.cycle(read_dbs)
 
