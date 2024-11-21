@@ -3388,10 +3388,10 @@ def get_database_config(ovride=False) -> dict:
                     db_type = key
 
                     db_config[db_type] = {
-                        "user": os.environ.get(f"{db_type}_USER"),
-                        "password": os.environ.get(f"{db_type}_PASSWORD"),
-                        "host": os.environ.get(f"{db_type}_HOST"),
-                        "database": os.environ.get(f"{db_type}_NAME")
+                        "user": os.environ.get(f"{db_type}USER"),
+                        "password": os.environ.get(f"{db_type}PASSWORD"),
+                        "host": os.environ.get(f"{db_type}HOST"),
+                        "database": os.environ.get(f"{db_type}NAME")
                     }
 
         logger.info(f"Database configuration: {db_config}")
