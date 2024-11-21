@@ -98,7 +98,6 @@ async def create_connection_pools(database_configg):
                     except asyncpg.InvalidAuthorizationSpecificationError:
                         logger.error(f"db connection issue for {db}.")
 
-    logger.info(f"Connection pools: {connection_pools}")
     return connection_pools
 
 
@@ -3396,8 +3395,6 @@ def get_database_config(ovride=False) -> dict:
                         "host": os.environ.get(f"CLEARSKY_DATABASE_H_{name}_HOST"),
                         "database": os.environ.get(f"CLEARSKY_DATABASE_DB_{name}_DATABASE")
                     }
-
-        logger.info(f"Database configuration: {db_config}")
 
         return db_config
     except Exception as e:
