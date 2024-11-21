@@ -3387,8 +3387,12 @@ def get_database_config(ovride=False) -> dict:
                 if key.startswith("CLEARSKY_DATABASE_"):
                     db_type = key
 
-                    if db_type not in db_config:
-                        db_config[db_type] = value
+                    db_config[db_type] = {
+                        "user": os.environ.get(f"{db_type}_USER"),
+                        "password": os.environ.get(f"{db_type}_PASSWORD"),
+                        "host": os.environ.get(f"{db_type}_HOST"),
+                        "database": os.environ.get(f"{db_type}_NAME")
+                    }
 
         logger.info(f"Database configuration: {db_config}")
 
