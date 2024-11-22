@@ -70,7 +70,7 @@ def get_connection_pool(db_type="read"):
                 logger.info(f"write keyword: {database_config["write_keyword"]}")
                 write = db
 
-                logger.info(f"write keyword: {database_config["write_keyword"]}")
+                logger.info(f"write db: {write}")
 
                 return write
 
