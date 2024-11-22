@@ -62,6 +62,10 @@ database_config = None
 def get_connection_pool(db_type="read"):
     if db_type == "read":
         return next(read_db_iterator)
+    elif db_type == "cursor":
+        for db, configg in database_config.items():
+            if "cursor" in db.lower():
+                return db
     else:
         for db, configg in database_config.items():
             if ("clearsky_database" in db.lower() and "db" not in db.lower()) or db.lower() == "write_keyword":
