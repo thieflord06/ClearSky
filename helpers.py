@@ -5,7 +5,7 @@ import uuid
 import asyncio
 from quart import request
 from datetime import datetime
-from config_helper import logger, config
+from config_helper import logger, config, check_override
 
 # ======================================================================================================================
 # ============================================== global variables ======================================================
@@ -63,7 +63,7 @@ async def get_time_since(time) -> str:
 
 
 async def get_ip_address():
-    if not os.environ.get('CLEAR_SKY'):
+    if not os.environ.get('CLEAR_SKY') or check_override:
         logger.info("IP connection: Using config.ini")
         ip_address = config.get("server", "ip")
         port_address = config.get("server", "port")
@@ -78,7 +78,7 @@ async def get_ip_address():
 
 
 async def get_replication_lag_api_key():  # TODO Need to add dynamic resources for multiple replcation lag calculation
-    if not os.environ.get('CLEAR_SKY'):
+    if not os.environ.get('CLEAR_SKY') and not check_override:
         logger.info("Replication lag: Using config.ini")
         api_key = config.get("environment", "replication_lag_key")
         resource = config.get("environment", "replication_resource")
@@ -98,7 +98,7 @@ async def get_var_info() -> dict[str, str]:
     config_api_key = config.get("environment", "api_key")
     config_self_server = config.get("environment", "self_server")
 
-    if not os.getenv('CLEAR_SKY'):
+    if not os.getenv('CLEAR_SKY') and not check_override:
         push_server = config.get("environment", "push_server")
         api_key = config.get("environment", "api_key")
         self_server = config.get("environment", "self_server")
