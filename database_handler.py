@@ -589,7 +589,8 @@ async def get_listblock_url(uri):
 
 async def get_dids_without_handles():
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query = "SELECT did FROM users WHERE handle IS NULL and status is TRUE"
                 rows = await connection.fetch(query)
@@ -603,7 +604,8 @@ async def get_dids_without_handles():
 
 async def get_dids_without_handles_and_are_not_active():
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query = "SELECT did FROM users WHERE handle IS NULL and status is FALSE"
                 rows = await connection.fetch(query)
@@ -618,7 +620,8 @@ async def get_dids_without_handles_and_are_not_active():
 async def get_pdses():
     # update PDS table with unique PDSes from users table that aren't already in PDS table
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query = """INSERT INTO pds (pds)
                             SELECT DISTINCT users.pds
@@ -630,7 +633,8 @@ async def get_pdses():
         logger.error(f"Error inserting PDSes: {e}")
 
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query = "SELECT pds from pds where status is TRUE"
                 results = await connection.fetch(query)
@@ -646,7 +650,8 @@ async def get_pdses():
 
 async def get_pds(did):
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query = "SELECT pds FROM users WHERE did = $1"
                 pds = await connection.fetchval(query, did)
@@ -660,7 +665,8 @@ async def get_pds(did):
 
 async def update_did_status(did, info) -> None:
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query = "UPDATE users SET status = $1, reason = $2 WHERE did = $3"
 
@@ -671,7 +677,8 @@ async def update_did_status(did, info) -> None:
 
 async def get_dids_without_pdses() -> List[str]:
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query = "SELECT did FROM users WHERE pds IS NULL"
                 rows = await connection.fetch(query)
@@ -686,7 +693,8 @@ async def get_dids_without_pdses() -> List[str]:
 
 async def update_did_pds(did, pds):
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query = "UPDATE users SET pds = $1 WHERE did = $2"
                 await connection.execute(query, pds, did)
@@ -695,62 +703,63 @@ async def update_did_pds(did, pds):
 
 
 async def blocklist_search(search_list, lookup, switch):
-    async with connection_pools["write"].acquire() as connection:
-        async with connection.transaction():
-            try:
-                blocking = """SELECT b.user_did, b.blocked_did, b.block_date, u1.handle, u1.status
-                                FROM blocklists AS b
-                                INNER JOIN users AS u1 ON b.user_did = u1.did
-                                INNER JOIN users AS u2 ON b.blocked_did = u2.did
-                                WHERE u1.handle = $1
-                                  AND u2.handle = $2"""
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
+            async with connection.transaction():
+                try:
+                    blocking = """SELECT b.user_did, b.blocked_did, b.block_date, u1.handle, u1.status
+                                    FROM blocklists AS b
+                                    INNER JOIN users AS u1 ON b.user_did = u1.did
+                                    INNER JOIN users AS u2 ON b.blocked_did = u2.did
+                                    WHERE u1.handle = $1
+                                      AND u2.handle = $2"""
 
-                blocked = """SELECT b.user_did, b.blocked_did, b.block_date, u1.handle, u1.status
-                                FROM blocklists AS b
-                                INNER JOIN users AS u1 ON b.user_did = u1.did
-                                INNER JOIN users AS u2 ON b.blocked_did = u2.did
-                                WHERE u1.handle = $2
-                                  AND u2.handle = $1"""
+                    blocked = """SELECT b.user_did, b.blocked_did, b.block_date, u1.handle, u1.status
+                                    FROM blocklists AS b
+                                    INNER JOIN users AS u1 ON b.user_did = u1.did
+                                    INNER JOIN users AS u2 ON b.blocked_did = u2.did
+                                    WHERE u1.handle = $2
+                                      AND u2.handle = $1"""
 
-                if "blocking" in switch:
-                    query = blocking
-                elif "blocked" in switch:
-                    query = blocked
-                else:
-                    result = None
+                    if "blocking" in switch:
+                        query = blocking
+                    elif "blocked" in switch:
+                        query = blocked
+                    else:
+                        result = None
 
-                    return result
+                        return result
 
-                result = await connection.fetch(query, search_list, lookup)
+                    result = await connection.fetch(query, search_list, lookup)
 
-                if result:
-                    resultslist = {}
+                    if result:
+                        resultslist = {}
 
-                    for record in result:
-                        block_date = record['block_date']
-                        handle = record['handle']
-                        status = record['status']
+                        for record in result:
+                            block_date = record['block_date']
+                            handle = record['handle']
+                            status = record['status']
 
-                    results = {
-                        "blocked_date": block_date.isoformat(),
-                        "handle": handle,
-                        "status": status
-                    }
+                        results = {
+                            "blocked_date": block_date.isoformat(),
+                            "handle": handle,
+                            "status": status
+                        }
 
-                    resultslist.update(results)
+                        resultslist.update(results)
 
-                    return resultslist
-                else:
+                        return resultslist
+                    else:
+                        resultslist = None
+
+                        return resultslist
+
+                except Exception as e:
+                    logger.error(f"Error retrieving blocklist search result: {e}")
+
                     resultslist = None
 
                     return resultslist
-
-            except Exception as e:
-                logger.error(f"Error retrieving blocklist search result: {e}")
-
-                resultslist = None
-
-                return resultslist
 
 
 async def crawl_all_retry_batch(batch_dids, forced=False):
@@ -791,7 +800,8 @@ async def crawl_all(forced=False, quarter=None, total_crawlers=None):
     table = f"temporary_table_{quarter}"
 
     # Check if there is a last processed DID in the temporary table
-    async with connection_pools["write"].acquire() as connection:
+    pool_name = get_connection_pool("write")
+    async with connection_pools[pool_name].acquire() as connection:
         async with connection.transaction():
             try:
                 query = f"SELECT last_processed_did FROM {table}"
@@ -932,12 +942,13 @@ async def crawler_batch(batch_dids, forced=False):
             try:
                 # Update the database with the batch of handles
                 logger.info("committing batch.")
-                async with connection_pools["write"].acquire() as connection:
+                pool_name = get_connection_pool("write")
+                async with connection_pools[pool_name].acquire() as connection:
                     async with connection.transaction():
                         await update_user_handles(handles_to_update)
                         total_handles_updated += len(handles_to_update)
 
-                break
+                        break
             except asyncpg.ConnectionDoesNotExistError as e:
                 logger.warning(f"Connection error: {e}, retrying in 30 seconds...")
                 await asyncio.sleep(30)  # Retry after 60 seconds
@@ -958,7 +969,8 @@ async def crawler_batch(batch_dids, forced=False):
 
 
 async def get_quarter_of_users_db(quarter_number, total_crawlers=4):
-    async with connection_pools["write"].acquire() as connection:
+    pool_name = get_connection_pool("write")
+    async with connection_pools[pool_name].acquire() as connection:
         logger.info(f"Getting quarter {quarter_number} of dids.")
         quarter_number = int(quarter_number)
         total_rows = await connection.fetchval('SELECT COUNT(*) FROM users')
@@ -983,7 +995,8 @@ async def get_all_users_db(run_update=False, get_dids=False, init_db_run=False, 
     dids = []
     total_dids = 0
 
-    async with connection_pools["write"].acquire() as connection:
+    pool_name = get_connection_pool("write")
+    async with connection_pools[pool_name].acquire() as connection:
         if not run_update:
             if get_dids:
                 # Return the user_dids from the "users" table
@@ -1086,71 +1099,72 @@ async def update_blocklist_table(ident, blocked_data, forced=False):
     if blocked_data is None:
         return counter
 
-    async with connection_pools["write"].acquire() as connection:
-        async with connection.transaction():
-            # Retrieve the existing blocklist entries for the specified ident
-            existing_records = await connection.fetch(
-                'SELECT uri FROM blocklists WHERE user_did = $1', ident
-            )
-            existing_blocklist_entries = {record['uri'] for record in existing_records}
-            logger.debug("Existing entires " + ident + ": " + str(existing_blocklist_entries))
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
+            async with connection.transaction():
+                # Retrieve the existing blocklist entries for the specified ident
+                existing_records = await connection.fetch(
+                    'SELECT uri FROM blocklists WHERE user_did = $1', ident
+                )
+                existing_blocklist_entries = {record['uri'] for record in existing_records}
+                logger.debug("Existing entires " + ident + ": " + str(existing_blocklist_entries))
 
-            # Iterate through blocked_data and check for None values
-            for subject, created_date, uri, cid in blocked_data:
-                if any(value is None for value in (subject, created_date, uri, cid)):
-                    logger.error(f"Blocked data contains a None value skipping: {blocked_data}")
+                # Iterate through blocked_data and check for None values
+                for subject, created_date, uri, cid in blocked_data:
+                    if any(value is None for value in (subject, created_date, uri, cid)):
+                        logger.error(f"Blocked data contains a None value skipping: {blocked_data}")
+
+                        return counter
+                # Prepare the data to be inserted into the database
+                data = [(ident, subject, created_date, uri, cid, datetime.now(pytz.utc), touched_actor) for subject, created_date, uri, cid in blocked_data]
+                logger.debug("Data to be inserted: " + str(data))
+
+                # Convert the new blocklist entries to a set for comparison
+                new_blocklist_entries = {record[3] for record in data}
+                logger.debug("new blocklist entry " + ident + " : " + str(new_blocklist_entries))
+
+                if existing_blocklist_entries != new_blocklist_entries or forced:
+                    try:
+                        await connection.execute('DELETE FROM blocklists WHERE user_did = $1', ident)
+                    except Exception as e:
+                        logger.error(f"Error deleting blocklist for {ident} : {e}")
+                        logger.error(existing_blocklist_entries)
+                    try:
+                        for uri in existing_blocklist_entries:
+                            if uri is None:
+                                logger.error(f"a URI is None in: {ident}")
+                                continue  # Skip processing when uri is None
+                            await connection.execute('INSERT INTO blocklists_transaction (user_did, uri, block_date, touched, touched_actor, delete) VALUES ($1, $2, $3, $4, $5, $6)', ident, uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor, True)
+                    except Exception as e:
+                        logger.error(f"Error updating blocklists_transaction on delete : {e}")
+                        logger.error(existing_blocklist_entries)
+
+                    logger.info("Blocklist transaction[deleted] updated.")
+
+                    if data:
+                        try:
+                            # Insert the new blocklist entries
+                            await connection.executemany(
+                                'INSERT INTO blocklists (user_did, blocked_did, block_date, cid, uri, touched, touched_actor) VALUES ($1, $2, $3, $5, $4, $6, $7)', data
+                            )
+
+                            await connection.executemany(
+                                'INSERT INTO blocklists_transaction (user_did, blocked_did, block_date, cid, uri, touched, touched_actor) VALUES ($1, $2, $3, $5, $4, $6, $7)', data
+                            )
+                        except Exception as e:
+                            logger.error(f"Error updating blocklists or blocklists_transaction on create : {e}")
+                            logger.error(data)
+
+                        logger.info("Blocklist transaction[created] updated.")
+                        logger.info(f"Blocks added for: {ident}")
+
+                    counter += 1
 
                     return counter
-            # Prepare the data to be inserted into the database
-            data = [(ident, subject, created_date, uri, cid, datetime.now(pytz.utc), touched_actor) for subject, created_date, uri, cid in blocked_data]
-            logger.debug("Data to be inserted: " + str(data))
+                else:
+                    logger.debug("Blocklist not updated already exists.")
 
-            # Convert the new blocklist entries to a set for comparison
-            new_blocklist_entries = {record[3] for record in data}
-            logger.debug("new blocklist entry " + ident + " : " + str(new_blocklist_entries))
-
-            if existing_blocklist_entries != new_blocklist_entries or forced:
-                try:
-                    await connection.execute('DELETE FROM blocklists WHERE user_did = $1', ident)
-                except Exception as e:
-                    logger.error(f"Error deleting blocklist for {ident} : {e}")
-                    logger.error(existing_blocklist_entries)
-                try:
-                    for uri in existing_blocklist_entries:
-                        if uri is None:
-                            logger.error(f"a URI is None in: {ident}")
-                            continue  # Skip processing when uri is None
-                        await connection.execute('INSERT INTO blocklists_transaction (user_did, uri, block_date, touched, touched_actor, delete) VALUES ($1, $2, $3, $4, $5, $6)', ident, uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor, True)
-                except Exception as e:
-                    logger.error(f"Error updating blocklists_transaction on delete : {e}")
-                    logger.error(existing_blocklist_entries)
-
-                logger.info("Blocklist transaction[deleted] updated.")
-
-                if data:
-                    try:
-                        # Insert the new blocklist entries
-                        await connection.executemany(
-                            'INSERT INTO blocklists (user_did, blocked_did, block_date, cid, uri, touched, touched_actor) VALUES ($1, $2, $3, $5, $4, $6, $7)', data
-                        )
-
-                        await connection.executemany(
-                            'INSERT INTO blocklists_transaction (user_did, blocked_did, block_date, cid, uri, touched, touched_actor) VALUES ($1, $2, $3, $5, $4, $6, $7)', data
-                        )
-                    except Exception as e:
-                        logger.error(f"Error updating blocklists or blocklists_transaction on create : {e}")
-                        logger.error(data)
-
-                    logger.info("Blocklist transaction[created] updated.")
-                    logger.info(f"Blocks added for: {ident}")
-
-                counter += 1
-
-                return counter
-            else:
-                logger.debug("Blocklist not updated already exists.")
-
-                return counter
+                    return counter
 
 
 async def update_subscribe_table(ident, subscribelists_data, forced=False):
@@ -1166,55 +1180,56 @@ async def update_subscribe_table(ident, subscribelists_data, forced=False):
 
         return counter
 
-    async with connection_pools["write"].acquire() as connection:
-        async with connection.transaction():
-            # Retrieve the existing blocklist entries for the specified ident
-            existing_records = await connection.fetch(
-                'SELECT uri FROM subscribe_blocklists WHERE did = $1', ident
-            )
-            existing_blocklist_entries = {record['uri'] for record in existing_records}
-            logger.debug("Existing subscribe entires " + ident + ": " + str(existing_blocklist_entries))
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
+            async with connection.transaction():
+                # Retrieve the existing blocklist entries for the specified ident
+                existing_records = await connection.fetch(
+                    'SELECT uri FROM subscribe_blocklists WHERE did = $1', ident
+                )
+                existing_blocklist_entries = {record['uri'] for record in existing_records}
+                logger.debug("Existing subscribe entires " + ident + ": " + str(existing_blocklist_entries))
 
-            # Prepare the data to be inserted into the database
-            data = [(record_type['did'], record_type['uri'], record_type['list_uri'], record_type['cid'], record_type['date_added'], record_type['record_type'], datetime.now(pytz.utc), touched_actor) for record_type in subscribelists_data]
-            logger.debug("Data to be inserted: " + str(data))
+                # Prepare the data to be inserted into the database
+                data = [(record_type['did'], record_type['uri'], record_type['list_uri'], record_type['cid'], record_type['date_added'], record_type['record_type'], datetime.now(pytz.utc), touched_actor) for record_type in subscribelists_data]
+                logger.debug("Data to be inserted: " + str(data))
 
-            # Convert the new blocklist entries to a set for comparison
-            new_blocklist_entries = {record[1] for record in data}
-            logger.debug("new subscribe blocklist entry " + ident + " : " + str(new_blocklist_entries))
+                # Convert the new blocklist entries to a set for comparison
+                new_blocklist_entries = {record[1] for record in data}
+                logger.debug("new subscribe blocklist entry " + ident + " : " + str(new_blocklist_entries))
 
-            if existing_blocklist_entries != new_blocklist_entries or forced:
-                await connection.execute('DELETE FROM subscribe_blocklists WHERE did = $1', ident)
+                if existing_blocklist_entries != new_blocklist_entries or forced:
+                    await connection.execute('DELETE FROM subscribe_blocklists WHERE did = $1', ident)
 
-                for uri in existing_blocklist_entries:
-                    try:
-                        await connection.execute('INSERT INTO subscribe_blocklists_transaction (uri, date_added, touched, touched_actor) VALUES ($1, $2, $3, $4)', uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor)
-                    except Exception as e:
-                        logger.error(f"Error updating subscribe_blocklists_transaction on delete : {e}")
-                        logger.error(existing_blocklist_entries)
+                    for uri in existing_blocklist_entries:
+                        try:
+                            await connection.execute('INSERT INTO subscribe_blocklists_transaction (uri, date_added, touched, touched_actor) VALUES ($1, $2, $3, $4)', uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor)
+                        except Exception as e:
+                            logger.error(f"Error updating subscribe_blocklists_transaction on delete : {e}")
+                            logger.error(existing_blocklist_entries)
 
-                logger.info("subscribe Blocklist transaction[deleted] updated.")
+                    logger.info("subscribe Blocklist transaction[deleted] updated.")
 
-                if data:
-                    try:
-                        # Insert the new blocklist entries
-                        await connection.executemany('INSERT INTO subscribe_blocklists (did, uri, list_uri, cid, date_added, record_type, touched, touched_actor) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)', data)
+                    if data:
+                        try:
+                            # Insert the new blocklist entries
+                            await connection.executemany('INSERT INTO subscribe_blocklists (did, uri, list_uri, cid, date_added, record_type, touched, touched_actor) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)', data)
 
-                        await connection.executemany('INSERT INTO subscribe_blocklists_transaction (did, uri, list_uri, cid, date_added, record_type, touched, touched_actor) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)', data)
-                    except Exception as e:
-                        logger.error(f"Error updating subscribe_blocklists or subscribe_blocklists_transaction on create: {e}")
-                        logger.error(new_blocklist_entries)
+                            await connection.executemany('INSERT INTO subscribe_blocklists_transaction (did, uri, list_uri, cid, date_added, record_type, touched, touched_actor) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)', data)
+                        except Exception as e:
+                            logger.error(f"Error updating subscribe_blocklists or subscribe_blocklists_transaction on create: {e}")
+                            logger.error(new_blocklist_entries)
 
-                    logger.info("Subscribe Blocklist transaction[created] updated.")
-                    logger.info(f"Subscribe blocklist added for: {ident}")
+                        logger.info("Subscribe Blocklist transaction[created] updated.")
+                        logger.info(f"Subscribe blocklist added for: {ident}")
 
-                subscribe_list_counter += 1
+                    subscribe_list_counter += 1
 
-                return subscribe_list_counter
-            else:
-                logger.info("Blocklist not updated already exists.")
+                    return subscribe_list_counter
+                else:
+                    logger.info("Blocklist not updated already exists.")
 
-                return subscribe_list_counter
+                    return subscribe_list_counter
 
 
 async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, forced=False):
@@ -1231,132 +1246,134 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, fo
 
         return counter
 
-    async with connection_pools["write"].acquire() as connection:
-        async with connection.transaction():
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
+            async with connection.transaction():
 
-            # Retrieve the existing blocklist entries for the specified ident
-            existing_records = await connection.fetch(
-                'SELECT uri FROM {} WHERE did = $1'.format(mute_lists_table), ident
-            )
-
-            existing_mutelist_entries = {(record['uri']) for record in existing_records}
-            logger.debug("Existing entires " + ident + ": " + str(existing_mutelist_entries))
-
-            # Create a list of tuples containing the data to be inserted
-            mutelist_records_to_insert = [
-                (record["url"], record["uri"], record["did"], record["cid"], record["name"], record["created_at"], record["description"], datetime.now(pytz.utc), touched_actor)
-                for record in mutelists_data]
-
-            # Convert the new mutelist entries to a set for comparison
-            new_mutelist_entries = {(record[1]) for record in mutelist_records_to_insert}
-            logger.debug("New mutelist entries for " + ident + ": " + str(new_mutelist_entries))
-
-            # Check if there are differences between the existing and new mutelist entries
-            if existing_mutelist_entries != new_mutelist_entries or forced:
-                # Delete existing mutelist entries for the specified ident
-                await connection.execute('DELETE FROM mutelists WHERE did = $1', ident)
-
-                for uri in existing_mutelist_entries:
-                    try:
-                        await connection.execute('INSERT INTO mutelists_transaction (uri, created_date, touched, touched_actor) VALUES ($1, $2, $3, $4)', uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor)
-                    except Exception as e:
-                        logger.error(f"Error updating mutelists_transaction on delete: {e}")
-                        logger.error(existing_mutelist_entries)
-
-                logger.info("Mutelist transaction[deleted] updated.")
-
-                if mutelist_records_to_insert:
-                    try:
-                        # Insert the new mutelist entries
-                        await connection.executemany("""INSERT INTO {} (url, uri, did, cid, name, created_date, description, touched, touched_actor) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)""".format(mute_lists_table), mutelist_records_to_insert)
-
-                        await connection.executemany("""INSERT INTO mutelists_transaction (url, uri, did, cid, name, created_date, description, touched, touched_actor) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)""", mutelist_records_to_insert)
-                    except Exception as e:
-                        logger.error(f"Error updating mutelists or mutelists_transaction on create: {e}")
-                        logger.error(new_mutelist_entries)
-
-                    logger.info("Mutelist transaction[created] updated.")
-                    logger.info(f"Mute list(s) added for: {ident}")
-
-                list_counter += 1
-            else:
-                logger.debug("Mutelist not updated; already exists.")
-
-            if mutelists_users_data:
-                # Retrieve the existing mutelist entries for the specified ident
-                existing_users_records = await connection.fetch(
-                    """SELECT listitem_uri
-                        FROM mutelists_users
-                        WHERE owner_did = $1""", ident
+                # Retrieve the existing blocklist entries for the specified ident
+                existing_records = await connection.fetch(
+                    'SELECT uri FROM {} WHERE did = $1'.format(mute_lists_table), ident
                 )
 
-                existing_mutelist_users_entries = {(record['listitem_uri']) for record in existing_users_records}
-
-                logger.debug("Existing entires " + ident + ": " + str(existing_mutelist_users_entries))
+                existing_mutelist_entries = {(record['uri']) for record in existing_records}
+                logger.debug("Existing entires " + ident + ": " + str(existing_mutelist_entries))
 
                 # Create a list of tuples containing the data to be inserted
-                mutelistusers_records_to_insert = [
-                    (record['list_uri'], record["cid"], record['subject'], record['author'], record["created_at"], datetime.now(pytz.utc), touched_actor, record['listitem_uri'])
-                    for record in mutelists_users_data]
+                mutelist_records_to_insert = [
+                    (record["url"], record["uri"], record["did"], record["cid"], record["name"], record["created_at"], record["description"], datetime.now(pytz.utc), touched_actor)
+                    for record in mutelists_data]
 
                 # Convert the new mutelist entries to a set for comparison
-                new_mutelist_users_entries = {(record[7]) for record in mutelistusers_records_to_insert}
-
-                logger.debug("New mutelist users entries for " + ident + ": " + str(new_mutelist_users_entries))
+                new_mutelist_entries = {(record[1]) for record in mutelist_records_to_insert}
+                logger.debug("New mutelist entries for " + ident + ": " + str(new_mutelist_entries))
 
                 # Check if there are differences between the existing and new mutelist entries
-                if existing_mutelist_users_entries != new_mutelist_users_entries or forced:
-                    for uri in existing_mutelist_users_entries:
+                if existing_mutelist_entries != new_mutelist_entries or forced:
+                    # Delete existing mutelist entries for the specified ident
+                    await connection.execute('DELETE FROM mutelists WHERE did = $1', ident)
+
+                    for uri in existing_mutelist_entries:
                         try:
-                            # Delete existing mutelist entries for the specified ident
-                            await connection.execute("""DELETE FROM mutelists_users WHERE listitem_uri = $1""", uri)
-
-                            await connection.execute("""INSERT INTO mutelists_users_transaction (listitem_uri, date_added, touched, touched_actor) VALUES ($1, $2, $3, $4)""", uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor)
+                            await connection.execute('INSERT INTO mutelists_transaction (uri, created_date, touched, touched_actor) VALUES ($1, $2, $3, $4)', uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor)
                         except Exception as e:
-                            logger.error(f"Error updating mutelists_users or mutelists_users_transaction on delete: {e}")
-                            logger.error(existing_mutelist_users_entries)
+                            logger.error(f"Error updating mutelists_transaction on delete: {e}")
+                            logger.error(existing_mutelist_entries)
 
-                    logger.info("Mutelist users transaction[deleted] updated.")
+                    logger.info("Mutelist transaction[deleted] updated.")
 
-                    if mutelistusers_records_to_insert:
+                    if mutelist_records_to_insert:
                         try:
                             # Insert the new mutelist entries
-                            await connection.executemany("""INSERT INTO {} (list_uri, cid, subject_did, owner_did, date_added, touched, touched_actor, listitem_uri) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)""".format(mute_lists_users_table), mutelistusers_records_to_insert)
+                            await connection.executemany("""INSERT INTO {} (url, uri, did, cid, name, created_date, description, touched, touched_actor) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)""".format(mute_lists_table), mutelist_records_to_insert)
 
-                            await connection.executemany("""INSERT INTO mutelists_users_transaction (list_uri, cid, subject_did, owner_did, date_added, touched, touched_actor, listitem_uri) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)""", mutelistusers_records_to_insert)
+                            await connection.executemany("""INSERT INTO mutelists_transaction (url, uri, did, cid, name, created_date, description, touched, touched_actor) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)""", mutelist_records_to_insert)
                         except Exception as e:
-                            logger.error(f"Error updating mutelists_users or mutelists_users_transaction on create: {e}")
-                            logger.error(new_mutelist_users_entries)
+                            logger.error(f"Error updating mutelists or mutelists_transaction on create: {e}")
+                            logger.error(new_mutelist_entries)
 
-                        logger.info("Mutelist users transaction[created] updated.")
-                        logger.info(f"Mute list user(s) added for: {ident}")
+                        logger.info("Mutelist transaction[created] updated.")
+                        logger.info(f"Mute list(s) added for: {ident}")
 
-                    user_counter += 1
-
-                    counter = [list_counter, user_counter]
-
-                    return counter
+                    list_counter += 1
                 else:
                     logger.debug("Mutelist not updated; already exists.")
 
+                if mutelists_users_data:
+                    # Retrieve the existing mutelist entries for the specified ident
+                    existing_users_records = await connection.fetch(
+                        """SELECT listitem_uri
+                            FROM mutelists_users
+                            WHERE owner_did = $1""", ident
+                    )
+
+                    existing_mutelist_users_entries = {(record['listitem_uri']) for record in existing_users_records}
+
+                    logger.debug("Existing entires " + ident + ": " + str(existing_mutelist_users_entries))
+
+                    # Create a list of tuples containing the data to be inserted
+                    mutelistusers_records_to_insert = [
+                        (record['list_uri'], record["cid"], record['subject'], record['author'], record["created_at"], datetime.now(pytz.utc), touched_actor, record['listitem_uri'])
+                        for record in mutelists_users_data]
+
+                    # Convert the new mutelist entries to a set for comparison
+                    new_mutelist_users_entries = {(record[7]) for record in mutelistusers_records_to_insert}
+
+                    logger.debug("New mutelist users entries for " + ident + ": " + str(new_mutelist_users_entries))
+
+                    # Check if there are differences between the existing and new mutelist entries
+                    if existing_mutelist_users_entries != new_mutelist_users_entries or forced:
+                        for uri in existing_mutelist_users_entries:
+                            try:
+                                # Delete existing mutelist entries for the specified ident
+                                await connection.execute("""DELETE FROM mutelists_users WHERE listitem_uri = $1""", uri)
+
+                                await connection.execute("""INSERT INTO mutelists_users_transaction (listitem_uri, date_added, touched, touched_actor) VALUES ($1, $2, $3, $4)""", uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor)
+                            except Exception as e:
+                                logger.error(f"Error updating mutelists_users or mutelists_users_transaction on delete: {e}")
+                                logger.error(existing_mutelist_users_entries)
+
+                        logger.info("Mutelist users transaction[deleted] updated.")
+
+                        if mutelistusers_records_to_insert:
+                            try:
+                                # Insert the new mutelist entries
+                                await connection.executemany("""INSERT INTO {} (list_uri, cid, subject_did, owner_did, date_added, touched, touched_actor, listitem_uri) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)""".format(mute_lists_users_table), mutelistusers_records_to_insert)
+
+                                await connection.executemany("""INSERT INTO mutelists_users_transaction (list_uri, cid, subject_did, owner_did, date_added, touched, touched_actor, listitem_uri) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)""", mutelistusers_records_to_insert)
+                            except Exception as e:
+                                logger.error(f"Error updating mutelists_users or mutelists_users_transaction on create: {e}")
+                                logger.error(new_mutelist_users_entries)
+
+                            logger.info("Mutelist users transaction[created] updated.")
+                            logger.info(f"Mute list user(s) added for: {ident}")
+
+                        user_counter += 1
+
+                        counter = [list_counter, user_counter]
+
+                        return counter
+                    else:
+                        logger.debug("Mutelist not updated; already exists.")
+
+                        counter = [list_counter, user_counter]
+
+                        return counter
+                else:
                     counter = [list_counter, user_counter]
 
                     return counter
-            else:
-                counter = [list_counter, user_counter]
-
-                return counter
 
 
 async def does_did_and_handle_exist_in_database(did, handle):
     max_retries = 5
     for retry in range(max_retries):
         try:
-            async with connection_pools["write"].acquire() as connection:
-                # Execute the SQL query to check if the given DID exists in the "users" table
-                exists = await connection.fetchval('SELECT EXISTS(SELECT 1 FROM users WHERE did = $1 AND handle = $2)', did, handle)
+            pool_name = get_connection_pool("write")
+            async with connection_pools[pool_name].acquire() as connection:
+                    # Execute the SQL query to check if the given DID exists in the "users" table
+                    exists = await connection.fetchval('SELECT EXISTS(SELECT 1 FROM users WHERE did = $1 AND handle = $2)', did, handle)
 
-                return exists
+                    return exists
         except TimeoutError:
             logger.error(f"Timeout error on attempt {retry + 1}. Retrying in 10 sec...")
             await asyncio.sleep(10)
@@ -1371,43 +1388,45 @@ async def does_did_and_handle_exist_in_database(did, handle):
 
 
 async def update_user_handles(handles_to_update):
-    async with connection_pools["write"].acquire() as connection:
-        async with connection.transaction():
-            # Drop the temporary table if it exists
-            await connection.execute('DROP TABLE IF EXISTS temp_handles')
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
+            async with connection.transaction():
+                # Drop the temporary table if it exists
+                await connection.execute('DROP TABLE IF EXISTS temp_handles')
 
-            # Create a temporary table to hold the handles to update
-            await connection.execute('''
-                CREATE TEMP TABLE temp_handles (
-                    did TEXT PRIMARY KEY,
-                    handle TEXT
-                )
-            ''')
-
-            # Populate the temporary table with the handles to update
-            for did, handle in handles_to_update:
+                # Create a temporary table to hold the handles to update
                 await connection.execute('''
-                    INSERT INTO temp_handles (did, handle)
-                    VALUES ($1, $2)
-                ''', did, handle)
+                    CREATE TEMP TABLE temp_handles (
+                        did TEXT PRIMARY KEY,
+                        handle TEXT
+                    )
+                ''')
 
-            # Update the users table using the temporary table
-            await connection.execute('''
-                INSERT INTO users (did, handle)
-                SELECT t.did, t.handle
-                FROM temp_handles AS t
-                ON CONFLICT (did) DO UPDATE
-                SET handle = EXCLUDED.handle
-            ''')
+                # Populate the temporary table with the handles to update
+                for did, handle in handles_to_update:
+                    await connection.execute('''
+                        INSERT INTO temp_handles (did, handle)
+                        VALUES ($1, $2)
+                    ''', did, handle)
 
-            # await connection.execute("delete from resolution_queue where did = $1", did)  # Remove the DID from the resolution queue
+                # Update the users table using the temporary table
+                await connection.execute('''
+                    INSERT INTO users (did, handle)
+                    SELECT t.did, t.handle
+                    FROM temp_handles AS t
+                    ON CONFLICT (did) DO UPDATE
+                    SET handle = EXCLUDED.handle
+                ''')
 
-        logger.info(f"Updated {len(handles_to_update)} handles in the database.")
+                # await connection.execute("delete from resolution_queue where did = $1", did)  # Remove the DID from the resolution queue
+
+            logger.info(f"Updated {len(handles_to_update)} handles in the database.")
 
 
 async def add_new_prefixes(handles):
     for handle in handles:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 try:
                     query = """INSERT INTO user_prefixes(handle, prefix1, prefix2, prefix3)
@@ -1454,7 +1473,8 @@ async def process_batch(batch_dids, ad_hoc, batch_size):
             try:
                 # Update the database with the batch of handles
                 logger.info("committing batch.")
-                async with connection_pools["write"].acquire() as connection:
+                pool_name = get_connection_pool("write")
+                async with connection_pools[pool_name].acquire() as connection:
                     async with connection.transaction():
                         await update_user_handles(handles_to_update)
                         total_handles_updated += len(handles_to_update)
@@ -1484,7 +1504,8 @@ async def process_batch(batch_dids, ad_hoc, batch_size):
 async def create_temporary_table(table):
     try:
         logger.info(f"Creating temp table: {table}")
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query = f"""
                 CREATE TABLE IF NOT EXISTS {table} (
@@ -1500,7 +1521,8 @@ async def create_temporary_table(table):
 async def create_new_users_temporary_table():
     try:
         logger.info("Creating temp table.")
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query = """
                 CREATE TABLE IF NOT EXISTS new_users_temporary_table (
@@ -1515,7 +1537,8 @@ async def create_new_users_temporary_table():
 
 async def update_24_hour_block_list_table(entries, list_type):
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 data = [(did, count, list_type) for did, count in entries]
                 # Insert the new row with the given last_processed_did
@@ -1532,7 +1555,8 @@ async def update_24_hour_block_list_table(entries, list_type):
 
 async def truncate_top_blocks_table():
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 # Delete the existing rows if it exists
                 await connection.execute("TRUNCATE top_block")
@@ -1543,7 +1567,8 @@ async def truncate_top_blocks_table():
 
 async def truncate_top24_blocks_table():
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 # Delete the existing row if it exists
                 await connection.execute("TRUNCATE top_twentyfour_hour_block")
@@ -1554,7 +1579,8 @@ async def truncate_top24_blocks_table():
 
 async def update_top_block_list_table(entries, list_type):
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 data = [(did, count, list_type) for did, count in entries]
                 # Insert the new row with the given last_processed_did
@@ -1571,7 +1597,8 @@ async def update_top_block_list_table(entries, list_type):
 
 async def get_top_blocks_list() -> Tuple[List[Tuple[str, int]], List[Tuple[str, int]]]:
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query1 = "SELECT distinct did, count FROM top_block WHERE list_type = 'blocked'"
                 query2 = "SELECT distinct did, count FROM top_block WHERE list_type = 'blocker'"
@@ -1587,7 +1614,8 @@ async def get_top_blocks_list() -> Tuple[List[Tuple[str, int]], List[Tuple[str, 
 
 async def get_24_hour_block_list():
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query1 = "SELECT distinct did, count FROM top_twentyfour_hour_block WHERE list_type = 'blocked'"
                 query2 = "SELECT distinct did, count FROM top_twentyfour_hour_block WHERE list_type = 'blocker'"
@@ -1604,7 +1632,8 @@ async def get_24_hour_block_list():
 async def delete_temporary_table(table):
     if table:
         try:
-            async with connection_pools["write"].acquire() as connection:
+            pool_name = get_connection_pool("write")
+            async with connection_pools[pool_name].acquire() as connection:
                 async with connection.transaction():
                     query = f"DROP TABLE IF EXISTS {table}"
                     await connection.execute(query)
@@ -1614,7 +1643,8 @@ async def delete_temporary_table(table):
 
 async def delete_new_users_temporary_table():
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query = "DROP TABLE IF EXISTS new_users_temporary_table"
                 await connection.execute(query)
@@ -1624,7 +1654,8 @@ async def delete_new_users_temporary_table():
 
 async def update_temporary_table(last_processed_did, table):
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 # Delete the existing row if it exists
                 delete_query = f"TRUNCATE {table}"
@@ -1639,7 +1670,8 @@ async def update_temporary_table(last_processed_did, table):
 
 async def update_new_users_temporary_table(last_processed_did):
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 # Delete the existing row if it exists
                 await connection.execute("TRUNCATE new_users_temporary_table")
@@ -1706,7 +1738,8 @@ async def update_did_service(data, label_data):
     # pop = "delete from resolution_queue where did = $1"
 
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 if data:
                     for record in data:
@@ -1817,7 +1850,8 @@ async def update_did_service(data, label_data):
 
 async def update_last_created_did_date(last_created):
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 # Delete the existing row if it exists
                 delete_query = f"TRUNCATE {last_created_table}"
@@ -1832,7 +1866,8 @@ async def update_last_created_did_date(last_created):
 
 async def check_last_created_did_date():
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query = """SELECT * FROM last_did_created_date"""
 
@@ -2343,31 +2378,32 @@ async def wait_for_redis() -> None:
 
 
 async def tables_exists() -> bool:
-    async with connection_pools["write"].acquire() as connection:
-        async with connection.transaction():
-            try:
-                query1 = """SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1)"""
-                query2 = """SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1)"""
-                query3 = """SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1)"""
-                query4 = """SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1)"""
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
+            async with connection.transaction():
+                try:
+                    query1 = """SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1)"""
+                    query2 = """SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1)"""
+                    query3 = """SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1)"""
+                    query4 = """SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1)"""
 
-                users_exist = await connection.fetchval(query1, users_table)
-                blocklists_exist = await connection.fetchval(query2, blocklist_table)
-                top_blocks_exist = await connection.fetchval(query3, top_blocks_table)
-                top_24_exist = await connection.fetchval(query4, top_24_blocks_table)
+                    users_exist = await connection.fetchval(query1, users_table)
+                    blocklists_exist = await connection.fetchval(query2, blocklist_table)
+                    top_blocks_exist = await connection.fetchval(query3, top_blocks_table)
+                    top_24_exist = await connection.fetchval(query4, top_24_blocks_table)
 
-                values = (users_exist, blocklists_exist, top_blocks_exist, top_24_exist)
+                    values = (users_exist, blocklists_exist, top_blocks_exist, top_24_exist)
 
-                if any(value is False for value in values):
+                    if any(value is False for value in values):
+
+                        return False
+                    else:
+
+                        return True
+                except asyncpg.ConnectionDoesNotExistError:
+                    logger.error("Error checking if schema exists, db not connected.")
 
                     return False
-                else:
-
-                    return True
-            except asyncpg.ConnectionDoesNotExistError:
-                logger.error("Error checking if schema exists, db not connected.")
-
-                return False
 
 
 async def get_unique_did_to_pds() -> Optional[list]:
@@ -2376,7 +2412,8 @@ async def get_unique_did_to_pds() -> Optional[list]:
     records = []
 
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 records_to_check = await connection.fetch("""SELECT did, pds
                                                                 FROM (
@@ -2403,7 +2440,8 @@ async def get_unique_did_to_pds() -> Optional[list]:
 
 async def update_pds_status(pds, status) -> None:
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query = """UPDATE pds SET status = $2 WHERE pds = $1"""
                 await connection.execute(query, pds, status)
@@ -2413,7 +2451,8 @@ async def update_pds_status(pds, status) -> None:
 
 async def update_pds(did, pds) -> None:
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 exists = await connection.fetchval('SELECT EXISTS(SELECT 1 FROM users WHERE did = $1 AND pds = $2)', did, pds)
 
@@ -2426,7 +2465,8 @@ async def update_pds(did, pds) -> None:
 
 async def get_didwebs_without_pds() -> Optional[list]:
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query = """SELECT did FROM users WHERE pds IS NULL AND did LIKE 'did:web%'"""
                 dids = await connection.fetch(query)
@@ -2450,7 +2490,8 @@ async def update_did_webs() -> None:
     query4 = """SELECT handle FROM did_web_history WHERE did = $1"""
 
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query = """SELECT DISTINCT(did), timestamp FROM resolution_queue WHERE did LIKE 'did:web%'"""
                 try:
@@ -2548,7 +2589,8 @@ async def update_did_webs() -> None:
 
 async def get_didwebs_pdses() -> Optional[list]:
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query = """SELECT did, pds FROM users WHERE did LIKE 'did:web%'"""
                 pds = await connection.fetch(query)
@@ -2568,28 +2610,29 @@ async def get_api_keys(environment, key_type, key) -> Optional[dict]:
 
         return None
 
-    async with connection_pools["write"].acquire() as connection:
-        async with connection.transaction():
-            try:
-                query = f"""SELECT a.key as key, a.valid, aa.*
-                            FROM api AS a
-                            INNER JOIN api_access AS aa ON a.key = aa.key
-                            WHERE a.key = $2 AND a.environment = $1 AND a.valid is TRUE"""
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
+            async with connection.transaction():
+                try:
+                    query = f"""SELECT a.key as key, a.valid, aa.*
+                                FROM api AS a
+                                INNER JOIN api_access AS aa ON a.key = aa.key
+                                WHERE a.key = $2 AND a.environment = $1 AND a.valid is TRUE"""
 
-                results = await connection.fetch(query, environment, key)
+                    results = await connection.fetch(query, environment, key)
 
-                for item in results:
-                    data = {
-                        "key": item['key'],
-                        "valid": item['valid'],
-                        key_type: item[key_type.lower()]
-                    }
-                return data
-            except Exception as e:
-                # Handle other exceptions as needed
-                logger.error(f"Error getting API keys: {e}")
+                    for item in results:
+                        data = {
+                            "key": item['key'],
+                            "valid": item['valid'],
+                            key_type: item[key_type.lower()]
+                        }
+                    return data
+                except Exception as e:
+                    # Handle other exceptions as needed
+                    logger.error(f"Error getting API keys: {e}")
 
-                return None
+                    return None
 
 
 async def get_dids_per_pds() -> Optional[dict]:
@@ -2619,7 +2662,8 @@ async def get_dids_per_pds() -> Optional[dict]:
 
 async def set_status_code(pds, status_code) -> None:
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query = """UPDATE pds SET last_status_code = $2 WHERE pds = $1"""
                 await connection.execute(query, pds, status_code)
@@ -2629,7 +2673,8 @@ async def set_status_code(pds, status_code) -> None:
 
 async def get_block_row(uri) -> Optional[dict]:
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query = """SELECT user_did, blocked_did, block_date, cid, uri
                             FROM blocklists
@@ -2663,7 +2708,8 @@ async def update_mutelist_count() -> None:
     logger.info("Updating mutelists counts.")
 
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 while True:
                     query_1 = """SELECT uri FROM mutelists LIMIT $1 OFFSET $2"""
@@ -2703,7 +2749,8 @@ async def update_subscribe_list_count() -> None:
     logger.info("Updating subscribe block list counts.")
 
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 while True:
                     query_1 = """SELECT uri FROM mutelists LIMIT $1 OFFSET $2"""
@@ -2742,7 +2789,8 @@ async def process_delete_queue() -> None:
     pop = 0
 
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 while True:
                     query = """SELECT uri FROM count_delete_queue LIMIT $1 OFFSET $2"""
@@ -2874,7 +2922,8 @@ async def get_user_count(get_active=True) -> int:
 
 async def get_dids_with_no_status() -> Optional[list]:
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query = """SELECT did FROM users WHERE status IS NULL"""
                 dids = await connection.fetch(query)
@@ -2890,7 +2939,8 @@ async def get_dids_with_no_status() -> Optional[list]:
 
 async def get_new_pdses() -> Optional[list]:
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query = """SELECT DISTINCT users.pds
                             FROM users
@@ -2910,7 +2960,8 @@ async def get_new_pdses() -> Optional[list]:
 
 async def get_did_webs() -> Optional[list]:
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query = """SELECT did FROM users WHERE did LIKE 'did:web%'"""
                 dids = await connection.fetch(query)
@@ -2926,7 +2977,8 @@ async def get_did_webs() -> Optional[list]:
 
 async def add_new_pdses(pdses) -> None:
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 for pds in pdses:
                     query = """INSERT INTO pds (pds) VALUES ($1)"""
@@ -3016,7 +3068,8 @@ async def get_labelers() -> dict[str, dict[str, str]]:
     data = {}
 
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 labelers = await connection.fetch('SELECT did, name, description FROM labelers')
 
@@ -3044,7 +3097,8 @@ async def get_labelers() -> dict[str, dict[str, str]]:
 
 async def update_labeler_data(data) -> None:
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 for did, info in data.items():
                     response = await on_wire.get_labeler_info(did)
@@ -3063,7 +3117,8 @@ async def update_labeler_data(data) -> None:
 
 async def get_resolution_queue(batch_size: int = 0) -> Optional[list]:
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query = """SELECT DISTINCT(did), timestamp FROM resolution_queue ORDER BY timestamp LIMIT $1"""
 
@@ -3086,7 +3141,8 @@ async def process_resolution_queue(info):
         pds = data.get("pds")
 
         try:
-            async with connection_pools["write"].acquire() as connection:
+            pool_name = get_connection_pool("write")
+            async with connection_pools[pool_name].acquire() as connection:
                 async with connection.transaction():
                     query = """SELECT handle, pds FROM USERS WHERE did = $1"""
 
@@ -3140,7 +3196,8 @@ async def check_did_web_changes(did):
     update_handle = False
 
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query = """SELECT handle, pds FROM USERS WHERE did = $1"""
 
@@ -3216,7 +3273,8 @@ async def check_did_web_changes(did):
 
 async def get_dids_without_created_date() -> Optional[list]:
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query = """SELECT did FROM users WHERE created_date IS NULL"""
                 dids = await connection.fetch(query)
@@ -3238,7 +3296,8 @@ async def update_did_created_date(did, created_date) -> None:
         created_date = datetime.strptime(created_date, '%Y-%m-%d %H:%M:%S')
 
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 await connection.execute("UPDATE users SET created_date = $1 WHERE did = $2", created_date, did)
     except Exception as e:
@@ -3247,7 +3306,8 @@ async def update_did_created_date(did, created_date) -> None:
 
 async def set_labeler_status(did, status) -> None:
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 await connection.execute('UPDATE labelers SET status = $2 WHERE did = $1', did, status)
     except Exception as e:
@@ -3256,7 +3316,8 @@ async def set_labeler_status(did, status) -> None:
 
 async def deactivate_user(user) -> None:
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 await connection.execute('UPDATE users SET status = FALSE WHERE did = $1', user)
     except Exception as e:
@@ -3279,7 +3340,8 @@ async def get_cursor_recall():
 
 async def get_cursor_time():
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 query = """SELECT timestamp FROM subscriptionstate WHERE service = 'firehose.clearsky.services'"""
 
@@ -3300,7 +3362,8 @@ async def get_cursor_time():
 
 async def pop_resolution_queue(did):
     try:
-        async with connection_pools["write"].acquire() as connection:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 await connection.execute("delete from resolution_queue where did = $1", did)
     except Exception as e:
