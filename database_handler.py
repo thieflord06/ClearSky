@@ -18,6 +18,7 @@ import functools
 from errors import NotFound, DatabaseConnectionError
 from config_helper import check_override
 import itertools
+from errors import InternalServerError, DatabaseConnectionError
 
 # ======================================================================================================================
 # ===================================================  global variables ================================================
@@ -306,8 +307,21 @@ async def find_handles(value):
 async def count_users_table():
     pool_name = get_connection_pool("read")
     async with connection_pools[pool_name].acquire() as connection:
-        # Execute the SQL query to count the rows in the "users" table
-        return await connection.fetchval('SELECT COUNT(*) FROM users WHERE status is TRUE')
+        try:
+            # Execute the SQL query to count the rows in the "users" table
+            return await connection.fetchval('SELECT COUNT(*) FROM users WHERE status is TRUE')
+        except asyncpg.PostgresError as e:
+            logger.error(f"Postgres error: {e}")
+            raise DatabaseConnectionError
+        except asyncpg.InterfaceError as e:
+            logger.error(f"interface error: {e}")
+            raise DatabaseConnectionError
+        except AttributeError:
+            logger.error(f"db connection issue.")
+            raise DatabaseConnectionError
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            raise InternalServerError
 
 
 async def get_blocklist(ident, limit=100, offset=0):
@@ -328,14 +342,16 @@ async def get_blocklist(ident, limit=100, offset=0):
                 return blocklist_rows, total_blocked_count
     except asyncpg.PostgresError as e:
         logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
     except asyncpg.InterfaceError as e:
         logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
     except AttributeError:
         logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
         logger.error(f"Error retrieving blocklist for {ident}: {e} {type(e)}")
-
-        return None, None
+        raise InternalServerError
 
 
 async def get_subscribe_blocks(ident, limit=100, offset=0):
@@ -384,14 +400,16 @@ async def get_subscribe_blocks(ident, limit=100, offset=0):
                 return data_list, total_blocked_count
     except asyncpg.PostgresError as e:
         logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
     except asyncpg.InterfaceError as e:
         logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
     except AttributeError:
         logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
         logger.error(f"Error retrieving subscribe blocklist for {ident}: {e} {type(e)}")
-
-        return None, None
+        raise InternalServerError
 
 
 async def get_subscribe_blocks_single(ident, list_of_lists, limit=100, offset=0):
@@ -448,14 +466,16 @@ async def get_subscribe_blocks_single(ident, list_of_lists, limit=100, offset=0)
                 return data_list, total_count
     except asyncpg.PostgresError as e:
         logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
     except asyncpg.InterfaceError as e:
         logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
     except AttributeError:
         logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
         logger.error(f"Error retrieving subscribe blocklist for {ident}: {e} {type(e)}")
-
-        return None, None
+        raise InternalServerError
 
 
 async def get_listitem_url(uri):
@@ -471,14 +491,16 @@ async def get_listitem_url(uri):
                 return url
     except asyncpg.PostgresError as e:
         logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
     except asyncpg.InterfaceError as e:
         logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
     except AttributeError:
         logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
         logger.error(f"Error retrieving URL {uri}: {e} {type(e)}")
-
-        return None
+        raise InternalServerError
 
 
 async def get_moderation_list(name, limit=100, offset=0):
@@ -517,14 +539,16 @@ async def get_moderation_list(name, limit=100, offset=0):
                 description_count = await connection.fetchval(description_count_query, search_string)
     except asyncpg.PostgresError as e:
         logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
     except asyncpg.InterfaceError as e:
         logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
     except AttributeError:
         logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
         logger.error(f"Error retrieving results for {name}: {e} {type(e)}")
-
-        return None, 0
+        raise InternalServerError
 
     count = name_count + description_count
 
@@ -580,14 +604,16 @@ async def get_listblock_url(uri):
                 return url
     except asyncpg.PostgresError as e:
         logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
     except asyncpg.InterfaceError as e:
         logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
     except AttributeError:
         logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
         logger.error(f"Error retrieving URL {uri}: {e} {type(e)}")
-
-        return None
+        raise InternalServerError
 
 
 async def get_dids_without_handles():
@@ -599,10 +625,18 @@ async def get_dids_without_handles():
                 rows = await connection.fetch(query)
                 dids_without_handles = [record['did'] for record in rows]
                 return dids_without_handles
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error retrieving DIDs without handles: {e}")
-
-        return []
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def get_dids_without_handles_and_are_not_active():
@@ -614,10 +648,18 @@ async def get_dids_without_handles_and_are_not_active():
                 rows = await connection.fetch(query)
                 dids_without_handles = [record['did'] for record in rows]
                 return dids_without_handles
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error retrieving DIDs without handles: {e}")
-
-        return []
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def get_pdses():
@@ -632,8 +674,18 @@ async def get_pdses():
                             LEFT JOIN pds ON users.pds = pds.pds
                             WHERE pds.pds IS NULL AND users.pds IS NOT NULL"""
                 await connection.execute(query)
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error inserting PDSes: {e}")
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
     try:
         pool_name = get_connection_pool("write")
@@ -645,10 +697,18 @@ async def get_pdses():
                 result = [pds["pds"] for pds in results]
 
                 return result
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error retrieving DIDs without handles: {e}")
-
-        return None
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def get_pds(did):
@@ -660,10 +720,18 @@ async def get_pds(did):
                 pds = await connection.fetchval(query, did)
 
                 return pds
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error retrieving PDS for DID {did}: {e}")
-
-        return None
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def update_did_status(did, info) -> None:
@@ -674,8 +742,18 @@ async def update_did_status(did, info) -> None:
                 query = "UPDATE users SET status = $1, reason = $2 WHERE did = $3"
 
                 await connection.execute(query, info.get("status"), info.get("reason"), did)
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error updating status for DID {info['did']}: {e}")
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def get_dids_without_pdses() -> List[str]:
@@ -688,10 +766,18 @@ async def get_dids_without_pdses() -> List[str]:
                 dids_without_pdses = [record['did'] for record in rows]
 
                 return dids_without_pdses
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error retrieving DIDs without PDSes: {e}")
-
-        return []
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def update_did_pds(did, pds):
@@ -701,8 +787,18 @@ async def update_did_pds(did, pds):
             async with connection.transaction():
                 query = "UPDATE users SET pds = $1 WHERE did = $2"
                 await connection.execute(query, pds, did)
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error updating PDS for DID {did}: {e}")
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def blocklist_search(search_list, lookup, switch):
@@ -756,13 +852,18 @@ async def blocklist_search(search_list, lookup, switch):
                     resultslist = None
 
                     return resultslist
-
+            except asyncpg.PostgresError as e:
+                logger.error(f"Postgres error: {e}")
+                raise DatabaseConnectionError
+            except asyncpg.InterfaceError as e:
+                logger.error(f"interface error: {e}")
+                raise DatabaseConnectionError
+            except AttributeError:
+                logger.error(f"db connection issue.")
+                raise DatabaseConnectionError
             except Exception as e:
-                logger.error(f"Error retrieving blocklist search result: {e}")
-
-                resultslist = None
-
-                return resultslist
+                logger.error(f"Error: {e}")
+                raise InternalServerError
 
 
 async def crawl_all_retry_batch(batch_dids, forced=False):
@@ -1368,26 +1469,25 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, fo
 
 
 async def does_did_and_handle_exist_in_database(did, handle):
-    max_retries = 5
-    for retry in range(max_retries):
-        try:
-            pool_name = get_connection_pool("write")
-            async with connection_pools[pool_name].acquire() as connection:
-                # Execute the SQL query to check if the given DID exists in the "users" table
-                exists = await connection.fetchval('SELECT EXISTS(SELECT 1 FROM users WHERE did = $1 AND handle = $2)', did, handle)
+    try:
+        pool_name = get_connection_pool("write")
+        async with connection_pools[pool_name].acquire() as connection:
+            # Execute the SQL query to check if the given DID exists in the "users" table
+            exists = await connection.fetchval('SELECT EXISTS(SELECT 1 FROM users WHERE did = $1 AND handle = $2)', did, handle)
 
-                return exists
-        except TimeoutError:
-            logger.error(f"Timeout error on attempt {retry + 1}. Retrying in 10 sec...")
-            await asyncio.sleep(10)
-            if retry == max_retries - 1:
-                logger.error("Max retries reached, failing to False.")
-
-                return False
-        except Exception as e:
-            logger.error(f"Error during does_did_and_handle_exist_in_database: {e}")
-
-            return False
+            return exists
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def update_user_handles(handles_to_update):
@@ -1426,22 +1526,22 @@ async def update_user_handles(handles_to_update):
         logger.info(f"Updated {len(handles_to_update)} handles in the database.")
 
 
-async def add_new_prefixes(handles):
-    for handle in handles:
-        pool_name = get_connection_pool("write")
-        async with connection_pools[pool_name].acquire() as connection:
-            async with connection.transaction():
-                try:
-                    query = """INSERT INTO user_prefixes(handle, prefix1, prefix2, prefix3)
-                                    VALUES($1,
-                                    SUBSTRING($1, 1, 1),
-                                    SUBSTRING($1, 1, 2),
-                                    SUBSTRING($1, 1, 3)
-                                    ) ON CONFLICT (handle) DO NOTHING;"""
-
-                    await connection.execute(query, handle)
-                except Exception as e:
-                    logger.error(f"Error updating prefixes: {e}")
+# async def add_new_prefixes(handles):
+#     for handle in handles:
+#         pool_name = get_connection_pool("write")
+#         async with connection_pools[pool_name].acquire() as connection:
+#             async with connection.transaction():
+#                 try:
+#                     query = """INSERT INTO user_prefixes(handle, prefix1, prefix2, prefix3)
+#                                     VALUES($1,
+#                                     SUBSTRING($1, 1, 1),
+#                                     SUBSTRING($1, 1, 2),
+#                                     SUBSTRING($1, 1, 3)
+#                                     ) ON CONFLICT (handle) DO NOTHING;"""
+#
+#                     await connection.execute(query, handle)
+#                 except Exception as e:
+#                     logger.error(f"Error updating prefixes: {e}")
 
 
 async def process_batch(batch_dids, ad_hoc, batch_size):
@@ -1550,10 +1650,22 @@ async def update_24_hour_block_list_table(entries, list_type):
                 logger.info("Updated top 24 block table.")
     except asyncpg.exceptions.UniqueViolationError:
         logger.warning("Attempted to insert duplicate entry into top block table")
+        raise InternalServerError
     except asyncpg.exceptions.UndefinedTableError:
         logger.warning("table doesn't exist")
+        raise InternalServerError
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error("Error updating top block table: %s", e)
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def truncate_top_blocks_table():
@@ -1564,8 +1676,18 @@ async def truncate_top_blocks_table():
                 # Delete the existing rows if it exists
                 await connection.execute("TRUNCATE top_block")
                 logger.info("Truncated block table.")
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error("Error updating top block table: %s", e)
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def truncate_top24_blocks_table():
@@ -1576,8 +1698,18 @@ async def truncate_top24_blocks_table():
                 # Delete the existing row if it exists
                 await connection.execute("TRUNCATE top_twentyfour_hour_block")
                 logger.info("Truncated top 24 block table.")
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error("Error updating top block table: %s", e)
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def update_top_block_list_table(entries, list_type):
@@ -1592,10 +1724,22 @@ async def update_top_block_list_table(entries, list_type):
                 logger.info("Updated top block table")
     except asyncpg.exceptions.UniqueViolationError:
         logger.warning("Attempted to insert duplicate entry into top block table")
+        raise InternalServerError
     except asyncpg.exceptions.UndefinedTableError:
         logger.warning("table doesn't exist")
+        raise InternalServerError
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error("Error updating top block table: %s", e)
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def get_top_blocks_list() -> Tuple[List[Tuple[str, int]], List[Tuple[str, int]]]:
@@ -1609,10 +1753,18 @@ async def get_top_blocks_list() -> Tuple[List[Tuple[str, int]], List[Tuple[str, 
                 blocker_rows = await connection.fetch(query2)
 
                 return blocked_rows, blocker_rows
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error retrieving DIDs without handles: {e}")
-
-        return [], []
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def get_24_hour_block_list():
@@ -1626,10 +1778,18 @@ async def get_24_hour_block_list():
                 blocker_rows = await connection.fetch(query2)
 
                 return blocked_rows, blocker_rows
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error retrieving DIDs without handles: {e}")
-
-        return [], []
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def delete_temporary_table(table):
@@ -1640,8 +1800,18 @@ async def delete_temporary_table(table):
                 async with connection.transaction():
                     query = f"DROP TABLE IF EXISTS {table}"
                     await connection.execute(query)
+        except asyncpg.PostgresError as e:
+            logger.error(f"Postgres error: {e}")
+            raise DatabaseConnectionError
+        except asyncpg.InterfaceError as e:
+            logger.error(f"interface error: {e}")
+            raise DatabaseConnectionError
+        except AttributeError:
+            logger.error(f"db connection issue.")
+            raise DatabaseConnectionError
         except Exception as e:
-            logger.error("Error deleting temporary table: %s", e)
+            logger.error(f"Error: {e}")
+            raise InternalServerError
 
 
 async def delete_new_users_temporary_table():
@@ -1651,8 +1821,18 @@ async def delete_new_users_temporary_table():
             async with connection.transaction():
                 query = "DROP TABLE IF EXISTS new_users_temporary_table"
                 await connection.execute(query)
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error("Error deleting temporary table: %s", e)
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def update_temporary_table(last_processed_did, table):
@@ -1667,8 +1847,18 @@ async def update_temporary_table(last_processed_did, table):
                 # Insert the new row with the given last_processed_did
                 insert_query = f"INSERT INTO {table} (last_processed_did, touched) VALUES ($1, $2)"
                 await connection.execute(insert_query, last_processed_did, touched)
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error("Error updating temporary table: %s", e)
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def update_new_users_temporary_table(last_processed_did):
@@ -1682,8 +1872,18 @@ async def update_new_users_temporary_table(last_processed_did):
                 # Insert the new row with the given last_processed_did
                 query = "INSERT INTO new_users_temporary_table (last_processed_did) VALUES ($1)"
                 await connection.execute(query, last_processed_did)
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error("Error updating temporary table: %s", e)
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def get_top_blocks():
@@ -1728,10 +1928,19 @@ async def get_top_blocks():
                 return blocked_data, blockers_data
     except asyncpg.exceptions.UndefinedTableError:
         logger.warning("table doesn't exist")
-
-        return None, None
+        raise InternalServerError
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error("Error retrieving data from db", e)
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def update_did_service(data, label_data):
@@ -1863,8 +2072,18 @@ async def update_last_created_did_date(last_created):
                 # Insert the new row with the given last_processed_did
                 insert_query = f"INSERT INTO {last_created_table} (last_created) VALUES ($1)"
                 await connection.execute(insert_query, last_created)
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error("Error updating temporary table: %s", e)
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def check_last_created_did_date():
@@ -1877,10 +2096,18 @@ async def check_last_created_did_date():
                 value = await connection.fetchval(query)
 
                 return value
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error("Error retrieving data", e)
-
-        return None
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def get_block_stats():
@@ -1997,12 +2224,18 @@ async def get_block_stats():
                         number_block_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000,
                         average_number_of_blocks, number_blocked_1, number_blocked_2_and_100, number_blocked_101_and_1000,
                         number_blocked_greater_than_1000, average_number_blocked, total_users)
-    except asyncpg.exceptions.UndefinedTableError:
-        logger.warning("table doesn't exist")
-
-        return None, None, None, None, None, None, None, None, None, None, None, None, None, None
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error retrieving data from db: {e}")
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def get_top24_blocks():
@@ -2041,10 +2274,19 @@ async def get_top24_blocks():
                 return blocked_data, blockers_data
     except asyncpg.exceptions.UndefinedTableError:
         logger.warning("table doesn't exist")
-
-        return None, None
+        raise InternalServerError
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error("Error retrieving data from db", e)
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def get_similar_blocked_by(user_did):
@@ -2326,10 +2568,18 @@ async def get_mutelists(ident) -> Optional[list]:
             """
             try:
                 mute_lists = await connection.fetch(query, ident)
+            except asyncpg.PostgresError as e:
+                logger.error(f"Postgres error: {e}")
+                raise DatabaseConnectionError
+            except asyncpg.InterfaceError as e:
+                logger.error(f"interface error: {e}")
+                raise DatabaseConnectionError
+            except AttributeError:
+                logger.error(f"db connection issue.")
+                raise DatabaseConnectionError
             except Exception as e:
-                logger.error(f"Error retrieving DIDs without handles: {e}")
-
-                return None
+                logger.error(f"Error: {e}")
+                raise InternalServerError
 
             lists = []
             for record in mute_lists:
@@ -2352,11 +2602,24 @@ async def check_api_key(api_environment, key_type, key_value) -> bool:
     pool_name = get_connection_pool("read")
     async with connection_pools[pool_name].acquire() as connection:
         async with connection.transaction():
-            query = """SELECT valid FROM API WHERE key = $3 environment = $1 AND access_type LIKE '%' || $2 || '%'"""
+            try:
+                query = """SELECT valid FROM API WHERE key = $3 environment = $1 AND access_type LIKE '%' || $2 || '%'"""
 
-            status = await connection.fetchval(query, api_environment, key_type, key_value)
+                status = await connection.fetchval(query, api_environment, key_type, key_value)
 
-            return status
+                return status
+            except asyncpg.PostgresError as e:
+                logger.error(f"Postgres error: {e}")
+                raise DatabaseConnectionError
+            except asyncpg.InterfaceError as e:
+                logger.error(f"interface error: {e}")
+                raise DatabaseConnectionError
+            except AttributeError:
+                logger.error(f"db connection issue.")
+                raise DatabaseConnectionError
+            except Exception as e:
+                logger.error(f"Error: {e}")
+                raise InternalServerError
 
 
 async def wait_for_redis() -> None:
@@ -2405,9 +2668,19 @@ async def tables_exists() -> bool:
 
                     return True
             except asyncpg.ConnectionDoesNotExistError:
-                logger.error("Error checking if schema exists, db not connected.")
-
-                return False
+                raise DatabaseConnectionError
+            except asyncpg.PostgresError as e:
+                logger.error(f"Postgres error: {e}")
+                raise DatabaseConnectionError
+            except asyncpg.InterfaceError as e:
+                logger.error(f"interface error: {e}")
+                raise DatabaseConnectionError
+            except AttributeError:
+                logger.error(f"db connection issue.")
+                raise DatabaseConnectionError
+            except Exception as e:
+                logger.error(f"Error: {e}")
+                raise InternalServerError
 
 
 async def get_unique_did_to_pds() -> Optional[list]:
@@ -2436,10 +2709,18 @@ async def get_unique_did_to_pds() -> Optional[list]:
                 logger.info(f"Processing {len(records)} records.")
 
                 return records
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error fetching federated pdses: {e}")
-
-        return None
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def update_pds_status(pds, status) -> None:
@@ -2449,8 +2730,18 @@ async def update_pds_status(pds, status) -> None:
             async with connection.transaction():
                 query = """UPDATE pds SET status = $2 WHERE pds = $1"""
                 await connection.execute(query, pds, status)
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error updating pds status: {e}")
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def update_pds(did, pds) -> None:
@@ -2463,8 +2754,18 @@ async def update_pds(did, pds) -> None:
                 if not exists:
                     query = """UPDATE users SET pds = $2 WHERE did = $1"""
                     await connection.execute(query, did, pds)
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error updating pds: {e}")
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def get_didwebs_without_pds() -> Optional[list]:
@@ -2478,10 +2779,18 @@ async def get_didwebs_without_pds() -> Optional[list]:
                 records = [record['did'] for record in dids]
 
                 return records
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error getting didwebs without pds: {e}")
-
-        return None
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def update_did_webs() -> None:
@@ -2602,10 +2911,18 @@ async def get_didwebs_pdses() -> Optional[list]:
                 records = [(record['did'], record['pds']) for record in pds]
 
                 return records
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error checking didweb pds: {e}")
-
-        return None
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def get_api_keys(environment, key_type, key) -> Optional[dict]:
@@ -2631,12 +2948,20 @@ async def get_api_keys(environment, key_type, key) -> Optional[dict]:
                         "valid": item['valid'],
                         key_type: item[key_type.lower()]
                     }
-                return data
-            except Exception as e:
-                # Handle other exceptions as needed
-                logger.error(f"Error getting API keys: {e}")
 
-                return None
+                return data
+            except asyncpg.PostgresError as e:
+                logger.error(f"Postgres error: {e}")
+                raise DatabaseConnectionError
+            except asyncpg.InterfaceError as e:
+                logger.error(f"interface error: {e}")
+                raise DatabaseConnectionError
+            except AttributeError:
+                logger.error(f"db connection issue.")
+                raise DatabaseConnectionError
+            except Exception as e:
+                logger.error(f"Error: {e}")
+                raise InternalServerError
 
 
 async def get_dids_per_pds() -> Optional[dict]:
@@ -2658,10 +2983,18 @@ async def get_dids_per_pds() -> Optional[dict]:
                     data_dict[record['pds']] = record['did_count']
 
                 return data_dict
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error getting dids per pds: {e}")
-
-        return None
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def set_status_code(pds, status_code) -> None:
@@ -2671,8 +3004,18 @@ async def set_status_code(pds, status_code) -> None:
             async with connection.transaction():
                 query = """UPDATE pds SET last_status_code = $2 WHERE pds = $1"""
                 await connection.execute(query, pds, status_code)
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error updating status code: {e}")
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def get_block_row(uri) -> Optional[dict]:
@@ -2699,8 +3042,18 @@ async def get_block_row(uri) -> Optional[dict]:
                     return response
                 else:
                     raise NotFound
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error updating status code: {e}")
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def update_mutelist_count() -> None:
@@ -2740,8 +3093,18 @@ async def update_mutelist_count() -> None:
 
         logger.info("Mutelists counts updated.")
         logger.info(f"Counted: {list_count} lists")
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error updating mutelist count (general): {e}")
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def update_subscribe_list_count() -> None:
@@ -2781,8 +3144,18 @@ async def update_subscribe_list_count() -> None:
 
         logger.info("Subscribe lists counts updated.")
         logger.info(f"Counted: {list_count} subscribe lists")
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error updating mutelist count (general): {e}")
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def process_delete_queue() -> None:
@@ -2839,8 +3212,18 @@ async def process_delete_queue() -> None:
                     offset += 100
 
         logger.info(f"Deleted {pop} entries from delete queue.")
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error processing delete queue: {e}")
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def identifier_exists_in_db(identifier):
@@ -2894,7 +3277,20 @@ async def identifier_exists_in_db(identifier):
 async def get_user_did(handle) -> Optional[str]:
     pool_name = get_connection_pool("read")
     async with connection_pools[pool_name].acquire() as connection:
-        did = await connection.fetchval('SELECT did FROM users WHERE handle = $1 AND status is True', handle)
+        try:
+            did = await connection.fetchval('SELECT did FROM users WHERE handle = $1 AND status is True', handle)
+        except asyncpg.PostgresError as e:
+            logger.error(f"Postgres error: {e}")
+            raise DatabaseConnectionError
+        except asyncpg.InterfaceError as e:
+            logger.error(f"interface error: {e}")
+            raise DatabaseConnectionError
+        except AttributeError:
+            logger.error(f"db connection issue.")
+            raise DatabaseConnectionError
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            raise InternalServerError
 
     return did
 
@@ -2902,7 +3298,20 @@ async def get_user_did(handle) -> Optional[str]:
 async def get_user_handle(did) -> Optional[str]:
     pool_name = get_connection_pool("read")
     async with connection_pools[pool_name].acquire() as connection:
-        handle = await connection.fetchval('SELECT handle FROM users WHERE did = $1', did)
+        try:
+            handle = await connection.fetchval('SELECT handle FROM users WHERE did = $1', did)
+        except asyncpg.PostgresError as e:
+            logger.error(f"Postgres error: {e}")
+            raise DatabaseConnectionError
+        except asyncpg.InterfaceError as e:
+            logger.error(f"interface error: {e}")
+            raise DatabaseConnectionError
+        except AttributeError:
+            logger.error(f"db connection issue.")
+            raise DatabaseConnectionError
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            raise InternalServerError
 
     return handle
 
@@ -2910,17 +3319,31 @@ async def get_user_handle(did) -> Optional[str]:
 async def get_user_count(get_active=True) -> int:
     pool_name = get_connection_pool("read")
     async with connection_pools[pool_name].acquire() as connection:
-        if get_active:
-            count = await connection.fetchval("""SELECT COUNT(*)
-                                                FROM users
-                                                JOIN pds ON users.pds = pds.pds
-                                                WHERE users.status IS TRUE AND pds.status IS TRUE""")
+        try:
+            if get_active:
+                count = await connection.fetchval("""SELECT COUNT(*)
+                                                    FROM users
+                                                    JOIN pds ON users.pds = pds.pds
+                                                    WHERE users.status IS TRUE AND pds.status IS TRUE""")
 
-            # count = await connection.fetchval("""SELECT COUNT(*)
-            #                                     FROM users
-            #                                     WHERE users.status IS TRUE""")
-        else:
-            count = await connection.fetchval("""SELECT COUNT(*) FROM users JOIN pds ON users.pds = pds.pds WHERE pds.status is TRUE""")
+                # count = await connection.fetchval("""SELECT COUNT(*)
+                #                                     FROM users
+                #                                     WHERE users.status IS TRUE""")
+            else:
+                count = await connection.fetchval("""SELECT COUNT(*) FROM users JOIN pds ON users.pds = pds.pds WHERE pds.status is TRUE""")
+        except asyncpg.PostgresError as e:
+            logger.error(f"Postgres error: {e}")
+            raise DatabaseConnectionError
+        except asyncpg.InterfaceError as e:
+            logger.error(f"interface error: {e}")
+            raise DatabaseConnectionError
+        except AttributeError:
+            logger.error(f"db connection issue.")
+            raise DatabaseConnectionError
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            raise InternalServerError
+
         return count
 
 
@@ -2935,10 +3358,18 @@ async def get_dids_with_no_status() -> Optional[list]:
                 records = [record['did'] for record in dids]
 
                 return records
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error getting dids with no status: {e}")
-
-        return None
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def get_new_pdses() -> Optional[list]:
@@ -2956,10 +3387,18 @@ async def get_new_pdses() -> Optional[list]:
                 records = [record['pds'] for record in pdses]
 
                 return records
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error getting new pdses: {e}")
-
-        return None
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def get_did_webs() -> Optional[list]:
@@ -2973,10 +3412,18 @@ async def get_did_webs() -> Optional[list]:
                 records = [record['did'] for record in dids]
 
                 return records
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error getting didwebs: {e}")
-
-        return None
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def add_new_pdses(pdses) -> None:
@@ -2988,14 +3435,37 @@ async def add_new_pdses(pdses) -> None:
                     query = """INSERT INTO pds (pds) VALUES ($1)"""
 
                     await connection.execute(query, pds)
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error getting new pdses: {e}")
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def get_deleted_users_count() -> int:
     pool_name = get_connection_pool("read")
     async with connection_pools[pool_name].acquire() as connection:
-        count = await connection.fetchval('SELECT COUNT(*) FROM USERS JOIN pds ON users.pds = pds.pds WHERE pds.status is TRUE AND users.status is FALSE')
+        try:
+            count = await connection.fetchval('SELECT COUNT(*) FROM USERS JOIN pds ON users.pds = pds.pds WHERE pds.status is TRUE AND users.status is FALSE')
+        except asyncpg.PostgresError as e:
+            logger.error(f"Postgres error: {e}")
+            raise DatabaseConnectionError
+        except asyncpg.InterfaceError as e:
+            logger.error(f"interface error: {e}")
+            raise DatabaseConnectionError
+        except AttributeError:
+            logger.error(f"db connection issue.")
+            raise DatabaseConnectionError
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            raise InternalServerError
 
         return count
 
@@ -3033,12 +3503,18 @@ async def get_single_user_blocks(ident, limit=100, offset=0):
                 total_blocked = 0
 
                 return block_list, total_blocked, pages
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        block_list = []
-        logger.error(f"Error fetching blocklists for {ident}: {e}")
-        count = 0
-
-        return block_list, count, pages
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def get_did_web_handle_history(identifier) -> Optional[list]:
@@ -3062,10 +3538,18 @@ async def get_did_web_handle_history(identifier) -> Optional[list]:
             handle_history.sort(key=lambda x: x[2])
 
             return handle_history
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error fetching did:web history: {e}")
-
-        return None
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def get_labelers() -> dict[str, dict[str, str]]:
@@ -3093,10 +3577,18 @@ async def get_labelers() -> dict[str, dict[str, str]]:
                     }
 
                 return data
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error fetching labelers: {e}")
-
-        return {}
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def update_labeler_data(data) -> None:
@@ -3131,8 +3623,18 @@ async def get_resolution_queue(batch_size: int = 0) -> Optional[list]:
                 processed_records = [record['did'] for record in records]
 
                 return processed_records
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error updating didwebs: {e}")
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def process_resolution_queue(info):
@@ -3286,10 +3788,18 @@ async def get_dids_without_created_date() -> Optional[list]:
                 records = [record['did'] for record in dids]
 
                 return records
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error getting dids without created date: {e}")
-
-        return None
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def update_did_created_date(did, created_date) -> None:
@@ -3337,9 +3847,18 @@ async def get_cursor_recall():
                 records = await connection.fetch(query)
 
                 return records
-    except Exception as e:
-        logger.error(f"Error getting cursor recall: {e}")
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
         raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def get_cursor_time():
@@ -3359,9 +3878,18 @@ async def get_cursor_time():
                     records2 = None
 
                 return records, records2
-    except Exception as e:
-        logger.error(f"Error getting cursor time: {e}")
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
         raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 async def pop_resolution_queue(did):
@@ -3370,10 +3898,18 @@ async def pop_resolution_queue(did):
         async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 await connection.execute("delete from resolution_queue where did = $1", did)
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error(f"db connection issue.")
+        raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error popping {did} from resolution queue: {e}")
-
-        return None
+        logger.error(f"Error: {e}")
+        raise InternalServerError
 
 
 # ======================================================================================================================
