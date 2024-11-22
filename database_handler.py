@@ -1493,7 +1493,7 @@ async def process_batch(batch_dids, ad_hoc, batch_size):
                 # logger.debug("Last processed DID: " + str(last_processed_did))
                 # if table:
                 #     await update_temporary_table(last_processed_did, table)
-            except asyncpg.ConnectionDoesNotExistError as e:
+            except asyncpg.ConnectionDoesNotExistError:
                 logger.warning("Connection error, retrying in 30 seconds...")
                 await asyncio.sleep(30)  # Retry after 60 seconds
             except Exception as e:
@@ -2381,32 +2381,33 @@ async def wait_for_redis() -> None:
 
 
 async def tables_exists() -> bool:
-        pool_name = get_connection_pool("write")
-        async with connection_pools[pool_name].acquire() as connection:
-            async with connection.transaction():
-                try:
-                    query1 = """SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1)"""
-                    query2 = """SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1)"""
-                    query3 = """SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1)"""
-                    query4 = """SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1)"""
+    pool_name = get_connection_pool("write")
 
-                    users_exist = await connection.fetchval(query1, users_table)
-                    blocklists_exist = await connection.fetchval(query2, blocklist_table)
-                    top_blocks_exist = await connection.fetchval(query3, top_blocks_table)
-                    top_24_exist = await connection.fetchval(query4, top_24_blocks_table)
+    async with connection_pools[pool_name].acquire() as connection:
+        async with connection.transaction():
+            try:
+                query1 = """SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1)"""
+                query2 = """SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1)"""
+                query3 = """SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1)"""
+                query4 = """SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1)"""
 
-                    values = (users_exist, blocklists_exist, top_blocks_exist, top_24_exist)
+                users_exist = await connection.fetchval(query1, users_table)
+                blocklists_exist = await connection.fetchval(query2, blocklist_table)
+                top_blocks_exist = await connection.fetchval(query3, top_blocks_table)
+                top_24_exist = await connection.fetchval(query4, top_24_blocks_table)
 
-                    if any(value is False for value in values):
+                values = (users_exist, blocklists_exist, top_blocks_exist, top_24_exist)
 
-                        return False
-                    else:
-
-                        return True
-                except asyncpg.ConnectionDoesNotExistError:
-                    logger.error("Error checking if schema exists, db not connected.")
+                if any(value is False for value in values):
 
                     return False
+                else:
+
+                    return True
+            except asyncpg.ConnectionDoesNotExistError:
+                logger.error("Error checking if schema exists, db not connected.")
+
+                return False
 
 
 async def get_unique_did_to_pds() -> Optional[list]:
