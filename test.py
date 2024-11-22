@@ -6,9 +6,12 @@ import urllib.parse
 import httpx
 from datetime import datetime
 import app
+import errors
+import on_wire
 import utils
 from config_helper import logger, limiter
 import database_handler
+import core
 import random
 import string
 import datetime
@@ -376,8 +379,7 @@ async def get_user_block_list(ident, pds):
 
 async def main():
     try:
-        await database_handler.create_connection_pool("read")
-        await database_handler.create_connection_pool("write")
+        await database_handler.create_connection_pools(database_handler.database_config)
     except Exception as e:
         logger.error(f"Error creating connection pool: {str(e)}")
         sys.exit()
@@ -433,8 +435,36 @@ async def main():
 
     # await database_handler.get_block_row('at://did:plc:vmdqzixzv3o7zw6bn233gb4s/app.bsky.graph.block/3kc7atxkmsp2u')
 
-    await utils.get_resolution_queue_info(True)
+    # await utils.get_resolution_queue_info(True)
 
     # await database_handler.get_all_users_db(True, False, init_db_run=True)
+
+    # await on_wire.get_status("did:plc:cgbowhige5h3tppwzkpchyhu", "https://verpa.us-west.host.bsky.network")
+
+    # await database_handler.update_did_created_date('did:plc:ub7o3tukadbzdcgi3v4k3a4l', 'unknown')
+
+    # Check if did:webs handle or pds has changed
+    # did_webs = await database_handler.get_did_webs()
+    #
+    # if did_webs:
+    #     for did in did_webs:
+    #         await database_handler.check_did_web_changes(did)
+
+    # await database_handler.check_did_web_changes('did:web:lily.pet')
+
+    # await core.time_behind()
+
+    # await utils.get_resolution_queue_info()
+
+    # try:
+    #     await core.get_handle_history_info("did:plc:picillica.bsky.social")
+    # except errors.NotFound:
+    #     logger.error("Handle not found")
+
+    # await database_handler.get_cursor_time()
+
+    await core.time_behind()
+
+    # database_handler.get_connection_pool('write')
 if __name__ == '__main__':
     asyncio.run(main())
