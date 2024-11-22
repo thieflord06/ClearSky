@@ -538,7 +538,9 @@ async def main():
         # api_endpoint = "http://localhost/api/v1/blocklist-search-blocking/desir.ee/thieflord.dev"
         # api_endpoint = "http://localhost/api/v1/anon/blocklist-search-blocked/thieflord.dev/desir.ee"
         # api_endpoint = "https://staging.bsky.thieflord.dev/api/v1/total-users"
-        # api_endpoint = "http://localhost/api/v1/single-blocklist/thieflord.dev"
+        # api_endpoint = "http://localhost/api/v1/anon/single-blocklist/thieflord.dev"
+        api_endpoint = "http://localhost/api/v1/anon/single-blocklist/dollyeldritch.bsky.social"
+        # api_endpoint = "http://localhost/api/v1/anon/blocklist/thieflord.dev"
         # api_endpoint = "http://localhost/api/v1/at-uri/at://did:plc:smcanwhzsj5dqp4yew7y6ybx/app.bsky.graph.listblock/3kf2kfcic5od2u"
         # api_endpoint = "http://localhost/api/v1/get-moderation-list/gaminsdfvf"
         # api_endpoint = "http://localhost/api/v1/anon/blocklist/kinewtesting2.bsky.social"
@@ -554,8 +556,12 @@ async def main():
         # api_endpoint = "https://api.clearsky.services/api/v1/anon/base/autocomplete/thi"
         # api_endpoint = "https://api.clearsky.services/api/v1/anon/at-uri/at://did:plc:synka4gchwjmophklcsndndf/app.bsky.feed.post/3klnptzxy3b2f"
         # api_endpoint = "https://api.staging.clearsky.services/api/v1/anon/data-transaction/query"
-        # api_endpoint = "http://localhost/api/v1/anon/validation/validate-handle/new.blockenheimer.click"
-        api_endpoint = "https://clearsky.app/api/v1/base/internal/status/process-status"
+        # api_endpoint = "https://api.clearsky.services/api/v1/anon/validation/validate-handle/drbonnieanderson.bsky.social"
+        # api_endpoint = "https://clearsky.app/api/v1/base/internal/status/process-status"
+        # api_endpoint = "https://api.clearsky.services/api/v1/anon/total-users"
+        # api_endpoint = "https://api.clearsky.services/api/v1/anon/lists/fun-facts"
+        # api_endpoint = "https://api.clearsky.services/api/v1/anon/cursor-recall/status"
+        # api_endpoint = "https://api.clearsky.services/api/v1/anon/status/time-behind"
 
         try:
             logger.info(f"API endpoint: {api_endpoint}")
