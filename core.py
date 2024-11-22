@@ -150,6 +150,12 @@ async def initialize() -> None:
     for db in dbs_connected:
         logger.info(f"{db} connected.")
 
+    logger.info(f"read db(s): {database_handler.read_dbs}")
+
+    write_db = database_handler.get_connection_pool("write")
+
+    logger.info(f"write db: {write_db}")
+
 
 async def pre_process_identifier(identifier) -> (Optional[str], Optional[str]):
     did_identifier = None
