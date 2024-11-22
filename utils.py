@@ -1526,7 +1526,8 @@ async def get_resolution_queue_info():
 
             total_dids = len(all_dids)
 
-            async with database_handler.connection_pools["write"].acquire() as connection:
+            pool_name = database_handler.get_connection_pool("write")
+            async with database_handler.connection_pools[pool_name].acquire() as connection:
                 async with connection.transaction():
                     # Concurrently process batches and update the handles
                     for i in range(0, total_dids, batch_size):
