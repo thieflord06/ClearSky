@@ -706,63 +706,63 @@ async def update_did_pds(did, pds):
 
 
 async def blocklist_search(search_list, lookup, switch):
-        pool_name = get_connection_pool("write")
-        async with connection_pools[pool_name].acquire() as connection:
-            async with connection.transaction():
-                try:
-                    blocking = """SELECT b.user_did, b.blocked_did, b.block_date, u1.handle, u1.status
-                                    FROM blocklists AS b
-                                    INNER JOIN users AS u1 ON b.user_did = u1.did
-                                    INNER JOIN users AS u2 ON b.blocked_did = u2.did
-                                    WHERE u1.handle = $1
-                                      AND u2.handle = $2"""
+    pool_name = get_connection_pool("write")
+    async with connection_pools[pool_name].acquire() as connection:
+        async with connection.transaction():
+            try:
+                blocking = """SELECT b.user_did, b.blocked_did, b.block_date, u1.handle, u1.status
+                                FROM blocklists AS b
+                                INNER JOIN users AS u1 ON b.user_did = u1.did
+                                INNER JOIN users AS u2 ON b.blocked_did = u2.did
+                                WHERE u1.handle = $1
+                                  AND u2.handle = $2"""
 
-                    blocked = """SELECT b.user_did, b.blocked_did, b.block_date, u1.handle, u1.status
-                                    FROM blocklists AS b
-                                    INNER JOIN users AS u1 ON b.user_did = u1.did
-                                    INNER JOIN users AS u2 ON b.blocked_did = u2.did
-                                    WHERE u1.handle = $2
-                                      AND u2.handle = $1"""
+                blocked = """SELECT b.user_did, b.blocked_did, b.block_date, u1.handle, u1.status
+                                FROM blocklists AS b
+                                INNER JOIN users AS u1 ON b.user_did = u1.did
+                                INNER JOIN users AS u2 ON b.blocked_did = u2.did
+                                WHERE u1.handle = $2
+                                  AND u2.handle = $1"""
 
-                    if "blocking" in switch:
-                        query = blocking
-                    elif "blocked" in switch:
-                        query = blocked
-                    else:
-                        result = None
+                if "blocking" in switch:
+                    query = blocking
+                elif "blocked" in switch:
+                    query = blocked
+                else:
+                    result = None
 
-                        return result
+                    return result
 
-                    result = await connection.fetch(query, search_list, lookup)
+                result = await connection.fetch(query, search_list, lookup)
 
-                    if result:
-                        resultslist = {}
+                if result:
+                    resultslist = {}
 
-                        for record in result:
-                            block_date = record['block_date']
-                            handle = record['handle']
-                            status = record['status']
+                    for record in result:
+                        block_date = record['block_date']
+                        handle = record['handle']
+                        status = record['status']
 
-                        results = {
-                            "blocked_date": block_date.isoformat(),
-                            "handle": handle,
-                            "status": status
-                        }
+                    results = {
+                        "blocked_date": block_date.isoformat(),
+                        "handle": handle,
+                        "status": status
+                    }
 
-                        resultslist.update(results)
+                    resultslist.update(results)
 
-                        return resultslist
-                    else:
-                        resultslist = None
-
-                        return resultslist
-
-                except Exception as e:
-                    logger.error(f"Error retrieving blocklist search result: {e}")
-
+                    return resultslist
+                else:
                     resultslist = None
 
                     return resultslist
+
+            except Exception as e:
+                logger.error(f"Error retrieving blocklist search result: {e}")
+
+                resultslist = None
+
+                return resultslist
 
 
 async def crawl_all_retry_batch(batch_dids, forced=False):
@@ -1102,72 +1102,72 @@ async def update_blocklist_table(ident, blocked_data, forced=False):
     if blocked_data is None:
         return counter
 
-        pool_name = get_connection_pool("write")
-        async with connection_pools[pool_name].acquire() as connection:
-            async with connection.transaction():
-                # Retrieve the existing blocklist entries for the specified ident
-                existing_records = await connection.fetch(
-                    'SELECT uri FROM blocklists WHERE user_did = $1', ident
-                )
-                existing_blocklist_entries = {record['uri'] for record in existing_records}
-                logger.debug("Existing entires " + ident + ": " + str(existing_blocklist_entries))
+    pool_name = get_connection_pool("write")
+    async with connection_pools[pool_name].acquire() as connection:
+        async with connection.transaction():
+            # Retrieve the existing blocklist entries for the specified ident
+            existing_records = await connection.fetch(
+                'SELECT uri FROM blocklists WHERE user_did = $1', ident
+            )
+            existing_blocklist_entries = {record['uri'] for record in existing_records}
+            logger.debug("Existing entires " + ident + ": " + str(existing_blocklist_entries))
 
-                # Iterate through blocked_data and check for None values
-                for subject, created_date, uri, cid in blocked_data:
-                    if any(value is None for value in (subject, created_date, uri, cid)):
-                        logger.error(f"Blocked data contains a None value skipping: {blocked_data}")
-
-                        return counter
-                # Prepare the data to be inserted into the database
-                data = [(ident, subject, created_date, uri, cid, datetime.now(pytz.utc), touched_actor) for subject, created_date, uri, cid in blocked_data]
-                logger.debug("Data to be inserted: " + str(data))
-
-                # Convert the new blocklist entries to a set for comparison
-                new_blocklist_entries = {record[3] for record in data}
-                logger.debug("new blocklist entry " + ident + " : " + str(new_blocklist_entries))
-
-                if existing_blocklist_entries != new_blocklist_entries or forced:
-                    try:
-                        await connection.execute('DELETE FROM blocklists WHERE user_did = $1', ident)
-                    except Exception as e:
-                        logger.error(f"Error deleting blocklist for {ident} : {e}")
-                        logger.error(existing_blocklist_entries)
-                    try:
-                        for uri in existing_blocklist_entries:
-                            if uri is None:
-                                logger.error(f"a URI is None in: {ident}")
-                                continue  # Skip processing when uri is None
-                            await connection.execute('INSERT INTO blocklists_transaction (user_did, uri, block_date, touched, touched_actor, delete) VALUES ($1, $2, $3, $4, $5, $6)', ident, uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor, True)
-                    except Exception as e:
-                        logger.error(f"Error updating blocklists_transaction on delete : {e}")
-                        logger.error(existing_blocklist_entries)
-
-                    logger.info("Blocklist transaction[deleted] updated.")
-
-                    if data:
-                        try:
-                            # Insert the new blocklist entries
-                            await connection.executemany(
-                                'INSERT INTO blocklists (user_did, blocked_did, block_date, cid, uri, touched, touched_actor) VALUES ($1, $2, $3, $5, $4, $6, $7)', data
-                            )
-
-                            await connection.executemany(
-                                'INSERT INTO blocklists_transaction (user_did, blocked_did, block_date, cid, uri, touched, touched_actor) VALUES ($1, $2, $3, $5, $4, $6, $7)', data
-                            )
-                        except Exception as e:
-                            logger.error(f"Error updating blocklists or blocklists_transaction on create : {e}")
-                            logger.error(data)
-
-                        logger.info("Blocklist transaction[created] updated.")
-                        logger.info(f"Blocks added for: {ident}")
-
-                    counter += 1
+            # Iterate through blocked_data and check for None values
+            for subject, created_date, uri, cid in blocked_data:
+                if any(value is None for value in (subject, created_date, uri, cid)):
+                    logger.error(f"Blocked data contains a None value skipping: {blocked_data}")
 
                     return counter
-                else:
-                    logger.debug("Blocklist not updated already exists.")
+            # Prepare the data to be inserted into the database
+            data = [(ident, subject, created_date, uri, cid, datetime.now(pytz.utc), touched_actor) for subject, created_date, uri, cid in blocked_data]
+            logger.debug("Data to be inserted: " + str(data))
 
-                    return counter
+            # Convert the new blocklist entries to a set for comparison
+            new_blocklist_entries = {record[3] for record in data}
+            logger.debug("new blocklist entry " + ident + " : " + str(new_blocklist_entries))
+
+            if existing_blocklist_entries != new_blocklist_entries or forced:
+                try:
+                    await connection.execute('DELETE FROM blocklists WHERE user_did = $1', ident)
+                except Exception as e:
+                    logger.error(f"Error deleting blocklist for {ident} : {e}")
+                    logger.error(existing_blocklist_entries)
+                try:
+                    for uri in existing_blocklist_entries:
+                        if uri is None:
+                            logger.error(f"a URI is None in: {ident}")
+                            continue  # Skip processing when uri is None
+                        await connection.execute('INSERT INTO blocklists_transaction (user_did, uri, block_date, touched, touched_actor, delete) VALUES ($1, $2, $3, $4, $5, $6)', ident, uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor, True)
+                except Exception as e:
+                    logger.error(f"Error updating blocklists_transaction on delete : {e}")
+                    logger.error(existing_blocklist_entries)
+
+                logger.info("Blocklist transaction[deleted] updated.")
+
+                if data:
+                    try:
+                        # Insert the new blocklist entries
+                        await connection.executemany(
+                            'INSERT INTO blocklists (user_did, blocked_did, block_date, cid, uri, touched, touched_actor) VALUES ($1, $2, $3, $5, $4, $6, $7)', data
+                        )
+
+                        await connection.executemany(
+                            'INSERT INTO blocklists_transaction (user_did, blocked_did, block_date, cid, uri, touched, touched_actor) VALUES ($1, $2, $3, $5, $4, $6, $7)', data
+                        )
+                    except Exception as e:
+                        logger.error(f"Error updating blocklists or blocklists_transaction on create : {e}")
+                        logger.error(data)
+
+                    logger.info("Blocklist transaction[created] updated.")
+                    logger.info(f"Blocks added for: {ident}")
+
+                counter += 1
+
+                return counter
+            else:
+                logger.debug("Blocklist not updated already exists.")
+
+                return counter
 
 
 async def update_subscribe_table(ident, subscribelists_data, forced=False):
@@ -1183,56 +1183,56 @@ async def update_subscribe_table(ident, subscribelists_data, forced=False):
 
         return counter
 
-        pool_name = get_connection_pool("write")
-        async with connection_pools[pool_name].acquire() as connection:
-            async with connection.transaction():
-                # Retrieve the existing blocklist entries for the specified ident
-                existing_records = await connection.fetch(
-                    'SELECT uri FROM subscribe_blocklists WHERE did = $1', ident
-                )
-                existing_blocklist_entries = {record['uri'] for record in existing_records}
-                logger.debug("Existing subscribe entires " + ident + ": " + str(existing_blocklist_entries))
+    pool_name = get_connection_pool("write")
+    async with connection_pools[pool_name].acquire() as connection:
+        async with connection.transaction():
+            # Retrieve the existing blocklist entries for the specified ident
+            existing_records = await connection.fetch(
+                'SELECT uri FROM subscribe_blocklists WHERE did = $1', ident
+            )
+            existing_blocklist_entries = {record['uri'] for record in existing_records}
+            logger.debug("Existing subscribe entires " + ident + ": " + str(existing_blocklist_entries))
 
-                # Prepare the data to be inserted into the database
-                data = [(record_type['did'], record_type['uri'], record_type['list_uri'], record_type['cid'], record_type['date_added'], record_type['record_type'], datetime.now(pytz.utc), touched_actor) for record_type in subscribelists_data]
-                logger.debug("Data to be inserted: " + str(data))
+            # Prepare the data to be inserted into the database
+            data = [(record_type['did'], record_type['uri'], record_type['list_uri'], record_type['cid'], record_type['date_added'], record_type['record_type'], datetime.now(pytz.utc), touched_actor) for record_type in subscribelists_data]
+            logger.debug("Data to be inserted: " + str(data))
 
-                # Convert the new blocklist entries to a set for comparison
-                new_blocklist_entries = {record[1] for record in data}
-                logger.debug("new subscribe blocklist entry " + ident + " : " + str(new_blocklist_entries))
+            # Convert the new blocklist entries to a set for comparison
+            new_blocklist_entries = {record[1] for record in data}
+            logger.debug("new subscribe blocklist entry " + ident + " : " + str(new_blocklist_entries))
 
-                if existing_blocklist_entries != new_blocklist_entries or forced:
-                    await connection.execute('DELETE FROM subscribe_blocklists WHERE did = $1', ident)
+            if existing_blocklist_entries != new_blocklist_entries or forced:
+                await connection.execute('DELETE FROM subscribe_blocklists WHERE did = $1', ident)
 
-                    for uri in existing_blocklist_entries:
-                        try:
-                            await connection.execute('INSERT INTO subscribe_blocklists_transaction (uri, date_added, touched, touched_actor) VALUES ($1, $2, $3, $4)', uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor)
-                        except Exception as e:
-                            logger.error(f"Error updating subscribe_blocklists_transaction on delete : {e}")
-                            logger.error(existing_blocklist_entries)
+                for uri in existing_blocklist_entries:
+                    try:
+                        await connection.execute('INSERT INTO subscribe_blocklists_transaction (uri, date_added, touched, touched_actor) VALUES ($1, $2, $3, $4)', uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor)
+                    except Exception as e:
+                        logger.error(f"Error updating subscribe_blocklists_transaction on delete : {e}")
+                        logger.error(existing_blocklist_entries)
 
-                    logger.info("subscribe Blocklist transaction[deleted] updated.")
+                logger.info("subscribe Blocklist transaction[deleted] updated.")
 
-                    if data:
-                        try:
-                            # Insert the new blocklist entries
-                            await connection.executemany('INSERT INTO subscribe_blocklists (did, uri, list_uri, cid, date_added, record_type, touched, touched_actor) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)', data)
+                if data:
+                    try:
+                        # Insert the new blocklist entries
+                        await connection.executemany('INSERT INTO subscribe_blocklists (did, uri, list_uri, cid, date_added, record_type, touched, touched_actor) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)', data)
 
-                            await connection.executemany('INSERT INTO subscribe_blocklists_transaction (did, uri, list_uri, cid, date_added, record_type, touched, touched_actor) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)', data)
-                        except Exception as e:
-                            logger.error(f"Error updating subscribe_blocklists or subscribe_blocklists_transaction on create: {e}")
-                            logger.error(new_blocklist_entries)
+                        await connection.executemany('INSERT INTO subscribe_blocklists_transaction (did, uri, list_uri, cid, date_added, record_type, touched, touched_actor) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)', data)
+                    except Exception as e:
+                        logger.error(f"Error updating subscribe_blocklists or subscribe_blocklists_transaction on create: {e}")
+                        logger.error(new_blocklist_entries)
 
-                        logger.info("Subscribe Blocklist transaction[created] updated.")
-                        logger.info(f"Subscribe blocklist added for: {ident}")
+                    logger.info("Subscribe Blocklist transaction[created] updated.")
+                    logger.info(f"Subscribe blocklist added for: {ident}")
 
-                    subscribe_list_counter += 1
+                subscribe_list_counter += 1
 
-                    return subscribe_list_counter
-                else:
-                    logger.info("Blocklist not updated already exists.")
+                return subscribe_list_counter
+            else:
+                logger.info("Blocklist not updated already exists.")
 
-                    return subscribe_list_counter
+                return subscribe_list_counter
 
 
 async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, forced=False):
@@ -1249,122 +1249,122 @@ async def update_mutelist_tables(ident, mutelists_data, mutelists_users_data, fo
 
         return counter
 
-        pool_name = get_connection_pool("write")
-        async with connection_pools[pool_name].acquire() as connection:
-            async with connection.transaction():
+    pool_name = get_connection_pool("write")
+    async with connection_pools[pool_name].acquire() as connection:
+        async with connection.transaction():
 
-                # Retrieve the existing blocklist entries for the specified ident
-                existing_records = await connection.fetch(
-                    'SELECT uri FROM {} WHERE did = $1'.format(mute_lists_table), ident
+            # Retrieve the existing blocklist entries for the specified ident
+            existing_records = await connection.fetch(
+                'SELECT uri FROM {} WHERE did = $1'.format(mute_lists_table), ident
+            )
+
+            existing_mutelist_entries = {(record['uri']) for record in existing_records}
+            logger.debug("Existing entires " + ident + ": " + str(existing_mutelist_entries))
+
+            # Create a list of tuples containing the data to be inserted
+            mutelist_records_to_insert = [
+                (record["url"], record["uri"], record["did"], record["cid"], record["name"], record["created_at"], record["description"], datetime.now(pytz.utc), touched_actor)
+                for record in mutelists_data]
+
+            # Convert the new mutelist entries to a set for comparison
+            new_mutelist_entries = {(record[1]) for record in mutelist_records_to_insert}
+            logger.debug("New mutelist entries for " + ident + ": " + str(new_mutelist_entries))
+
+            # Check if there are differences between the existing and new mutelist entries
+            if existing_mutelist_entries != new_mutelist_entries or forced:
+                # Delete existing mutelist entries for the specified ident
+                await connection.execute('DELETE FROM mutelists WHERE did = $1', ident)
+
+                for uri in existing_mutelist_entries:
+                    try:
+                        await connection.execute('INSERT INTO mutelists_transaction (uri, created_date, touched, touched_actor) VALUES ($1, $2, $3, $4)', uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor)
+                    except Exception as e:
+                        logger.error(f"Error updating mutelists_transaction on delete: {e}")
+                        logger.error(existing_mutelist_entries)
+
+                logger.info("Mutelist transaction[deleted] updated.")
+
+                if mutelist_records_to_insert:
+                    try:
+                        # Insert the new mutelist entries
+                        await connection.executemany("""INSERT INTO {} (url, uri, did, cid, name, created_date, description, touched, touched_actor) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)""".format(mute_lists_table), mutelist_records_to_insert)
+
+                        await connection.executemany("""INSERT INTO mutelists_transaction (url, uri, did, cid, name, created_date, description, touched, touched_actor) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)""", mutelist_records_to_insert)
+                    except Exception as e:
+                        logger.error(f"Error updating mutelists or mutelists_transaction on create: {e}")
+                        logger.error(new_mutelist_entries)
+
+                    logger.info("Mutelist transaction[created] updated.")
+                    logger.info(f"Mute list(s) added for: {ident}")
+
+                list_counter += 1
+            else:
+                logger.debug("Mutelist not updated; already exists.")
+
+            if mutelists_users_data:
+                # Retrieve the existing mutelist entries for the specified ident
+                existing_users_records = await connection.fetch(
+                    """SELECT listitem_uri
+                        FROM mutelists_users
+                        WHERE owner_did = $1""", ident
                 )
 
-                existing_mutelist_entries = {(record['uri']) for record in existing_records}
-                logger.debug("Existing entires " + ident + ": " + str(existing_mutelist_entries))
+                existing_mutelist_users_entries = {(record['listitem_uri']) for record in existing_users_records}
+
+                logger.debug("Existing entires " + ident + ": " + str(existing_mutelist_users_entries))
 
                 # Create a list of tuples containing the data to be inserted
-                mutelist_records_to_insert = [
-                    (record["url"], record["uri"], record["did"], record["cid"], record["name"], record["created_at"], record["description"], datetime.now(pytz.utc), touched_actor)
-                    for record in mutelists_data]
+                mutelistusers_records_to_insert = [
+                    (record['list_uri'], record["cid"], record['subject'], record['author'], record["created_at"], datetime.now(pytz.utc), touched_actor, record['listitem_uri'])
+                    for record in mutelists_users_data]
 
                 # Convert the new mutelist entries to a set for comparison
-                new_mutelist_entries = {(record[1]) for record in mutelist_records_to_insert}
-                logger.debug("New mutelist entries for " + ident + ": " + str(new_mutelist_entries))
+                new_mutelist_users_entries = {(record[7]) for record in mutelistusers_records_to_insert}
+
+                logger.debug("New mutelist users entries for " + ident + ": " + str(new_mutelist_users_entries))
 
                 # Check if there are differences between the existing and new mutelist entries
-                if existing_mutelist_entries != new_mutelist_entries or forced:
-                    # Delete existing mutelist entries for the specified ident
-                    await connection.execute('DELETE FROM mutelists WHERE did = $1', ident)
-
-                    for uri in existing_mutelist_entries:
+                if existing_mutelist_users_entries != new_mutelist_users_entries or forced:
+                    for uri in existing_mutelist_users_entries:
                         try:
-                            await connection.execute('INSERT INTO mutelists_transaction (uri, created_date, touched, touched_actor) VALUES ($1, $2, $3, $4)', uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor)
+                            # Delete existing mutelist entries for the specified ident
+                            await connection.execute("""DELETE FROM mutelists_users WHERE listitem_uri = $1""", uri)
+
+                            await connection.execute("""INSERT INTO mutelists_users_transaction (listitem_uri, date_added, touched, touched_actor) VALUES ($1, $2, $3, $4)""", uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor)
                         except Exception as e:
-                            logger.error(f"Error updating mutelists_transaction on delete: {e}")
-                            logger.error(existing_mutelist_entries)
+                            logger.error(f"Error updating mutelists_users or mutelists_users_transaction on delete: {e}")
+                            logger.error(existing_mutelist_users_entries)
 
-                    logger.info("Mutelist transaction[deleted] updated.")
+                    logger.info("Mutelist users transaction[deleted] updated.")
 
-                    if mutelist_records_to_insert:
+                    if mutelistusers_records_to_insert:
                         try:
                             # Insert the new mutelist entries
-                            await connection.executemany("""INSERT INTO {} (url, uri, did, cid, name, created_date, description, touched, touched_actor) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)""".format(mute_lists_table), mutelist_records_to_insert)
+                            await connection.executemany("""INSERT INTO {} (list_uri, cid, subject_did, owner_did, date_added, touched, touched_actor, listitem_uri) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)""".format(mute_lists_users_table), mutelistusers_records_to_insert)
 
-                            await connection.executemany("""INSERT INTO mutelists_transaction (url, uri, did, cid, name, created_date, description, touched, touched_actor) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)""", mutelist_records_to_insert)
+                            await connection.executemany("""INSERT INTO mutelists_users_transaction (list_uri, cid, subject_did, owner_did, date_added, touched, touched_actor, listitem_uri) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)""", mutelistusers_records_to_insert)
                         except Exception as e:
-                            logger.error(f"Error updating mutelists or mutelists_transaction on create: {e}")
-                            logger.error(new_mutelist_entries)
+                            logger.error(f"Error updating mutelists_users or mutelists_users_transaction on create: {e}")
+                            logger.error(new_mutelist_users_entries)
 
-                        logger.info("Mutelist transaction[created] updated.")
-                        logger.info(f"Mute list(s) added for: {ident}")
+                        logger.info("Mutelist users transaction[created] updated.")
+                        logger.info(f"Mute list user(s) added for: {ident}")
 
-                    list_counter += 1
-                else:
-                    logger.debug("Mutelist not updated; already exists.")
+                    user_counter += 1
 
-                if mutelists_users_data:
-                    # Retrieve the existing mutelist entries for the specified ident
-                    existing_users_records = await connection.fetch(
-                        """SELECT listitem_uri
-                            FROM mutelists_users
-                            WHERE owner_did = $1""", ident
-                    )
-
-                    existing_mutelist_users_entries = {(record['listitem_uri']) for record in existing_users_records}
-
-                    logger.debug("Existing entires " + ident + ": " + str(existing_mutelist_users_entries))
-
-                    # Create a list of tuples containing the data to be inserted
-                    mutelistusers_records_to_insert = [
-                        (record['list_uri'], record["cid"], record['subject'], record['author'], record["created_at"], datetime.now(pytz.utc), touched_actor, record['listitem_uri'])
-                        for record in mutelists_users_data]
-
-                    # Convert the new mutelist entries to a set for comparison
-                    new_mutelist_users_entries = {(record[7]) for record in mutelistusers_records_to_insert}
-
-                    logger.debug("New mutelist users entries for " + ident + ": " + str(new_mutelist_users_entries))
-
-                    # Check if there are differences between the existing and new mutelist entries
-                    if existing_mutelist_users_entries != new_mutelist_users_entries or forced:
-                        for uri in existing_mutelist_users_entries:
-                            try:
-                                # Delete existing mutelist entries for the specified ident
-                                await connection.execute("""DELETE FROM mutelists_users WHERE listitem_uri = $1""", uri)
-
-                                await connection.execute("""INSERT INTO mutelists_users_transaction (listitem_uri, date_added, touched, touched_actor) VALUES ($1, $2, $3, $4)""", uri, datetime.now(pytz.utc), datetime.now(pytz.utc), touched_actor)
-                            except Exception as e:
-                                logger.error(f"Error updating mutelists_users or mutelists_users_transaction on delete: {e}")
-                                logger.error(existing_mutelist_users_entries)
-
-                        logger.info("Mutelist users transaction[deleted] updated.")
-
-                        if mutelistusers_records_to_insert:
-                            try:
-                                # Insert the new mutelist entries
-                                await connection.executemany("""INSERT INTO {} (list_uri, cid, subject_did, owner_did, date_added, touched, touched_actor, listitem_uri) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)""".format(mute_lists_users_table), mutelistusers_records_to_insert)
-
-                                await connection.executemany("""INSERT INTO mutelists_users_transaction (list_uri, cid, subject_did, owner_did, date_added, touched, touched_actor, listitem_uri) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)""", mutelistusers_records_to_insert)
-                            except Exception as e:
-                                logger.error(f"Error updating mutelists_users or mutelists_users_transaction on create: {e}")
-                                logger.error(new_mutelist_users_entries)
-
-                            logger.info("Mutelist users transaction[created] updated.")
-                            logger.info(f"Mute list user(s) added for: {ident}")
-
-                        user_counter += 1
-
-                        counter = [list_counter, user_counter]
-
-                        return counter
-                    else:
-                        logger.debug("Mutelist not updated; already exists.")
-
-                        counter = [list_counter, user_counter]
-
-                        return counter
-                else:
                     counter = [list_counter, user_counter]
 
                     return counter
+                else:
+                    logger.debug("Mutelist not updated; already exists.")
+
+                    counter = [list_counter, user_counter]
+
+                    return counter
+            else:
+                counter = [list_counter, user_counter]
+
+                return counter
 
 
 async def does_did_and_handle_exist_in_database(did, handle):
@@ -1373,10 +1373,10 @@ async def does_did_and_handle_exist_in_database(did, handle):
         try:
             pool_name = get_connection_pool("write")
             async with connection_pools[pool_name].acquire() as connection:
-                    # Execute the SQL query to check if the given DID exists in the "users" table
-                    exists = await connection.fetchval('SELECT EXISTS(SELECT 1 FROM users WHERE did = $1 AND handle = $2)', did, handle)
+                # Execute the SQL query to check if the given DID exists in the "users" table
+                exists = await connection.fetchval('SELECT EXISTS(SELECT 1 FROM users WHERE did = $1 AND handle = $2)', did, handle)
 
-                    return exists
+                return exists
         except TimeoutError:
             logger.error(f"Timeout error on attempt {retry + 1}. Retrying in 10 sec...")
             await asyncio.sleep(10)
@@ -1391,39 +1391,39 @@ async def does_did_and_handle_exist_in_database(did, handle):
 
 
 async def update_user_handles(handles_to_update):
-        pool_name = get_connection_pool("write")
-        async with connection_pools[pool_name].acquire() as connection:
-            async with connection.transaction():
-                # Drop the temporary table if it exists
-                await connection.execute('DROP TABLE IF EXISTS temp_handles')
+    pool_name = get_connection_pool("write")
+    async with connection_pools[pool_name].acquire() as connection:
+        async with connection.transaction():
+            # Drop the temporary table if it exists
+            await connection.execute('DROP TABLE IF EXISTS temp_handles')
 
-                # Create a temporary table to hold the handles to update
+            # Create a temporary table to hold the handles to update
+            await connection.execute('''
+                CREATE TEMP TABLE temp_handles (
+                    did TEXT PRIMARY KEY,
+                    handle TEXT
+                )
+            ''')
+
+            # Populate the temporary table with the handles to update
+            for did, handle in handles_to_update:
                 await connection.execute('''
-                    CREATE TEMP TABLE temp_handles (
-                        did TEXT PRIMARY KEY,
-                        handle TEXT
-                    )
-                ''')
+                    INSERT INTO temp_handles (did, handle)
+                    VALUES ($1, $2)
+                ''', did, handle)
 
-                # Populate the temporary table with the handles to update
-                for did, handle in handles_to_update:
-                    await connection.execute('''
-                        INSERT INTO temp_handles (did, handle)
-                        VALUES ($1, $2)
-                    ''', did, handle)
+            # Update the users table using the temporary table
+            await connection.execute('''
+                INSERT INTO users (did, handle)
+                SELECT t.did, t.handle
+                FROM temp_handles AS t
+                ON CONFLICT (did) DO UPDATE
+                SET handle = EXCLUDED.handle
+            ''')
 
-                # Update the users table using the temporary table
-                await connection.execute('''
-                    INSERT INTO users (did, handle)
-                    SELECT t.did, t.handle
-                    FROM temp_handles AS t
-                    ON CONFLICT (did) DO UPDATE
-                    SET handle = EXCLUDED.handle
-                ''')
+            # await connection.execute("delete from resolution_queue where did = $1", did)  # Remove the DID from the resolution queue
 
-                # await connection.execute("delete from resolution_queue where did = $1", did)  # Remove the DID from the resolution queue
-
-            logger.info(f"Updated {len(handles_to_update)} handles in the database.")
+        logger.info(f"Updated {len(handles_to_update)} handles in the database.")
 
 
 async def add_new_prefixes(handles):
@@ -2613,29 +2613,29 @@ async def get_api_keys(environment, key_type, key) -> Optional[dict]:
 
         return None
 
-        pool_name = get_connection_pool("write")
-        async with connection_pools[pool_name].acquire() as connection:
-            async with connection.transaction():
-                try:
-                    query = f"""SELECT a.key as key, a.valid, aa.*
-                                FROM api AS a
-                                INNER JOIN api_access AS aa ON a.key = aa.key
-                                WHERE a.key = $2 AND a.environment = $1 AND a.valid is TRUE"""
+    pool_name = get_connection_pool("write")
+    async with connection_pools[pool_name].acquire() as connection:
+        async with connection.transaction():
+            try:
+                query = f"""SELECT a.key as key, a.valid, aa.*
+                            FROM api AS a
+                            INNER JOIN api_access AS aa ON a.key = aa.key
+                            WHERE a.key = $2 AND a.environment = $1 AND a.valid is TRUE"""
 
-                    results = await connection.fetch(query, environment, key)
+                results = await connection.fetch(query, environment, key)
 
-                    for item in results:
-                        data = {
-                            "key": item['key'],
-                            "valid": item['valid'],
-                            key_type: item[key_type.lower()]
-                        }
-                    return data
-                except Exception as e:
-                    # Handle other exceptions as needed
-                    logger.error(f"Error getting API keys: {e}")
+                for item in results:
+                    data = {
+                        "key": item['key'],
+                        "valid": item['valid'],
+                        key_type: item[key_type.lower()]
+                    }
+                return data
+            except Exception as e:
+                # Handle other exceptions as needed
+                logger.error(f"Error getting API keys: {e}")
 
-                    return None
+                return None
 
 
 async def get_dids_per_pds() -> Optional[dict]:
