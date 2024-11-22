@@ -1388,6 +1388,10 @@ async def retrieve_subscribe_blocks_blocklist(client_identifier: str, page: int)
 async def retrieve_subscribe_blocks_single_blocklist(client_identifier, page) -> jsonify:
     values = await get_var_info()
 
+    count = 0
+    pages = 0
+    blocklist = None
+
     api_key = values.get('api_key')
     self_server = values.get('self_server')
 
