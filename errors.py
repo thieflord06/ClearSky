@@ -1,28 +1,32 @@
 # errors.py
 
-class BadRequest(Exception):
+class BadRequest(Exception):  # 400
     pass
 
 
-class NotFound(Exception):
+class NotFound(Exception):  # 404
     pass
 
 
-class DatabaseConnectionError(Exception):
+class DatabaseConnectionError(Exception):  # 503
     pass
 
 
-class NoFileProvided(Exception):
+class NoFileProvided(Exception):  # 400
     pass
 
 
-class FileNameExists(Exception):
+class FileNameExists(Exception):  # 409
     pass
 
 
-class ExceedsFileSizeLimit(Exception):
+class ExceedsFileSizeLimit(Exception):  # 413
     pass
 
 
-class InternalServerError(Exception):
+class InternalServerError(Exception):  # 500
+    pass
+
+
+class NotImplement(Exception):  # 501
     pass
