@@ -1,16 +1,17 @@
 # test.py
 import asyncio
 import sys
-from config_helper import logger
-import database_handler
+
 import core
+import database_handler
+from config_helper import logger
 
 
 async def main():
     try:
         await database_handler.create_connection_pools(database_handler.database_config)
     except Exception as e:
-        logger.error(f"Error creating connection pool: {str(e)}")
+        logger.error(f"Error creating connection pool: {e!s}")
         sys.exit()
 
     # try:
@@ -23,5 +24,7 @@ async def main():
     await core.time_behind()
 
     # database_handler.get_connection_pool('write')
-if __name__ == '__main__':
+
+
+if __name__ == "__main__":
     asyncio.run(main())

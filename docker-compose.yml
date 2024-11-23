@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:14.11
+    environment:
+      POSTGRES_USER: clearsky
+      POSTGRES_PASSWORD: clearsky
+      POSTGRES_DB: clearsky_local
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:

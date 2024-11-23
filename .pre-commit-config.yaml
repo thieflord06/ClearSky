@@ -1,0 +1,38 @@
+default_language_version:
+  python: python3.12
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.6.0
+  hooks:
+  - id: trailing-whitespace
+  - id: end-of-file-fixer
+  - id: check-added-large-files
+    args: ["--maxkb=1500"]
+  - id: check-case-conflict
+  - id: check-json
+  - id: check-merge-conflict
+  - id: debug-statements
+- repo: https://github.com/charliermarsh/ruff-pre-commit
+  rev: 'v0.4.4'
+  hooks:
+  - id: ruff
+    args: ["--fix", "--exit-non-zero-on-fix", ]
+  - id: ruff-format
+- repo: https://github.com/pycqa/bandit
+  rev: "1.7.8"
+  hooks:
+  - id: bandit
+    args: ["-r", "-ll", "-ii"]
+- repo: https://github.com/asottile/pyupgrade
+  rev: v3.15.2
+  hooks:
+  - id: pyupgrade
+    args: ["--py312-plus"]
+- repo: https://github.com/jazzband/pip-tools
+  rev: 7.4.1
+  hooks:
+  - id: pip-compile
+  - id: pip-compile
+    name: pip-compile (dev)
+    args: ["requirements-dev.in"]
+    files: ^requirements(-dev)?\.(in|txt)$

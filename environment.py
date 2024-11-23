@@ -1,17 +1,18 @@
 # environment.py
 
-from config_helper import config, logger
 import os
+
+from config_helper import config, logger
 
 
 def get_api_var() -> str:
-    if not os.getenv('CLEAR_SKY'):
+    if not os.getenv("CLEAR_SKY"):
         api_environment = config.get("environment", "api")
         if not api_environment:
             logger.warning("Using default environment.")
             api_environment = "prod"
     else:
-        if os.getenv('CLEAR_SKY') and config.get("environment", "api"):
+        if os.getenv("CLEAR_SKY") and config.get("environment", "api"):
             logger.warning("environment override.")
             api_environment = config.get("environment", "api")
         else:

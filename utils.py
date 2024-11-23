@@ -1,17 +1,16 @@
 # utils.py
 
-import math
-import httpx
-import urllib.parse
-from datetime import datetime
 import asyncio
-import database_handler
-import requests
-from config_helper import logger, limiter
-import on_wire
+import math
 import re
+from datetime import datetime, timezone
+
+import httpx
 from cachetools import Cache
-import json
+
+import database_handler
+import on_wire
+from config_helper import logger
 
 # ======================================================================================================================
 # ================================================ cache/global variables ==============================================
@@ -67,11 +66,19 @@ async def resolve_did(did: str, count: int, test: bool = False):
     if not test:
         resolved_did = await on_wire.resolve_did(did)
         if resolved_did[0] is not None:
-
-            return {'did': did, 'Handle': resolved_did[0], 'block_count': count, 'ProfileURL': f'https://bsky.app/profile/{did}'}
+            return {
+                "did": did,
+                "Handle": resolved_did[0],
+                "block_count": count,
+                "ProfileURL": f"https://bsky.app/profile/{did}",
+            }
     elif test:
-
-        return {'did': did, 'Handle': did, 'block_count': count, 'ProfileURL': f'https://bsky.app/profile/{did}'}
+        return {
+            "did": did,
+            "Handle": did,
+            "block_count": count,
+            "ProfileURL": f"https://bsky.app/profile/{did}",
+        }
 
     return None
 
@@ -81,8 +88,8 @@ async def resolve_top_block_lists():
     blocked, blockers = await database_handler.get_top_blocks_list()
 
     # Extract DID values from blocked and blockers
-    blocked_dids = [record['did'] for record in blocked]
-    blocker_dids = [record['did'] for record in blockers]
+    blocked_dids = [record["did"] for record in blocked]
+    blocker_dids = [record["did"] for record in blockers]
 
     if await database_handler.local_db():
         blocked_avatar_dict = {did: did for did in blocked_dids}
@@ -118,8 +125,16 @@ async def resolve_top_block_lists():
     resolved_blockers = [entry for entry in resolved_blockers if entry is not None]
 
     # Remove any none entries from avatar_id lists
-    resolved_blocked_avatar_dict = {did: blocked_avatar_dict[did] for did in blocked_avatar_dict if did in [entry['did'] for entry in resolved_blocked]}
-    resolved_blocker_avatar_dict = {did: blocker_avatar_dict[did] for did in blocker_avatar_dict if did in [entry['did'] for entry in resolved_blockers]}
+    resolved_blocked_avatar_dict = {
+        did: blocked_avatar_dict[did]
+        for did in blocked_avatar_dict
+        if did in [entry["did"] for entry in resolved_blocked]
+    }
+    resolved_blocker_avatar_dict = {
+        did: blocker_avatar_dict[did]
+        for did in blocker_avatar_dict
+        if did in [entry["did"] for entry in resolved_blockers]
+    }
 
     # Sort the lists based on block_count in descending order
     sorted_resolved_blocked = sorted(resolved_blocked, key=lambda x: (x["block_count"], x["did"]), reverse=True)
@@ -129,12 +144,12 @@ async def resolve_top_block_lists():
     sorted_resolved_blockers_avatar_dict = {}
 
     for entry in sorted_resolved_blocked:
-        did = entry['did']
+        did = entry["did"]
         if did in resolved_blocked_avatar_dict:
             sorted_resolved_blocked_avatar_dict[did] = resolved_blocked_avatar_dict[did]
 
     for entry in sorted_resolved_blockers:
-        did = entry['did']
+        did = entry["did"]
         if did in resolved_blocker_avatar_dict:
             sorted_resolved_blockers_avatar_dict[did] = resolved_blocker_avatar_dict[did]
 
@@ -153,7 +168,12 @@ async def resolve_top_block_lists():
     blocked_avatar_ids_cache["blocked_aid"] = blocked_avatar_ids
     blocker_avatar_ids_cache["blocker_aid"] = blocker_avatar_ids
 
-    return top_resolved_blocked, top_resolved_blockers, blocked_avatar_ids, blocker_avatar_ids
+    return (
+        top_resolved_blocked,
+        top_resolved_blockers,
+        blocked_avatar_ids,
+        blocker_avatar_ids,
+    )
 
 
 async def resolve_top24_block_lists():
@@ -161,8 +181,8 @@ async def resolve_top24_block_lists():
     blocked, blockers = await database_handler.get_24_hour_block_list()
 
     # Extract DID values from blocked and blockers
-    blocked_dids = [record['did'] for record in blocked]
-    blocker_dids = [record['did'] for record in blockers]
+    blocked_dids = [record["did"] for record in blocked]
+    blocker_dids = [record["did"] for record in blockers]
 
     if await database_handler.local_db():
         blocked_avatar_dict = {did: did for did in blocked_dids}
@@ -198,8 +218,16 @@ async def resolve_top24_block_lists():
     resolved_blockers = [entry for entry in resolved_blockers if entry is not None]
 
     # Remove any none entries from avatar_id lists
-    resolved_blocked_avatar_dict = {did: blocked_avatar_dict[did] for did in blocked_avatar_dict if did in [entry['did'] for entry in resolved_blocked]}
-    resolved_blocker_avatar_dict = {did: blocker_avatar_dict[did] for did in blocker_avatar_dict if did in [entry['did'] for entry in resolved_blockers]}
+    resolved_blocked_avatar_dict = {
+        did: blocked_avatar_dict[did]
+        for did in blocked_avatar_dict
+        if did in [entry["did"] for entry in resolved_blocked]
+    }
+    resolved_blocker_avatar_dict = {
+        did: blocker_avatar_dict[did]
+        for did in blocker_avatar_dict
+        if did in [entry["did"] for entry in resolved_blockers]
+    }
 
     # Sort the lists based on block_count in descending order
     sorted_resolved_blocked = sorted(resolved_blocked, key=lambda x: (x["block_count"], x["did"]), reverse=True)
@@ -209,12 +237,12 @@ async def resolve_top24_block_lists():
     sorted_resolved_blockers_avatar_dict = {}
 
     for entry in sorted_resolved_blocked:
-        did = entry['did']
+        did = entry["did"]
         if did in resolved_blocked_avatar_dict:
             sorted_resolved_blocked_avatar_dict[did] = resolved_blocked_avatar_dict[did]
 
     for entry in sorted_resolved_blockers:
-        did = entry['did']
+        did = entry["did"]
         if did in resolved_blocker_avatar_dict:
             sorted_resolved_blockers_avatar_dict[did] = resolved_blocker_avatar_dict[did]
 
@@ -233,7 +261,12 @@ async def resolve_top24_block_lists():
     blocked_24_avatar_ids_cache["blocked_aid"] = blocked_avatar_ids
     blocker_24_avatar_ids_cache["blocker_aid"] = blocker_avatar_ids
 
-    return top_resolved_blocked, top_resolved_blockers, blocked_avatar_ids, blocker_avatar_ids
+    return (
+        top_resolved_blocked,
+        top_resolved_blockers,
+        blocked_avatar_ids,
+        blocker_avatar_ids,
+    )
 
 
 async def update_block_statistics():
@@ -245,18 +278,43 @@ async def update_block_statistics():
 
     logger.info("Updating block statsitics.")
 
-    block_stats_start_time = datetime.now()
+    block_stats_start_time = datetime.now(timezone.utc)
 
     block_stats_status.set()
 
-    (number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking,
-     number_block_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000, average_number_of_blocks,
-     number_blocked_1, number_blocked_2_and_100, number_blocked_101_and_1000, number_blocked_greater_than_1000, average_number_of_blocked, total_users
-     ) = await database_handler.get_block_stats()
+    (
+        number_of_total_blocks,
+        number_of_unique_users_blocked,
+        number_of_unique_users_blocking,
+        number_block_1,
+        number_blocking_2_and_100,
+        number_blocking_101_and_1000,
+        number_blocking_greater_than_1000,
+        average_number_of_blocks,
+        number_blocked_1,
+        number_blocked_2_and_100,
+        number_blocked_101_and_1000,
+        number_blocked_greater_than_1000,
+        average_number_of_blocked,
+        total_users,
+    ) = await database_handler.get_block_stats()
 
-    values = (number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking, number_block_1,
-              number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000, average_number_of_blocks,
-              number_blocked_1, number_blocked_2_and_100, number_blocked_101_and_1000, number_blocked_greater_than_1000, average_number_of_blocked, total_users)
+    values = (
+        number_of_total_blocks,
+        number_of_unique_users_blocked,
+        number_of_unique_users_blocking,
+        number_block_1,
+        number_blocking_2_and_100,
+        number_blocking_101_and_1000,
+        number_blocking_greater_than_1000,
+        average_number_of_blocks,
+        number_blocked_1,
+        number_blocked_2_and_100,
+        number_blocked_101_and_1000,
+        number_blocked_greater_than_1000,
+        average_number_of_blocked,
+        total_users,
+    )
 
     for value in values:
         if value is None:
@@ -279,19 +337,31 @@ async def update_block_statistics():
 
     block_stats_status.clear()
 
-    end_time = datetime.now()
+    end_time = datetime.now(timezone.utc)
 
     if block_stats_start_time is not None:
         block_stats_process_time = end_time - block_stats_start_time
     block_stats_last_update = end_time
     block_stats_start_time = None
 
-    block_stats_as_of_time = datetime.now().isoformat()
+    block_stats_as_of_time = datetime.now(timezone.utc).isoformat()
 
-    return (number_of_total_blocks, number_of_unique_users_blocked, number_of_unique_users_blocking,
-            number_block_1, number_blocking_2_and_100, number_blocking_101_and_1000, number_blocking_greater_than_1000,
-            average_number_of_blocks, number_blocked_1, number_blocked_2_and_100, number_blocked_101_and_1000,
-            number_blocked_greater_than_1000, average_number_of_blocked, total_users)
+    return (
+        number_of_total_blocks,
+        number_of_unique_users_blocked,
+        number_of_unique_users_blocking,
+        number_block_1,
+        number_blocking_2_and_100,
+        number_blocking_101_and_1000,
+        number_blocking_greater_than_1000,
+        average_number_of_blocks,
+        number_blocked_1,
+        number_blocked_2_and_100,
+        number_blocked_101_and_1000,
+        number_blocked_greater_than_1000,
+        average_number_of_blocked,
+        total_users,
+    )
 
 
 async def update_total_users() -> (int, int, int):
@@ -303,7 +373,7 @@ async def update_total_users() -> (int, int, int):
 
     logger.info("Updating total users.")
 
-    total_users_start_time = datetime.now()
+    total_users_start_time = datetime.now(timezone.utc)
 
     total_users_status.set()
 
@@ -317,7 +387,7 @@ async def update_total_users() -> (int, int, int):
 
     total_users_status.clear()
 
-    end_time = datetime.now()
+    end_time = datetime.now(timezone.utc)
 
     if total_users_start_time is not None:
         total_users_process_time = end_time - total_users_start_time
@@ -326,7 +396,7 @@ async def update_total_users() -> (int, int, int):
 
     total_users_start_time = None
 
-    total_users_as_of_time = datetime.now().isoformat()
+    total_users_as_of_time = datetime.now(timezone.utc).isoformat()
 
     logger.info("Total users update complete.")
 
@@ -340,8 +410,14 @@ async def process_user_block_list(ident, limit, offset):
 
     if blocked_users:
         # Iterate over blocked_users and extract handle and status
-        for user_did, block_date, handle, status in blocked_users:
-            block_list.append({"handle": handle, "status": status, "blocked_date": block_date.isoformat()})
+        for _user_did, block_date, handle, status in blocked_users:
+            block_list.append(
+                {
+                    "handle": handle,
+                    "status": status,
+                    "blocked_date": block_date.isoformat(),
+                }
+            )
 
     if count > 0:
         pages = count / 100
@@ -361,7 +437,6 @@ async def process_user_block_list(ident, limit, offset):
 
         return block_list, total_blocked, pages
     else:
-
         return block_list, count, pages
 
 
@@ -388,14 +463,15 @@ async def process_subscribe_blocks(ident, limit, offset):
 
         return block_list, total_blocked, pages
     else:
-
         return blocked_users, count, pages
 
 
 async def process_subscribe_blocks_single(ident, list_of_lists, limit, offset):
     block_list = {}
 
-    blocked_users, count = await database_handler.get_subscribe_blocks_single(ident, list_of_lists, limit=limit, offset=offset)
+    blocked_users, count = await database_handler.get_subscribe_blocks_single(
+        ident, list_of_lists, limit=limit, offset=offset
+    )
 
     if count > 0:
         pages = count / 100
@@ -415,37 +491,36 @@ async def process_subscribe_blocks_single(ident, list_of_lists, limit, offset):
 
         return block_list, total_blocked, pages
     else:
-
         return blocked_users, count, pages
 
 
 def is_did(identifier) -> bool:
     # Check if the identifier contains percent-encoded characters
-    if '%' in identifier:
+    if "%" in identifier:
         logger.warning(f"Identifier contains percent-encoded characters: {identifier}")
 
         return False
 
     # Check if the identifier ends with ':' or '%'
-    if identifier.endswith(':') or identifier.endswith('%'):
+    if identifier.endswith(":") or identifier.endswith("%"):
         logger.warning(f"Identifier ends with ':' or '%': {identifier}")
 
         return False
 
-    if not len(identifier.encode('utf-8')) <= 2 * 1024:
+    if not len(identifier.encode("utf-8")) <= 2 * 1024:
         logger.warning(f"Identifier is too long: {identifier}")
 
         return False
 
     # Define the regex pattern for DID
-    did_pattern = r'^did:(?:web|plc):[a-zA-Z0-9._:-]*[a-zA-Z0-9._-]$'
+    did_pattern = r"^did:(?:web|plc):[a-zA-Z0-9._:-]*[a-zA-Z0-9._-]$"
 
     # Match the identifier against the regex pattern
     return re.match(did_pattern, identifier) is not None
 
 
 def is_handle(identifier) -> bool:
-    handle_pattern = r'^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$'
+    handle_pattern = r"^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$"
 
     return re.match(handle_pattern, identifier) is not None
 
@@ -454,14 +529,15 @@ async def use_handle(identifier):
     if is_did(identifier):
         handle_identifier = await on_wire.resolve_did(identifier)
 
-        if handle_identifier is None:  # If the DID is not found, return null // Being done because UI is sending handles in did format
+        if (
+            handle_identifier is None
+        ):  # If the DID is not found, return null // Being done because UI is sending handles in did format
             return_ident = "null"
 
             return return_ident
         else:
             return handle_identifier[0]
     else:
-
         return identifier
 
 
@@ -471,7 +547,6 @@ async def use_did(identifier):
 
         return did_identifier
     else:
-
         return identifier
 
 
@@ -524,9 +599,15 @@ async def get_handle_history(identifier):
                     if "at://" not in also_known_as[0]:
                         cleaned_also_known_as = [(also_known_as, created_at_value, endpoint)]
                     else:
-                        cleaned_also_known_as = [(item.replace("at://", ""), created_at_value, endpoint) for item in also_known_as]
+                        cleaned_also_known_as = [
+                            (item.replace("at://", ""), created_at_value, endpoint) for item in also_known_as
+                        ]
                 else:
-                    cleaned_also_known_as = [(item.replace("at://", ""), created_at_value, endpoint) for item in also_known_as if "at://" in item]
+                    cleaned_also_known_as = [
+                        (item.replace("at://", ""), created_at_value, endpoint)
+                        for item in also_known_as
+                        if "at://" in item
+                    ]
 
                 also_known_as_list.extend(cleaned_also_known_as)
 
@@ -561,8 +642,8 @@ async def get_handle_history(identifier):
 
 
 async def list_uri_to_url(uri):
-    pattern = r'did:plc:[a-zA-Z0-9]+'
-    pattern2 = r'/([^/]+)$'
+    pattern = r"did:plc:[a-zA-Z0-9]+"
+    pattern2 = r"/([^/]+)$"
     list_base_url = "https://bsky.app/profile"
     match = re.search(pattern, uri)
     match2 = re.search(pattern2, uri)

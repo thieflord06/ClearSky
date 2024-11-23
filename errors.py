@@ -1,5 +1,6 @@
 # errors.py
 
+
 class BadRequest(Exception):  # 400
     pass
 
