@@ -2110,7 +2110,7 @@ async def check_last_created_did_date():
 
 async def get_block_stats():
     try:
-        pool_name = get_connection_pool("read")
+        pool_name = get_connection_pool("write")
         async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
                 logger.info("Getting block statistics.")
