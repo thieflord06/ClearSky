@@ -63,7 +63,7 @@ async def get_time_since(time) -> str:
 
 
 async def get_ip_address():
-    if not os.environ.get('CLEAR_SKY') or check_override:
+    if not os.environ.get('CLEAR_SKY') or check_override is True:
         logger.info("IP connection: Using config.ini")
         ip_address = config.get("server", "ip")
         port_address = config.get("server", "port")
