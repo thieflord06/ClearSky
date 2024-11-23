@@ -11,3 +11,4 @@ quart_rate_limiter>=0.10.0
 quart_cors>=0.7.0
 aiocron>=1.8
 aiohttp>=3.11.7
+aiofiles~=24.1.0

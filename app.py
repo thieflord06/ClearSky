@@ -1,34 +1,44 @@
 # app.py
 
-import sys
-from quart import Quart, request, session, jsonify
-from datetime import datetime
-import os
 import asyncio
-from quart_rate_limiter import RateLimiter
-from quart_cors import cors
-import database_handler
-import utils
-import config_helper
-from config_helper import logger
-from environment import get_api_var
+import functools
+import os
+import sys
+from datetime import datetime, timezone
+
 import aiocron
 import aiohttp
-import functools
-from errors import NotFound, DatabaseConnectionError
+from quart import Quart, jsonify, request, session
+from quart_cors import cors
+from quart_rate_limiter import RateLimiter
+
+import config_helper
+import database_handler
+import utils
 from apis import api_blueprint
-from helpers import blocklist_24_failed, blocklist_failed, get_ip, get_ip_address, get_var_info, version
-from core import initialize, db_pool_acquired, dbs_connected
+from config_helper import logger
+from core import db_pool_acquired, dbs_connected, initialize
+from environment import get_api_var
+from errors import DatabaseConnectionError, NotFound
+from helpers import (
+    blocklist_24_failed,
+    blocklist_failed,
+    get_ip,
+    get_ip_address,
+    get_var_info,
+    version,
+)
 
 # ======================================================================================================================
 # ======================================== global variables // Set up logging ==========================================
 config = config_helper.read_config()
 
 title_name = "ClearSky"
-os.system("title " + title_name)
+if sys.platform == "Windows":
+    os.system("title " + title_name)  # nosec
 current_dir = os.getcwd()
 log_version = "ClearSky Version: " + version
-current_time = datetime.now().strftime("%m%d%Y::%H:%M:%S")
+current_time = datetime.now(timezone.utc).strftime("%m%d%Y::%H:%M:%S")
 
 try:
     username = os.getlogin()
@@ -41,7 +51,7 @@ rate_limiter = RateLimiter(app)
 cors(app, allow_origin="*")
 
 # Configure session secret key
-app.secret_key = 'your-secret-key'
+app.secret_key = "your-secret-key"
 
 
 # ======================================================================================================================
@@ -49,7 +59,7 @@ app.secret_key = 'your-secret-key'
 async def preprocess_status(identifier) -> bool:
     if not identifier:
         return False
-    
+
     try:
         persona, status = await database_handler.identifier_exists_in_db(identifier)
         logger.debug(f"persona: {persona} status: {status}")
@@ -59,7 +69,6 @@ async def preprocess_status(identifier) -> bool:
         raise DatabaseConnectionError
 
     if persona is True and status is True:
-
         return True
     elif persona is True and status is False:
         logger.info(f"Account: {identifier} deleted")
@@ -113,7 +122,7 @@ async def first_run() -> None:
         await asyncio.sleep(30)
 
 
-@aiocron.crontab('0 */12 * * *')  # Every 12 hours
+@aiocron.crontab("0 */12 * * *")  # Every 12 hours
 async def schedule_stats_update() -> None:
     logger.info("Starting scheduled stats update.")
 
@@ -140,7 +149,7 @@ async def schedule_stats_update() -> None:
     logger.info("Scheduled stats update complete.")
 
 
-@aiocron.crontab('*/10 * * * *')  # Every 10 mins
+@aiocron.crontab("*/10 * * * *")  # Every 10 mins
 async def schedule_total_users_update() -> None:
     if utils.total_users_status.is_set():
         logger.warning("Total users updater is already running.")
@@ -164,21 +173,28 @@ def api_key_required(key_type) -> callable:
 
             api_keys = await database_handler.get_api_keys(api_environment, key_type, provided_api_key)
             try:
-                if provided_api_key not in api_keys.get('key') or api_keys.get('valid') is False or api_keys.get(key_type) is False:
+                if (
+                    provided_api_key not in api_keys.get("key")
+                    or api_keys.get("valid") is False
+                    or api_keys.get(key_type) is False
+                ):
                     ip = await get_ip()
                     logger.warning(f"<< {ip}: given key:{provided_api_key} Unauthorized API access.")
-                    session['authenticated'] = False
+                    session["authenticated"] = False
 
-                    return "Unauthorized", 401  # Return an error response if the API key is not valid
+                    return (
+                        "Unauthorized",
+                        401,
+                    )  # Return an error response if the API key is not valid
             except AttributeError:
                 logger.error(f"API key not found for type: {key_type}")
-                session['authenticated'] = False
+                session["authenticated"] = False
 
                 return "Unauthorized", 401
             else:
                 logger.info(f"Valid key {provided_api_key} for type: {key_type}")
 
-                session['authenticated'] = True  # Set to True if authenticated
+                session["authenticated"] = True  # Set to True if authenticated
 
             return await func(*args, **kwargs)
 
@@ -203,28 +219,30 @@ async def fetch_and_push_data():
 
     if api_key is not None:
         try:
-            fetch_api = {
-                "top_blocked": f'{self_server}/api/v1/auth/lists/fun-facts',
-                "top_24_blocked": f'{self_server}/api/v1/auth/lists/funer-facts',
-                "block_stats": f'{self_server}/api/v1/auth/lists/block-stats',
-                "total_users": f'{self_server}/api/v1/auth/total-users'
+            fetch_api_map = {
+                "top_blocked": f"{self_server}/api/v1/auth/lists/fun-facts",
+                "top_24_blocked": f"{self_server}/api/v1/auth/lists/funer-facts",
+                "block_stats": f"{self_server}/api/v1/auth/lists/block-stats",
+                "total_users": f"{self_server}/api/v1/auth/total-users",
             }
-            send_api = {
-                "top_blocked": f'{push_server}/api/v1/base/reporting/stats-cache/top-blocked',
-                "top_24_blocked": f'{push_server}/api/v1/base/reporting/stats-cache/top-24-blocked',
-                "block_stats": f'{push_server}/api/v1/base/reporting/stats-cache/block-stats',
-                "total_users": f'{push_server}/api/v1/base/reporting/stats-cache/total-users'
+            send_api_map = {
+                "top_blocked": f"{push_server}/api/v1/base/reporting/stats-cache/top-blocked",
+                "top_24_blocked": f"{push_server}/api/v1/base/reporting/stats-cache/top-24-blocked",
+                "block_stats": f"{push_server}/api/v1/base/reporting/stats-cache/block-stats",
+                "total_users": f"{push_server}/api/v1/base/reporting/stats-cache/total-users",
             }
-            headers = {'X-API-Key': f'{api_key}'}
+            headers = {"X-API-Key": f"{api_key}"}
 
             async with aiohttp.ClientSession(headers=headers) as get_session:
-                for (fetch_name, fetch_api), (send_name, send_api) in zip(fetch_api.items(), send_api.items()):
+                for (fetch_name, fetch_api), (_send_name, send_api) in zip(
+                    fetch_api_map.items(), send_api_map.items(), strict=False
+                ):
                     logger.info(f"Fetching data from {fetch_name} API")
 
                     async with get_session.get(fetch_api) as internal_response:
                         if internal_response.status == 200:
                             internal_data = await internal_response.json()
-                            if "timeLeft" in internal_data['data']:
+                            if "timeLeft" in internal_data["data"]:
                                 logger.info(f"{fetch_name} Data not ready, skipping.")
                             else:
                                 async with get_session.post(send_api, json=internal_data) as response:
@@ -243,7 +261,7 @@ async def fetch_and_push_data():
 
 
 # Schedule the task to run every hour
-@aiocron.crontab('0 * * * *')
+@aiocron.crontab("0 * * * *")
 async def schedule_data_push():
     logger.info("Starting scheduled data push.")
     await fetch_and_push_data()
@@ -267,6 +285,6 @@ async def main():
     await asyncio.gather(run_web_server_task, first_run())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())

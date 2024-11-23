@@ -1,12 +1,13 @@
 # on_wire.py
 
-import urllib.parse
 import asyncio
-from typing import Optional
-import httpx
-from config_helper import logger, limiter
+import urllib.parse
+
 import dns.resolver
+import httpx
+
 import database_handler
+from config_helper import limiter, logger
 from errors import InternalServerError
 
 
@@ -15,9 +16,7 @@ from errors import InternalServerError
 async def resolve_handle(info):  # Take Handle and get DID
     base_url = "https://api.bsky.app/xrpc/"
     url = urllib.parse.urljoin(base_url, "com.atproto.identity.resolveHandle")
-    params = {
-        "handle": info
-    }
+    params = {"handle": info}
 
     encoded_params = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
     full_url = f"{url}?{encoded_params}"
@@ -33,7 +32,7 @@ async def resolve_handle(info):  # Take Handle and get DID
                 response_json = response.json()
 
                 if response.status_code == 200:
-                    result = list(response_json.values())[0]
+                    result = next(iter(response_json.values()))
 
                     return result
                 elif response.status_code == 400:
@@ -45,7 +44,7 @@ async def resolve_handle(info):  # Take Handle and get DID
 
                             return None
                     except KeyError:
-                        logger.error(f"Error getting response: key error")
+                        logger.error("Error getting response: key error")
 
                         return None
                 else:
@@ -63,7 +62,7 @@ async def resolve_handle(info):  # Take Handle and get DID
     return None
 
 
-async def resolve_did(did, did_web_pds=False) -> Optional[list]:  # Take DID and get handle
+async def resolve_did(did, did_web_pds=False) -> list | None:  # Take DID and get handle
     base_url = "https://plc.directory/"
     url = f"{base_url}{did}"
     stripped_record = []
@@ -73,7 +72,7 @@ async def resolve_did(did, did_web_pds=False) -> Optional[list]:  # Take DID and
 
     if "did:web" in did:
         logger.info("Resolving did:web")
-        short_did = did[len("did:web:"):]
+        short_did = did[len("did:web:") :]
         url = f"https://{urllib.parse.unquote(short_did)}/.well-known/did.json"
 
     logger.debug(url)
@@ -94,7 +93,6 @@ async def resolve_did(did, did_web_pds=False) -> Optional[list]:  # Take DID and
                 logger.debug("response: " + str(response_json))
 
                 if response.status_code == 200:
-
                     if "did:web" in did:
                         try:
                             record = response_json["alsoKnownAs"]
@@ -186,17 +184,17 @@ async def resolve_did(did, did_web_pds=False) -> Optional[list]:  # Take DID and
             return None
         except httpx.RequestError as e:
             retry_count += 1
-            logger.error(f"Error occurred while making the API call: {str(e)} {url}")
+            logger.error(f"Error occurred while making the API call: {e!s} {url}")
 
             return None
         except httpx.HTTPStatusError as e:
             retry_count += 1
-            logger.error(f"Error occurred while parsing JSON response: {str(e)} {url}")
+            logger.error(f"Error occurred while parsing JSON response: {e!s} {url}")
 
             return None
         except Exception as e:
             retry_count += 1
-            logger.error(f"An unexpected error occurred: {str(e)} {url}")
+            logger.error(f"An unexpected error occurred: {e!s} {url}")
 
             return None
 
@@ -211,11 +209,7 @@ async def get_avatar_id(did, aux=False):
     collection = "app.bsky.actor.profile"
     rkey = "self"
     url = urllib.parse.urljoin(base_url, "com.atproto.repo.getRecord")
-    params = {
-        "repo": handle,
-        "collection": collection,
-        "rkey": rkey
-    }
+    params = {"repo": handle, "collection": collection, "rkey": rkey}
 
     encoded_params = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
     full_url = f"{url}?{encoded_params}"
@@ -234,12 +228,12 @@ async def get_avatar_id(did, aux=False):
                 if response.status_code == 200:
                     if aux:
                         try:
-                            display_value = response_json['value']['displayName']
+                            display_value = response_json["value"]["displayName"]
                         except Exception:
                             display_value = None
 
                         try:
-                            description = response_json['value']['description']
+                            description = response_json["value"]["description"]
                         except Exception:
                             description = None
 
@@ -248,7 +242,6 @@ async def get_avatar_id(did, aux=False):
                     avatar_link = avatar_info.get("ref", {}).get("$link", "")
                     avatar_mimetype = avatar_info.get("mimeType", "")
                     if avatar_link and "jpeg" in avatar_mimetype:
-
                         return avatar_link
                     elif avatar_link:
                         logger.warning(f"No picture format or incorrect format: {avatar_mimetype}")
@@ -281,17 +274,17 @@ async def get_avatar_id(did, aux=False):
             return None
         except httpx.RequestError as e:
             retry_count += 1
-            logger.error(f"Error occurred while making the API call: {str(e)} {full_url}")
+            logger.error(f"Error occurred while making the API call: {e!s} {full_url}")
 
             return None
         except httpx.HTTPStatusError as e:
             retry_count += 1
-            logger.error(f"Error occurred while parsing JSON response: {str(e)} {full_url}")
+            logger.error(f"Error occurred while parsing JSON response: {e!s} {full_url}")
 
             return None
         except Exception as e:
             retry_count += 1
-            logger.error(f"An unexpected error occurred: {str(e)} {full_url}")
+            logger.error(f"An unexpected error occurred: {e!s} {full_url}")
 
             return None
 
@@ -366,7 +359,7 @@ async def verify_handle(identity) -> bool:
         if result:
             result = str(result[0])
             dns_result = result.strip('"')
-            dns_result = dns_result.replace('did=', '')
+            dns_result = dns_result.replace("did=", "")
         else:
             dns_result = None
     except Exception as e:
@@ -374,29 +367,31 @@ async def verify_handle(identity) -> bool:
 
         dns_result = None
 
-    if (at_proto_result is not None and "did:plc" in at_proto_result) or (bsky_result is not None and "did:plc" in bsky_result) or (dns_result is not None and "did:plc" in dns_result):
+    if (
+        (at_proto_result is not None and "did:plc" in at_proto_result)
+        or (bsky_result is not None and "did:plc" in bsky_result)
+        or (dns_result is not None and "did:plc" in dns_result)
+    ):
         if "bsky.social" in identity:
             if at_proto_result and bsky_result:
-                if at_proto_result == bsky_result:
-                    return True
-                else:
-                    return False
+                return at_proto_result == bsky_result
         else:
             if dns_result and bsky_result:
-                if dns_result == bsky_result:
-                    return True
-                else:
-                    return False
+                return dns_result == bsky_result
             elif bsky_result and at_proto_result:
-                if bsky_result == at_proto_result:
-                    return True
-                else:
-                    return False
+                return bsky_result == at_proto_result
             else:
-                logger.error(f"validity case didn't match for {identity} | at_proto: {at_proto_result} | bsky: {bsky_result} | dns: {dns_result}")
+                logger.error(
+                    f"validity case didn't match for {identity} | at_proto: {at_proto_result} | "
+                    f"bsky: {bsky_result} | dns: {dns_result}"
+                )
 
                 return False
-    elif (at_proto_result is not None and "did:web" in at_proto_result) or (bsky_result is not None and "did:web" in bsky_result) or (dns_result is not None and "did:web" in dns_result):
+    elif (
+        (at_proto_result is not None and "did:web" in at_proto_result)
+        or (bsky_result is not None and "did:web" in bsky_result)
+        or (dns_result is not None and "did:web" in dns_result)
+    ):
         if at_proto_result is not None and "did:web" in at_proto_result:
             handle1 = await resolve_did(at_proto_result)
         elif bsky_result is not None and "did:web" in bsky_result:
@@ -408,19 +403,16 @@ async def verify_handle(identity) -> bool:
         handle2 = handle2[0] if handle2 else None
         handle3 = handle3[0] if handle3 else None
 
-        if identity == handle1 or identity == handle2 or identity == handle3:
+        if identity in (handle1, handle2, handle3):
             if dns_result and bsky_result:
-                if dns_result == bsky_result:
-                    return True
-                else:
-                    return False
+                return dns_result == bsky_result
             elif bsky_result and at_proto_result:
-                if bsky_result == at_proto_result:
-                    return True
-                else:
-                    return False
+                return bsky_result == at_proto_result
             else:
-                logger.error(f"validity case didn't match for {identity} | at_proto: {at_proto_result} | bsky: {bsky_result} | dns: {dns_result}")
+                logger.error(
+                    f"validity case didn't match for {identity} | at_proto: {at_proto_result} | "
+                    f"bsky: {bsky_result} | dns: {dns_result}"
+                )
 
                 return False
     else:
@@ -437,9 +429,8 @@ async def get_pds(identifier):
         logger.debug(f"full url: {full_url}")
 
         try:
-            async with limiter:
-                async with httpx.AsyncClient() as client:
-                    response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
+            async with limiter, httpx.AsyncClient() as client:
+                response = await client.get(full_url, timeout=10)  # Set an appropriate timeout value (in seconds)
         except httpx.ReadTimeout:
             logger.warning("Request timed out. Retrying... Retry count: %d", retry_count)
             retry_count += 1
@@ -455,7 +446,7 @@ async def get_pds(identifier):
             response_json = response.json()
 
             try:
-                endpoint = response_json.get('service')[0]['serviceEndpoint']
+                endpoint = response_json.get("service")[0]["serviceEndpoint"]
             except Exception as e:
                 endpoint = None
                 logger.error(f"Error getting PDS endpoint: {full_url} {e}")

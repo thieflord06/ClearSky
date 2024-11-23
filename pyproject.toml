@@ -19,7 +19,7 @@ lint.select = [
   "PTH",
   "RUF",
 ]
-lint.ignore = ["RUF013", "E731", "COM812", "B904"]
+lint.ignore = ["RUF013", "E731", "COM812", "B904", "PTH", "N818"]
 lint.flake8-annotations.allow-star-arg-any = true
 lint.flake8-type-checking.quote-annotations = true
 lint.extend-safe-fixes = ["SIM101", "TCH"]

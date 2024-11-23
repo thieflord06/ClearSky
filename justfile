@@ -5,6 +5,7 @@
 @pip-update:
     pip-compile requirements.in
     pip-compile requirements-dev.in
+    just pip-install
 
 first-time-setup:
     #!/usr/bin/env bash

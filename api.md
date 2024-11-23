@@ -10,7 +10,7 @@
 
 ## Pagination:
 `<page:int>`
-- **Value:** Integer 
+- **Value:** Integer
   - This is a parameter that is used to paginate the results. It is used to specify the page number of the results to be returned. The default value is 1.
 
 ### Unathenticated endpoints:
@@ -254,7 +254,7 @@
     - **Parameters:** none
       - **Response:**
           ```json
-              { 
+              {
                   "as of":"2024-04-15T12:59:08.467076",
                       "data":
                           {
