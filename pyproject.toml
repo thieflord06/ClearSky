@@ -30,6 +30,7 @@ resolver = "backtracking"
 generate-hashes = true
 allow_unsafe = true
 strip_extras = true
+annotate = false
 
 [tool.pyright]
 venvPath = "."
