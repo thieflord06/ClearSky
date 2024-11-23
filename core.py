@@ -1502,7 +1502,9 @@ async def does_file_exist(file_path) -> bool:
     return bool(os.path.exists(file_path))
 
 
-async def store_data(data, file_name: str, author: str = None, description: str = None, appeal: str = None, list_type: str = None) -> None:
+async def store_data(
+    data, file_name: str, author: str = None, description: str = None, appeal: str = None, list_type: str = None
+) -> None:
     base_path = await get_data_storage_path()
 
     # Define the file paths for the data file and metadata file
@@ -1520,7 +1522,7 @@ async def store_data(data, file_name: str, author: str = None, description: str 
 
     if name_validated and content_validated and not file_exists:
         # Prepare to read data as a CSV
-        data_io = io.StringIO(data.decode('utf-8'))
+        data_io = io.StringIO(data.decode("utf-8"))
         reader = csv.reader(data_io)
 
         # Extract the header row
@@ -1530,13 +1532,13 @@ async def store_data(data, file_name: str, author: str = None, description: str 
         if not header:
             raise BadRequest("Invalid CSV file format. No header row found.")
 
-        async with aiofiles.open(data_file_path, 'w') as file:
+        async with aiofiles.open(data_file_path, "w") as file:
             writer = csv.writer(file)
             writer.writerow(header)
             writer.writerows(reader)
 
         # Write metadata to the metadata file
-        async with aiofiles.open(metadata_file_path, 'w') as metadata_file:
+        async with aiofiles.open(metadata_file_path, "w") as metadata_file:
             await metadata_file.write(f"Author: {author}\n")
             await metadata_file.write(f"Description: {description}\n")
             await metadata_file.write(f"Appeal: {appeal}\n")
