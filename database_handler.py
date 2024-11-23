@@ -2250,7 +2250,7 @@ async def get_top24_blocks():
                 blocked_query = '''SELECT b.blocked_did, COUNT(*) AS block_count
                                     FROM blocklists AS b
                                     JOIN users AS u ON b.blocked_did = u.did AND u.status = TRUE
-                                    WHERE b.block_date::date >= CURRENT_DATE - INTERVAL '1 day'
+                                    WHERE b.block_date >= now() - INTERVAL '1 day'
                                     GROUP BY b.blocked_did
                                     ORDER BY block_count DESC
                                     LIMIT 25'''
@@ -2261,7 +2261,7 @@ async def get_top24_blocks():
                 blockers_query = '''SELECT b.user_did, COUNT(*) AS block_count
                                     FROM blocklists as b
                                     JOIN users AS u ON b.user_did = u.did AND u.status = TRUE
-                                    WHERE b.block_date::date >= CURRENT_DATE - INTERVAL '1 day'
+                                    WHERE b.block_date >= now() - INTERVAL '1 day'
                                     GROUP BY user_did
                                     ORDER BY block_count DESC
                                     LIMIT 25'''
