@@ -35,4 +35,4 @@ repos:
   - id: pip-compile
     name: pip-compile (dev)
     args: ["requirements-dev.in"]
-    files: ^requirements(-dev)?\.(in|txt)$
+    files: ^requirements(\-dev\.in|\.txt)$
