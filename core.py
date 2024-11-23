@@ -114,11 +114,6 @@ async def initialize() -> None:
 
     log_warning_once = True
 
-    if not await database_handler.redis_connected():
-        logger.warning("Redis not connected.")
-    else:
-        database_handler.redis_connection = True
-
     if dbs_connected is None:
         while True:
             dbs_connected = await database_handler.create_connection_pools(database_handler.database_config)
@@ -1243,13 +1238,6 @@ async def get_internal_status() -> jsonify:
         else:
             top_24_blocked_status = "complete"
 
-    redis_connection = await database_handler.redis_connected()
-
-    if redis_connection:
-        redis_status = "connected"
-    else:
-        redis_status = "disconnected"
-
     if database_handler.block_cache_status.is_set():
         block_cache_status = "processing"
     else:
@@ -1281,7 +1269,6 @@ async def get_internal_status() -> jsonify:
     status["block stats status"] = stats_status
     status["top blocked status"] = top_blocked_status
     status["top 24 blocked status"] = top_24_blocked_status
-    status["redis status"] = redis_status
     status["block cache status"] = block_cache_status
     status["block stats last process time"] = str(utils.block_stats_process_time)
     status["block cache status"] = str(database_handler.all_blocks_process_time)

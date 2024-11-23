@@ -102,8 +102,8 @@ async def first_run() -> None:
             if tables:
                 await database_handler.blocklists_updater()
                 await database_handler.top_24blocklists_updater()
-                # await utils.update_block_statistics()
-                # await utils.update_total_users()
+                await utils.update_block_statistics()
+                await utils.update_total_users()
 
                 break
             else:
@@ -127,31 +127,31 @@ async def schedule_stats_update() -> None:
     else:
         await database_handler.top_24blocklists_updater()
 
-    # if utils.block_stats_status.is_set():
-    #     logger.warning("Block stats updater is already running.")
-    # else:
-    #     await utils.update_block_statistics()
+    if utils.block_stats_status.is_set():
+        logger.warning("Block stats updater is already running.")
+    else:
+        await utils.update_block_statistics()
 
-    # if utils.total_users_status.is_set():
-    #     logger.warning("Total users updater is already running.")
-    # else:
-    #     await utils.update_total_users()
+    if utils.total_users_status.is_set():
+        logger.warning("Total users updater is already running.")
+    else:
+        await utils.update_total_users()
 
     logger.info("Scheduled stats update complete.")
 
 
-# @aiocron.crontab('*/10 * * * *')  # Every 10 mins
-# async def schedule_total_users_update() -> None:
-#     if utils.total_users_status.is_set():
-#         logger.warning("Total users updater is already running.")
-#
-#         return
-#
-#     logger.info("Starting scheduled total users update.")
-#
-#     await utils.update_total_users()
-#
-#     logger.info("Scheduled total users update complete.")
+@aiocron.crontab('*/10 * * * *')  # Every 10 mins
+async def schedule_total_users_update() -> None:
+    if utils.total_users_status.is_set():
+        logger.warning("Total users updater is already running.")
+
+        return
+
+    logger.info("Starting scheduled total users update.")
+
+    await utils.update_total_users()
+
+    logger.info("Scheduled total users update complete.")
 
 
 def api_key_required(key_type) -> callable:
