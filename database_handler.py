@@ -15,7 +15,7 @@ import pytz
 import on_wire
 import math
 import functools
-from errors import NotFound, DatabaseConnectionError
+from errors import NotFound
 from config_helper import check_override
 import itertools
 from errors import InternalServerError, DatabaseConnectionError
@@ -73,8 +73,6 @@ def get_connection_pool(db_type="read"):
                 continue
             if database_config["write_keyword"] in db.lower() or ("db" in db.lower() and database_config["write_keyword"] in db.lower()):
                 write = db
-
-                logger.info(f"write db: {write}")
 
                 return write
 
@@ -1892,7 +1890,7 @@ async def get_top_blocks():
 
     logger.info("Getting top blocks from db.")
     try:
-        pool_name = get_connection_pool("read")
+        pool_name = get_connection_pool("write")
         async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
 
@@ -2244,7 +2242,7 @@ async def get_top24_blocks():
 
     logger.info("Getting top 24 blocks from db.")
     try:
-        pool_name = get_connection_pool("read")
+        pool_name = get_connection_pool("write")
         async with connection_pools[pool_name].acquire() as connection:
             async with connection.transaction():
 
@@ -3317,7 +3315,7 @@ async def get_user_handle(did) -> Optional[str]:
 
 
 async def get_user_count(get_active=True) -> int:
-    pool_name = get_connection_pool("read")
+    pool_name = get_connection_pool("write")
     async with connection_pools[pool_name].acquire() as connection:
         try:
             if get_active:
@@ -3450,7 +3448,7 @@ async def add_new_pdses(pdses) -> None:
 
 
 async def get_deleted_users_count() -> int:
-    pool_name = get_connection_pool("read")
+    pool_name = get_connection_pool("write")
     async with connection_pools[pool_name].acquire() as connection:
         try:
             count = await connection.fetchval('SELECT COUNT(*) FROM USERS JOIN pds ON users.pds = pds.pds WHERE pds.status is TRUE AND users.status is FALSE')
