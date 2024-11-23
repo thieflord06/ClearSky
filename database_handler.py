@@ -187,14 +187,6 @@ async def retrieve_autocomplete_handles(query):
         redis_connection = False
         once = False
 
-        if not once:
-            once = True
-            asyncio.create_task(wait_for_redis())
-        else:
-            results = None
-
-            return results
-
         results = await asyncio.wait_for(find_handles(query), timeout=5.0)
 
         return results
