@@ -165,41 +165,40 @@ def check_db_connection(*dbs):
 #             while True:
 #                 pool_name = get_connection_pool("read")
 #                 async with connection_pools[pool_name].acquire() as connection:
-#                     async with connection.transaction():
-#                         logger.info("Transferring handles to cache.")
-#                         # Query all handles from the database
-#                         query_text = "SELECT handle FROM users LIMIT $1 OFFSET $2"
-#                         result = await connection.fetch(query_text, batch_size, offset)
+#                     logger.info("Transferring handles to cache.")
+#                     # Query all handles from the database
+#                     query_text = "SELECT handle FROM users LIMIT $1 OFFSET $2"
+#                     result = await connection.fetch(query_text, batch_size, offset)
 #
-#                         if not result:
-#                             break  # No more handles to fetch
+#                     if not result:
+#                         break  # No more handles to fetch
 #
-#                         # Create a temporary dictionary to hold handles by level
-#                         handles_by_level = defaultdict(list)
+#                     # Create a temporary dictionary to hold handles by level
+#                     handles_by_level = defaultdict(list)
 #
-#                         # Organize handles into a trie-like structure
-#                         for row in result:
-#                             handle = row['handle']
-#                             logger.debug(str(handle))
-#                             if handle:  # Check if handle is not empty
-#                                 # Group handles by level, e.g., {"a": ["abc", "ade"], "ab": ["abc"]}
-#                                 for i in range(1, len(handle) + 1):
-#                                     prefix = handle[:i]
-#                                     handles_by_level[prefix].append(handle)
+#                     # Organize handles into a trie-like structure
+#                     for row in result:
+#                         handle = row['handle']
+#                         logger.debug(str(handle))
+#                         if handle:  # Check if handle is not empty
+#                             # Group handles by level, e.g., {"a": ["abc", "ade"], "ab": ["abc"]}
+#                             for i in range(1, len(handle) + 1):
+#                                 prefix = handle[:i]
+#                                 handles_by_level[prefix].append(handle)
 #
-#                         logger.info("inserting into redis")
-#                         # Store handles in Redis ZSETs by level
-#                         async with redis_conn as pipe:
-#                             for prefix, handles in handles_by_level.items():
-#                                 zset_key = f"handles:{prefix}"
-#                                 # Create a dictionary with new handles as members and scores (use 0 for simplicity)
-#                                 zset_data = {handle: 0 for handle in handles}
-#                                 await pipe.zadd(zset_key, zset_data, nx=True)
+#                     logger.info("inserting into redis")
+#                     # Store handles in Redis ZSETs by level
+#                     async with redis_conn as pipe:
+#                         for prefix, handles in handles_by_level.items():
+#                             zset_key = f"handles:{prefix}"
+#                             # Create a dictionary with new handles as members and scores (use 0 for simplicity)
+#                             zset_data = {handle: 0 for handle in handles}
+#                             await pipe.zadd(zset_key, zset_data, nx=True)
 #
-#                         offset += batch_size
-#                         batch_count += 1
+#                     offset += batch_size
+#                     batch_count += 1
 #
-#                         logger.info(f"Batch {str(batch_count)} processed. Total handles added: {str(offset)}")
+#                     logger.info(f"Batch {str(batch_count)} processed. Total handles added: {str(offset)}")
 #
 #             logger.info("Handles added to cache successfully.")
 #
@@ -272,26 +271,25 @@ async def find_handles(value):
     try:
         pool_name = get_connection_pool("read")
         async with connection_pools[pool_name].acquire() as connection:
-            async with connection.transaction():
-                logger.debug(f"{value}")
+            logger.debug(f"{value}")
 
-                query_text1 = """SELECT handle 
-                                FROM users
-                                WHERE handle LIKE $1 || '%'
-                                LIMIT 5"""
+            query_text1 = """SELECT handle 
+                            FROM users
+                            WHERE handle LIKE $1 || '%'
+                            LIMIT 5"""
 
-                result = await asyncio.wait_for(connection.fetch(query_text1, value), timeout=5.0)
+            result = await asyncio.wait_for(connection.fetch(query_text1, value), timeout=5.0)
 
-                logger.debug("autocomplete fulfilled.")
+            logger.debug("autocomplete fulfilled.")
 
-                if not result:
+            if not result:
 
-                    return None
+                return None
 
-                # Extract matching handles from the database query result
-                matching_handles = [row['handle'] for row in result]
+            # Extract matching handles from the database query result
+            matching_handles = [row['handle'] for row in result]
 
-                return matching_handles
+            return matching_handles
     except asyncpg.ConnectionDoesNotExistError:
         logger.error("db connection issue.")
 
@@ -326,18 +324,17 @@ async def get_blocklist(ident, limit=100, offset=0):
     try:
         pool_name = get_connection_pool("read")
         async with connection_pools[pool_name].acquire() as connection:
-            async with connection.transaction():
-                query = """SELECT DISTINCT b.blocked_did, b.block_date, u.handle, u.status 
-                FROM blocklists AS b JOIN users AS u ON b.blocked_did = u.did 
-                WHERE b.user_did = $1 ORDER BY block_date DESC LIMIT $2 OFFSET $3"""
-                blocklist_rows = await connection.fetch(query, ident, limit, offset)
+            query = """SELECT DISTINCT b.blocked_did, b.block_date, u.handle, u.status 
+            FROM blocklists AS b JOIN users AS u ON b.blocked_did = u.did 
+            WHERE b.user_did = $1 ORDER BY block_date DESC LIMIT $2 OFFSET $3"""
+            blocklist_rows = await connection.fetch(query, ident, limit, offset)
 
-                query2 = """SELECT COUNT(DISTINCT blocked_did) 
-                FROM blocklists 
-                WHERE user_did = $1"""
-                total_blocked_count = await connection.fetchval(query2, ident)
+            query2 = """SELECT COUNT(DISTINCT blocked_did) 
+            FROM blocklists 
+            WHERE user_did = $1"""
+            total_blocked_count = await connection.fetchval(query2, ident)
 
-                return blocklist_rows, total_blocked_count
+            return blocklist_rows, total_blocked_count
     except asyncpg.PostgresError as e:
         logger.error(f"Postgres error: {e}")
         raise DatabaseConnectionError
@@ -358,44 +355,43 @@ async def get_subscribe_blocks(ident, limit=100, offset=0):
     try:
         pool_name = get_connection_pool("read")
         async with connection_pools[pool_name].acquire() as connection:
-            async with connection.transaction():
-                query_1 = """SELECT mu.subject_did, u.handle, s.date_added, u.status, s.list_uri, m.url, sc.user_count
-                                FROM subscribe_blocklists AS s
-                                INNER JOIN mutelists_users AS mu ON s.list_uri = mu.list_uri
-                                INNER JOIN users AS u ON mu.subject_did = u.did
-                                INNER JOIN mutelists AS m ON s.list_uri = m.uri
-                                INNER JOIN subscribe_blocklists_user_count AS sc ON s.list_uri = sc.list_uri
-                                WHERE s.did = $1
-                                ORDER BY s.date_added DESC
-                                LIMIT $2
-                                OFFSET $3"""
+            query_1 = """SELECT mu.subject_did, u.handle, s.date_added, u.status, s.list_uri, m.url, sc.user_count
+                            FROM subscribe_blocklists AS s
+                            INNER JOIN mutelists_users AS mu ON s.list_uri = mu.list_uri
+                            INNER JOIN users AS u ON mu.subject_did = u.did
+                            INNER JOIN mutelists AS m ON s.list_uri = m.uri
+                            INNER JOIN subscribe_blocklists_user_count AS sc ON s.list_uri = sc.list_uri
+                            WHERE s.did = $1
+                            ORDER BY s.date_added DESC
+                            LIMIT $2
+                            OFFSET $3"""
 
-                query_2 = """SELECT COUNT(mu.subject_did)
-                                FROM subscribe_blocklists AS s
-                                INNER JOIN mutelists_users AS mu ON s.list_uri = mu.list_uri
-                                WHERE s.did = $1"""
+            query_2 = """SELECT COUNT(mu.subject_did)
+                            FROM subscribe_blocklists AS s
+                            INNER JOIN mutelists_users AS mu ON s.list_uri = mu.list_uri
+                            WHERE s.did = $1"""
 
-                sub_list = await connection.fetch(query_1, ident, limit, offset)
+            sub_list = await connection.fetch(query_1, ident, limit, offset)
 
-                total_blocked_count = await connection.fetchval(query_2, ident)
+            total_blocked_count = await connection.fetchval(query_2, ident)
 
-                if not sub_list:
-                    return None, 0
+            if not sub_list:
+                return None, 0
 
-                for record in sub_list:
-                    list_dict = {
-                        "handle": record['handle'],
-                        "subject_did": record['subject_did'],
-                        "date_added": record['date_added'].isoformat(),
-                        "status": record['status'],
-                        "list_uri": record['list_uri'],
-                        "list_url": record['url'],
-                        "list count": record['user_count']
-                    }
+            for record in sub_list:
+                list_dict = {
+                    "handle": record['handle'],
+                    "subject_did": record['subject_did'],
+                    "date_added": record['date_added'].isoformat(),
+                    "status": record['status'],
+                    "list_uri": record['list_uri'],
+                    "list_url": record['url'],
+                    "list count": record['user_count']
+                }
 
-                    data_list.append(list_dict)
+                data_list.append(list_dict)
 
-                return data_list, total_blocked_count
+            return data_list, total_blocked_count
     except asyncpg.PostgresError as e:
         logger.error(f"Postgres error: {e}")
         raise DatabaseConnectionError
@@ -418,50 +414,49 @@ async def get_subscribe_blocks_single(ident, list_of_lists, limit=100, offset=0)
     try:
         pool_name = get_connection_pool("read")
         async with connection_pools[pool_name].acquire() as connection:
-            async with connection.transaction():
-                query_1 = """SELECT s.did, u.handle, s.date_added, u.status, s.list_uri, m.url, sc.user_count
-                                FROM subscribe_blocklists AS s
-                                INNER JOIN users AS u ON s.did = u.did
-                                INNER JOIN mutelists AS m ON s.list_uri = m.uri
-                                INNER JOIN subscribe_blocklists_user_count AS sc ON s.list_uri = sc.list_uri
-                                WHERE m.url = $1
-                                ORDER BY s.date_added DESC
-                                LIMIT $2
-                                OFFSET $3"""
+            query_1 = """SELECT s.did, u.handle, s.date_added, u.status, s.list_uri, m.url, sc.user_count
+                            FROM subscribe_blocklists AS s
+                            INNER JOIN users AS u ON s.did = u.did
+                            INNER JOIN mutelists AS m ON s.list_uri = m.uri
+                            INNER JOIN subscribe_blocklists_user_count AS sc ON s.list_uri = sc.list_uri
+                            WHERE m.url = $1
+                            ORDER BY s.date_added DESC
+                            LIMIT $2
+                            OFFSET $3"""
 
-                query_2 = """SELECT COUNT(s.did)
-                                FROM subscribe_blocklists AS s
-                                INNER JOIN mutelists AS m ON s.list_uri = m.uri
-                                WHERE m.url = $1"""
+            query_2 = """SELECT COUNT(s.did)
+                            FROM subscribe_blocklists AS s
+                            INNER JOIN mutelists AS m ON s.list_uri = m.uri
+                            WHERE m.url = $1"""
 
-                if not list_of_lists:
-                    return None, 0
+            if not list_of_lists:
+                return None, 0
 
-                for list_url in list_of_lists:
-                    count = await connection.fetchval(query_2, list_url)
-                    if count:
-                        data = await connection.fetch(query_1, list_url, limit, offset)
+            for list_url in list_of_lists:
+                count = await connection.fetchval(query_2, list_url)
+                if count:
+                    data = await connection.fetch(query_1, list_url, limit, offset)
 
-                        total_data.append(data)
-                    total_count += count
+                    total_data.append(data)
+                total_count += count
 
-                if not total_data:
-                    return None, 0
+            if not total_data:
+                return None, 0
 
-                for record in total_data:
-                    for data in record:
-                        list_dict = {
-                            "handle": data['handle'],
-                            "did": data['did'],
-                            "date_added": data['date_added'].isoformat(),
-                            "status": data['status'],
-                            "list_uri": data['list_uri'],
-                            "list_url": data['url']
-                        }
+            for record in total_data:
+                for data in record:
+                    list_dict = {
+                        "handle": data['handle'],
+                        "did": data['did'],
+                        "date_added": data['date_added'].isoformat(),
+                        "status": data['status'],
+                        "list_uri": data['list_uri'],
+                        "list_url": data['url']
+                    }
 
-                        data_list.append(list_dict)
+                    data_list.append(list_dict)
 
-                return data_list, total_count
+            return data_list, total_count
     except asyncpg.PostgresError as e:
         logger.error(f"Postgres error: {e}")
         raise DatabaseConnectionError
@@ -480,13 +475,12 @@ async def get_listitem_url(uri):
     try:
         pool_name = get_connection_pool("read")
         async with connection_pools[pool_name].acquire() as connection:
-            async with connection.transaction():
-                query = "SELECT list_uri FROM mutelist_users WHERE listitem_uri = $1"
-                list_uri = await connection.fetchval(query, uri)
+            query = "SELECT list_uri FROM mutelist_users WHERE listitem_uri = $1"
+            list_uri = await connection.fetchval(query, uri)
 
-                url = await utils.list_uri_to_url(list_uri)
+            url = await utils.list_uri_to_url(list_uri)
 
-                return url
+            return url
     except asyncpg.PostgresError as e:
         logger.error(f"Postgres error: {e}")
         raise DatabaseConnectionError
@@ -505,36 +499,35 @@ async def get_moderation_list(name, limit=100, offset=0):
     try:
         pool_name = get_connection_pool("read")
         async with connection_pools[pool_name].acquire() as connection:
-            async with connection.transaction():
-                search_string = f'%{name}%'
+            search_string = f'%{name}%'
 
-                name_query = """SELECT ml.url, u.handle, u.status, ml.name, ml.description, ml.created_date, mc.user_count
-                FROM mutelists AS ml 
-                INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle 
-                LEFT mutelists_user_count AS mc ON ml.uri = mc.list_uri
-                WHERE ml.name ILIKE $1
-                LIMIT $2
-                OFFSET $3"""
+            name_query = """SELECT ml.url, u.handle, u.status, ml.name, ml.description, ml.created_date, mc.user_count
+            FROM mutelists AS ml 
+            INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle 
+            LEFT mutelists_user_count AS mc ON ml.uri = mc.list_uri
+            WHERE ml.name ILIKE $1
+            LIMIT $2
+            OFFSET $3"""
 
-                name_mod_lists = await connection.fetch(name_query, search_string, limit, offset)
+            name_mod_lists = await connection.fetch(name_query, search_string, limit, offset)
 
-                description_query = """SELECT ml.url, u.handle, u.status, ml.name, ml.description, ml.created_date, mc.user_count
-                FROM mutelists AS ml
-                INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle
-                LEFT mutelists_user_count AS mc ON ml.uri = mc.list_uri
-                WHERE ml.description ILIKE $1
-                LIMIT $2
-                OFFSET $3"""
+            description_query = """SELECT ml.url, u.handle, u.status, ml.name, ml.description, ml.created_date, mc.user_count
+            FROM mutelists AS ml
+            INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle
+            LEFT mutelists_user_count AS mc ON ml.uri = mc.list_uri
+            WHERE ml.description ILIKE $1
+            LIMIT $2
+            OFFSET $3"""
 
-                description_mod_lists = await connection.fetch(description_query, search_string, limit, offset)
+            description_mod_lists = await connection.fetch(description_query, search_string, limit, offset)
 
-                name_count_query = """SELECT COUNT(*) FROM mutelists WHERE name ILIKE $1"""
+            name_count_query = """SELECT COUNT(*) FROM mutelists WHERE name ILIKE $1"""
 
-                description_count_query = """SELECT COUNT(*) FROM mutelists WHERE description ILIKE $1"""
+            description_count_query = """SELECT COUNT(*) FROM mutelists WHERE description ILIKE $1"""
 
-                name_count = await connection.fetchval(name_count_query, search_string)
+            name_count = await connection.fetchval(name_count_query, search_string)
 
-                description_count = await connection.fetchval(description_count_query, search_string)
+            description_count = await connection.fetchval(description_count_query, search_string)
     except asyncpg.PostgresError as e:
         logger.error(f"Postgres error: {e}")
         raise DatabaseConnectionError
@@ -593,13 +586,12 @@ async def get_listblock_url(uri):
     try:
         pool_name = get_connection_pool("read")
         async with connection_pools[pool_name].acquire() as connection:
-            async with connection.transaction():
-                query = "SELECT list_uri FROM subscribe_blocklists WHERE uri = $1"
-                list_uri = await connection.fetchval(query, uri)
+            query = "SELECT list_uri FROM subscribe_blocklists WHERE uri = $1"
+            list_uri = await connection.fetchval(query, uri)
 
-                url = await utils.list_uri_to_url(list_uri)
+            url = await utils.list_uri_to_url(list_uri)
 
-                return url
+            return url
     except asyncpg.PostgresError as e:
         logger.error(f"Postgres error: {e}")
         raise DatabaseConnectionError
@@ -2305,14 +2297,13 @@ async def get_similar_blocked_by(user_did):
 
         pool_name = get_connection_pool("read")
         async with connection_pools[pool_name].acquire() as connection:
-            async with connection.transaction():
-                # Fetch all blocklists except for the specified user's blocklist
-                all_blocklists_rows = await connection.fetch(
-                    'SELECT user_did, blocked_did FROM blocklists'
-                )
-                all_blocks_cache = all_blocklists_rows
+            # Fetch all blocklists except for the specified user's blocklist
+            all_blocklists_rows = await connection.fetch(
+                'SELECT user_did, blocked_did FROM blocklists'
+            )
+            all_blocks_cache = all_blocklists_rows
 
-                block_cache_status.clear()
+            block_cache_status.clear()
     else:
         all_blocklists_rows = all_blocks_cache
 
@@ -2357,10 +2348,9 @@ async def get_similar_blocked_by(user_did):
     for user, percentage in top_similar_users:
         pool_name = get_connection_pool("read")
         async with connection_pools[pool_name].acquire() as connection:
-            async with connection.transaction():
-                status = await connection.fetch(
-                    'SELECT status FROM users WHERE did = $1', user)
-                status_list.append(status)
+            status = await connection.fetch(
+                'SELECT status FROM users WHERE did = $1', user)
+            status_list.append(status)
 
     # Return the sorted list of users and their match percentages
     return users, percentages, status_list
@@ -2381,18 +2371,17 @@ async def get_similar_users(user_did):
 
         pool_name = get_connection_pool("read")
         async with connection_pools[pool_name].acquire() as connection:
-            async with connection.transaction():
-                # Fetch all blocklists except for the specified user's blocklist
-                all_blocklists_rows = await connection.fetch(
-                    'SELECT user_did, blocked_did FROM blocklists'
-                )
-                all_blocks_cache["blocks"] = all_blocklists_rows
+            # Fetch all blocklists except for the specified user's blocklist
+            all_blocklists_rows = await connection.fetch(
+                'SELECT user_did, blocked_did FROM blocklists'
+            )
+            all_blocks_cache["blocks"] = all_blocklists_rows
 
-                block_cache_status.clear()
-                end_time = datetime.now()
-                if start_time is not None:
-                    all_blocks_process_time = end_time - start_time
-                all_blocks_last_update = end_time
+            block_cache_status.clear()
+            end_time = datetime.now()
+            if start_time is not None:
+                all_blocks_process_time = end_time - start_time
+            all_blocks_last_update = end_time
     else:
         all_blocklists_rows = all_blocks
 
@@ -2450,10 +2439,9 @@ async def get_similar_users(user_did):
     for user, percentage in top_similar_users:
         pool_name = get_connection_pool("read")
         async with connection_pools[pool_name].acquire() as connection:
-            async with connection.transaction():
-                status = await connection.fetchval(
-                    'SELECT status FROM users WHERE did = $1', user)
-                status_list.append(status)
+            status = await connection.fetchval(
+                'SELECT status FROM users WHERE did = $1', user)
+            status_list.append(status)
     logger.info(status_list)
     return users, percentages, status_list
 
@@ -2555,69 +2543,67 @@ async def top_24blocklists_updater():
 async def get_mutelists(ident) -> Optional[list]:
     pool_name = get_connection_pool("read")
     async with connection_pools[pool_name].acquire() as connection:
-        async with connection.transaction():
-            query = """
-            SELECT ml.url, u.handle, u.status, ml.name, ml.description, ml.created_date, mu.date_added, mc.user_count
-            FROM mutelists AS ml
-            INNER JOIN mutelists_users AS mu ON ml.uri = mu.list_uri
-            INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle
-            LEFT JOIN mutelists_user_count AS mc ON ml.uri = mc.list_uri
-            WHERE mu.subject_did = $1 AND u.status = TRUE
-            """
-            try:
-                mute_lists = await connection.fetch(query, ident)
-            except asyncpg.PostgresError as e:
-                logger.error(f"Postgres error: {e}")
-                raise DatabaseConnectionError
-            except asyncpg.InterfaceError as e:
-                logger.error(f"interface error: {e}")
-                raise DatabaseConnectionError
-            except AttributeError:
-                logger.error(f"db connection issue.")
-                raise DatabaseConnectionError
-            except Exception as e:
-                logger.error(f"Error: {e}")
-                raise InternalServerError
+        query = """
+        SELECT ml.url, u.handle, u.status, ml.name, ml.description, ml.created_date, mu.date_added, mc.user_count
+        FROM mutelists AS ml
+        INNER JOIN mutelists_users AS mu ON ml.uri = mu.list_uri
+        INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle
+        LEFT JOIN mutelists_user_count AS mc ON ml.uri = mc.list_uri
+        WHERE mu.subject_did = $1 AND u.status = TRUE
+        """
+        try:
+            mute_lists = await connection.fetch(query, ident)
+        except asyncpg.PostgresError as e:
+            logger.error(f"Postgres error: {e}")
+            raise DatabaseConnectionError
+        except asyncpg.InterfaceError as e:
+            logger.error(f"interface error: {e}")
+            raise DatabaseConnectionError
+        except AttributeError:
+            logger.error(f"db connection issue.")
+            raise DatabaseConnectionError
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            raise InternalServerError
 
-            lists = []
-            for record in mute_lists:
-                data = {
-                    "url": record['url'],
-                    "handle": record['handle'],
-                    "status": record['status'],
-                    "name": record['name'],
-                    "description": record['description'],
-                    "created_date": record['created_date'].isoformat(),
-                    "date_added": record['date_added'].isoformat(),
-                    "list user count": record['user_count']
-                }
-                lists.append(data)
+        lists = []
+        for record in mute_lists:
+            data = {
+                "url": record['url'],
+                "handle": record['handle'],
+                "status": record['status'],
+                "name": record['name'],
+                "description": record['description'],
+                "created_date": record['created_date'].isoformat(),
+                "date_added": record['date_added'].isoformat(),
+                "list user count": record['user_count']
+            }
+            lists.append(data)
 
-            return lists
+        return lists
 
 
 async def check_api_key(api_environment, key_type, key_value) -> bool:
     pool_name = get_connection_pool("read")
     async with connection_pools[pool_name].acquire() as connection:
-        async with connection.transaction():
-            try:
-                query = """SELECT valid FROM API WHERE key = $3 environment = $1 AND access_type LIKE '%' || $2 || '%'"""
+        try:
+            query = """SELECT valid FROM API WHERE key = $3 environment = $1 AND access_type LIKE '%' || $2 || '%'"""
 
-                status = await connection.fetchval(query, api_environment, key_type, key_value)
+            status = await connection.fetchval(query, api_environment, key_type, key_value)
 
-                return status
-            except asyncpg.PostgresError as e:
-                logger.error(f"Postgres error: {e}")
-                raise DatabaseConnectionError
-            except asyncpg.InterfaceError as e:
-                logger.error(f"interface error: {e}")
-                raise DatabaseConnectionError
-            except AttributeError:
-                logger.error(f"db connection issue.")
-                raise DatabaseConnectionError
-            except Exception as e:
-                logger.error(f"Error: {e}")
-                raise InternalServerError
+            return status
+        except asyncpg.PostgresError as e:
+            logger.error(f"Postgres error: {e}")
+            raise DatabaseConnectionError
+        except asyncpg.InterfaceError as e:
+            logger.error(f"interface error: {e}")
+            raise DatabaseConnectionError
+        except AttributeError:
+            logger.error(f"db connection issue.")
+            raise DatabaseConnectionError
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            raise InternalServerError
 
 
 async def wait_for_redis() -> None:
@@ -2968,19 +2954,18 @@ async def get_dids_per_pds() -> Optional[dict]:
     try:
         pool_name = get_connection_pool("read")
         async with connection_pools[pool_name].acquire() as connection:
-            async with connection.transaction():
-                query = """SELECT users.pds, COUNT(did) AS did_count
-                            FROM users
-                            join pds on users.pds = pds.pds
-                            WHERE users.pds IS NOT NULL AND pds.status is TRUE
-                            GROUP BY users.pds
-                            ORDER BY did_count desc"""
+            query = """SELECT users.pds, COUNT(did) AS did_count
+                        FROM users
+                        join pds on users.pds = pds.pds
+                        WHERE users.pds IS NOT NULL AND pds.status is TRUE
+                        GROUP BY users.pds
+                        ORDER BY did_count desc"""
 
-                results = await connection.fetch(query)
-                for record in results:
-                    data_dict[record['pds']] = record['did_count']
+            results = await connection.fetch(query)
+            for record in results:
+                data_dict[record['pds']] = record['did_count']
 
-                return data_dict
+            return data_dict
     except asyncpg.PostgresError as e:
         logger.error(f"Postgres error: {e}")
         raise DatabaseConnectionError
@@ -3839,12 +3824,11 @@ async def deactivate_user(user) -> None:
 async def get_cursor_recall():
     try:
         async with connection_pools["cursor"].acquire() as connection:
-            async with connection.transaction():
-                query = """SELECT * FROM cursor_storage WHERE service = 'clearsky.cursors'"""
+            query = """SELECT * FROM cursor_storage WHERE service = 'clearsky.cursors'"""
 
-                records = await connection.fetch(query)
+            records = await connection.fetch(query)
 
-                return records
+            return records
     except asyncpg.PostgresError as e:
         logger.error(f"Postgres error: {e}")
         raise DatabaseConnectionError
