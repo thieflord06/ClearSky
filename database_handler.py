@@ -3473,13 +3473,15 @@ async def get_single_user_blocks(ident, limit=100, offset=0):
         # Execute the SQL query to get all the user_dids that have the specified did/ident in their blocklist
         pool_name = get_connection_pool("read")
         async with connection_pools[pool_name].acquire() as connection:
-            result = await connection.fetch('''SELECT DISTINCT b.user_did, b.block_date, u.handle, u.status 
+            result_query = connection.fetch('''SELECT DISTINCT b.user_did, b.block_date, u.handle, u.status 
                                                 FROM blocklists AS b 
                                                 JOIN users as u ON b.user_did = u.did 
                                                 WHERE b.blocked_did = $1 
                                                 ORDER BY block_date DESC LIMIT $2 OFFSET $3''', ident, limit, offset)
 
-            count = await connection.fetchval('SELECT COUNT(DISTINCT user_did) FROM blocklists WHERE blocked_did = $1', ident)
+            count_query = connection.fetchval('SELECT COUNT(DISTINCT user_did) FROM blocklists WHERE blocked_did = $1', ident)
+
+            result, count = await asyncio.gather(result_query, count_query)
 
             block_list = []
 
