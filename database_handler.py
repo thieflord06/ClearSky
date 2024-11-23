@@ -147,70 +147,70 @@ def check_db_connection(*dbs):
 
 
 # Function to close the connection pool
-async def close_connection_pool():
-    global connection_pools
+# async def close_connection_pool():
+#     global connection_pools
+#
+#     if connection_pools:
+#         for db in connection_pools:
+#             await db.close()
 
-    if connection_pools:
-        for db in connection_pools:
-            await db.close()
 
-
-async def populate_redis_with_handles():
-    if await redis_connected():
-        try:
-            # Query handles in batches
-            batch_size = 1000  # Adjust the batch size as needed
-            offset = 0
-            batch_count = 0
-            while True:
-                pool_name = get_connection_pool("read")
-                async with connection_pools[pool_name].acquire() as connection:
-                    async with connection.transaction():
-                        logger.info("Transferring handles to cache.")
-                        # Query all handles from the database
-                        query_text = "SELECT handle FROM users LIMIT $1 OFFSET $2"
-                        result = await connection.fetch(query_text, batch_size, offset)
-
-                        if not result:
-                            break  # No more handles to fetch
-
-                        # Create a temporary dictionary to hold handles by level
-                        handles_by_level = defaultdict(list)
-
-                        # Organize handles into a trie-like structure
-                        for row in result:
-                            handle = row['handle']
-                            logger.debug(str(handle))
-                            if handle:  # Check if handle is not empty
-                                # Group handles by level, e.g., {"a": ["abc", "ade"], "ab": ["abc"]}
-                                for i in range(1, len(handle) + 1):
-                                    prefix = handle[:i]
-                                    handles_by_level[prefix].append(handle)
-
-                        logger.info("inserting into redis")
-                        # Store handles in Redis ZSETs by level
-                        async with redis_conn as pipe:
-                            for prefix, handles in handles_by_level.items():
-                                zset_key = f"handles:{prefix}"
-                                # Create a dictionary with new handles as members and scores (use 0 for simplicity)
-                                zset_data = {handle: 0 for handle in handles}
-                                await pipe.zadd(zset_key, zset_data, nx=True)
-
-                        offset += batch_size
-                        batch_count += 1
-
-                        logger.info(f"Batch {str(batch_count)} processed. Total handles added: {str(offset)}")
-
-            logger.info("Handles added to cache successfully.")
-
-            return None
-        except Exception as e:
-            logger.error(f"Error adding handles to Redis: {e}")
-
-            return "Error"
-        finally:
-            # Close the Redis connection
-            await redis_conn.close()
+# async def populate_redis_with_handles():
+#     if await redis_connected():
+#         try:
+#             # Query handles in batches
+#             batch_size = 1000  # Adjust the batch size as needed
+#             offset = 0
+#             batch_count = 0
+#             while True:
+#                 pool_name = get_connection_pool("read")
+#                 async with connection_pools[pool_name].acquire() as connection:
+#                     async with connection.transaction():
+#                         logger.info("Transferring handles to cache.")
+#                         # Query all handles from the database
+#                         query_text = "SELECT handle FROM users LIMIT $1 OFFSET $2"
+#                         result = await connection.fetch(query_text, batch_size, offset)
+#
+#                         if not result:
+#                             break  # No more handles to fetch
+#
+#                         # Create a temporary dictionary to hold handles by level
+#                         handles_by_level = defaultdict(list)
+#
+#                         # Organize handles into a trie-like structure
+#                         for row in result:
+#                             handle = row['handle']
+#                             logger.debug(str(handle))
+#                             if handle:  # Check if handle is not empty
+#                                 # Group handles by level, e.g., {"a": ["abc", "ade"], "ab": ["abc"]}
+#                                 for i in range(1, len(handle) + 1):
+#                                     prefix = handle[:i]
+#                                     handles_by_level[prefix].append(handle)
+#
+#                         logger.info("inserting into redis")
+#                         # Store handles in Redis ZSETs by level
+#                         async with redis_conn as pipe:
+#                             for prefix, handles in handles_by_level.items():
+#                                 zset_key = f"handles:{prefix}"
+#                                 # Create a dictionary with new handles as members and scores (use 0 for simplicity)
+#                                 zset_data = {handle: 0 for handle in handles}
+#                                 await pipe.zadd(zset_key, zset_data, nx=True)
+#
+#                         offset += batch_size
+#                         batch_count += 1
+#
+#                         logger.info(f"Batch {str(batch_count)} processed. Total handles added: {str(offset)}")
+#
+#             logger.info("Handles added to cache successfully.")
+#
+#             return None
+#         except Exception as e:
+#             logger.error(f"Error adding handles to Redis: {e}")
+#
+#             return "Error"
+#         finally:
+#             # Close the Redis connection
+#             await redis_conn.close()
 
 
 async def retrieve_autocomplete_handles(query):
@@ -302,24 +302,24 @@ async def find_handles(value):
         return None
 
 
-async def count_users_table():
-    pool_name = get_connection_pool("read")
-    async with connection_pools[pool_name].acquire() as connection:
-        try:
-            # Execute the SQL query to count the rows in the "users" table
-            return await connection.fetchval('SELECT COUNT(*) FROM users WHERE status is TRUE')
-        except asyncpg.PostgresError as e:
-            logger.error(f"Postgres error: {e}")
-            raise DatabaseConnectionError
-        except asyncpg.InterfaceError as e:
-            logger.error(f"interface error: {e}")
-            raise DatabaseConnectionError
-        except AttributeError:
-            logger.error(f"db connection issue.")
-            raise DatabaseConnectionError
-        except Exception as e:
-            logger.error(f"Error: {e}")
-            raise InternalServerError
+# async def count_users_table():
+#     pool_name = get_connection_pool("read")
+#     async with connection_pools[pool_name].acquire() as connection:
+#         try:
+#             # Execute the SQL query to count the rows in the "users" table
+#             return await connection.fetchval('SELECT COUNT(*) FROM users WHERE status is TRUE')
+#         except asyncpg.PostgresError as e:
+#             logger.error(f"Postgres error: {e}")
+#             raise DatabaseConnectionError
+#         except asyncpg.InterfaceError as e:
+#             logger.error(f"interface error: {e}")
+#             raise DatabaseConnectionError
+#         except AttributeError:
+#             logger.error(f"db connection issue.")
+#             raise DatabaseConnectionError
+#         except Exception as e:
+#             logger.error(f"Error: {e}")
+#             raise InternalServerError
 
 
 async def get_blocklist(ident, limit=100, offset=0):
