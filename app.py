@@ -102,7 +102,7 @@ async def first_run() -> None:
             if tables:
                 await database_handler.blocklists_updater()
                 await database_handler.top_24blocklists_updater()
-                await utils.update_block_statistics()
+                # await utils.update_block_statistics()
                 await utils.update_total_users()
 
                 break
@@ -127,9 +127,9 @@ async def schedule_stats_update() -> None:
     else:
         await database_handler.top_24blocklists_updater()
 
-    if utils.block_stats_status.is_set():
-        logger.warning("Block stats updater is already running.")
-    else:
+    # if utils.block_stats_status.is_set():
+    #     logger.warning("Block stats updater is already running.")
+    # else:
         await utils.update_block_statistics()
 
     if utils.total_users_status.is_set():
