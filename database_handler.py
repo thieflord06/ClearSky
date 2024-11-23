@@ -330,12 +330,14 @@ async def get_blocklist(ident, limit=100, offset=0):
                 query = """SELECT DISTINCT b.blocked_did, b.block_date, u.handle, u.status 
                 FROM blocklists AS b JOIN users AS u ON b.blocked_did = u.did 
                 WHERE b.user_did = $1 ORDER BY block_date DESC LIMIT $2 OFFSET $3"""
-                blocklist_rows = await connection.fetch(query, ident, limit, offset)
+                blocklist_rows_query = connection.fetch(query, ident, limit, offset)
 
                 query2 = """SELECT COUNT(DISTINCT blocked_did) 
                 FROM blocklists 
                 WHERE user_did = $1"""
-                total_blocked_count = await connection.fetchval(query2, ident)
+                total_blocked_count_query = connection.fetchval(query2, ident)
+
+                blocklist_rows, total_blocked_count = await asyncio.gather(blocklist_rows_query, total_blocked_count_query)
 
                 return blocklist_rows, total_blocked_count
     except asyncpg.PostgresError as e:
