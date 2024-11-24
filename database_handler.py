@@ -230,6 +230,8 @@ async def find_handles(value):
 
 
 async def get_blocklist(ident, limit=100, offset=0):
+    total_blocked_count = 0
+
     try:
         pool_name = get_connection_pool("read")
         async with connection_pools[pool_name].acquire() as connection:
@@ -238,10 +240,10 @@ async def get_blocklist(ident, limit=100, offset=0):
             WHERE b.user_did = $1 ORDER BY block_date DESC LIMIT $2 OFFSET $3"""
             blocklist_rows = await connection.fetch(query, ident, limit, offset)
 
-            query2 = """SELECT COUNT(DISTINCT blocked_did)
-            FROM blocklists
-            WHERE user_did = $1"""
-            total_blocked_count = await connection.fetchval(query2, ident)
+            # query2 = """SELECT COUNT(DISTINCT blocked_did)
+            # FROM blocklists
+            # WHERE user_did = $1"""
+            # total_blocked_count = await connection.fetchval(query2, ident)
 
             return blocklist_rows, total_blocked_count
     except asyncpg.PostgresError as e:
@@ -1582,6 +1584,7 @@ async def get_deleted_users_count() -> int:
 
 
 async def get_single_user_blocks(ident, limit=100, offset=0):
+    count = 0
     try:
         # Execute the SQL query to get all the user_dids that have the specified did/ident in their blocklist
         pool_name = get_connection_pool("read")
@@ -1597,10 +1600,10 @@ async def get_single_user_blocks(ident, limit=100, offset=0):
                 offset,
             )
 
-            count = await connection.fetchval(
-                "SELECT COUNT(DISTINCT user_did) FROM blocklists WHERE blocked_did = $1",
-                ident,
-            )
+            # count = await connection.fetchval(
+            #     "SELECT COUNT(DISTINCT user_did) FROM blocklists WHERE blocked_did = $1",
+            #     ident,
+            # )
 
             block_list = []
 
