@@ -187,9 +187,9 @@ async def get_blocklist(ident, limit=100, offset=0):
     try:
         pool_name = get_connection_pool("read")
         async with connection_pools[pool_name].acquire() as connection:
-            query = """SELECT DISTINCT b.blocked_did, b.block_date, u.handle, u.status
-            FROM blocklists AS b JOIN users AS u ON b.blocked_did = u.did
-            WHERE b.user_did = $1 ORDER BY block_date DESC LIMIT $2 OFFSET $3"""
+            query = """SELECT DISTINCT blocked_did, block_date
+            FROM blocklists
+            WHERE user_did = $1 ORDER BY block_date DESC LIMIT $2 OFFSET $3"""
             blocklist_rows = await connection.fetch(query, ident, limit, offset)
 
             # query2 = """SELECT COUNT(DISTINCT blocked_did)
@@ -209,6 +209,30 @@ async def get_blocklist(ident, limit=100, offset=0):
         raise DatabaseConnectionError
     except Exception as e:
         logger.error(f"Error retrieving blocklist for {ident}: {e} {type(e)}")
+        raise InternalServerError
+
+
+async def get_handle_and_status(ident):
+    try:
+        pool_name = get_connection_pool("read")
+        async with connection_pools[pool_name].acquire() as connection:
+            query = """SELECT handle, status
+                        FROM users
+                        WHERE did = $1"""
+            result = await connection.fetchrow(query, ident)
+
+            return result
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error("db connection issue.")
+        raise DatabaseConnectionError
+    except Exception as e:
+        logger.error(f"Error retrieving handle and status for {ident}: {e} {type(e)}")
         raise InternalServerError
 
 
@@ -1183,10 +1207,9 @@ async def get_mutelists(ident) -> list | None:
     pool_name = get_connection_pool("read")
     async with connection_pools[pool_name].acquire() as connection:
         query = """
-        SELECT ml.url, u.handle, u.status, ml.name, ml.description, ml.created_date, mu.date_added, mc.user_count
+        SELECT ml.url, ml.name, ml.did, ml.description, ml.created_date, mu.date_added, mc.user_count
         FROM mutelists AS ml
         INNER JOIN mutelists_users AS mu ON ml.uri = mu.list_uri
-        INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle
         LEFT JOIN mutelists_user_count AS mc ON ml.uri = mc.list_uri
         WHERE mu.subject_did = $1 AND u.status = TRUE
         """
@@ -1207,10 +1230,12 @@ async def get_mutelists(ident) -> list | None:
 
         lists = []
         for record in mute_lists:
+            handle_and_status = await get_handle_and_status(record['did'])
+
             data = {
                 "url": record["url"],
-                "handle": record["handle"],
-                "status": record["status"],
+                "handle": handle_and_status.get("handle"),
+                "status": handle_and_status.get("status"),
                 "name": record["name"],
                 "description": record["description"],
                 "created_date": record["created_date"].isoformat(),
@@ -1542,10 +1567,9 @@ async def get_single_user_blocks(ident, limit=100, offset=0):
         pool_name = get_connection_pool("read")
         async with connection_pools[pool_name].acquire() as connection:
             result = await connection.fetch(
-                """SELECT DISTINCT b.user_did, b.block_date, u.handle, u.status
-                                                FROM blocklists AS b
-                                                JOIN users as u ON b.user_did = u.did
-                                                WHERE b.blocked_did = $1
+                """SELECT DISTINCT user_did, block_date
+                                                FROM blocklists
+                                                WHERE blocked_did = $1
                                                 ORDER BY block_date DESC LIMIT $2 OFFSET $3""",
                 ident,
                 limit,
@@ -1566,14 +1590,18 @@ async def get_single_user_blocks(ident, limit=100, offset=0):
             else:
                 pages = 0
 
-            if result:
+            handle_and_status = await get_user_handle(ident)
+
+            if result and handle_and_status:
                 # Iterate over blocked_users and extract handle and status
-                for _user_did, block_date, handle, status in result:
+                for user_did, block_date in result:
+                    handle_and_status = await get_handle_and_status(user_did)
+
                     block_list.append(
                         {
-                            "handle": handle,
-                            "status": status,
-                            "blocked_date": block_date.isoformat(),
+                            "handle": handle_and_status.get("handle"),
+                            "status": handle_and_status.get("status"),
+                            "blocked_date": block_date.isoformat()
                         }
                     )
 
