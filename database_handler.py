@@ -213,7 +213,7 @@ async def get_blocklist(ident, limit=100, offset=0):
 
 
 async def get_handle_and_status(ident):
-    pass
+    return None
     try:
         pool_name = get_connection_pool("read")
         async with connection_pools[pool_name].acquire() as connection:
