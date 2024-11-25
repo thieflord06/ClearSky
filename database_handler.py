@@ -90,6 +90,8 @@ async def create_connection_pools(database_configg):
                         host=configg.get("host", "localhost"),
                         port=configg.get("port", "5432"),
                         database=configg["database"],
+                        min_size=20,
+                        max_size=100,
                     )
                     connection_pools[db] = connection_pool
                     logger.info(f"Connection pool created for {db}")
