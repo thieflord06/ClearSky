@@ -1211,7 +1211,7 @@ async def get_mutelists(ident) -> list | None:
         FROM mutelists AS ml
         INNER JOIN mutelists_users AS mu ON ml.uri = mu.list_uri
         LEFT JOIN mutelists_user_count AS mc ON ml.uri = mc.list_uri
-        WHERE mu.subject_did = $1 AND u.status = TRUE
+        WHERE mu.subject_did = $1
         """
         try:
             mute_lists = await connection.fetch(query, ident)
