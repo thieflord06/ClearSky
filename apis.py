@@ -259,7 +259,6 @@ async def auth_convert_uri_to_url(uri) -> jsonify:
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_get_total_users() -> jsonify:
-    return jsonify({"error": "Not Implemented"}), 501
     try:
         return await get_total_users()
     except DatabaseConnectionError:
@@ -861,7 +860,6 @@ async def anon_convert_uri_to_url(uri) -> jsonify:
 @api_blueprint.route("/api/v1/anon/total-users", methods=["GET"])
 @rate_limit(5, timedelta(seconds=1))
 async def anon_get_total_users() -> jsonify:
-    return jsonify({"error": "Not Implemented"}), 501
     try:
         return await get_total_users()
     except DatabaseConnectionError:
