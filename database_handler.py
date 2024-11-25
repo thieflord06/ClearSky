@@ -9,7 +9,6 @@ from datetime import datetime, timezone
 
 import asyncpg
 from cachetools import TTLCache
-from redis import asyncio as aioredis
 
 import config_helper
 import utils
@@ -21,7 +20,6 @@ from errors import DatabaseConnectionError, InternalServerError, NotFound
 
 connection_pools = {}
 db_lock = asyncio.Lock()
-redis_connection = None
 once = None
 no_tables = asyncio.Event()
 
@@ -147,55 +145,6 @@ def check_db_connection(*dbs):
         return wrapper
 
     return decorator
-
-
-async def retrieve_autocomplete_handles(query):
-    global redis_connection
-    global once
-
-    key = f"handles:{query}"
-    try:
-        matching_handles = await asyncio.wait_for(
-            redis_conn.zrange(key, start=0, end=4), timeout=1.5
-        )  # Fetch the first 5 handles
-        if matching_handles:
-            decoded = [handle.decode("utf-8") for handle in matching_handles]
-
-            logger.debug("From redis")
-
-            return decoded
-        else:
-            results = await asyncio.wait_for(find_handles(query), timeout=5.0)
-
-            logger.info("from db, not in redis")
-            if not results:
-                results = None
-
-            return results
-    except TimeoutError:
-        # Query the database for autocomplete results
-        try:
-            results = await asyncio.wait_for(find_handles(query), timeout=5.0)
-
-            logger.debug("from db, timeout in redis")
-            logger.debug(str(results))
-
-            return results
-        except TimeoutError:
-            logger.info("not quick enough.")
-
-            results = None
-
-            return results
-    except Exception as e:
-        logger.error(f"Error getting data from redis, failing over to db: {e}")
-
-        redis_connection = False
-        once = False
-
-        results = await asyncio.wait_for(find_handles(query), timeout=5.0)
-
-        return results
 
 
 async def find_handles(value):
@@ -1847,6 +1796,7 @@ env_db_names = [
 read_dbs = config_db_names + env_db_names
 
 read_db_iterator = itertools.cycle(read_dbs)
+
 
 async def local_db() -> bool:
     if database_config["use_local_db"]:
