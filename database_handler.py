@@ -9,7 +9,6 @@ from datetime import datetime, timezone
 
 import asyncpg
 from cachetools import TTLCache
-from redis import asyncio as aioredis
 
 import config_helper
 import utils
@@ -21,7 +20,6 @@ from errors import DatabaseConnectionError, InternalServerError, NotFound
 
 connection_pools = {}
 db_lock = asyncio.Lock()
-redis_connection = None
 once = None
 no_tables = asyncio.Event()
 
@@ -90,6 +88,7 @@ async def create_connection_pools(database_configg):
                         user=configg["user"],
                         password=configg["password"],
                         host=configg.get("host", "localhost"),
+                        port=configg.get("port", "5432"),
                         database=configg["database"],
                     )
                     connection_pools[db] = connection_pool
@@ -146,55 +145,6 @@ def check_db_connection(*dbs):
         return wrapper
 
     return decorator
-
-
-async def retrieve_autocomplete_handles(query):
-    global redis_connection
-    global once
-
-    key = f"handles:{query}"
-    try:
-        matching_handles = await asyncio.wait_for(
-            redis_conn.zrange(key, start=0, end=4), timeout=1.5
-        )  # Fetch the first 5 handles
-        if matching_handles:
-            decoded = [handle.decode("utf-8") for handle in matching_handles]
-
-            logger.debug("From redis")
-
-            return decoded
-        else:
-            results = await asyncio.wait_for(find_handles(query), timeout=5.0)
-
-            logger.info("from db, not in redis")
-            if not results:
-                results = None
-
-            return results
-    except TimeoutError:
-        # Query the database for autocomplete results
-        try:
-            results = await asyncio.wait_for(find_handles(query), timeout=5.0)
-
-            logger.debug("from db, timeout in redis")
-            logger.debug(str(results))
-
-            return results
-        except TimeoutError:
-            logger.info("not quick enough.")
-
-            results = None
-
-            return results
-    except Exception as e:
-        logger.error(f"Error getting data from redis, failing over to db: {e}")
-
-        redis_connection = False
-        once = False
-
-        results = await asyncio.wait_for(find_handles(query), timeout=5.0)
-
-        return results
 
 
 async def find_handles(value):
@@ -1750,20 +1700,6 @@ def get_database_config(ovride=False) -> dict:
         if not os.getenv("CLEAR_SKY") or ovride:
             logger.info("Database connection: Using config.ini.")
 
-            redis_host = config.get("redis", "host")
-            redis_port = config.get("redis", "port")
-            redis_username = config.get("redis", "username")
-            redis_password = config.get("redis", "password")
-            redis_key_name = config.get("redis", "autocomplete")
-
-            db_config["redis"] = {
-                "host": redis_host,
-                "port": redis_port,
-                "username": redis_username,
-                "password": redis_password,
-                "autocomplete": redis_key_name,
-            }
-
             use_local_db = config.get("database", "use_local", fallback=False)
 
             db_config["use_local_db"] = use_local_db
@@ -1796,6 +1732,11 @@ def get_database_config(ovride=False) -> dict:
                             "pg_host",
                             fallback=os.getenv(f"CLEARSKY_DATABASE_{db_type.upper()}_HOST"),
                         ),
+                        "port": config.get(
+                            section,
+                            "pg_port",
+                            fallback=os.getenv(f"CLEARSKY_DATABASE_{db_type.upper()}_PORT"),
+                        ),
                         "database": config.get(
                             section,
                             "pg_database",
@@ -1804,20 +1745,6 @@ def get_database_config(ovride=False) -> dict:
                     }
         else:
             logger.info("Database connection: Using environment variables.")
-
-            redis_host = os.environ.get("REDIS_HOST")
-            redis_port = os.environ.get("REDIS_PORT")
-            redis_username = os.environ.get("REDIS_USERNAME")
-            redis_password = os.environ.get("REDIS_PASSWORD")
-            redis_key_name = os.environ.get("REDIS_AUTOCOMPLETE")
-
-            db_config["redis"] = {
-                "host": redis_host,
-                "port": redis_port,
-                "username": redis_username,
-                "password": redis_password,
-                "autocomplete": redis_key_name,
-            }
 
             use_local_db = os.environ.get("USE_LOCAL_DB")
 
@@ -1872,17 +1799,6 @@ env_db_names = [
 read_dbs = config_db_names + env_db_names
 
 read_db_iterator = itertools.cycle(read_dbs)
-
-if database_config["redis"]["username"] == "none":
-    logger.warning("Using failover redis.")
-    redis_conn = aioredis.from_url(
-        f"redis://{database_config['redis']['host']}:{database_config['redis']['port']}",
-        password=database_config["redis"]["password"],
-    )
-else:
-    redis_conn = aioredis.from_url(
-        f"rediss://{database_config['redis']['username']}:{database_config['redis']['password']}@{database_config['redis']['host']}:{database_config['redis']['port']}"
-    )
 
 
 async def local_db() -> bool:
