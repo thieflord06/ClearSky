@@ -1230,7 +1230,7 @@ async def get_mutelists(ident) -> list | None:
 
         lists = []
         for record in mute_lists:
-            handle_and_status = await get_handle_and_status(record['did'])
+            handle_and_status = await get_handle_and_status(record["did"])
 
             data = {
                 "url": record["url"],
@@ -1601,7 +1601,7 @@ async def get_single_user_blocks(ident, limit=100, offset=0):
                         {
                             "handle": handle_and_status.get("handle"),
                             "status": handle_and_status.get("status"),
-                            "blocked_date": block_date.isoformat()
+                            "blocked_date": block_date.isoformat(),
                         }
                     )
 
