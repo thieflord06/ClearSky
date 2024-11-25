@@ -102,7 +102,7 @@ async def first_run() -> None:
         await asyncio.sleep(5)
 
     while True:
-        if dbs_connected:
+        if db_pool_acquired.is_set():
             blocklist_24_failed.clear()
             blocklist_failed.clear()
 
@@ -119,6 +119,7 @@ async def first_run() -> None:
                 logger.warning("Tables do not exist in db.")
                 sys.exit()
 
+        logger.warning(f"Database connection not established, waiting for connection before running block stats processes.")
         await asyncio.sleep(30)
 
 
