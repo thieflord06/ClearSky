@@ -17,7 +17,7 @@ import database_handler
 import utils
 from apis import api_blueprint
 from config_helper import logger
-from core import db_pool_acquired, dbs_connected, initialize
+from core import db_pool_acquired, initialize
 from environment import get_api_var
 from errors import DatabaseConnectionError, NotFound
 from helpers import (
@@ -102,7 +102,7 @@ async def first_run() -> None:
         await asyncio.sleep(5)
 
     while True:
-        if dbs_connected:
+        if db_pool_acquired.is_set():
             blocklist_24_failed.clear()
             blocklist_failed.clear()
 
@@ -119,6 +119,7 @@ async def first_run() -> None:
                 logger.warning("Tables do not exist in db.")
                 sys.exit()
 
+        logger.warning("DB connection not established, waiting for connection before running block stats processes.")
         await asyncio.sleep(30)
 
 
