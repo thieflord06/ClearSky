@@ -411,12 +411,13 @@ async def process_user_block_list(ident, limit, offset):
     if blocked_users:
         # Iterate over blocked_users and extract handle and status
         for user_did, block_date in blocked_users:
+
             handle_and_status = await database_handler.get_handle_and_status(user_did)
 
             block_list.append(
                 {
-                    "handle": handle_and_status.get("handle"),
-                    "status": handle_and_status.get("status"),
+                    "handle": handle_and_status.get('handle'),
+                    "status": handle_and_status.get('status'),
                     "blocked_date": block_date.isoformat(),
                 }
             )
