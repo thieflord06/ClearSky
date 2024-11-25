@@ -119,7 +119,7 @@ async def first_run() -> None:
                 logger.warning("Tables do not exist in db.")
                 sys.exit()
 
-        logger.warning(f"DB connection not established, waiting for connection before running block stats processes.")
+        logger.warning("DB connection not established, waiting for connection before running block stats processes.")
         await asyncio.sleep(30)
 
 
