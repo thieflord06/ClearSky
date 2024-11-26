@@ -71,7 +71,7 @@ def get_connection_pool(db_type="read"):
                 continue
             if db.lower() == "write_keyword":
                 continue
-            if database_config["write_keyword"] in db.lower():
+            if db.startswith("CLEARSKY_DATABASE") and f"db_{database_config.get("write_keyword")}" in db.lower():
                 write = db
 
                 return write
