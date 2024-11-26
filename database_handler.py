@@ -505,19 +505,15 @@ async def blocklist_search(search_list, lookup, switch):
     pool_name = get_connection_pool("write")
     async with connection_pools[pool_name].acquire() as connection, connection.transaction():
         try:
-            blocking = """SELECT b.user_did, b.blocked_did, b.block_date, u1.handle, u1.status
+            blocking = """SELECT b.user_did, b.blocked_did, b.block_date
                                 FROM blocklists AS b
-                                INNER JOIN users AS u1 ON b.user_did = u1.did
-                                INNER JOIN users AS u2 ON b.blocked_did = u2.did
-                                WHERE u1.handle = $1
-                                  AND u2.handle = $2"""
+                                WHERE user_did = $1
+                                  AND blocked_did = $2"""
 
-            blocked = """SELECT b.user_did, b.blocked_did, b.block_date, u1.handle, u1.status
+            blocked = """SELECT b.user_did, b.blocked_did, b.block_date
                                 FROM blocklists AS b
-                                INNER JOIN users AS u1 ON b.user_did = u1.did
-                                INNER JOIN users AS u2 ON b.blocked_did = u2.did
-                                WHERE u1.handle = $2
-                                  AND u2.handle = $1"""
+                                WHERE user_did = $2
+                                  AND blocked_did = $1"""
 
             if "blocking" in switch:
                 query = blocking
@@ -533,16 +529,30 @@ async def blocklist_search(search_list, lookup, switch):
             if result:
                 resultslist = {}
 
-                for record in result:
-                    block_date = record["block_date"]
-                    handle = record["handle"]
-                    status = record["status"]
+                if "blocking" in switch:
+                    for record in result:
+                        block_date = record["block_date"]
+                        did = record["blocked_did"]
+                        status = record["status"]
 
-                results = {
-                    "blocked_date": block_date.isoformat(),
-                    "handle": handle,
-                    "status": status,
-                }
+                    results = {
+                        "blocked_date": block_date.isoformat(),
+                        "did": did,
+                        "status": status,
+                    }
+                elif "blocked" in switch:
+                    for record in result:
+                        block_date = record["block_date"]
+                        did = record["user_did"]
+                        status = record["status"]
+
+                    results = {
+                        "blocked_date": block_date.isoformat(),
+                        "did": did,
+                        "status": status,
+                    }
+                else:
+                    results = None
 
                 resultslist.update(results)
 
