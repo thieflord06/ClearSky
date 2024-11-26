@@ -71,9 +71,7 @@ def get_connection_pool(db_type="read"):
                 continue
             if db.lower() == "write_keyword":
                 continue
-            if database_config["write_keyword"] in db.lower() or (
-                "db" in db.lower() and database_config["write_keyword"] in db.lower()
-            ):
+            if database_config["write_keyword"] in db.lower():
                 write = db
 
                 return write
@@ -1766,33 +1764,32 @@ def get_database_config(ovride=False) -> dict:
 
             for section in config.sections():
                 if section.startswith("database."):
-                    # db_type = section.split(".")[1]
                     db_type = section
                     db_config[db_type] = {
                         "user": config.get(
                             section,
-                            "pg_user",
-                            fallback=os.getenv(f"CLEARSKY_DATABASE_{db_type.upper()}_USER"),
+                            "CLEARSKY_DATABASE_U",
+                            fallback=os.getenv(f"CLEARSKY_DATABASE_U_{db_type.upper()}"),
                         ),
                         "password": config.get(
                             section,
-                            "pg_password",
-                            fallback=os.getenv(f"CLEARSKY_DATABASE_{db_type.upper()}_PASSWORD"),
+                            "CLEARSKY_DATABASE_P",
+                            fallback=os.getenv(f"CLEARSKY_DATABASE_P_{db_type.upper()}"),
                         ),
                         "host": config.get(
                             section,
-                            "pg_host",
-                            fallback=os.getenv(f"CLEARSKY_DATABASE_{db_type.upper()}_HOST"),
+                            "CLEARSKY_DATABASE_H",
+                            fallback=os.getenv(f"CLEARSKY_DATABASE_H_{db_type.upper()}"),
                         ),
                         "port": config.get(
                             section,
-                            "pg_port",
-                            fallback=os.getenv(f"CLEARSKY_DATABASE_{db_type.upper()}_PORT"),
+                            "CLEARSKY_DATABASE_PORT",
+                            fallback=os.getenv(f"CLEARSKY_DATABASE_PORT_{db_type.upper()}"),
                         ),
                         "database": config.get(
                             section,
-                            "pg_database",
-                            fallback=os.getenv(f"CLEARSKY_DATABASE_{db_type.upper()}_NAME"),
+                            "CLEARSKY_DATABASE_DB",
+                            fallback=os.getenv(f"CLEARSKY_DATABASE_DB_{db_type.upper()}"),
                         ),
                     }
         else:
