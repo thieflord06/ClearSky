@@ -63,7 +63,9 @@ def get_connection_pool(db_type="read"):
                 return db
     else:
         for db, _configg in database_config.items():
-            if ("clearsky_database" in db.lower() and "db" not in db.lower()) or db.lower() == "write_keyword":
+            if "use_local_db" in db.lower() and "none" in database_config["use_local_db"].lower():
+                continue
+            if "write_keyword" == db.lower():
                 continue
             if database_config["write_keyword"] in db.lower() or (
                 "db" in db.lower() and database_config["write_keyword"] in db.lower()
@@ -71,6 +73,8 @@ def get_connection_pool(db_type="read"):
                 write = db
 
                 return write
+
+            continue
 
         logger.error("No write db found.")
 
@@ -1735,15 +1739,24 @@ def get_database_config(ovride=False) -> dict:
         if not os.getenv("CLEAR_SKY") or ovride:
             logger.info("Database connection: Using config.ini.")
 
-            use_local_db = config.get("database", "use_local", fallback=False)
+            use_local_db = config.get("database", "use_local", fallback="None")
+
+            if not use_local_db:
+                use_local_db = "None"
 
             db_config["use_local_db"] = use_local_db
 
             read_keyword = config.get("environment", "read_keyword", fallback="read")
 
+            if not read_keyword:
+                read_keyword = "read"
+
             db_config["read_keyword"] = read_keyword
 
             write_keyword = config.get("environment", "write_keyword", fallback="write")
+
+            if not write_keyword:
+                write_keyword = "write"
 
             db_config["write_keyword"] = write_keyword
 
