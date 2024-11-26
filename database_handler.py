@@ -63,7 +63,8 @@ def get_connection_pool(db_type="read"):
                 return db
     else:
         for db, _configg in database_config.items():
-            if "use_local_db" in db.lower() and "none" in database_config["use_local_db"].lower():
+            use_local_db = database_config.get("use_local_db")
+            if "use_local_db" in db.lower() and "none" in use_local_db.lower():
                 continue
             if db.lower() == "write_keyword":
                 continue
