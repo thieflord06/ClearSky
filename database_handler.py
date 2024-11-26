@@ -71,7 +71,7 @@ def get_connection_pool(db_type="read"):
                 continue
             if db.lower() == "write_keyword":
                 continue
-            if db.startswith("CLEARSKY_DATABASE") and f"db_{database_config.get("write_keyword")}" in db.lower():
+            if db.startswith("CLEARSKY_DATABASE") and database_config.get("write_keyword") in db.lower():
                 write = db
 
                 return write
@@ -1797,29 +1797,41 @@ def get_database_config(ovride=False) -> dict:
 
             use_local_db = os.environ.get("USE_LOCAL_DB")
 
+            if not use_local_db:
+                use_local_db = "None"
+
             db_config["use_local_db"] = use_local_db
 
             read_keyword = os.environ.get("READ_KEYWORD")
+
+            if not read_keyword:
+                read_keyword = "read"
 
             db_config["read_keyword"] = read_keyword
 
             write_keyword = os.environ.get("WRITE_KEYWORD")
 
+            if not write_keyword:
+                write_keyword = "write"
+
             db_config["write_keyword"] = write_keyword
 
             for key, _value in os.environ.items():
                 if key.startswith("CLEARSKY_DATABASE"):
-                    db_type = key
+                    if key.startswith("CLEARSKY_DATABASE_DB"):
+                        db_type = key
+                    else:
+                        db_type = None
 
                     name_parts = key.split("_")
                     name = name_parts[3]
-
-                    db_config[db_type] = {
-                        "user": os.environ.get(f"CLEARSKY_DATABASE_USR_{name}"),
-                        "password": os.environ.get(f"CLEARSKY_DATABASE_PW_{name}"),
-                        "host": os.environ.get(f"CLEARSKY_DATABASE_H_{name}"),
-                        "database": os.environ.get(f"CLEARSKY_DATABASE_DB_{name}"),
-                    }
+                    if db_type:
+                        db_config[db_type] = {
+                            "user": os.environ.get(f"CLEARSKY_DATABASE_USR_{name}"),
+                            "password": os.environ.get(f"CLEARSKY_DATABASE_PW_{name}"),
+                            "host": os.environ.get(f"CLEARSKY_DATABASE_H_{name}"),
+                            "database": os.environ.get(f"CLEARSKY_DATABASE_DB_{name}"),
+                        }
 
         return db_config
     except Exception as e:
