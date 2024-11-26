@@ -763,6 +763,9 @@ async def get_blocking_search(client_identifier, search_identifier) -> jsonify:
         search_is_handle = utils.is_handle(search_identifier)
 
         if client_is_handle and search_is_handle:
+            client_identifier = await utils.use_did(client_identifier)
+            search_identifier = await utils.use_did(search_identifier)
+
             result = await database_handler.blocklist_search(client_identifier, search_identifier, switch="blocking")
         else:
             result = None
