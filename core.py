@@ -1035,37 +1035,53 @@ async def block_stats() -> jsonify:
     average_number_of_blocked = utils.average_number_of_blocked_cache.get("averageblocked")
     total_users = utils.block_stats_total_users_cache.get("total_users")
 
-    percent_users_blocked = (int(number_of_unique_users_blocked) / int(total_users)) * 100
-    percent_users_blocking = (int(number_of_unique_users_blocking) / int(total_users)) * 100
+    if total_users > 0:
+        percent_users_blocked = (int(number_of_unique_users_blocked) / int(total_users)) * 100
+        percent_users_blocking = (int(number_of_unique_users_blocking) / int(total_users)) * 100
+    else:
+        percent_users_blocked = 0
+        percent_users_blocking = 0
 
     percent_users_blocked = round(percent_users_blocked, 2)
     percent_users_blocking = round(percent_users_blocking, 2)
 
-    percent_number_blocking_1 = round((int(number_blocking_1) / int(number_of_unique_users_blocking) * 100), 2)
-    percent_number_blocking_2_and_100 = round(
-        (int(number_blocking_2_and_100) / int(number_of_unique_users_blocking) * 100), 2
-    )
-    percent_number_blocking_101_and_1000 = round(
-        (int(number_blocking_101_and_1000) / int(number_of_unique_users_blocking) * 100),
-        2,
-    )
-    percent_number_blocking_greater_than_1000 = round(
-        (int(number_blocking_greater_than_1000) / int(number_of_unique_users_blocking) * 100),
-        2,
-    )
+    if number_of_unique_users_blocking > 0:
+        percent_number_blocking_1 = round((int(number_blocking_1) / int(number_of_unique_users_blocking) * 100), 2)
+        percent_number_blocking_2_and_100 = round(
+            (int(number_blocking_2_and_100) / int(number_of_unique_users_blocking) * 100), 2
+        )
+        percent_number_blocking_101_and_1000 = round(
+            (int(number_blocking_101_and_1000) / int(number_of_unique_users_blocking) * 100),
+            2,
+        )
+        percent_number_blocking_greater_than_1000 = round(
+            (int(number_blocking_greater_than_1000) / int(number_of_unique_users_blocking) * 100),
+            2,
+        )
+    else:
+        percent_number_blocking_1 = 0
+        percent_number_blocking_2_and_100 = 0
+        percent_number_blocking_101_and_1000 = 0
+        percent_number_blocking_greater_than_1000 = 0
 
-    percent_number_blocked_1 = round((int(number_blocked_1) / int(number_of_unique_users_blocked) * 100), 2)
-    percent_number_blocked_2_and_100 = round(
-        (int(number_blocked_2_and_100) / int(number_of_unique_users_blocked) * 100), 2
-    )
-    percent_number_blocked_101_and_1000 = round(
-        (int(number_blocked_101_and_1000) / int(number_of_unique_users_blocked) * 100),
-        2,
-    )
-    percent_number_blocked_greater_than_1000 = round(
-        (int(number_blocked_greater_than_1000) / int(number_of_unique_users_blocked) * 100),
-        2,
-    )
+    if number_of_unique_users_blocked > 0:
+        percent_number_blocked_1 = round((int(number_blocked_1) / int(number_of_unique_users_blocked) * 100), 2)
+        percent_number_blocked_2_and_100 = round(
+            (int(number_blocked_2_and_100) / int(number_of_unique_users_blocked) * 100), 2
+        )
+        percent_number_blocked_101_and_1000 = round(
+            (int(number_blocked_101_and_1000) / int(number_of_unique_users_blocked) * 100),
+            2,
+        )
+        percent_number_blocked_greater_than_1000 = round(
+            (int(number_blocked_greater_than_1000) / int(number_of_unique_users_blocked) * 100),
+            2,
+        )
+    else:
+        percent_number_blocked_1 = 0
+        percent_number_blocked_2_and_100 = 0
+        percent_number_blocked_101_and_1000 = 0
+        percent_number_blocked_greater_than_1000 = 0
 
     average_number_of_blocks_round = round(float(average_number_of_blocks), 2)
     average_number_of_blocked_round = round(float(average_number_of_blocked), 2)
