@@ -1818,10 +1818,7 @@ def get_database_config(ovride=False) -> dict:
 
             for key, _value in os.environ.items():
                 if key.startswith("CLEARSKY_DATABASE"):
-                    if key.startswith("CLEARSKY_DATABASE_DB"):
-                        db_type = key
-                    else:
-                        db_type = None
+                    db_type = key if key.startswith("CLEARSKY_DATABASE_DB") else None
 
                     name_parts = key.split("_")
                     name = name_parts[3]
