@@ -664,7 +664,8 @@ async def get_list_info(client_identifier, page):
             items_per_page = 100
             offset = (page - 1) * items_per_page
 
-            mute_lists, count, pages = await database_handler.get_mutelists(did_identifier, limit=items_per_page, offset=offset)
+            mute_lists, count, pages = await database_handler.get_mutelists(did_identifier, limit=items_per_page,
+                                                                            offset=offset)
 
             list_data = {"identifier": identifier, "lists": mute_lists, "count": count, "pages": pages}
         else:
