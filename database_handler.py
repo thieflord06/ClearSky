@@ -1240,7 +1240,7 @@ async def top_24blocklists_updater():
     return top_blocked_24, top_blockers_24, blocked_aid_24, blocker_aid_24
 
 
-async def get_mutelists(ident) -> list | None:
+async def get_mutelists(ident, limit=100, offset=0) -> list | None:
     pool_name = get_connection_pool("read")
     async with connection_pools[pool_name].acquire() as connection:
         query = """
@@ -1249,9 +1249,10 @@ async def get_mutelists(ident) -> list | None:
         INNER JOIN mutelists_users AS mu ON ml.uri = mu.list_uri
         LEFT JOIN mutelists_user_count AS mc ON ml.uri = mc.list_uri
         WHERE mu.subject_did = $1
+        LIMIT $2 OFFSET $3
         """
         try:
-            mute_lists = await connection.fetch(query, ident)
+            mute_lists = await connection.fetch(query, ident, limit, offset)
         except asyncpg.PostgresError as e:
             logger.error(f"Postgres error: {e}")
             raise DatabaseConnectionError
