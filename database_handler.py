@@ -1509,7 +1509,7 @@ async def get_user_handle(did) -> str | None:
 
 
 async def get_user_count(get_active=True) -> int:
-    pool_name = get_connection_pool("write")
+    pool_name = get_connection_pool("read")
     async with connection_pools[pool_name].acquire() as connection:
         try:
             if get_active:
@@ -1544,7 +1544,7 @@ async def get_user_count(get_active=True) -> int:
 
 
 async def get_deleted_users_count() -> int:
-    pool_name = get_connection_pool("write")
+    pool_name = get_connection_pool("read")
     async with connection_pools[pool_name].acquire() as connection:
         try:
             count = await connection.fetchval(
