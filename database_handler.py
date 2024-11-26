@@ -55,28 +55,52 @@ database_config = None
 # ======================================================================================================================
 # ========================================= database handling functions ================================================
 def get_connection_pool(db_type="read"):
-    if db_type == "read":
-        return next(read_db_iterator)
-    elif db_type == "cursor":
-        for db, _configg in database_config.items():
-            if "cursor" in db.lower():
-                return db
-    else:
-        for db, _configg in database_config.items():
-            use_local_db = database_config.get("use_local_db")
+    override = config_helper.check_override()
+    if os.getenv("CLEAR_SKY") and override is False:
+        if db_type == "read":
+            return next(read_db_iterator)
+        elif db_type == "cursor":
+            for db, _configg in database_config.items():
+                if "cursor" in db.lower():
+                    return db
+        else:
+            for db, _configg in database_config.items():
+                use_local_db = database_config.get("use_local_db")
 
-            if use_local_db is None:
-                continue
-            if "use_local_db" in db.lower() and "none" in use_local_db.lower():
-                continue
-            if db.lower() == "write_keyword":
-                continue
-            if db.startswith("CLEARSKY_DATABASE") and database_config.get("write_keyword") in db.lower():
-                write = db
+                if use_local_db is None:
+                    continue
+                if "use_local_db" in db.lower() and "none" in use_local_db.lower():
+                    continue
+                if db.lower() == "write_keyword":
+                    continue
+                if db.startswith("CLEARSKY_DATABASE") and database_config.get("write_keyword") in db.lower():
+                    write = db
 
-                return write
+                    return write
 
-            continue
+                continue
+
+    if not os.getenv("CLEAR_SKY") or override is True:
+        if db_type == "read":
+            return next(read_db_iterator)
+        elif db_type == "cursor":
+            for db, _configg in database_config.items():
+                if "cursor" in db.lower():
+                    return db
+        else:
+            for db, _configg in database_config.items():
+                use_local_db = database_config.get("use_local_db")
+
+                if use_local_db is None:
+                    continue
+                if "use_local_db" in db.lower() and "none" in use_local_db.lower():
+                    continue
+                if db.lower() == "write_keyword":
+                    continue
+                if "write" in db.lower():
+                    return db
+
+                continue
 
         logger.error("No write db found.")
 
@@ -533,23 +557,19 @@ async def blocklist_search(search_list, lookup, switch):
                     for record in result:
                         block_date = record["block_date"]
                         did = record["blocked_did"]
-                        status = record["status"]
 
                     results = {
                         "blocked_date": block_date.isoformat(),
                         "did": did,
-                        "status": status,
                     }
                 elif "blocked" in switch:
                     for record in result:
                         block_date = record["block_date"]
                         did = record["user_did"]
-                        status = record["status"]
 
                     results = {
                         "blocked_date": block_date.isoformat(),
                         "did": did,
-                        "status": status,
                     }
                 else:
                     results = None
