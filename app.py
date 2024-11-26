@@ -7,7 +7,6 @@ import sys
 from datetime import datetime, timezone
 
 import aiocron
-import aiohttp
 from quart import Quart, jsonify, request, session
 from quart_cors import cors
 from quart_rate_limiter import RateLimiter
@@ -25,7 +24,6 @@ from helpers import (
     blocklist_failed,
     get_ip,
     get_ip_address,
-    get_var_info,
     version,
 )
 
