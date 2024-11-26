@@ -1860,9 +1860,9 @@ read_db_iterator = itertools.cycle(read_dbs)
 
 
 async def local_db() -> bool:
-    if database_config["use_local_db"]:
+    if database_config["use_local_db"].lower() == "none":
+        return False
+    else:
         logger.warning("Using local db.")
 
         return True
-    else:
-        return False
