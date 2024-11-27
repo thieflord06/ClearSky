@@ -1240,7 +1240,10 @@ async def top_24blocklists_updater():
     return top_blocked_24, top_blockers_24, blocked_aid_24, blocker_aid_24
 
 
-async def get_mutelists(ident, limit=100, offset=0) -> list | None:
+async def get_mutelists(ident, limit=100, offset=0):
+    count = 0
+    pages = 0
+
     pool_name = get_connection_pool("read")
     async with connection_pools[pool_name].acquire() as connection:
         query = """
@@ -1279,7 +1282,7 @@ async def get_mutelists(ident, limit=100, offset=0) -> list | None:
             }
             lists.append(data)
 
-        return lists
+        return lists, count, pages
 
 
 async def check_api_key(api_environment, key_type, key_value) -> bool:
