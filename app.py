@@ -104,18 +104,12 @@ async def first_run() -> None:
             blocklist_24_failed.clear()
             blocklist_failed.clear()
 
-            tables = await database_handler.tables_exists()
+            await database_handler.blocklists_updater()
+            await database_handler.top_24blocklists_updater()
+            await utils.update_block_statistics()
+            await utils.update_total_users()
 
-            if tables:
-                await database_handler.blocklists_updater()
-                await database_handler.top_24blocklists_updater()
-                await utils.update_block_statistics()
-                await utils.update_total_users()
-
-                break
-            else:
-                logger.warning("Tables do not exist in db.")
-                sys.exit()
+            break
 
         logger.warning("DB connection not established, waiting for connection before running block stats processes.")
         await asyncio.sleep(30)
