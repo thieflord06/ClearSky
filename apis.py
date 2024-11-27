@@ -37,6 +37,9 @@ from core import (
     store_data,
     time_behind,
     verify_handle,
+    get_single_blocklist_total,
+    get_blocklist_total,
+    get_list_total
 )
 from errors import BadRequest, DatabaseConnectionError, ExceedsFileSizeLimit, FileNameExists, NoFileProvided, NotFound
 from helpers import generate_session_number, get_ip
@@ -201,6 +204,42 @@ async def auth_get_single_blocklist(client_identifier, page) -> jsonify:
         return jsonify({"error": "Internal error"}), 500
 
 
+@api_blueprint.route("/api/v1/auth/single-blocklist/total/<client_identifier>", methods=["GET"])
+@api_key_required("SERVER")
+@rate_limit(5, timedelta(seconds=1))
+async def auth_get_single_blocklist_total(client_identifier) -> jsonify:
+    try:
+        return await get_single_blocklist_total(client_identifier)
+    except DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
+    except Exception as e:
+        logger.error(f"Error in anon_get_single_blocklist_total: {e}")
+        return jsonify({"error": "Internal error"}), 500
+
+
+@api_blueprint.route("/api/v1/auth/blocklist/total/<client_identifier>", methods=["GET"])
+@api_key_required("SERVER")
+@rate_limit(5, timedelta(seconds=1))
+async def auth_get_blocklist_total(client_identifier) -> jsonify:
+    try:
+        return await get_blocklist_total(client_identifier)
+    except DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
+    except Exception as e:
+        logger.error(f"Error in anon_get_blocklist_total: {e}")
+        return jsonify({"error": "Internal error"}), 500
+
+
 @api_blueprint.route("/api/v1/auth/in-common-blocklist/<client_identifier>", methods=["GET"])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
@@ -343,6 +382,24 @@ async def auth_get_list_info(client_identifier, page) -> jsonify:
         return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in auth_get_list_info: {e}")
+        return jsonify({"error": "Internal error"}), 500
+
+
+@api_blueprint.route("/api/v1/auth/get-list/total/<client_identifier>", methods=["GET"])
+@api_key_required("SERVER")
+@rate_limit(30, timedelta(seconds=1))
+async def auth_get_list_total(client_identifier) -> jsonify:
+    try:
+        return await get_list_total(client_identifier)
+    except DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
+    except Exception as e:
+        logger.error(f"Error in auth_get_list_total: {e}")
         return jsonify({"error": "Internal error"}), 500
 
 
@@ -807,6 +864,40 @@ async def anon_get_single_blocklist(client_identifier, page) -> jsonify:
         return jsonify({"error": "Internal error"}), 500
 
 
+@api_blueprint.route("/api/v1/anon/single-blocklist/total/<client_identifier>", methods=["GET"])
+@rate_limit(5, timedelta(seconds=1))
+async def anon_get_single_blocklist_total(client_identifier) -> jsonify:
+    try:
+        return await get_single_blocklist_total(client_identifier)
+    except DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
+    except Exception as e:
+        logger.error(f"Error in anon_get_single_blocklist_total: {e}")
+        return jsonify({"error": "Internal error"}), 500
+
+
+@api_blueprint.route("/api/v1/anon/blocklist/total/<client_identifier>", methods=["GET"])
+@rate_limit(5, timedelta(seconds=1))
+async def anon_get_blocklist_total(client_identifier) -> jsonify:
+    try:
+        return await get_blocklist_total(client_identifier)
+    except DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
+    except Exception as e:
+        logger.error(f"Error in anon_get_blocklist_total: {e}")
+        return jsonify({"error": "Internal error"}), 500
+
+
 @api_blueprint.route("/api/v1/anon/in-common-blocklist/<client_identifier>", methods=["GET"])
 @rate_limit(5, timedelta(seconds=1))
 async def anon_get_in_common_blocklist(client_identifier) -> jsonify:
@@ -941,6 +1032,23 @@ async def anon_get_list_info(client_identifier, page) -> jsonify:
         return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in anon_get_list_info: {e}")
+        return jsonify({"error": "Internal error"}), 500
+
+
+@api_blueprint.route("/api/v1/anon/get-list/total/<client_identifier>", methods=["GET"])
+@rate_limit(5, timedelta(seconds=1))
+async def anon_get_list_total(client_identifier) -> jsonify:
+    try:
+        return await get_list_total(client_identifier)
+    except DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
+    except Exception as e:
+        logger.error(f"Error in auth_get_list_total: {e}")
         return jsonify({"error": "Internal error"}), 500
 
 

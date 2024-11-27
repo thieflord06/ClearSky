@@ -242,15 +242,15 @@ async def get_blocklist(ident, limit=100, offset=0):
         raise InternalServerError
 
 
-async def get_handle_and_status(ident):
-    return None
+async def get_single_user_blocks_count(did_identifier):
     try:
         pool_name = get_connection_pool("read")
         async with connection_pools[pool_name].acquire() as connection:
-            query = """SELECT handle, status
-                        FROM users
-                        WHERE did = $1"""
-            result = await connection.fetchrow(query, ident)
+            query = """SELECT COUNT(DISTINCT user_did)
+                        FROM blocklists
+                        WHERE blocked_did = $1"""
+
+            result = await connection.fetchval(query, did_identifier)
 
             return result
     except asyncpg.PostgresError as e:
@@ -263,7 +263,32 @@ async def get_handle_and_status(ident):
         logger.error("db connection issue.")
         raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error retrieving handle and status for {ident}: {e} {type(e)}")
+        logger.error(f"Error retrieving blocklist count for {did_identifier}: {e} {type(e)}")
+        raise InternalServerError
+
+
+async def get_user_blocks_count(did_identifier):
+    try:
+        pool_name = get_connection_pool("read")
+        async with connection_pools[pool_name].acquire() as connection:
+            query = """SELECT COUNT(DISTINCT blocked_did)
+                        FROM blocklists
+                        WHERE user_did = $1"""
+
+            result = await connection.fetchval(query, did_identifier)
+
+            return result
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error("db connection issue.")
+        raise DatabaseConnectionError
+    except Exception as e:
+        logger.error(f"Error retrieving blocklist count for {did_identifier}: {e} {type(e)}")
         raise InternalServerError
 
 
@@ -1293,6 +1318,30 @@ async def get_mutelists(ident, limit=100, offset=0):
         return lists, count, pages
 
 
+async def get_mutelist_count(ident):
+    pool_name = get_connection_pool("read")
+    async with connection_pools[pool_name].acquire() as connection:
+        query = """
+        SELECT COUNT(*) FROM mutelists_users WHERE subject_did = $1
+        """
+        try:
+            count = await connection.fetchval(query, ident)
+        except asyncpg.PostgresError as e:
+            logger.error(f"Postgres error: {e}")
+            raise DatabaseConnectionError
+        except asyncpg.InterfaceError as e:
+            logger.error(f"interface error: {e}")
+            raise DatabaseConnectionError
+        except AttributeError:
+            logger.error("db connection issue.")
+            raise DatabaseConnectionError
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            raise InternalServerError
+
+        return count
+
+
 async def check_api_key(api_environment, key_type, key_value) -> bool:
     pool_name = get_connection_pool("read")
     async with connection_pools[pool_name].acquire() as connection:
@@ -1622,11 +1671,6 @@ async def get_single_user_blocks(ident, limit=100, offset=0):
                 offset,
             )
 
-            # count = await connection.fetchval(
-            #     "SELECT COUNT(DISTINCT user_did) FROM blocklists WHERE blocked_did = $1",
-            #     ident,
-            # )
-
             block_list = []
 
             if count > 0:
@@ -1636,19 +1680,12 @@ async def get_single_user_blocks(ident, limit=100, offset=0):
             else:
                 pages = 0
 
-            handle_and_status = await get_user_handle(ident)
-
-            if result and handle_and_status:
+            if result:
                 # Iterate over blocked_users and extract handle and status
                 for user_did, block_date in result:
-                    handle_and_status = await get_handle_and_status(user_did)
-
-                    status = None if handle_and_status is None else handle_and_status["status"]
-
                     block_list.append(
                         {
                             "did": user_did,
-                            "status": status,
                             "blocked_date": block_date.isoformat(),
                         }
                     )

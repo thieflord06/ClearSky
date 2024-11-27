@@ -3,6 +3,7 @@ import asyncio
 import csv
 import functools
 import io
+import math
 import os
 from datetime import datetime, timedelta, timezone
 
@@ -373,6 +374,86 @@ async def get_single_blocklist(client_identifier, page):
     return jsonify(data)
 
 
+async def get_single_blocklist_total(client_identifier):
+    session_ip = await get_ip()
+    api_key = request.headers.get("X-API-Key")
+
+    identifier = await sanitization(client_identifier)
+
+    logger.info(f"<< {session_ip} - {api_key} - single blocklist total request: {identifier}")
+
+    if identifier:
+        did_identifier, handle_identifier = await pre_process_identifier(identifier)
+        status = await preprocess_status(did_identifier)
+
+        if did_identifier and handle_identifier and status:
+            count = await database_handler.get_single_user_blocks_count(did_identifier)
+
+            if count > 0:
+                pages = count / 100
+
+                pages = math.ceil(pages)
+            else:
+                pages = 0
+
+            formatted_count = f"{count:,}"
+
+            blocklist_data = {"count": formatted_count, "pages": pages}
+        else:
+            blocklist_data = None
+
+        data = {"identity": identifier, "status": status, "data": blocklist_data}
+    else:
+        identifier = "Missing parameter"
+        result = "Missing parameter"
+        block_data = {"error": result}
+        data = {"data": block_data}
+
+    logger.info(f">> {session_ip} - {api_key} - single blocklist total result returned: {identifier}")
+
+    return jsonify(data)
+
+
+async def get_blocklist_total(client_identifier):
+    session_ip = await get_ip()
+    api_key = request.headers.get("X-API-Key")
+
+    identifier = await sanitization(client_identifier)
+
+    logger.info(f"<< {session_ip} - {api_key} - blocklist total request: {identifier}")
+
+    if identifier:
+        did_identifier, handle_identifier = await pre_process_identifier(identifier)
+        status = await preprocess_status(did_identifier)
+
+        if did_identifier and handle_identifier and status:
+            count = await database_handler.get_user_blocks_count(did_identifier)
+
+            if count > 0:
+                pages = count / 100
+
+                pages = math.ceil(pages)
+            else:
+                pages = 0
+
+            formatted_count = f"{count:,}"
+
+            blocklist_data = {"count": formatted_count, "pages": pages}
+        else:
+            blocklist_data = None
+
+        data = {"identity": identifier, "status": status, "data": blocklist_data}
+    else:
+        identifier = "Missing parameter"
+        result = "Missing parameter"
+        block_data = {"error": result}
+        data = {"data": block_data}
+
+    logger.info(f">> {session_ip} - {api_key} - blocklist total result returned: {identifier}")
+
+    return jsonify(data)
+
+
 async def get_in_common_blocklist(client_identifier):
     session_ip = await get_ip()
     api_key = request.headers.get("X-API-Key")
@@ -680,6 +761,46 @@ async def get_list_info(client_identifier, page):
         data = {"data": block_data}
 
     logger.info(f">> {session_ip} - {api_key} - mute/block list result returned: {identifier}")
+
+    return jsonify(data)
+
+
+async def get_list_total(client_identifier):
+    session_ip = await get_ip()
+    api_key = request.headers.get("X-API-Key")
+
+    identifier = await sanitization(client_identifier)
+
+    logger.info(f"<< {session_ip} - {api_key} - get mute/block list total request: {identifier}")
+
+    if identifier:
+        did_identifier, handle_identifier = await pre_process_identifier(identifier)
+        status = await preprocess_status(did_identifier)
+
+        if did_identifier and handle_identifier and status:
+            count = await database_handler.get_mutelist_count(did_identifier)
+
+            if count > 0:
+                pages = count / 100
+
+                pages = math.ceil(pages)
+            else:
+                pages = 0
+
+            formatted_count = f"{count:,}"
+
+            list_data = {"count": formatted_count, "pages": pages}
+        else:
+            list_data = None
+
+        data = {"identifier": identifier, "data": list_data}
+    else:
+        identifier = "Missing parameter"
+        result = "Missing parameter"
+        block_data = {"error": result}
+        data = {"data": block_data}
+
+    logger.info(f">> {session_ip} - {api_key} - mute/block list total result returned: {identifier}")
 
     return jsonify(data)
 
