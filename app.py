@@ -201,65 +201,6 @@ def ratelimit_error(e):
     return jsonify(error="ratelimit exceeded", message=str(e.description)), 429
 
 
-# async def fetch_and_push_data():
-#     var_info = await get_var_info()
-#
-#     api_key = var_info.get("api_key")
-#     push_server = var_info.get("push_server")
-#     self_server = var_info.get("self_server")
-#
-#     logger.info(f"API key: {api_key} | Push server: {push_server} | Self server: {self_server}")
-#
-#     if api_key is not None:
-#         try:
-#             fetch_api_map = {
-#                 "top_blocked": f"{self_server}/api/v1/auth/lists/fun-facts",
-#                 "top_24_blocked": f"{self_server}/api/v1/auth/lists/funer-facts",
-#                 "block_stats": f"{self_server}/api/v1/auth/lists/block-stats",
-#                 "total_users": f"{self_server}/api/v1/auth/total-users",
-#             }
-#             send_api_map = {
-#                 "top_blocked": f"{push_server}/api/v1/base/reporting/stats-cache/top-blocked",
-#                 "top_24_blocked": f"{push_server}/api/v1/base/reporting/stats-cache/top-24-blocked",
-#                 "block_stats": f"{push_server}/api/v1/base/reporting/stats-cache/block-stats",
-#                 "total_users": f"{push_server}/api/v1/base/reporting/stats-cache/total-users",
-#             }
-#             headers = {"X-API-Key": f"{api_key}"}
-#
-#             async with aiohttp.ClientSession(headers=headers) as get_session:
-#                 for (fetch_name, fetch_api), (_send_name, send_api) in zip(
-#                     fetch_api_map.items(), send_api_map.items(), strict=False
-#                 ):
-#                     logger.info(f"Fetching data from {fetch_name} API")
-#
-#                     async with get_session.get(fetch_api) as internal_response:
-#                         if internal_response.status == 200:
-#                             internal_data = await internal_response.json()
-#                             if "timeLeft" in internal_data["data"]:
-#                                 logger.info(f"{fetch_name} Data not ready, skipping.")
-#                             else:
-#                                 async with get_session.post(send_api, json=internal_data) as response:
-#                                     if response.status == 200:
-#                                         logger.info(f"Data successfully pushed to {send_api}")
-#                                     else:
-#                                         logger.error("Failed to push data to the destination server")
-#                                         continue
-#                         else:
-#                             logger.error(f"Failed to fetch data from {fetch_api}")
-#                             continue
-#         except Exception as e:
-#             logger.error(f"An error occurred: {e}")
-#     else:
-#         logger.error("PUSH not executed, no API key configured.")
-
-
-# Schedule the task to run every hour
-# @aiocron.crontab("0 * * * *")
-# async def schedule_data_push():
-#     logger.info("Starting scheduled data push.")
-#     await fetch_and_push_data()
-
-
 # ======================================================================================================================
 # =============================================== Main Logic ===========================================================
 async def main():
