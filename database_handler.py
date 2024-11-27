@@ -1161,7 +1161,11 @@ async def blocklists_updater():
 
     logger.info("Updating top blocks lists requested.")
 
-    await truncate_top_blocks_table()
+    try:
+        await truncate_top_blocks_table()
+    except Exception as e:
+        logger.error(f"Error truncating top blocks table: {e}")
+        return
 
     blocked_results, blockers_results = await get_top_blocks()  # Get blocks for db
     logger.debug(f"blocked count: {len(blocked_results)} blockers count: {len(blockers_results)}")
@@ -1206,7 +1210,11 @@ async def top_24blocklists_updater():
 
     logger.info("Updating top 24 blocks lists requested.")
 
-    await truncate_top24_blocks_table()
+    try:
+        await truncate_top24_blocks_table()
+    except Exception as e:
+        logger.error(f"Error truncating top 24 blocks table: {e}")
+        return
 
     blocked_results_24, blockers_results_24 = await get_top24_blocks()  # Get blocks for db
 
