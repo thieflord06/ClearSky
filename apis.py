@@ -327,12 +327,13 @@ async def auth_get_handle_history_info(client_identifier) -> jsonify:
         return jsonify({"error": "Internal error"}), 500
 
 
-@api_blueprint.route("/api/v1/auth/get-list/<client_identifier>", methods=["GET"])
+@api_blueprint.route("/api/v1/auth/get-list/<client_identifier>", defaults={"page": 1}, methods=["GET"])
+@api_blueprint.route("/api/v1/auth/get-list/<client_identifier>/<int:page>", methods=["GET"])
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
-async def auth_get_list_info(client_identifier) -> jsonify:
+async def auth_get_list_info(client_identifier, page) -> jsonify:
     try:
-        return await get_list_info(client_identifier)
+        return await get_list_info(client_identifier, page)
     except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503
@@ -925,11 +926,12 @@ async def anon_get_handle_history_info(client_identifier) -> jsonify:
         return jsonify({"error": "Internal error"}), 500
 
 
-@api_blueprint.route("/api/v1/anon/get-list/<client_identifier>", methods=["GET"])
+@api_blueprint.route("/api/v1/anon/get-list/<client_identifier>", defaults={"page": 1}, methods=["GET"])
+@api_blueprint.route("/api/v1/anon/get-list/<client_identifier>/<int:page>", methods=["GET"])
 @rate_limit(5, timedelta(seconds=1))
-async def anon_get_list_info(client_identifier) -> jsonify:
+async def anon_get_list_info(client_identifier, page) -> jsonify:
     try:
-        return await get_list_info(client_identifier)
+        return await get_list_info(client_identifier, page)
     except DatabaseConnectionError:
         logger.error("Database connection error")
         return jsonify({"error": "Connection error"}), 503

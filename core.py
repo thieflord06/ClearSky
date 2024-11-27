@@ -648,7 +648,7 @@ async def get_handle_history_info(client_identifier) -> jsonify:
     return jsonify(data)
 
 
-async def get_list_info(client_identifier) -> jsonify:
+async def get_list_info(client_identifier, page):
     session_ip = await get_ip()
     api_key = request.headers.get("X-API-Key")
 
@@ -661,9 +661,14 @@ async def get_list_info(client_identifier) -> jsonify:
         status = await preprocess_status(did_identifier)
 
         if did_identifier and handle_identifier and status:
-            mute_lists = await database_handler.get_mutelists(did_identifier)
+            items_per_page = 100
+            offset = (page - 1) * items_per_page
 
-            list_data = {"identifier": identifier, "lists": mute_lists}
+            mute_lists, count, pages = await database_handler.get_mutelists(
+                did_identifier, limit=items_per_page, offset=offset
+            )
+
+            list_data = {"identifier": identifier, "lists": mute_lists, "count": count, "pages": pages}
         else:
             list_data = None
 
@@ -763,6 +768,9 @@ async def get_blocking_search(client_identifier, search_identifier) -> jsonify:
         search_is_handle = utils.is_handle(search_identifier)
 
         if client_is_handle and search_is_handle:
+            client_identifier = await utils.use_did(client_identifier)
+            search_identifier = await utils.use_did(search_identifier)
+
             result = await database_handler.blocklist_search(client_identifier, search_identifier, switch="blocking")
         else:
             result = None

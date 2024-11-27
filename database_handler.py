@@ -55,28 +55,52 @@ database_config = None
 # ======================================================================================================================
 # ========================================= database handling functions ================================================
 def get_connection_pool(db_type="read"):
-    if db_type == "read":
-        return next(read_db_iterator)
-    elif db_type == "cursor":
-        for db, _configg in database_config.items():
-            if "cursor" in db.lower():
-                return db
-    else:
-        for db, _configg in database_config.items():
-            use_local_db = database_config.get("use_local_db")
+    override = config_helper.check_override()
+    if os.getenv("CLEAR_SKY") and override is False:
+        if db_type == "read":
+            return next(read_db_iterator)
+        elif db_type == "cursor":
+            for db, _configg in database_config.items():
+                if "cursor" in db.lower():
+                    return db
+        else:
+            for db, _configg in database_config.items():
+                use_local_db = database_config.get("use_local_db")
 
-            if use_local_db is None:
-                continue
-            if "use_local_db" in db.lower() and "none" in use_local_db.lower():
-                continue
-            if db.lower() == "write_keyword":
-                continue
-            if db.startswith("CLEARSKY_DATABASE") and database_config.get("write_keyword") in db.lower():
-                write = db
+                if use_local_db is None:
+                    continue
+                if "use_local_db" in db.lower() and "none" in use_local_db.lower():
+                    continue
+                if db.lower() == "write_keyword":
+                    continue
+                if db.startswith("CLEARSKY_DATABASE") and database_config.get("write_keyword") in db.lower():
+                    write = db
 
-                return write
+                    return write
 
-            continue
+                continue
+
+    if not os.getenv("CLEAR_SKY") or override is True:
+        if db_type == "read":
+            return next(read_db_iterator)
+        elif db_type == "cursor":
+            for db, _configg in database_config.items():
+                if "cursor" in db.lower():
+                    return db
+        else:
+            for db, _configg in database_config.items():
+                use_local_db = database_config.get("use_local_db")
+
+                if use_local_db is None:
+                    continue
+                if "use_local_db" in db.lower() and "none" in use_local_db.lower():
+                    continue
+                if db.lower() == "write_keyword":
+                    continue
+                if "write" in db.lower():
+                    return db
+
+                continue
 
         logger.error("No write db found.")
 
@@ -505,19 +529,15 @@ async def blocklist_search(search_list, lookup, switch):
     pool_name = get_connection_pool("write")
     async with connection_pools[pool_name].acquire() as connection, connection.transaction():
         try:
-            blocking = """SELECT b.user_did, b.blocked_did, b.block_date, u1.handle, u1.status
+            blocking = """SELECT b.user_did, b.blocked_did, b.block_date
                                 FROM blocklists AS b
-                                INNER JOIN users AS u1 ON b.user_did = u1.did
-                                INNER JOIN users AS u2 ON b.blocked_did = u2.did
-                                WHERE u1.handle = $1
-                                  AND u2.handle = $2"""
+                                WHERE user_did = $1
+                                  AND blocked_did = $2"""
 
-            blocked = """SELECT b.user_did, b.blocked_did, b.block_date, u1.handle, u1.status
+            blocked = """SELECT b.user_did, b.blocked_did, b.block_date
                                 FROM blocklists AS b
-                                INNER JOIN users AS u1 ON b.user_did = u1.did
-                                INNER JOIN users AS u2 ON b.blocked_did = u2.did
-                                WHERE u1.handle = $2
-                                  AND u2.handle = $1"""
+                                WHERE user_did = $2
+                                  AND blocked_did = $1"""
 
             if "blocking" in switch:
                 query = blocking
@@ -533,16 +553,26 @@ async def blocklist_search(search_list, lookup, switch):
             if result:
                 resultslist = {}
 
-                for record in result:
-                    block_date = record["block_date"]
-                    handle = record["handle"]
-                    status = record["status"]
+                if "blocking" in switch:
+                    for record in result:
+                        block_date = record["block_date"]
+                        did = record["blocked_did"]
 
-                results = {
-                    "blocked_date": block_date.isoformat(),
-                    "handle": handle,
-                    "status": status,
-                }
+                    results = {
+                        "blocked_date": block_date.isoformat(),
+                        "did": did,
+                    }
+                elif "blocked" in switch:
+                    for record in result:
+                        block_date = record["block_date"]
+                        did = record["user_did"]
+
+                    results = {
+                        "blocked_date": block_date.isoformat(),
+                        "did": did,
+                    }
+                else:
+                    results = None
 
                 resultslist.update(results)
 
@@ -1210,7 +1240,7 @@ async def top_24blocklists_updater():
     return top_blocked_24, top_blockers_24, blocked_aid_24, blocker_aid_24
 
 
-async def get_mutelists(ident) -> list | None:
+async def get_mutelists(ident, limit=100, offset=0) -> list | None:
     pool_name = get_connection_pool("read")
     async with connection_pools[pool_name].acquire() as connection:
         query = """
@@ -1219,9 +1249,10 @@ async def get_mutelists(ident) -> list | None:
         INNER JOIN mutelists_users AS mu ON ml.uri = mu.list_uri
         LEFT JOIN mutelists_user_count AS mc ON ml.uri = mc.list_uri
         WHERE mu.subject_did = $1
+        LIMIT $2 OFFSET $3
         """
         try:
-            mute_lists = await connection.fetch(query, ident)
+            mute_lists = await connection.fetch(query, ident, limit, offset)
         except asyncpg.PostgresError as e:
             logger.error(f"Postgres error: {e}")
             raise DatabaseConnectionError
