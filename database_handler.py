@@ -1268,14 +1268,9 @@ async def get_mutelists(ident, limit=100, offset=0) -> list | None:
 
         lists = []
         for record in mute_lists:
-            handle_and_status = await get_handle_and_status(record["did"])
-
-            status = None if handle_and_status is None else handle_and_status["status"]
-
             data = {
                 "url": record["url"],
                 "did": record["did"],
-                "status": status,
                 "name": record["name"],
                 "description": record["description"],
                 "created_date": record["created_date"].isoformat(),
