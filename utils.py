@@ -1,7 +1,6 @@
 # utils.py
 
 import asyncio
-import math
 import re
 from datetime import datetime, timezone
 
@@ -440,9 +439,7 @@ async def process_subscribe_blocks(ident, limit, offset):
 async def process_subscribe_blocks_single(ident, limit, offset):
     block_list = {}
 
-    blocked_users = await database_handler.get_subscribe_blocks_single(
-        ident, limit=limit, offset=offset
-    )
+    blocked_users = await database_handler.get_subscribe_blocks_single(ident, limit=limit, offset=offset)
 
     if not blocked_users:
         logger.info(f"{ident} Hasn't subscribed blocked any lists.")

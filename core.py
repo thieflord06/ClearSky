@@ -9,7 +9,6 @@ from datetime import datetime, timedelta, timezone
 
 import aiofiles
 import aiofiles.os
-import aiohttp
 import httpx
 import pytz
 from quart import jsonify, request, session
@@ -33,7 +32,6 @@ from helpers import (
     get_ip,
     get_ip_address,
     get_time_since,
-    get_var_info,
     runtime,
     version,
 )
@@ -1478,9 +1476,7 @@ async def retrieve_subscribe_blocks_blocklist(client_identifier: str, page: int)
             items_per_page = 100
             offset = (page - 1) * items_per_page
 
-            blocklist = await utils.process_subscribe_blocks(
-                did_identifier, limit=items_per_page, offset=offset
-            )
+            blocklist = await utils.process_subscribe_blocks(did_identifier, limit=items_per_page, offset=offset)
 
             blocklist_data = {
                 "blocklist": blocklist,
