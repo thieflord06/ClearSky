@@ -1476,9 +1476,7 @@ async def retrieve_subscribe_blocks_blocklist(client_identifier: str, page: int)
             items_per_page = 100
             offset = (page - 1) * items_per_page
 
-            blocklist = await utils.process_subscribe_blocks(
-                did_identifier, limit=items_per_page, offset=offset
-            )
+            blocklist = await utils.process_subscribe_blocks(did_identifier, limit=items_per_page, offset=offset)
 
             blocklist_data = {
                 "blocklist": blocklist,
