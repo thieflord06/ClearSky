@@ -3,7 +3,6 @@ import asyncio
 import csv
 import functools
 import io
-import math
 import os
 from datetime import datetime, timedelta, timezone
 
@@ -380,16 +379,7 @@ async def get_single_blocklist_total(client_identifier):
         if did_identifier and handle_identifier and status:
             count = await database_handler.get_single_user_blocks_count(did_identifier)
 
-            if count > 0:
-                pages = count / 100
-
-                pages = math.ceil(pages)
-            else:
-                pages = 0
-
-            formatted_count = f"{count:,}"
-
-            blocklist_data = {"count": formatted_count, "pages": pages}
+            blocklist_data = {"count": count}
         else:
             blocklist_data = None
 
@@ -420,16 +410,7 @@ async def get_blocklist_total(client_identifier):
         if did_identifier and handle_identifier and status:
             count = await database_handler.get_user_blocks_count(did_identifier)
 
-            if count > 0:
-                pages = count / 100
-
-                pages = math.ceil(pages)
-            else:
-                pages = 0
-
-            formatted_count = f"{count:,}"
-
-            blocklist_data = {"count": formatted_count, "pages": pages}
+            blocklist_data = {"count": count}
         else:
             blocklist_data = None
 
@@ -494,7 +475,6 @@ async def get_in_common_blocked(client_identifier):
         if not not_implemented:
             if did_identifier and handle_identifier and status:
                 blocklist_data = await database_handler.get_similar_blocked_by(did_identifier)
-                # formatted_count = '{:,}'.format(count)
 
             else:
                 blocklist_data = None
@@ -577,25 +557,21 @@ async def get_total_users():
     active_count = utils.total_active_users_cache.get("total_active_users")
     deleted_count = utils.total_deleted_users_cache.get("total_deleted_users")
 
-    formatted_active_count = f"{active_count:,}"
-    formatted_total_count = f"{total_count:,}"
-    formatted_deleted_count = f"{deleted_count:,}"
-
-    logger.debug(f"{session_ip} > {api_key} | total users count: {formatted_total_count}")
-    logger.debug(f"{session_ip} > {api_key} | total active users count: {formatted_active_count}")
-    logger.debug(f"{session_ip} > {api_key} | total deleted users count: {formatted_deleted_count}")
+    logger.debug(f"{session_ip} > {api_key} | total users count: {total_count}")
+    logger.debug(f"{session_ip} > {api_key} | total active users count: {active_count}")
+    logger.debug(f"{session_ip} > {api_key} | total deleted users count: {deleted_count}")
 
     count_data = {
         "active_count": {
-            "value": formatted_active_count,
+            "value": active_count,
             "displayName": "Active Users",
         },
         "total_count": {
-            "value": formatted_total_count,
+            "value": total_count,
             "displayName": "Total Users",
         },
         "deleted_count": {
-            "value": formatted_deleted_count,
+            "value": deleted_count,
             "displayName": "Deleted Users",
         },
         "as of": utils.total_users_as_of_time,
@@ -771,16 +747,7 @@ async def get_list_total(client_identifier):
         if did_identifier and handle_identifier and status:
             count = await database_handler.get_mutelist_count(did_identifier)
 
-            if count > 0:
-                pages = count / 100
-
-                pages = math.ceil(pages)
-            else:
-                pages = 0
-
-            formatted_count = f"{count:,}"
-
-            list_data = {"count": formatted_count, "pages": pages}
+            list_data = {"count": count}
         else:
             list_data = None
 
@@ -1206,35 +1173,21 @@ async def block_stats() -> jsonify:
     average_number_of_blocks_round = round(float(average_number_of_blocks), 2)
     average_number_of_blocked_round = round(float(average_number_of_blocked), 2)
 
-    number_of_total_blocks_formatted = f"{number_of_total_blocks:,}"
-    number_of_unique_users_blocked_formatted = f"{number_of_unique_users_blocked:,}"
-    number_of_unique_users_blocking_formatted = f"{number_of_unique_users_blocking:,}"
-    total_users_formatted = f"{total_users:,}"
-    number_block_1_formatted = f"{number_blocking_1:,}"
-    number_blocking_2_and_100_formatted = f"{number_blocking_2_and_100:,}"
-    number_blocking_101_and_1000_formatted = f"{number_blocking_101_and_1000:,}"
-    number_blocking_greater_than_1000_formatted = f"{number_blocking_greater_than_1000:,}"
-    average_number_of_blocks_formatted = f"{average_number_of_blocks_round:,}"
-    number_blocked_1_formatted = f"{number_blocked_1:,}"
-    number_blocked_2_and_100_formatted = f"{number_blocked_2_and_100:,}"
-    number_blocked_101_and_1000_formatted = f"{number_blocked_101_and_1000:,}"
-    number_blocked_greater_than_1000_formatted = f"{number_blocked_greater_than_1000:,}"
-
     stats_data = {
         "numberOfTotalBlocks": {
-            "value": number_of_total_blocks_formatted,
+            "value": number_of_total_blocks,
             "displayName": "Number of Total Blocks",
         },
         "numberOfUniqueUsersBlocked": {
-            "value": number_of_unique_users_blocked_formatted,
+            "value": number_of_unique_users_blocked,
             "displayName": "Number of Unique Users Blocked",
         },
         "numberOfUniqueUsersBlocking": {
-            "value": number_of_unique_users_blocking_formatted,
+            "value": number_of_unique_users_blocking,
             "displayName": "Number of Unique Users Blocking",
         },
         "totalUsers": {
-            "value": total_users_formatted,
+            "value": total_users,
             "displayName": "Total Users",
         },
         "percentUsersBlocked": {
@@ -1246,19 +1199,19 @@ async def block_stats() -> jsonify:
             "displayName": "Percent Users Blocking",
         },
         "numberBlock1": {
-            "value": number_block_1_formatted,
+            "value": number_blocking_1,
             "displayName": "Number of Users Blocking 1 User",
         },
         "numberBlocking2and100": {
-            "value": number_blocking_2_and_100_formatted,
+            "value": number_blocking_2_and_100,
             "displayName": "Number of Users Blocking 2-100 Users",
         },
         "numberBlocking101and1000": {
-            "value": number_blocking_101_and_1000_formatted,
+            "value": number_blocking_101_and_1000,
             "displayName": "Number of Users Blocking 101-1000 Users",
         },
         "numberBlockingGreaterThan1000": {
-            "value": number_blocking_greater_than_1000_formatted,
+            "value": number_blocking_greater_than_1000,
             "displayName": "Number of Users Blocking More than 1000 Users",
         },
         "percentNumberBlocking1": {
@@ -1278,23 +1231,23 @@ async def block_stats() -> jsonify:
             "displayName": "Percent of Users Blocking More than 1000 Users",
         },
         "averageNumberOfBlocks": {
-            "value": average_number_of_blocks_formatted,
+            "value": average_number_of_blocks_round,
             "displayName": "Average Number of Blocks",
         },
         "numberBlocked1": {
-            "value": number_blocked_1_formatted,
+            "value": number_blocked_1,
             "displayName": "Number of Users Blocked by 1 User",
         },
         "numberBlocked2and100": {
-            "value": number_blocked_2_and_100_formatted,
+            "value": number_blocked_2_and_100,
             "displayName": "Number of Users Blocked by 2-100 Users",
         },
         "numberBlocked101and1000": {
-            "value": number_blocked_101_and_1000_formatted,
+            "value": number_blocked_101_and_1000,
             "displayName": "Number of Users Blocked by 101-1000 Users",
         },
         "numberBlockedGreaterThan1000": {
-            "value": number_blocked_greater_than_1000_formatted,
+            "value": number_blocked_greater_than_1000,
             "displayName": "Number of Users Blocked by More than 1000 Users",
         },
         "percentNumberBlocked1": {
