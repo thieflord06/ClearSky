@@ -9,7 +9,6 @@ from datetime import datetime, timedelta, timezone
 
 import aiofiles
 import aiofiles.os
-import aiohttp
 import httpx
 import pytz
 from quart import jsonify, request, session
@@ -33,7 +32,6 @@ from helpers import (
     get_ip,
     get_ip_address,
     get_time_since,
-    get_var_info,
     runtime,
     version,
 )
