@@ -447,9 +447,8 @@ async def get_moderation_list(name, limit=100, offset=0):
         async with connection_pools[pool_name].acquire() as connection:
             search_string = f"%{name}%"
 
-            name_query = """SELECT ml.url, u.handle, u.status, ml.name, ml.description, ml.created_date, mc.user_count
+            name_query = """SELECT ml.url, ml.did, ml.name, ml.description, ml.created_date, mc.user_count
             FROM mutelists AS ml
-            INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle
             LEFT mutelists_user_count AS mc ON ml.uri = mc.list_uri
             WHERE ml.name ILIKE $1
             LIMIT $2
@@ -457,10 +456,9 @@ async def get_moderation_list(name, limit=100, offset=0):
 
             name_mod_lists = await connection.fetch(name_query, search_string, limit, offset)
 
-            description_query = """SELECT ml.url, u.handle, u.status, ml.name, ml.description, ml.created_date,
+            description_query = """SELECT ml.url, ml.did, ml.name, ml.description, ml.created_date,
             mc.user_count
             FROM mutelists AS ml
-            INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle
             LEFT mutelists_user_count AS mc ON ml.uri = mc.list_uri
             WHERE ml.description ILIKE $1
             LIMIT $2
@@ -503,8 +501,7 @@ async def get_moderation_list(name, limit=100, offset=0):
         for record in name_mod_lists:
             data = {
                 "url": record["url"],
-                "handle": record["handle"],
-                "status": record["status"],
+                "did": record["did"],
                 "name": record["name"],
                 "description": record["description"],
                 "created_date": record["created_date"].isoformat(),
@@ -515,8 +512,7 @@ async def get_moderation_list(name, limit=100, offset=0):
         for record in description_mod_lists:
             data = {
                 "url": record["url"],
-                "handle": record["handle"],
-                "status": record["status"],
+                "did": record["did"],
                 "name": record["name"],
                 "description": record["description"],
                 "created_date": record["created_date"].isoformat(),
