@@ -1,7 +1,6 @@
 # utils.py
 
 import asyncio
-import math
 import re
 from datetime import datetime, timezone
 
@@ -406,96 +405,52 @@ async def update_total_users() -> (int, int, int):
 async def process_user_block_list(ident, limit, offset):
     block_list = []
 
-    blocked_users, count = await database_handler.get_blocklist(ident, limit=limit, offset=offset)
-
-    if blocked_users:
-        # Iterate over blocked_users and extract handle and status
-        for user_did, block_date in blocked_users:
-            handle_and_status = await database_handler.get_handle_and_status(user_did)
-
-            status = None if handle_and_status is None else handle_and_status["status"]
-
-            block_list.append(
-                {
-                    "did": user_did,
-                    "status": status,
-                    "blocked_date": block_date.isoformat(),
-                }
-            )
-
-    if count > 0:
-        pages = count / 100
-
-        pages = math.ceil(pages)
-    else:
-        pages = 0
+    blocked_users = await database_handler.get_blocklist(ident, limit=limit, offset=offset)
 
     if not blocked_users:
-        total_blocked = 0
         logger.info(f"{ident} Hasn't blocked anyone.")
 
-        return block_list, total_blocked, pages
+        return block_list
     elif "no repo" in blocked_users:
-        total_blocked = 0
         logger.info(f"{ident} doesn't exist.")
 
-        return block_list, total_blocked, pages
+        return block_list
     else:
-        return block_list, count, pages
+        return block_list
 
 
 async def process_subscribe_blocks(ident, limit, offset):
     block_list = {}
 
-    blocked_users, count = await database_handler.get_subscribe_blocks(ident, limit=limit, offset=offset)
-
-    if count > 0:
-        pages = count / 100
-
-        pages = math.ceil(pages)
-    else:
-        pages = 0
+    blocked_users = await database_handler.get_subscribe_blocks(ident, limit=limit, offset=offset)
 
     if not blocked_users:
-        total_blocked = 0
         logger.info(f"{ident} Hasn't subscribed blocked any lists.")
 
-        return block_list, total_blocked, pages
+        return block_list
     elif "no repo" in blocked_users:
-        total_blocked = 0
         logger.info(f"{ident} doesn't exist.")
 
-        return block_list, total_blocked, pages
+        return block_list
     else:
-        return blocked_users, count, pages
+        return blocked_users
 
 
-async def process_subscribe_blocks_single(ident, list_of_lists, limit, offset):
+async def process_subscribe_blocks_single(ident, limit, offset):
     block_list = {}
 
-    blocked_users, count = await database_handler.get_subscribe_blocks_single(
-        ident, list_of_lists, limit=limit, offset=offset
-    )
-
-    if count > 0:
-        pages = count / 100
-
-        pages = math.ceil(pages)
-    else:
-        pages = 0
+    blocked_users = await database_handler.get_subscribe_blocks_single(ident, limit=limit, offset=offset)
 
     if not blocked_users:
-        total_blocked = 0
         logger.info(f"{ident} Hasn't subscribed blocked any lists.")
 
-        return block_list, total_blocked, pages
+        return block_list
     elif "no repo" in blocked_users:
-        total_blocked = 0
         logger.info(f"{ident} doesn't exist.")
 
-        return block_list, total_blocked, pages
+        return block_list
     else:
-        return blocked_users, count, pages
+        return blocked_users
 
 
 def is_did(identifier) -> bool:

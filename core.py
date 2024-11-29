@@ -9,7 +9,6 @@ from datetime import datetime, timedelta, timezone
 
 import aiofiles
 import aiofiles.os
-import aiohttp
 import httpx
 import pytz
 from quart import jsonify, request, session
@@ -33,7 +32,6 @@ from helpers import (
     get_ip,
     get_ip_address,
     get_time_since,
-    get_var_info,
     runtime,
     version,
 )
@@ -305,12 +303,9 @@ async def get_blocklist(client_identifier, page):
             blocklist, count, pages = await utils.process_user_block_list(
                 did_identifier, limit=items_per_page, offset=offset
             )
-            formatted_count = f"{count:,}"
 
             blocklist_data = {
                 "blocklist": blocklist,
-                "count": formatted_count,
-                "pages": pages,
             }
         else:
             blocklist = None
@@ -346,21 +341,17 @@ async def get_single_blocklist(client_identifier, page):
             items_per_page = 100
             offset = (page - 1) * items_per_page
 
-            blocklist, count, pages = await database_handler.get_single_user_blocks(
+            blocklist = await database_handler.get_single_user_blocks(
                 did_identifier, limit=items_per_page, offset=offset
             )
-            formatted_count = f"{count:,}"
 
             blocklist_data = {
                 "blocklist": blocklist,
-                "count": formatted_count,
-                "pages": pages,
             }
         else:
             blocklist_data = None
-            count = 0
 
-            blocklist_data = {"blocklist": blocklist_data, "count": count}
+            blocklist_data = {"blocklist": blocklist_data}
 
         data = {"identity": identifier, "status": status, "data": blocklist_data}
     else:
@@ -1485,22 +1476,15 @@ async def retrieve_subscribe_blocks_blocklist(client_identifier: str, page: int)
             items_per_page = 100
             offset = (page - 1) * items_per_page
 
-            blocklist, count, pages = await utils.process_subscribe_blocks(
-                did_identifier, limit=items_per_page, offset=offset
-            )
-
-            formatted_count = f"{count:,}"
+            blocklist = await utils.process_subscribe_blocks(did_identifier, limit=items_per_page, offset=offset)
 
             blocklist_data = {
                 "blocklist": blocklist,
-                "count": formatted_count,
-                "pages": pages,
             }
         else:
             blocklist = None
-            count = 0
 
-            blocklist_data = {"blocklist": blocklist, "count": count}
+            blocklist_data = {"blocklist": blocklist}
 
         data = {"identity": identifier, "status": status, "data": blocklist_data}
     else:
@@ -1515,23 +1499,12 @@ async def retrieve_subscribe_blocks_blocklist(client_identifier: str, page: int)
 
 
 async def retrieve_subscribe_blocks_single_blocklist(client_identifier, page) -> jsonify:
-    values = await get_var_info()
-
-    count = 0
-    pages = 0
-    blocklist = None
-
-    api_key = values.get("api_key")
-    self_server = values.get("self_server")
-
     session_ip = await get_ip()
     received_api_key = request.headers.get("X-API-Key")
 
     identifier = await sanitization(client_identifier)
 
     logger.info(f"<< {session_ip} - {received_api_key} - blocklist request: {identifier}")
-
-    list_url = []
 
     if identifier:
         did_identifier, handle_identifier = await pre_process_identifier(identifier)
@@ -1541,52 +1514,19 @@ async def retrieve_subscribe_blocks_single_blocklist(client_identifier, page) ->
             items_per_page = 100
             offset = (page - 1) * items_per_page
 
-            headers = {"X-API-Key": f"{api_key}"}
-            fetch_api = f"{self_server}/api/v1/auth/get-list/{did_identifier}"
-
-            try:
-                async with (
-                    aiohttp.ClientSession(headers=headers) as session,
-                    session.get(fetch_api) as internal_response,
-                ):
-                    if internal_response.status == 200:
-                        mod_list = await internal_response.json()
-                    else:
-                        mod_list = "error"
-            except Exception as e:
-                logger.error(f"Error retrieving mod list from internal API: {e}")
-                mod_list = None
-
-            if mod_list is not None:
-                if "data" in mod_list and "lists" in mod_list["data"]:
-                    for item in mod_list["data"]["lists"]:
-                        url = item["url"]
-
-                        list_url.append(url)
-
-                    blocklist, count, pages = await utils.process_subscribe_blocks_single(
-                        did_identifier,
-                        list_url,
-                        limit=items_per_page,
-                        offset=offset,
-                    )
-            else:
-                blocklist = None
-                count = 0
-                pages = 0
-
-            formatted_count = f"{count:,}"
+            blocklist = await utils.process_subscribe_blocks_single(
+                did_identifier,
+                limit=items_per_page,
+                offset=offset,
+            )
 
             blocklist_data = {
                 "blocklist": blocklist,
-                "count": formatted_count,
-                "pages": pages,
             }
         else:
             blocklist = None
-            count = 0
 
-            blocklist_data = {"blocklist": blocklist, "count": count}
+            blocklist_data = {"blocklist": blocklist}
 
         data = {"identity": identifier, "status": status, "data": blocklist_data}
     else:

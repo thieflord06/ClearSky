@@ -17,6 +17,7 @@ from core import (
     get_blocked_search,
     get_blocking_search,
     get_blocklist,
+    get_blocklist_total,
     get_did_info,
     get_handle_history_info,
     get_handle_info,
@@ -24,8 +25,10 @@ from core import (
     get_in_common_blocklist,
     get_internal_status,
     get_list_info,
+    get_list_total,
     get_moderation_lists,
     get_single_blocklist,
+    get_single_blocklist_total,
     get_total_users,
     logger,
     request,
@@ -37,9 +40,6 @@ from core import (
     store_data,
     time_behind,
     verify_handle,
-    get_single_blocklist_total,
-    get_blocklist_total,
-    get_list_total
 )
 from errors import BadRequest, DatabaseConnectionError, ExceedsFileSizeLimit, FileNameExists, NoFileProvided, NotFound
 from helpers import generate_session_number, get_ip
