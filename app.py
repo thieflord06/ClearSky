@@ -16,7 +16,7 @@ import database_handler
 import utils
 from apis import api_blueprint
 from config_helper import logger
-from core import db_pool_acquired, initialize
+from core import db_pool_acquired, initialize, load_api_statuses
 from environment import get_api_var
 from errors import DatabaseConnectionError, NotFound
 from helpers import (
@@ -156,6 +156,11 @@ async def schedule_total_users_update() -> None:
     logger.info("Scheduled total users update complete.")
 
 
+@aiocron.crontab("*/10 * * * *")  # Every 10 mins
+async def refresh_cache():
+    await load_api_statuses()
+
+
 def api_key_required(key_type) -> callable:
     def decorator(func) -> callable:
         @functools.wraps(func)
@@ -199,6 +204,12 @@ def api_key_required(key_type) -> callable:
 @app.errorhandler(429)
 def ratelimit_error(e):
     return jsonify(error="ratelimit exceeded", message=str(e.description)), 429
+
+
+# Load API statuses on startup
+@app.before_serving
+async def startup():
+    await load_api_statuses()
 
 
 # ======================================================================================================================
