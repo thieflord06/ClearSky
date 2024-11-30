@@ -158,6 +158,7 @@ async def schedule_total_users_update() -> None:
 
 @aiocron.crontab("*/10 * * * *")  # Every 10 mins
 async def refresh_cache():
+    logger.info("Refreshing API cache.")
     await load_api_statuses()
 
 
