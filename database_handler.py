@@ -188,8 +188,8 @@ async def find_handles(value):
             query_text1 = """SELECT handle
                             FROM users
                             WHERE handle LIKE $1 || '%'
-                            LIMIT 5
-                            ORDER BY handle ASC"""
+                            ORDER BY handle ASC
+                            LIMIT 5"""
 
             result = await asyncio.wait_for(connection.fetch(query_text1, value), timeout=5.0)
 
@@ -455,9 +455,9 @@ async def get_moderation_list(name, limit=100, offset=0):
             FROM mutelists AS ml
             LEFT mutelists_user_count AS mc ON ml.uri = mc.list_uri
             WHERE ml.name ILIKE $1
+            ORDER BY ml.created_date DESC
             LIMIT $2
-            OFFSET $3
-            ORDER BY ml.created_date DESC"""
+            OFFSET $3"""
 
             name_mod_lists = await connection.fetch(name_query, search_string, limit, offset)
 
@@ -466,9 +466,9 @@ async def get_moderation_list(name, limit=100, offset=0):
             FROM mutelists AS ml
             LEFT mutelists_user_count AS mc ON ml.uri = mc.list_uri
             WHERE ml.description ILIKE $1
+            ORDER BY ml.created_date DESC
             LIMIT $2
-            OFFSET $3
-            ORDER BY ml.created_date DESC"""
+            OFFSET $3"""
 
             description_mod_lists = await connection.fetch(description_query, search_string, limit, offset)
 
@@ -1290,8 +1290,8 @@ async def get_mutelists(ident, limit=100, offset=0):
         INNER JOIN mutelists_users AS mu ON ml.uri = mu.list_uri
         LEFT JOIN mutelists_user_count AS mc ON ml.uri = mc.list_uri
         WHERE mu.subject_did = $1
-        LIMIT $2 OFFSET $3
         ORDER BY mu.date_added DESC
+        LIMIT $2 OFFSET $3
         """
         try:
             mute_lists = await connection.fetch(query, ident, limit, offset)
