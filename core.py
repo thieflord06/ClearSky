@@ -5,13 +5,13 @@ import functools
 import io
 import os
 from datetime import datetime, timedelta, timezone
-
+from async_lru import alru_cache
 import aiofiles
 import aiofiles.os
 import httpx
 import pytz
 from quart import jsonify, request, session
-
+from functools import wraps
 import database_handler
 import helpers
 import on_wire
@@ -44,6 +44,7 @@ total_start_time = None
 block_stats_app_start_time = None
 dbs_connected = None
 db_pool_acquired = asyncio.Event()
+api_status_cache = {}
 
 
 # ======================================================================================================================
@@ -276,6 +277,37 @@ def api_key_required(key_type) -> callable:
         return wrapper
 
     return decorator
+
+
+def check_api_status(api_name):
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            api_status = api_status_cache.get(api_name)
+            if not api_status:
+                return jsonify({"error": "Not found"}), 404
+
+            status = api_status["status"]
+
+            if status is False:
+                return jsonify({"error": "API is disabled"}), 503
+
+            return await func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
+@alru_cache(maxsize=1)
+async def load_api_statuses():
+    query = "SELECT api, status, rate FROM api_endpoint_status"
+    pool_name = database_handler.get_connection_pool("write")
+    async with database_handler.connection_pools[pool_name].acquire() as connection:
+        rows = await connection.fetch(query)
+        for row in rows:
+            api_status_cache[row["api"]] = {
+                "status": row["status"],
+                "rate": row["rate"],
+            }
 
 
 # ======================================================================================================================
