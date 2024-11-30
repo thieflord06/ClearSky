@@ -310,10 +310,22 @@ async def load_api_statuses():
     async with database_handler.connection_pools[pool_name].acquire() as connection:
         rows = await connection.fetch(query)
         for row in rows:
-            api_status_cache[row["api"]] = {
-                "status": row["status"],
-                "rate": row["rate"],
-            }
+            api = row["api"]
+            new_status = row["status"]
+            new_rate = row["rate"]
+
+            if api in api_status_cache:
+                old_status = api_status_cache[api]["status"]
+                old_rate = api_status_cache[api]["rate"]
+
+                if old_status != new_status:
+                    logger.info(f"API {api} status changed: status {old_status} -> {new_status}")
+                elif old_rate != new_rate:
+                    logger.info(f"API {api} rate changed: rate {old_rate} -> {new_rate}")
+
+            else:
+                api_status_cache[api] = {"status": new_status, "rate": new_rate}
+                logger.info(f"API {api} added with status {new_status} and rate {new_rate}")
 
 
 # ======================================================================================================================
