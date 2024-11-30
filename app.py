@@ -206,12 +206,6 @@ def ratelimit_error(e):
     return jsonify(error="ratelimit exceeded", message=str(e.description)), 429
 
 
-# Load API statuses on startup
-@app.before_serving
-async def startup():
-    await load_api_statuses()
-
-
 # ======================================================================================================================
 # =============================================== Main Logic ===========================================================
 async def main():
