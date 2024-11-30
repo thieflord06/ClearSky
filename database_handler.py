@@ -188,7 +188,8 @@ async def find_handles(value):
             query_text1 = """SELECT handle
                             FROM users
                             WHERE handle LIKE $1 || '%'
-                            LIMIT 5"""
+                            LIMIT 5
+                            ORDER BY handle ASC"""
 
             result = await asyncio.wait_for(connection.fetch(query_text1, value), timeout=5.0)
 
@@ -219,7 +220,10 @@ async def get_blocklist(ident, limit=100, offset=0):
         async with connection_pools[pool_name].acquire() as connection:
             query = """SELECT DISTINCT blocked_did, block_date
             FROM blocklists
-            WHERE user_did = $1 ORDER BY block_date DESC LIMIT $2 OFFSET $3"""
+            WHERE user_did = $1 
+            ORDER BY block_date DESC 
+            LIMIT $2 
+            OFFSET $3"""
             result = await connection.fetch(query, ident, limit, offset)
 
             if result:
@@ -452,7 +456,8 @@ async def get_moderation_list(name, limit=100, offset=0):
             LEFT mutelists_user_count AS mc ON ml.uri = mc.list_uri
             WHERE ml.name ILIKE $1
             LIMIT $2
-            OFFSET $3"""
+            OFFSET $3
+            ORDER BY ml.created_date DESC"""
 
             name_mod_lists = await connection.fetch(name_query, search_string, limit, offset)
 
@@ -462,7 +467,8 @@ async def get_moderation_list(name, limit=100, offset=0):
             LEFT mutelists_user_count AS mc ON ml.uri = mc.list_uri
             WHERE ml.description ILIKE $1
             LIMIT $2
-            OFFSET $3"""
+            OFFSET $3
+            ORDER BY ml.created_date DESC"""
 
             description_mod_lists = await connection.fetch(description_query, search_string, limit, offset)
 
@@ -1285,6 +1291,7 @@ async def get_mutelists(ident, limit=100, offset=0):
         LEFT JOIN mutelists_user_count AS mc ON ml.uri = mc.list_uri
         WHERE mu.subject_did = $1
         LIMIT $2 OFFSET $3
+        ORDER BY mu.date_added DESC
         """
         try:
             mute_lists = await connection.fetch(query, ident, limit, offset)
@@ -1663,7 +1670,9 @@ async def get_single_user_blocks(ident, limit=100, offset=0):
                 """SELECT DISTINCT user_did, block_date
                                                 FROM blocklists
                                                 WHERE blocked_did = $1
-                                                ORDER BY block_date DESC LIMIT $2 OFFSET $3""",
+                                                ORDER BY block_date DESC 
+                                                LIMIT $2 
+                                                OFFSET $3""",
                 ident,
                 limit,
                 offset,
