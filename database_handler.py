@@ -220,9 +220,9 @@ async def get_blocklist(ident, limit=100, offset=0):
         async with connection_pools[pool_name].acquire() as connection:
             query = """SELECT DISTINCT blocked_did, block_date
             FROM blocklists
-            WHERE user_did = $1 
-            ORDER BY block_date DESC 
-            LIMIT $2 
+            WHERE user_did = $1
+            ORDER BY block_date DESC
+            LIMIT $2
             OFFSET $3"""
             result = await connection.fetch(query, ident, limit, offset)
 
@@ -1670,8 +1670,8 @@ async def get_single_user_blocks(ident, limit=100, offset=0):
                 """SELECT DISTINCT user_did, block_date
                                                 FROM blocklists
                                                 WHERE blocked_did = $1
-                                                ORDER BY block_date DESC 
-                                                LIMIT $2 
+                                                ORDER BY block_date DESC
+                                                LIMIT $2
                                                 OFFSET $3""",
                 ident,
                 limit,
