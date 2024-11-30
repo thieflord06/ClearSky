@@ -24,6 +24,7 @@ from errors import (
     ExceedsFileSizeLimit,
     FileNameExists,
     NotFound,
+    InternalServerError,
 )
 from helpers import (
     blocklist_24_failed,
@@ -169,11 +170,8 @@ async def initialize() -> None:
 
 
 async def pre_process_identifier(identifier) -> (str | None, str | None):
-    did_identifier = None
-    handle_identifier = None
-
     if not identifier:  # If form is submitted without anything in the identifier return intentional error
-        return did_identifier, handle_identifier
+        raise BadRequest
 
     # Check if did or handle exists before processing
     if utils.is_did(identifier):
@@ -183,7 +181,7 @@ async def pre_process_identifier(identifier) -> (str | None, str | None):
                 handle_identifier = await asyncio.wait_for(utils.use_handle(identifier), timeout=5)
             except TimeoutError:
                 # handle_identifier = None
-                logger.warning("resolution failed, possible connection issue.")
+                logger.warning("resolution failed, bsky connection issue.")
                 did_identifier = identifier
                 handle_identifier = await database_handler.get_user_handle(identifier)
                 if handle_identifier is not None:
@@ -198,7 +196,7 @@ async def pre_process_identifier(identifier) -> (str | None, str | None):
                 did_identifier = await asyncio.wait_for(utils.use_did(identifier), timeout=5)
             except TimeoutError:
                 # did_identifier = None
-                logger.warning("resolution failed, possible connection issue.")
+                logger.warning("resolution failed, bsky connection issue.")
                 handle_identifier = identifier
                 did_identifier = await database_handler.get_user_did(identifier)
                 if did_identifier is not None:
@@ -207,8 +205,7 @@ async def pre_process_identifier(identifier) -> (str | None, str | None):
             handle_identifier = identifier
             did_identifier = await database_handler.get_user_did(identifier)
     else:
-        did_identifier = None
-        handle_identifier = None
+        raise BadRequest
 
     return did_identifier, handle_identifier
 
@@ -236,9 +233,9 @@ async def preprocess_status(identifier) -> bool:
 
         raise NotFound
     else:
-        logger.info(f"Error page loaded for resolution failure using: {identifier}")
+        logger.info(f"Error, status check failure using: {identifier}")
 
-        return False
+        raise InternalServerError
 
 
 def api_key_required(key_type) -> callable:
