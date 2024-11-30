@@ -319,11 +319,9 @@ async def load_api_statuses():
                 old_rate = api_status_cache[api]["rate"]
 
                 if old_status != new_status:
-                    logger.info(
-                        f"API {api} status changed: status {old_status} -> {new_status}")
+                    logger.info(f"API {api} status changed: status {old_status} -> {new_status}")
                 elif old_rate != new_rate:
-                    logger.info(
-                        f"API {api} rate changed: rate {old_rate} -> {new_rate}")
+                    logger.info(f"API {api} rate changed: rate {old_rate} -> {new_rate}")
 
             else:
                 api_status_cache[api] = {"status": new_status, "rate": new_rate}
