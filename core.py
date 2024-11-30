@@ -171,6 +171,8 @@ async def initialize() -> None:
 
     logger.info(f"write db: {write_db}")
 
+    await load_api_statuses()
+
 
 async def pre_process_identifier(identifier) -> (str | None, str | None):
     if not identifier:  # If form is submitted without anything in the identifier return intentional error
