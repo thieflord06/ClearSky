@@ -188,6 +188,7 @@ async def find_handles(value):
             query_text1 = """SELECT handle
                             FROM users
                             WHERE handle LIKE $1 || '%'
+                            ORDER BY handle ASC
                             LIMIT 5"""
 
             result = await asyncio.wait_for(connection.fetch(query_text1, value), timeout=5.0)
@@ -212,22 +213,34 @@ async def find_handles(value):
 
 
 async def get_blocklist(ident, limit=100, offset=0):
-    total_blocked_count = 0
+    block_list = []
 
     try:
         pool_name = get_connection_pool("read")
         async with connection_pools[pool_name].acquire() as connection:
             query = """SELECT DISTINCT blocked_did, block_date
             FROM blocklists
-            WHERE user_did = $1 ORDER BY block_date DESC LIMIT $2 OFFSET $3"""
-            blocklist_rows = await connection.fetch(query, ident, limit, offset)
+            WHERE user_did = $1
+            ORDER BY block_date DESC
+            LIMIT $2
+            OFFSET $3"""
+            result = await connection.fetch(query, ident, limit, offset)
 
-            # query2 = """SELECT COUNT(DISTINCT blocked_did)
-            # FROM blocklists
-            # WHERE user_did = $1"""
-            # total_blocked_count = await connection.fetchval(query2, ident)
+            if result:
+                # Iterate over blocked_users and extract handle and status
+                for blocked_did, block_date in result:
+                    block_list.append(
+                        {
+                            "did": blocked_did,
+                            "blocked_date": block_date.isoformat(),
+                        }
+                    )
 
-            return blocklist_rows, total_blocked_count
+                return block_list
+            else:
+                block_list = []
+
+                return block_list
     except asyncpg.PostgresError as e:
         logger.error(f"Postgres error: {e}")
         raise DatabaseConnectionError
@@ -242,15 +255,15 @@ async def get_blocklist(ident, limit=100, offset=0):
         raise InternalServerError
 
 
-async def get_handle_and_status(ident):
-    return None
+async def get_single_user_blocks_count(did_identifier):
     try:
         pool_name = get_connection_pool("read")
         async with connection_pools[pool_name].acquire() as connection:
-            query = """SELECT handle, status
-                        FROM users
-                        WHERE did = $1"""
-            result = await connection.fetchrow(query, ident)
+            query = """SELECT COUNT(DISTINCT user_did)
+                        FROM blocklists
+                        WHERE blocked_did = $1"""
+
+            result = await connection.fetchval(query, did_identifier)
 
             return result
     except asyncpg.PostgresError as e:
@@ -263,7 +276,32 @@ async def get_handle_and_status(ident):
         logger.error("db connection issue.")
         raise DatabaseConnectionError
     except Exception as e:
-        logger.error(f"Error retrieving handle and status for {ident}: {e} {type(e)}")
+        logger.error(f"Error retrieving blocklist count for {did_identifier}: {e} {type(e)}")
+        raise InternalServerError
+
+
+async def get_user_blocks_count(did_identifier):
+    try:
+        pool_name = get_connection_pool("read")
+        async with connection_pools[pool_name].acquire() as connection:
+            query = """SELECT COUNT(DISTINCT blocked_did)
+                        FROM blocklists
+                        WHERE user_did = $1"""
+
+            result = await connection.fetchval(query, did_identifier)
+
+            return result
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error("db connection issue.")
+        raise DatabaseConnectionError
+    except Exception as e:
+        logger.error(f"Error retrieving blocklist count for {did_identifier}: {e} {type(e)}")
         raise InternalServerError
 
 
@@ -273,43 +311,33 @@ async def get_subscribe_blocks(ident, limit=100, offset=0):
     try:
         pool_name = get_connection_pool("read")
         async with connection_pools[pool_name].acquire() as connection:
-            query_1 = """SELECT mu.subject_did, u.handle, s.date_added, u.status, s.list_uri, m.url, sc.user_count
+            query_1 = """SELECT mu.subject_did, mu.owner_did, s.date_added, s.list_uri, m.url
                             FROM subscribe_blocklists AS s
                             INNER JOIN mutelists_users AS mu ON s.list_uri = mu.list_uri
-                            INNER JOIN users AS u ON mu.subject_did = u.did
                             INNER JOIN mutelists AS m ON s.list_uri = m.uri
-                            INNER JOIN subscribe_blocklists_user_count AS sc ON s.list_uri = sc.list_uri
                             WHERE s.did = $1
                             ORDER BY s.date_added DESC
                             LIMIT $2
                             OFFSET $3"""
 
-            query_2 = """SELECT COUNT(mu.subject_did)
-                            FROM subscribe_blocklists AS s
-                            INNER JOIN mutelists_users AS mu ON s.list_uri = mu.list_uri
-                            WHERE s.did = $1"""
-
             sub_list = await connection.fetch(query_1, ident, limit, offset)
-
-            total_blocked_count = await connection.fetchval(query_2, ident)
 
             if not sub_list:
                 return None, 0
 
             for record in sub_list:
                 list_dict = {
-                    "handle": record["handle"],
+                    "did": record["ident"],
                     "subject_did": record["subject_did"],
                     "date_added": record["date_added"].isoformat(),
-                    "status": record["status"],
+                    "list owner": record["owner_did"],
                     "list_uri": record["list_uri"],
                     "list_url": record["url"],
-                    "list count": record["user_count"],
                 }
 
                 data_list.append(list_dict)
 
-            return data_list, total_blocked_count
+            return data_list
     except asyncpg.PostgresError as e:
         logger.error(f"Postgres error: {e}")
         raise DatabaseConnectionError
@@ -324,57 +352,61 @@ async def get_subscribe_blocks(ident, limit=100, offset=0):
         raise InternalServerError
 
 
-async def get_subscribe_blocks_single(ident, list_of_lists, limit=100, offset=0):
+async def get_subscribe_blocks_count(ident):
+    try:
+        pool_name = get_connection_pool("read")
+        async with connection_pools[pool_name].acquire() as connection:
+            query = """SELECT COUNT(DISTINCT list_uri)
+                        FROM subscribe_blocklists
+                        WHERE did = $1"""
+
+            result = await connection.fetchval(query, ident)
+
+            return result
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error("db connection issue.")
+        raise DatabaseConnectionError
+    except Exception as e:
+        logger.error(f"Error retrieving subscribe blocklist count for {ident}: {e} {type(e)}")
+        raise InternalServerError
+
+
+async def get_subscribe_blocks_single(ident, limit=100, offset=0):
     data_list = []
-    total_data = []
-    total_count = 0
 
     try:
         pool_name = get_connection_pool("read")
         async with connection_pools[pool_name].acquire() as connection:
-            query_1 = """SELECT s.did, u.handle, s.date_added, u.status, s.list_uri, m.url, sc.user_count
+            query_1 = """SELECT s.did, s.date_added, s.list_uri, m.url, m.did as list owner, count(s.did) as count
                             FROM subscribe_blocklists AS s
-                            INNER JOIN users AS u ON s.did = u.did
                             INNER JOIN mutelists AS m ON s.list_uri = m.uri
-                            INNER JOIN subscribe_blocklists_user_count AS sc ON s.list_uri = sc.list_uri
-                            WHERE m.url = $1
+                            INNER JOIN mutelists_users AS mu ON s.list_uri = mu.list_uri
+                            WHERE mu.subject_did = $1
                             ORDER BY s.date_added DESC
                             LIMIT $2
                             OFFSET $3"""
 
-            query_2 = """SELECT COUNT(s.did)
-                            FROM subscribe_blocklists AS s
-                            INNER JOIN mutelists AS m ON s.list_uri = m.uri
-                            WHERE m.url = $1"""
+            data = await connection.fetch(query_1, ident, limit, offset)
 
-            if not list_of_lists:
-                return None, 0
+            for record in data:
+                list_dict = {
+                    "did": record["did"],
+                    "list owner": record["list owner"],
+                    "date_added": record["date_added"].isoformat(),
+                    "list_uri": record["list_uri"],
+                    "list_url": record["url"],
+                    "count": record["count"],
+                }
 
-            for list_url in list_of_lists:
-                count = await connection.fetchval(query_2, list_url)
-                if count:
-                    data = await connection.fetch(query_1, list_url, limit, offset)
+                data_list.append(list_dict)
 
-                    total_data.append(data)
-                total_count += count
-
-            if not total_data:
-                return None, 0
-
-            for record in total_data:
-                for data in record:
-                    list_dict = {
-                        "handle": data["handle"],
-                        "did": data["did"],
-                        "date_added": data["date_added"].isoformat(),
-                        "status": data["status"],
-                        "list_uri": data["list_uri"],
-                        "list_url": data["url"],
-                    }
-
-                    data_list.append(list_dict)
-
-            return data_list, total_count
+            return data_list
     except asyncpg.PostgresError as e:
         logger.error(f"Postgres error: {e}")
         raise DatabaseConnectionError
@@ -419,22 +451,22 @@ async def get_moderation_list(name, limit=100, offset=0):
         async with connection_pools[pool_name].acquire() as connection:
             search_string = f"%{name}%"
 
-            name_query = """SELECT ml.url, u.handle, u.status, ml.name, ml.description, ml.created_date, mc.user_count
+            name_query = """SELECT ml.url, ml.did, ml.name, ml.description, ml.created_date, mc.user_count
             FROM mutelists AS ml
-            INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle
             LEFT mutelists_user_count AS mc ON ml.uri = mc.list_uri
             WHERE ml.name ILIKE $1
+            ORDER BY ml.created_date DESC
             LIMIT $2
             OFFSET $3"""
 
             name_mod_lists = await connection.fetch(name_query, search_string, limit, offset)
 
-            description_query = """SELECT ml.url, u.handle, u.status, ml.name, ml.description, ml.created_date,
+            description_query = """SELECT ml.url, ml.did, ml.name, ml.description, ml.created_date,
             mc.user_count
             FROM mutelists AS ml
-            INNER JOIN users AS u ON ml.did = u.did -- Join the users table to get the handle
             LEFT mutelists_user_count AS mc ON ml.uri = mc.list_uri
             WHERE ml.description ILIKE $1
+            ORDER BY ml.created_date DESC
             LIMIT $2
             OFFSET $3"""
 
@@ -475,8 +507,7 @@ async def get_moderation_list(name, limit=100, offset=0):
         for record in name_mod_lists:
             data = {
                 "url": record["url"],
-                "handle": record["handle"],
-                "status": record["status"],
+                "did": record["did"],
                 "name": record["name"],
                 "description": record["description"],
                 "created_date": record["created_date"].isoformat(),
@@ -487,8 +518,7 @@ async def get_moderation_list(name, limit=100, offset=0):
         for record in description_mod_lists:
             data = {
                 "url": record["url"],
-                "handle": record["handle"],
-                "status": record["status"],
+                "did": record["did"],
                 "name": record["name"],
                 "description": record["description"],
                 "created_date": record["created_date"].isoformat(),
@@ -1260,6 +1290,7 @@ async def get_mutelists(ident, limit=100, offset=0):
         INNER JOIN mutelists_users AS mu ON ml.uri = mu.list_uri
         LEFT JOIN mutelists_user_count AS mc ON ml.uri = mc.list_uri
         WHERE mu.subject_did = $1
+        ORDER BY mu.date_added DESC
         LIMIT $2 OFFSET $3
         """
         try:
@@ -1291,6 +1322,30 @@ async def get_mutelists(ident, limit=100, offset=0):
             lists.append(data)
 
         return lists, count, pages
+
+
+async def get_mutelist_count(ident):
+    pool_name = get_connection_pool("read")
+    async with connection_pools[pool_name].acquire() as connection:
+        query = """
+        SELECT COUNT(*) FROM mutelists_users WHERE subject_did = $1
+        """
+        try:
+            count = await connection.fetchval(query, ident)
+        except asyncpg.PostgresError as e:
+            logger.error(f"Postgres error: {e}")
+            raise DatabaseConnectionError
+        except asyncpg.InterfaceError as e:
+            logger.error(f"interface error: {e}")
+            raise DatabaseConnectionError
+        except AttributeError:
+            logger.error("db connection issue.")
+            raise DatabaseConnectionError
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            raise InternalServerError
+
+        return count
 
 
 async def check_api_key(api_environment, key_type, key_value) -> bool:
@@ -1607,7 +1662,6 @@ async def get_deleted_users_count() -> int:
 
 
 async def get_single_user_blocks(ident, limit=100, offset=0):
-    count = 0
     try:
         # Execute the SQL query to get all the user_dids that have the specified did/ident in their blocklist
         pool_name = get_connection_pool("read")
@@ -1616,49 +1670,31 @@ async def get_single_user_blocks(ident, limit=100, offset=0):
                 """SELECT DISTINCT user_did, block_date
                                                 FROM blocklists
                                                 WHERE blocked_did = $1
-                                                ORDER BY block_date DESC LIMIT $2 OFFSET $3""",
+                                                ORDER BY block_date DESC
+                                                LIMIT $2
+                                                OFFSET $3""",
                 ident,
                 limit,
                 offset,
             )
 
-            # count = await connection.fetchval(
-            #     "SELECT COUNT(DISTINCT user_did) FROM blocklists WHERE blocked_did = $1",
-            #     ident,
-            # )
-
             block_list = []
 
-            if count > 0:
-                pages = count / 100
-
-                pages = math.ceil(pages)
-            else:
-                pages = 0
-
-            handle_and_status = await get_user_handle(ident)
-
-            if result and handle_and_status:
+            if result:
                 # Iterate over blocked_users and extract handle and status
                 for user_did, block_date in result:
-                    handle_and_status = await get_handle_and_status(user_did)
-
-                    status = None if handle_and_status is None else handle_and_status["status"]
-
                     block_list.append(
                         {
                             "did": user_did,
-                            "status": status,
                             "blocked_date": block_date.isoformat(),
                         }
                     )
 
-                return block_list, count, pages
+                return block_list
             else:
                 block_list = []
-                total_blocked = 0
 
-                return block_list, total_blocked, pages
+                return block_list
     except asyncpg.PostgresError as e:
         logger.error(f"Postgres error: {e}")
         raise DatabaseConnectionError

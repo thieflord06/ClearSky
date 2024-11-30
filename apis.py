@@ -10,6 +10,7 @@ from core import (
     autocomplete,
     block_stats,
     check_api_keys,
+    check_api_status,
     convert_uri_to_url,
     cursor_recall_status,
     fun_facts,
@@ -17,6 +18,7 @@ from core import (
     get_blocked_search,
     get_blocking_search,
     get_blocklist,
+    get_blocklist_total,
     get_did_info,
     get_handle_history_info,
     get_handle_info,
@@ -24,8 +26,10 @@ from core import (
     get_in_common_blocklist,
     get_internal_status,
     get_list_info,
+    get_list_total,
     get_moderation_lists,
     get_single_blocklist,
+    get_single_blocklist_total,
     get_total_users,
     logger,
     request,
@@ -165,6 +169,7 @@ async def auth_get_icon():
 # ============================================= Authenticated API Endpoints ============================================
 @api_blueprint.route("/api/v1/auth/blocklist/<client_identifier>", defaults={"page": 1}, methods=["GET"])
 @api_blueprint.route("/api/v1/auth/blocklist/<client_identifier>/<int:page>", methods=["GET"])
+@check_api_status("/api/v1/auth/blocklist")
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_get_blocklist(client_identifier, page) -> jsonify:
@@ -184,6 +189,7 @@ async def auth_get_blocklist(client_identifier, page) -> jsonify:
 
 @api_blueprint.route("/api/v1/auth/single-blocklist/<client_identifier>", defaults={"page": 1}, methods=["GET"])
 @api_blueprint.route("/api/v1/auth/single-blocklist/<client_identifier>/<int:page>", methods=["GET"])
+@check_api_status("/api/v1/auth/single-blocklist")
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_get_single_blocklist(client_identifier, page) -> jsonify:
@@ -201,7 +207,46 @@ async def auth_get_single_blocklist(client_identifier, page) -> jsonify:
         return jsonify({"error": "Internal error"}), 500
 
 
+@api_blueprint.route("/api/v1/auth/single-blocklist/total/<client_identifier>", methods=["GET"])
+@check_api_status("/api/v1/auth/single-blocklist/total")
+@api_key_required("SERVER")
+@rate_limit(30, timedelta(seconds=1))
+async def auth_get_single_blocklist_total(client_identifier) -> jsonify:
+    try:
+        return await get_single_blocklist_total(client_identifier)
+    except DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
+    except Exception as e:
+        logger.error(f"Error in anon_get_single_blocklist_total: {e}")
+        return jsonify({"error": "Internal error"}), 500
+
+
+@api_blueprint.route("/api/v1/auth/blocklist/total/<client_identifier>", methods=["GET"])
+@check_api_status("/api/v1/auth/blocklist/total")
+@api_key_required("SERVER")
+@rate_limit(30, timedelta(seconds=1))
+async def auth_get_blocklist_total(client_identifier) -> jsonify:
+    try:
+        return await get_blocklist_total(client_identifier)
+    except DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
+    except Exception as e:
+        logger.error(f"Error in anon_get_blocklist_total: {e}")
+        return jsonify({"error": "Internal error"}), 500
+
+
 @api_blueprint.route("/api/v1/auth/in-common-blocklist/<client_identifier>", methods=["GET"])
+@check_api_status("/api/v1/auth/in-common-blocklist")
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_get_in_common_blocklist(client_identifier) -> jsonify:
@@ -220,6 +265,7 @@ async def auth_get_in_common_blocklist(client_identifier) -> jsonify:
 
 
 @api_blueprint.route("/api/v1/auth/in-common-blocked-by/<client_identifier>", methods=["GET"])
+@check_api_status("/api/v1/auth/in-common-blocked-by")
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_get_in_common_blocked_by(client_identifier) -> jsonify:
@@ -238,6 +284,7 @@ async def auth_get_in_common_blocked_by(client_identifier) -> jsonify:
 
 
 @api_blueprint.route("/api/v1/auth/at-uri/<path:uri>", methods=["GET"])
+@check_api_status("/api/v1/auth/at-uri")
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_convert_uri_to_url(uri) -> jsonify:
@@ -256,6 +303,7 @@ async def auth_convert_uri_to_url(uri) -> jsonify:
 
 
 @api_blueprint.route("/api/v1/auth/total-users", methods=["GET"])
+@check_api_status("/api/v1/auth/total-users")
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_get_total_users() -> jsonify:
@@ -274,6 +322,7 @@ async def auth_get_total_users() -> jsonify:
 
 
 @api_blueprint.route("/api/v1/auth/get-did/<client_identifier>", methods=["GET"])
+@check_api_status("/api/v1/auth/get-did")
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_get_did_info(client_identifier) -> jsonify:
@@ -292,6 +341,7 @@ async def auth_get_did_info(client_identifier) -> jsonify:
 
 
 @api_blueprint.route("/api/v1/auth/get-handle/<client_identifier>", methods=["GET"])
+@check_api_status("/api/v1/auth/get-handle")
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_get_handle_info(client_identifier) -> jsonify:
@@ -310,6 +360,7 @@ async def auth_get_handle_info(client_identifier) -> jsonify:
 
 
 @api_blueprint.route("/api/v1/auth/get-handle-history/<client_identifier>", methods=["GET"])
+@check_api_status("/api/v1/auth/get-handle-history")
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_get_handle_history_info(client_identifier) -> jsonify:
@@ -329,6 +380,7 @@ async def auth_get_handle_history_info(client_identifier) -> jsonify:
 
 @api_blueprint.route("/api/v1/auth/get-list/<client_identifier>", defaults={"page": 1}, methods=["GET"])
 @api_blueprint.route("/api/v1/auth/get-list/<client_identifier>/<int:page>", methods=["GET"])
+@check_api_status("/api/v1/auth/get-list")
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_get_list_info(client_identifier, page) -> jsonify:
@@ -346,8 +398,28 @@ async def auth_get_list_info(client_identifier, page) -> jsonify:
         return jsonify({"error": "Internal error"}), 500
 
 
+@api_blueprint.route("/api/v1/auth/get-list/total/<client_identifier>", methods=["GET"])
+@check_api_status("/api/v1/auth/get-list/total")
+@api_key_required("SERVER")
+@rate_limit(30, timedelta(seconds=1))
+async def auth_get_list_total(client_identifier) -> jsonify:
+    try:
+        return await get_list_total(client_identifier)
+    except DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
+    except Exception as e:
+        logger.error(f"Error in auth_get_list_total: {e}")
+        return jsonify({"error": "Internal error"}), 500
+
+
 @api_blueprint.route("/api/v1/auth/get-moderation-list/<string:input_name>", defaults={"page": 1}, methods=["GET"])
 @api_blueprint.route("/api/v1/auth/get-moderation-list/<string:input_name>/<int:page>", methods=["GET"])
+@check_api_status("/api/v1/auth/get-moderation-list")
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_get_moderation_lists(input_name, page) -> jsonify:
@@ -366,6 +438,7 @@ async def auth_get_moderation_lists(input_name, page) -> jsonify:
 
 
 @api_blueprint.route("/api/v1/auth/blocklist-search-blocked/<client_identifier>/<search_identifier>", methods=["GET"])
+@check_api_status("/api/v1/auth/blocklist-search-blocked")
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_get_blocked_search(client_identifier, search_identifier) -> jsonify:
@@ -384,6 +457,7 @@ async def auth_get_blocked_search(client_identifier, search_identifier) -> jsoni
 
 
 @api_blueprint.route("/api/v1/auth/blocklist-search-blocking/<client_identifier>/<search_identifier>", methods=["GET"])
+@check_api_status("/api/v1/auth/blocklist-search-blocking")
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_get_blocking_search(client_identifier, search_identifier) -> jsonify:
@@ -402,6 +476,7 @@ async def auth_get_blocking_search(client_identifier, search_identifier) -> json
 
 
 @api_blueprint.route("/api/v1/auth/lists/fun-facts", methods=["GET"])
+@check_api_status("/api/v1/auth/lists/fun-facts")
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_fun_facts() -> jsonify:
@@ -420,6 +495,7 @@ async def auth_fun_facts() -> jsonify:
 
 
 @api_blueprint.route("/api/v1/auth/lists/funer-facts", methods=["GET"])
+@check_api_status("/api/v1/auth/lists/funer-facts")
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_funer_facts() -> jsonify:
@@ -438,6 +514,7 @@ async def auth_funer_facts() -> jsonify:
 
 
 @api_blueprint.route("/api/v1/auth/lists/block-stats", methods=["GET"])
+@check_api_status("/api/v1/auth/lists/block-stats")
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_block_stats() -> jsonify:
@@ -456,6 +533,7 @@ async def auth_block_stats() -> jsonify:
 
 
 @api_blueprint.route("/api/v1/auth/base/autocomplete/<client_identifier>", methods=["GET"])
+@check_api_status("/api/v1/auth/base/autocomplete")
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_autocomplete(client_identifier) -> jsonify:
@@ -474,6 +552,7 @@ async def auth_autocomplete(client_identifier) -> jsonify:
 
 
 @api_blueprint.route("/api/v1/auth/base/internal/status/process-status", methods=["GET"])
+@check_api_status("/api/v1/auth/base/internal/status/process-status")
 @api_key_required("INTERNALSERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_get_internal_status() -> jsonify:
@@ -492,6 +571,7 @@ async def auth_get_internal_status() -> jsonify:
 
 
 @api_blueprint.route("/api/v1/auth/base/internal/api-check", methods=["GET"])
+@check_api_status("/api/v1/auth/base/internal/api-check")
 @api_key_required("INTERNALSERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_check_api_keys() -> jsonify:
@@ -510,6 +590,7 @@ async def auth_check_api_keys() -> jsonify:
 
 
 @api_blueprint.route("/api/v1/auth/lists/dids-per-pds", methods=["GET"])
+@check_api_status("/api/v1/auth/lists/dids-per-pds")
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_dids_per_pds() -> jsonify:
@@ -531,6 +612,7 @@ async def auth_dids_per_pds() -> jsonify:
     "/api/v1/auth/subscribe-blocks-blocklist/<client_identifier>", defaults={"page": 1}, methods=["GET"]
 )
 @api_blueprint.route("/api/v1/auth/subscribe-blocks-blocklist/<client_identifier>/<int:page>", methods=["GET"])
+@check_api_status("/api/v1/auth/subscribe-blocks-blocklist")
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_subscribe_blocks_blocklist(client_identifier, page) -> jsonify:
@@ -552,6 +634,7 @@ async def auth_subscribe_blocks_blocklist(client_identifier, page) -> jsonify:
     "/api/v1/auth/subscribe-blocks-single-blocklist/<client_identifier>", defaults={"page": 1}, methods=["GET"]
 )
 @api_blueprint.route("/api/v1/auth/subscribe-blocks-single-blocklist/<client_identifier>/<int:page>", methods=["GET"])
+@check_api_status("/api/v1/auth/subscribe-blocks-single-blocklist")
 @api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_subscribe_blocks_single_blocklist(client_identifier, page) -> jsonify:
@@ -570,6 +653,7 @@ async def auth_subscribe_blocks_single_blocklist(client_identifier, page) -> jso
 
 
 @api_blueprint.route("/api/v1/auth/validation/validate-handle/<client_identifier>", methods=["GET"])
+@check_api_status("/api/v1/auth/validation/validate-handle")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_validate_handle(client_identifier) -> jsonify:
     try:
@@ -587,14 +671,13 @@ async def auth_validate_handle(client_identifier) -> jsonify:
 
 
 @api_blueprint.route("/api/v1/auth/data-transaction/receive", methods=["POST"])
+@check_api_status("/api/v1/auth/data-transaction/receive")
 @rate_limit(1, timedelta(seconds=2))
 async def auth_receive_data() -> jsonify:
     session_ip = await get_ip()
     api_key = request.headers.get("X-API-Key")
 
     logger.info(f"data list file upload request: {session_ip} - {api_key}")
-
-    return jsonify({"error": "Not Implemented"}), 501
 
     try:
         file_name = await request.form
@@ -678,14 +761,13 @@ async def auth_receive_data() -> jsonify:
 
 
 @api_blueprint.route("/api/v1/auth/data-transaction/retrieve", methods=["GET"])
+@check_api_status("/api/v1/auth/data-transaction/retrieve")
 @rate_limit(1, timedelta(seconds=2))
 async def auth_retrieve_data() -> jsonify:
     session_ip = await get_ip()
     api_key = request.headers.get("X-API-Key")
 
     logger.info(f"data list file request: {session_ip} - {api_key}")
-
-    return jsonify({"error": "Not Implemented"}), 501
 
     try:
         retrieve_lists = request.args.get("retrieveLists")
@@ -718,6 +800,7 @@ async def auth_retrieve_data() -> jsonify:
 
 
 @api_blueprint.route("/api/v1/auth/data-transaction/query", methods=["GET"])
+@check_api_status("/api/v1/auth/data-transaction/query")
 @rate_limit(1, timedelta(seconds=2))
 async def auth_query_data() -> jsonify:
     session_ip = await get_ip()
@@ -748,6 +831,7 @@ async def auth_query_data() -> jsonify:
 
 
 @api_blueprint.route("/api/v1/auth/status/time-behind", methods=["GET"])
+@check_api_status("/api/v1/auth/status/time-behind")
 @rate_limit(30, timedelta(seconds=2))
 async def auth_time_behind() -> jsonify:
     session_ip = await get_ip()
@@ -773,6 +857,7 @@ async def auth_time_behind() -> jsonify:
 # ========================================== Unauthenticated API Endpoints =============================================
 @api_blueprint.route("/api/v1/anon/blocklist/<client_identifier>", defaults={"page": 1}, methods=["GET"])
 @api_blueprint.route("/api/v1/anon/blocklist/<client_identifier>/<int:page>", methods=["GET"])
+@check_api_status("/api/v1/anon/blocklist")
 @rate_limit(5, timedelta(seconds=1))
 async def anon_get_blocklist(client_identifier, page) -> jsonify:
     try:
@@ -791,6 +876,7 @@ async def anon_get_blocklist(client_identifier, page) -> jsonify:
 
 @api_blueprint.route("/api/v1/anon/single-blocklist/<client_identifier>", defaults={"page": 1}, methods=["GET"])
 @api_blueprint.route("/api/v1/anon/single-blocklist/<client_identifier>/<int:page>", methods=["GET"])
+@check_api_status("/api/v1/anon/single-blocklist")
 @rate_limit(5, timedelta(seconds=1))
 async def anon_get_single_blocklist(client_identifier, page) -> jsonify:
     try:
@@ -807,7 +893,44 @@ async def anon_get_single_blocklist(client_identifier, page) -> jsonify:
         return jsonify({"error": "Internal error"}), 500
 
 
+@api_blueprint.route("/api/v1/anon/single-blocklist/total/<client_identifier>", methods=["GET"])
+@check_api_status("/api/v1/anon/single-blocklist/total")
+@rate_limit(5, timedelta(seconds=1))
+async def anon_get_single_blocklist_total(client_identifier) -> jsonify:
+    try:
+        return await get_single_blocklist_total(client_identifier)
+    except DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
+    except Exception as e:
+        logger.error(f"Error in anon_get_single_blocklist_total: {e}")
+        return jsonify({"error": "Internal error"}), 500
+
+
+@api_blueprint.route("/api/v1/anon/blocklist/total/<client_identifier>", methods=["GET"])
+@check_api_status("/api/v1/anon/blocklist/total")
+@rate_limit(5, timedelta(seconds=1))
+async def anon_get_blocklist_total(client_identifier) -> jsonify:
+    try:
+        return await get_blocklist_total(client_identifier)
+    except DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
+    except Exception as e:
+        logger.error(f"Error in anon_get_blocklist_total: {e}")
+        return jsonify({"error": "Internal error"}), 500
+
+
 @api_blueprint.route("/api/v1/anon/in-common-blocklist/<client_identifier>", methods=["GET"])
+@check_api_status("/api/v1/anon/in-common-blocklist")
 @rate_limit(5, timedelta(seconds=1))
 async def anon_get_in_common_blocklist(client_identifier) -> jsonify:
     try:
@@ -825,6 +948,7 @@ async def anon_get_in_common_blocklist(client_identifier) -> jsonify:
 
 
 @api_blueprint.route("/api/v1/anon/in-common-blocked-by/<client_identifier>", methods=["GET"])
+@check_api_status("/api/v1/anon/in-common-blocked-by")
 @rate_limit(5, timedelta(seconds=1))
 async def anon_get_in_common_blocked_by(client_identifier) -> jsonify:
     try:
@@ -842,6 +966,7 @@ async def anon_get_in_common_blocked_by(client_identifier) -> jsonify:
 
 
 @api_blueprint.route("/api/v1/anon/at-uri/<path:uri>", methods=["GET"])
+@check_api_status("/api/v1/anon/at-uri")
 @rate_limit(5, timedelta(seconds=1))
 async def anon_convert_uri_to_url(uri) -> jsonify:
     try:
@@ -859,6 +984,7 @@ async def anon_convert_uri_to_url(uri) -> jsonify:
 
 
 @api_blueprint.route("/api/v1/anon/total-users", methods=["GET"])
+@check_api_status("/api/v1/anon/total-users")
 @rate_limit(5, timedelta(seconds=1))
 async def anon_get_total_users() -> jsonify:
     try:
@@ -876,6 +1002,7 @@ async def anon_get_total_users() -> jsonify:
 
 
 @api_blueprint.route("/api/v1/anon/get-did/<client_identifier>", methods=["GET"])
+@check_api_status("/api/v1/anon/get-did")
 @rate_limit(5, timedelta(seconds=1))
 async def anon_get_did_info(client_identifier) -> jsonify:
     try:
@@ -893,6 +1020,7 @@ async def anon_get_did_info(client_identifier) -> jsonify:
 
 
 @api_blueprint.route("/api/v1/anon/get-handle/<client_identifier>", methods=["GET"])
+@check_api_status("/api/v1/anon/get-handle")
 @rate_limit(5, timedelta(seconds=1))
 async def anon_get_handle_info(client_identifier) -> jsonify:
     try:
@@ -910,6 +1038,7 @@ async def anon_get_handle_info(client_identifier) -> jsonify:
 
 
 @api_blueprint.route("/api/v1/anon/get-handle-history/<client_identifier>", methods=["GET"])
+@check_api_status("/api/v1/anon/get-handle-history")
 @rate_limit(5, timedelta(seconds=1))
 async def anon_get_handle_history_info(client_identifier) -> jsonify:
     try:
@@ -928,6 +1057,7 @@ async def anon_get_handle_history_info(client_identifier) -> jsonify:
 
 @api_blueprint.route("/api/v1/anon/get-list/<client_identifier>", defaults={"page": 1}, methods=["GET"])
 @api_blueprint.route("/api/v1/anon/get-list/<client_identifier>/<int:page>", methods=["GET"])
+@check_api_status("/api/v1/anon/get-list")
 @rate_limit(5, timedelta(seconds=1))
 async def anon_get_list_info(client_identifier, page) -> jsonify:
     try:
@@ -944,8 +1074,27 @@ async def anon_get_list_info(client_identifier, page) -> jsonify:
         return jsonify({"error": "Internal error"}), 500
 
 
+@api_blueprint.route("/api/v1/anon/get-list/total/<client_identifier>", methods=["GET"])
+@check_api_status("/api/v1/anon/get-list/total")
+@rate_limit(5, timedelta(seconds=1))
+async def anon_get_list_total(client_identifier) -> jsonify:
+    try:
+        return await get_list_total(client_identifier)
+    except DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
+    except Exception as e:
+        logger.error(f"Error in auth_get_list_total: {e}")
+        return jsonify({"error": "Internal error"}), 500
+
+
 @api_blueprint.route("/api/v1/anon/get-moderation-list/<string:input_name>", defaults={"page": 1}, methods=["GET"])
 @api_blueprint.route("/api/v1/anon/get-moderation-list/<string:input_name>/<int:page>", methods=["GET"])
+@check_api_status("/api/v1/anon/get-moderation-list")
 @rate_limit(5, timedelta(seconds=1))
 async def anon_get_moderation_lists(input_name, page) -> jsonify:
     try:
@@ -963,6 +1112,7 @@ async def anon_get_moderation_lists(input_name, page) -> jsonify:
 
 
 @api_blueprint.route("/api/v1/anon/blocklist-search-blocked/<client_identifier>/<search_identifier>", methods=["GET"])
+@check_api_status("/api/v1/anon/blocklist-search-blocked")
 @rate_limit(5, timedelta(seconds=1))
 async def anon_get_blocked_search(client_identifier, search_identifier) -> jsonify:
     try:
@@ -980,6 +1130,7 @@ async def anon_get_blocked_search(client_identifier, search_identifier) -> jsoni
 
 
 @api_blueprint.route("/api/v1/anon/blocklist-search-blocking/<client_identifier>/<search_identifier>", methods=["GET"])
+@check_api_status("/api/v1/anon/blocklist-search-blocking")
 @rate_limit(5, timedelta(seconds=1))
 async def anon_get_blocking_search(client_identifier, search_identifier) -> jsonify:
     try:
@@ -997,6 +1148,7 @@ async def anon_get_blocking_search(client_identifier, search_identifier) -> json
 
 
 @api_blueprint.route("/api/v1/anon/lists/fun-facts", methods=["GET"])
+@check_api_status("/api/v1/anon/lists/fun-facts")
 @rate_limit(5, timedelta(seconds=1))
 async def anon_fun_facts() -> jsonify:
     try:
@@ -1014,6 +1166,7 @@ async def anon_fun_facts() -> jsonify:
 
 
 @api_blueprint.route("/api/v1/anon/lists/funer-facts", methods=["GET"])
+@check_api_status("/api/v1/anon/lists/funer-facts")
 @rate_limit(5, timedelta(seconds=1))
 async def anon_funer_facts() -> jsonify:
     try:
@@ -1031,6 +1184,7 @@ async def anon_funer_facts() -> jsonify:
 
 
 @api_blueprint.route("/api/v1/anon/lists/block-stats", methods=["GET"])
+@check_api_status("/api/v1/anon/lists/block-stats")
 @rate_limit(5, timedelta(seconds=1))
 async def anon_block_stats() -> jsonify:
     try:
@@ -1048,6 +1202,7 @@ async def anon_block_stats() -> jsonify:
 
 
 @api_blueprint.route("/api/v1/anon/base/autocomplete/<client_identifier>", methods=["GET"])
+@check_api_status("/api/v1/anon/base/autocomplete")
 @rate_limit(5, timedelta(seconds=1))
 async def anon_autocomplete(client_identifier) -> jsonify:
     try:
@@ -1065,6 +1220,7 @@ async def anon_autocomplete(client_identifier) -> jsonify:
 
 
 @api_blueprint.route("/api/v1/anon/base/internal/status/process-status", methods=["GET"])
+@check_api_status("/api/v1/anon/base/internal/status/process-status")
 @rate_limit(5, timedelta(seconds=1))
 async def anon_get_internal_status() -> jsonify:
     try:
@@ -1082,6 +1238,7 @@ async def anon_get_internal_status() -> jsonify:
 
 
 @api_blueprint.route("/api/v1/anon/lists/dids-per-pds", methods=["GET"])
+@check_api_status("/api/v1/anon/lists/dids-per-pds")
 @rate_limit(5, timedelta(seconds=1))
 async def anon_dids_per_pds() -> jsonify:
     try:
@@ -1102,6 +1259,7 @@ async def anon_dids_per_pds() -> jsonify:
     "/api/v1/anon/subscribe-blocks-blocklist/<client_identifier>", defaults={"page": 1}, methods=["GET"]
 )
 @api_blueprint.route("/api/v1/anon/subscribe-blocks-blocklist/<client_identifier>/<int:page>", methods=["GET"])
+@check_api_status("/api/v1/anon/subscribe-blocks-blocklist")
 @rate_limit(5, timedelta(seconds=1))
 async def anon_subscribe_blocks_blocklist(client_identifier: str, page: int) -> jsonify:
     try:
@@ -1122,6 +1280,7 @@ async def anon_subscribe_blocks_blocklist(client_identifier: str, page: int) -> 
     "/api/v1/anon/subscribe-blocks-single-blocklist/<client_identifier>", defaults={"page": 1}, methods=["GET"]
 )
 @api_blueprint.route("/api/v1/anon/subscribe-blocks-single-blocklist/<client_identifier>/<int:page>", methods=["GET"])
+@check_api_status("/api/v1/anon/subscribe-blocks-single-blocklist")
 @rate_limit(5, timedelta(seconds=1))
 async def anon_subscribe_blocks_single_blocklist(client_identifier, page) -> jsonify:
     try:
@@ -1139,6 +1298,7 @@ async def anon_subscribe_blocks_single_blocklist(client_identifier, page) -> jso
 
 
 @api_blueprint.route("/api/v1/anon/validation/validate-handle/<client_identifier>", methods=["GET"])
+@check_api_status("/api/v1/anon/validation/validate-handle")
 @rate_limit(5, timedelta(seconds=1))
 async def anon_validate_handle(client_identifier) -> jsonify:
     try:
@@ -1156,14 +1316,13 @@ async def anon_validate_handle(client_identifier) -> jsonify:
 
 
 @api_blueprint.route("/api/v1/anon/data-transaction/receive", methods=["POST"])
+@check_api_status("/api/v1/anon/data-transaction/receive")
 @rate_limit(1, timedelta(seconds=2))
 async def anon_receive_data() -> jsonify:
     session_ip = await get_ip()
     api_key = request.headers.get("X-API-Key")
 
     logger.info(f"data list file upload request: {session_ip} - {api_key}")
-
-    return jsonify({"error": "Not Implemented"}), 501
 
     try:
         file_name = await request.form
@@ -1247,14 +1406,13 @@ async def anon_receive_data() -> jsonify:
 
 
 @api_blueprint.route("/api/v1/anon/data-transaction/retrieve", methods=["GET"])
+@check_api_status("/api/v1/anon/data-transaction/retrieve")
 @rate_limit(1, timedelta(seconds=2))
 async def anon_retrieve_data() -> jsonify:
     session_ip = await get_ip()
     api_key = request.headers.get("X-API-Key")
 
     logger.info(f"data list file request: {session_ip} - {api_key}")
-
-    return jsonify({"error": "Not Implemented"}), 501
 
     try:
         retrieve_lists = request.args.get("retrieveLists")
@@ -1287,14 +1445,13 @@ async def anon_retrieve_data() -> jsonify:
 
 
 @api_blueprint.route("/api/v1/anon/data-transaction/query", methods=["GET"])
+@check_api_status("/api/v1/anon/data-transaction/query")
 @rate_limit(1, timedelta(seconds=2))
 async def anon_query_data() -> jsonify:
     session_ip = await get_ip()
     api_key = request.headers.get("X-API-Key")
 
     logger.info(f"data list query request: {session_ip} - {api_key}")
-
-    return jsonify({"error": "Not Implemented"}), 501
 
     try:
         get_list = request.args.get("list")
@@ -1317,6 +1474,7 @@ async def anon_query_data() -> jsonify:
 
 
 @api_blueprint.route("/api/v1/anon/cursor-recall/status", methods=["GET"])
+@check_api_status("/api/v1/anon/cursor-recall/status")
 @rate_limit(5, timedelta(seconds=2))
 async def anon_cursor_recall() -> jsonify:
     session_ip = await get_ip()
@@ -1339,6 +1497,7 @@ async def anon_cursor_recall() -> jsonify:
 
 
 @api_blueprint.route("/api/v1/anon/status/time-behind", methods=["GET"])
+@check_api_status("/api/v1/anon/status/time-behind")
 @rate_limit(5, timedelta(seconds=2))
 async def anon_time_behind() -> jsonify:
     session_ip = await get_ip()

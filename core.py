@@ -5,12 +5,13 @@ import functools
 import io
 import os
 from datetime import datetime, timedelta, timezone
+from functools import wraps
 
 import aiofiles
 import aiofiles.os
-import aiohttp
 import httpx
 import pytz
+from async_lru import alru_cache
 from quart import jsonify, request, session
 
 import database_handler
@@ -24,6 +25,7 @@ from errors import (
     DatabaseConnectionError,
     ExceedsFileSizeLimit,
     FileNameExists,
+    InternalServerError,
     NotFound,
 )
 from helpers import (
@@ -32,7 +34,6 @@ from helpers import (
     get_ip,
     get_ip_address,
     get_time_since,
-    get_var_info,
     runtime,
     version,
 )
@@ -45,6 +46,7 @@ total_start_time = None
 block_stats_app_start_time = None
 dbs_connected = None
 db_pool_acquired = asyncio.Event()
+api_status_cache = {}
 
 
 # ======================================================================================================================
@@ -169,13 +171,12 @@ async def initialize() -> None:
 
     logger.info(f"write db: {write_db}")
 
+    await load_api_statuses()
+
 
 async def pre_process_identifier(identifier) -> (str | None, str | None):
-    did_identifier = None
-    handle_identifier = None
-
     if not identifier:  # If form is submitted without anything in the identifier return intentional error
-        return did_identifier, handle_identifier
+        raise BadRequest
 
     # Check if did or handle exists before processing
     if utils.is_did(identifier):
@@ -185,7 +186,7 @@ async def pre_process_identifier(identifier) -> (str | None, str | None):
                 handle_identifier = await asyncio.wait_for(utils.use_handle(identifier), timeout=5)
             except TimeoutError:
                 # handle_identifier = None
-                logger.warning("resolution failed, possible connection issue.")
+                logger.warning("resolution failed, bsky connection issue.")
                 did_identifier = identifier
                 handle_identifier = await database_handler.get_user_handle(identifier)
                 if handle_identifier is not None:
@@ -200,7 +201,7 @@ async def pre_process_identifier(identifier) -> (str | None, str | None):
                 did_identifier = await asyncio.wait_for(utils.use_did(identifier), timeout=5)
             except TimeoutError:
                 # did_identifier = None
-                logger.warning("resolution failed, possible connection issue.")
+                logger.warning("resolution failed, bsky connection issue.")
                 handle_identifier = identifier
                 did_identifier = await database_handler.get_user_did(identifier)
                 if did_identifier is not None:
@@ -209,8 +210,7 @@ async def pre_process_identifier(identifier) -> (str | None, str | None):
             handle_identifier = identifier
             did_identifier = await database_handler.get_user_did(identifier)
     else:
-        did_identifier = None
-        handle_identifier = None
+        raise BadRequest
 
     return did_identifier, handle_identifier
 
@@ -238,9 +238,9 @@ async def preprocess_status(identifier) -> bool:
 
         raise NotFound
     else:
-        logger.info(f"Error page loaded for resolution failure using: {identifier}")
+        logger.info(f"Error, status check failure using: {identifier}")
 
-        return False
+        raise InternalServerError
 
 
 def api_key_required(key_type) -> callable:
@@ -283,6 +283,56 @@ def api_key_required(key_type) -> callable:
     return decorator
 
 
+def check_api_status(api_name):
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            api_status = api_status_cache.get(api_name)
+            if not api_status:
+                return jsonify({"error": "Not found"}), 404
+
+            status = api_status["status"]
+
+            if status is False:
+                return jsonify({"error": "API is disabled"}), 503
+
+            return await func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+@alru_cache(maxsize=1)
+async def load_api_statuses():
+    query = "SELECT api, status, rate FROM api_endpoint_status"
+    pool_name = database_handler.get_connection_pool("write")
+    async with database_handler.connection_pools[pool_name].acquire() as connection:
+        rows = await connection.fetch(query)
+        for row in rows:
+            api = row["api"]
+            new_status = row["status"]
+            new_rate = row["rate"]
+
+            if api in api_status_cache:
+                old_status = api_status_cache[api]["status"]
+                old_rate = api_status_cache[api]["rate"]
+
+                if old_status != new_status:
+                    api_status_cache[api] = {"status": new_status, "rate": new_rate}
+                    logger.info(f"API {api} status changed: status {old_status} -> {new_status}")
+                elif old_rate != new_rate:
+                    api_status_cache[api] = {"status": new_status, "rate": new_rate}
+                    logger.info(f"API {api} rate changed: rate {old_rate} -> {new_rate}")
+
+                else:
+                    logger.info(f"API {api} status and rate unchanged")
+
+            else:
+                api_status_cache[api] = {"status": new_status, "rate": new_rate}
+                logger.info(f"API {api} added with status {new_status} and rate {new_rate}")
+
+
 # ======================================================================================================================
 # ============================================ API Services Functions ==================================================
 async def get_blocklist(client_identifier, page):
@@ -304,12 +354,9 @@ async def get_blocklist(client_identifier, page):
             blocklist, count, pages = await utils.process_user_block_list(
                 did_identifier, limit=items_per_page, offset=offset
             )
-            formatted_count = f"{count:,}"
 
             blocklist_data = {
                 "blocklist": blocklist,
-                "count": formatted_count,
-                "pages": pages,
             }
         else:
             blocklist = None
@@ -345,21 +392,17 @@ async def get_single_blocklist(client_identifier, page):
             items_per_page = 100
             offset = (page - 1) * items_per_page
 
-            blocklist, count, pages = await database_handler.get_single_user_blocks(
+            blocklist = await database_handler.get_single_user_blocks(
                 did_identifier, limit=items_per_page, offset=offset
             )
-            formatted_count = f"{count:,}"
 
             blocklist_data = {
                 "blocklist": blocklist,
-                "count": formatted_count,
-                "pages": pages,
             }
         else:
             blocklist_data = None
-            count = 0
 
-            blocklist_data = {"blocklist": blocklist_data, "count": count}
+            blocklist_data = {"blocklist": blocklist_data}
 
         data = {"identity": identifier, "status": status, "data": blocklist_data}
     else:
@@ -369,6 +412,68 @@ async def get_single_blocklist(client_identifier, page):
         data = {"data": block_data}
 
     logger.info(f">> {session_ip} - {api_key} - single blocklist result returned: {identifier}")
+
+    return jsonify(data)
+
+
+async def get_single_blocklist_total(client_identifier):
+    session_ip = await get_ip()
+    api_key = request.headers.get("X-API-Key")
+
+    identifier = await sanitization(client_identifier)
+
+    logger.info(f"<< {session_ip} - {api_key} - single blocklist total request: {identifier}")
+
+    if identifier:
+        did_identifier, handle_identifier = await pre_process_identifier(identifier)
+        status = await preprocess_status(did_identifier)
+
+        if did_identifier and handle_identifier and status:
+            count = await database_handler.get_single_user_blocks_count(did_identifier)
+
+            blocklist_data = {"count": count}
+        else:
+            blocklist_data = None
+
+        data = {"identity": identifier, "status": status, "data": blocklist_data}
+    else:
+        identifier = "Missing parameter"
+        result = "Missing parameter"
+        block_data = {"error": result}
+        data = {"data": block_data}
+
+    logger.info(f">> {session_ip} - {api_key} - single blocklist total result returned: {identifier}")
+
+    return jsonify(data)
+
+
+async def get_blocklist_total(client_identifier):
+    session_ip = await get_ip()
+    api_key = request.headers.get("X-API-Key")
+
+    identifier = await sanitization(client_identifier)
+
+    logger.info(f"<< {session_ip} - {api_key} - blocklist total request: {identifier}")
+
+    if identifier:
+        did_identifier, handle_identifier = await pre_process_identifier(identifier)
+        status = await preprocess_status(did_identifier)
+
+        if did_identifier and handle_identifier and status:
+            count = await database_handler.get_user_blocks_count(did_identifier)
+
+            blocklist_data = {"count": count}
+        else:
+            blocklist_data = None
+
+        data = {"identity": identifier, "status": status, "data": blocklist_data}
+    else:
+        identifier = "Missing parameter"
+        result = "Missing parameter"
+        block_data = {"error": result}
+        data = {"data": block_data}
+
+    logger.info(f">> {session_ip} - {api_key} - blocklist total result returned: {identifier}")
 
     return jsonify(data)
 
@@ -422,7 +527,6 @@ async def get_in_common_blocked(client_identifier):
         if not not_implemented:
             if did_identifier and handle_identifier and status:
                 blocklist_data = await database_handler.get_similar_blocked_by(did_identifier)
-                # formatted_count = '{:,}'.format(count)
 
             else:
                 blocklist_data = None
@@ -505,31 +609,26 @@ async def get_total_users():
     active_count = utils.total_active_users_cache.get("total_active_users")
     deleted_count = utils.total_deleted_users_cache.get("total_deleted_users")
 
-    formatted_active_count = f"{active_count:,}"
-    formatted_total_count = f"{total_count:,}"
-    formatted_deleted_count = f"{deleted_count:,}"
-
-    logger.debug(f"{session_ip} > {api_key} | total users count: {formatted_total_count}")
-    logger.debug(f"{session_ip} > {api_key} | total active users count: {formatted_active_count}")
-    logger.debug(f"{session_ip} > {api_key} | total deleted users count: {formatted_deleted_count}")
+    logger.debug(f"{session_ip} > {api_key} | total users count: {total_count}")
+    logger.debug(f"{session_ip} > {api_key} | total active users count: {active_count}")
+    logger.debug(f"{session_ip} > {api_key} | total deleted users count: {deleted_count}")
 
     count_data = {
         "active_count": {
-            "value": formatted_active_count,
+            "value": active_count,
             "displayName": "Active Users",
         },
         "total_count": {
-            "value": formatted_total_count,
+            "value": total_count,
             "displayName": "Total Users",
         },
         "deleted_count": {
-            "value": formatted_deleted_count,
+            "value": deleted_count,
             "displayName": "Deleted Users",
         },
-        "as of": utils.total_users_as_of_time,
     }
 
-    data = {"data": count_data}
+    data = {"data": count_data, "as of": utils.total_users_as_of_time}
 
     logger.info(f">> {session_ip} - {api_key} - total users result returned")
 
@@ -680,6 +779,37 @@ async def get_list_info(client_identifier, page):
         data = {"data": block_data}
 
     logger.info(f">> {session_ip} - {api_key} - mute/block list result returned: {identifier}")
+
+    return jsonify(data)
+
+
+async def get_list_total(client_identifier):
+    session_ip = await get_ip()
+    api_key = request.headers.get("X-API-Key")
+
+    identifier = await sanitization(client_identifier)
+
+    logger.info(f"<< {session_ip} - {api_key} - get mute/block list total request: {identifier}")
+
+    if identifier:
+        did_identifier, handle_identifier = await pre_process_identifier(identifier)
+        status = await preprocess_status(did_identifier)
+
+        if did_identifier and handle_identifier and status:
+            count = await database_handler.get_mutelist_count(did_identifier)
+
+            list_data = {"count": count}
+        else:
+            list_data = None
+
+        data = {"identifier": identifier, "data": list_data}
+    else:
+        identifier = "Missing parameter"
+        result = "Missing parameter"
+        block_data = {"error": result}
+        data = {"data": block_data}
+
+    logger.info(f">> {session_ip} - {api_key} - mute/block list total result returned: {identifier}")
 
     return jsonify(data)
 
@@ -1094,117 +1224,31 @@ async def block_stats() -> jsonify:
     average_number_of_blocks_round = round(float(average_number_of_blocks), 2)
     average_number_of_blocked_round = round(float(average_number_of_blocked), 2)
 
-    number_of_total_blocks_formatted = f"{number_of_total_blocks:,}"
-    number_of_unique_users_blocked_formatted = f"{number_of_unique_users_blocked:,}"
-    number_of_unique_users_blocking_formatted = f"{number_of_unique_users_blocking:,}"
-    total_users_formatted = f"{total_users:,}"
-    number_block_1_formatted = f"{number_blocking_1:,}"
-    number_blocking_2_and_100_formatted = f"{number_blocking_2_and_100:,}"
-    number_blocking_101_and_1000_formatted = f"{number_blocking_101_and_1000:,}"
-    number_blocking_greater_than_1000_formatted = f"{number_blocking_greater_than_1000:,}"
-    average_number_of_blocks_formatted = f"{average_number_of_blocks_round:,}"
-    number_blocked_1_formatted = f"{number_blocked_1:,}"
-    number_blocked_2_and_100_formatted = f"{number_blocked_2_and_100:,}"
-    number_blocked_101_and_1000_formatted = f"{number_blocked_101_and_1000:,}"
-    number_blocked_greater_than_1000_formatted = f"{number_blocked_greater_than_1000:,}"
-
     stats_data = {
-        "numberOfTotalBlocks": {
-            "value": number_of_total_blocks_formatted,
-            "displayName": "Number of Total Blocks",
-        },
-        "numberOfUniqueUsersBlocked": {
-            "value": number_of_unique_users_blocked_formatted,
-            "displayName": "Number of Unique Users Blocked",
-        },
-        "numberOfUniqueUsersBlocking": {
-            "value": number_of_unique_users_blocking_formatted,
-            "displayName": "Number of Unique Users Blocking",
-        },
-        "totalUsers": {
-            "value": total_users_formatted,
-            "displayName": "Total Users",
-        },
-        "percentUsersBlocked": {
-            "value": percent_users_blocked,
-            "displayName": "Percent Users Blocked",
-        },
-        "percentUsersBlocking": {
-            "value": percent_users_blocking,
-            "displayName": "Percent Users Blocking",
-        },
-        "numberBlock1": {
-            "value": number_block_1_formatted,
-            "displayName": "Number of Users Blocking 1 User",
-        },
-        "numberBlocking2and100": {
-            "value": number_blocking_2_and_100_formatted,
-            "displayName": "Number of Users Blocking 2-100 Users",
-        },
-        "numberBlocking101and1000": {
-            "value": number_blocking_101_and_1000_formatted,
-            "displayName": "Number of Users Blocking 101-1000 Users",
-        },
-        "numberBlockingGreaterThan1000": {
-            "value": number_blocking_greater_than_1000_formatted,
-            "displayName": "Number of Users Blocking More than 1000 Users",
-        },
-        "percentNumberBlocking1": {
-            "value": percent_number_blocking_1,
-            "displayName": "Percent of Users Blocking 1 User",
-        },
-        "percentNumberBlocking2and100": {
-            "value": percent_number_blocking_2_and_100,
-            "displayName": "Percent of Users Blocking 2-100 Users",
-        },
-        "percentNumberBlocking101and1000": {
-            "value": percent_number_blocking_101_and_1000,
-            "displayName": "Percent of Users Blocking 101-1000 Users",
-        },
-        "percentNumberBlockingGreaterThan1000": {
-            "value": percent_number_blocking_greater_than_1000,
-            "displayName": "Percent of Users Blocking More than 1000 Users",
-        },
-        "averageNumberOfBlocks": {
-            "value": average_number_of_blocks_formatted,
-            "displayName": "Average Number of Blocks",
-        },
-        "numberBlocked1": {
-            "value": number_blocked_1_formatted,
-            "displayName": "Number of Users Blocked by 1 User",
-        },
-        "numberBlocked2and100": {
-            "value": number_blocked_2_and_100_formatted,
-            "displayName": "Number of Users Blocked by 2-100 Users",
-        },
-        "numberBlocked101and1000": {
-            "value": number_blocked_101_and_1000_formatted,
-            "displayName": "Number of Users Blocked by 101-1000 Users",
-        },
-        "numberBlockedGreaterThan1000": {
-            "value": number_blocked_greater_than_1000_formatted,
-            "displayName": "Number of Users Blocked by More than 1000 Users",
-        },
-        "percentNumberBlocked1": {
-            "value": percent_number_blocked_1,
-            "displayName": "Percent of Users Blocked by 1 User",
-        },
-        "percentNumberBlocked2and100": {
-            "value": percent_number_blocked_2_and_100,
-            "displayName": "Percent of Users Blocked by 2-100 Users",
-        },
-        "percentNumberBlocked101and1000": {
-            "value": percent_number_blocked_101_and_1000,
-            "displayName": "Percent of Users Blocked by 101-1000 Users",
-        },
-        "percentNumberBlockedGreaterThan1000": {
-            "value": percent_number_blocked_greater_than_1000,
-            "displayName": "Percent of Users Blocked by More than 1000 Users",
-        },
-        "averageNumberOfBlocked": {
-            "value": average_number_of_blocked_round,
-            "displayName": "Average Number of Users Blocked",
-        },
+        "numberOfTotalBlocks": number_of_total_blocks,
+        "numberOfUniqueUsersBlocked": number_of_unique_users_blocked,
+        "numberOfUniqueUsersBlocking": number_of_unique_users_blocking,
+        "totalUsers": total_users,
+        "percentUsersBlocked": percent_users_blocked,
+        "percentUsersBlocking": percent_users_blocking,
+        "numberBlock1": number_blocking_1,
+        "numberBlocking2and100": number_blocking_2_and_100,
+        "numberBlocking101and1000": number_blocking_101_and_1000,
+        "numberBlockingGreaterThan1000": number_blocking_greater_than_1000,
+        "percentNumberBlocking1": percent_number_blocking_1,
+        "percentNumberBlocking2and100": percent_number_blocking_2_and_100,
+        "percentNumberBlocking101and1000": percent_number_blocking_101_and_1000,
+        "percentNumberBlockingGreaterThan1000": percent_number_blocking_greater_than_1000,
+        "averageNumberOfBlocks": average_number_of_blocks_round,
+        "numberBlocked1": number_blocked_1,
+        "numberBlocked2and100": number_blocked_2_and_100,
+        "numberBlocked101and1000": number_blocked_101_and_1000,
+        "numberBlockedGreaterThan1000": number_blocked_greater_than_1000,
+        "percentNumberBlocked1": percent_number_blocked_1,
+        "percentNumberBlocked2and100": percent_number_blocked_2_and_100,
+        "percentNumberBlocked101and1000": percent_number_blocked_101_and_1000,
+        "percentNumberBlockedGreaterThan1000": percent_number_blocked_greater_than_1000,
+        "averageNumberOfBlocked": average_number_of_blocked_round,
     }
 
     data = {"data": stats_data, "as of": utils.block_stats_as_of_time}
@@ -1364,22 +1408,15 @@ async def retrieve_subscribe_blocks_blocklist(client_identifier: str, page: int)
             items_per_page = 100
             offset = (page - 1) * items_per_page
 
-            blocklist, count, pages = await utils.process_subscribe_blocks(
-                did_identifier, limit=items_per_page, offset=offset
-            )
-
-            formatted_count = f"{count:,}"
+            blocklist = await utils.process_subscribe_blocks(did_identifier, limit=items_per_page, offset=offset)
 
             blocklist_data = {
                 "blocklist": blocklist,
-                "count": formatted_count,
-                "pages": pages,
             }
         else:
             blocklist = None
-            count = 0
 
-            blocklist_data = {"blocklist": blocklist, "count": count}
+            blocklist_data = {"blocklist": blocklist}
 
         data = {"identity": identifier, "status": status, "data": blocklist_data}
     else:
@@ -1394,23 +1431,12 @@ async def retrieve_subscribe_blocks_blocklist(client_identifier: str, page: int)
 
 
 async def retrieve_subscribe_blocks_single_blocklist(client_identifier, page) -> jsonify:
-    values = await get_var_info()
-
-    count = 0
-    pages = 0
-    blocklist = None
-
-    api_key = values.get("api_key")
-    self_server = values.get("self_server")
-
     session_ip = await get_ip()
     received_api_key = request.headers.get("X-API-Key")
 
     identifier = await sanitization(client_identifier)
 
     logger.info(f"<< {session_ip} - {received_api_key} - blocklist request: {identifier}")
-
-    list_url = []
 
     if identifier:
         did_identifier, handle_identifier = await pre_process_identifier(identifier)
@@ -1420,52 +1446,19 @@ async def retrieve_subscribe_blocks_single_blocklist(client_identifier, page) ->
             items_per_page = 100
             offset = (page - 1) * items_per_page
 
-            headers = {"X-API-Key": f"{api_key}"}
-            fetch_api = f"{self_server}/api/v1/auth/get-list/{did_identifier}"
-
-            try:
-                async with (
-                    aiohttp.ClientSession(headers=headers) as session,
-                    session.get(fetch_api) as internal_response,
-                ):
-                    if internal_response.status == 200:
-                        mod_list = await internal_response.json()
-                    else:
-                        mod_list = "error"
-            except Exception as e:
-                logger.error(f"Error retrieving mod list from internal API: {e}")
-                mod_list = None
-
-            if mod_list is not None:
-                if "data" in mod_list and "lists" in mod_list["data"]:
-                    for item in mod_list["data"]["lists"]:
-                        url = item["url"]
-
-                        list_url.append(url)
-
-                    blocklist, count, pages = await utils.process_subscribe_blocks_single(
-                        did_identifier,
-                        list_url,
-                        limit=items_per_page,
-                        offset=offset,
-                    )
-            else:
-                blocklist = None
-                count = 0
-                pages = 0
-
-            formatted_count = f"{count:,}"
+            blocklist = await utils.process_subscribe_blocks_single(
+                did_identifier,
+                limit=items_per_page,
+                offset=offset,
+            )
 
             blocklist_data = {
                 "blocklist": blocklist,
-                "count": formatted_count,
-                "pages": pages,
             }
         else:
             blocklist = None
-            count = 0
 
-            blocklist_data = {"blocklist": blocklist, "count": count}
+            blocklist_data = {"blocklist": blocklist}
 
         data = {"identity": identifier, "status": status, "data": blocklist_data}
     else:
