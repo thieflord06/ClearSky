@@ -607,10 +607,9 @@ async def get_total_users():
             "value": deleted_count,
             "displayName": "Deleted Users",
         },
-        "as of": utils.total_users_as_of_time,
     }
 
-    data = {"data": count_data}
+    data = {"data": count_data, "as of": utils.total_users_as_of_time}
 
     logger.info(f">> {session_ip} - {api_key} - total users result returned")
 
