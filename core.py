@@ -295,7 +295,9 @@ def check_api_status(api_name):
                 return jsonify({"error": "API is disabled"}), 503
 
             return await func(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
