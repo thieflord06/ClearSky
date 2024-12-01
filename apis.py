@@ -36,6 +36,10 @@ from core import (
     retrieve_csv_data,
     retrieve_csv_files_info,
     retrieve_dids_per_pds,
+    retrieve_single_starter_packs,
+    retrieve_single_starter_packs_total,
+    retrieve_starter_packs,
+    retrieve_starter_packs_total,
     retrieve_subscribe_blocks_blocklist,
     retrieve_subscribe_blocks_single_blocklist,
     store_data,
@@ -654,6 +658,7 @@ async def auth_subscribe_blocks_single_blocklist(client_identifier, page) -> jso
 
 @api_blueprint.route("/api/v1/auth/validation/validate-handle/<client_identifier>", methods=["GET"])
 @check_api_status("/api/v1/auth/validation/validate-handle")
+@api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=1))
 async def auth_validate_handle(client_identifier) -> jsonify:
     try:
@@ -672,6 +677,7 @@ async def auth_validate_handle(client_identifier) -> jsonify:
 
 @api_blueprint.route("/api/v1/auth/data-transaction/receive", methods=["POST"])
 @check_api_status("/api/v1/auth/data-transaction/receive")
+@api_key_required("SERVER")
 @rate_limit(1, timedelta(seconds=2))
 async def auth_receive_data() -> jsonify:
     session_ip = await get_ip()
@@ -762,6 +768,7 @@ async def auth_receive_data() -> jsonify:
 
 @api_blueprint.route("/api/v1/auth/data-transaction/retrieve", methods=["GET"])
 @check_api_status("/api/v1/auth/data-transaction/retrieve")
+@api_key_required("SERVER")
 @rate_limit(1, timedelta(seconds=2))
 async def auth_retrieve_data() -> jsonify:
     session_ip = await get_ip()
@@ -801,6 +808,7 @@ async def auth_retrieve_data() -> jsonify:
 
 @api_blueprint.route("/api/v1/auth/data-transaction/query", methods=["GET"])
 @check_api_status("/api/v1/auth/data-transaction/query")
+@api_key_required("SERVER")
 @rate_limit(1, timedelta(seconds=2))
 async def auth_query_data() -> jsonify:
     session_ip = await get_ip()
@@ -830,6 +838,7 @@ async def auth_query_data() -> jsonify:
 
 @api_blueprint.route("/api/v1/auth/status/time-behind", methods=["GET"])
 @check_api_status("/api/v1/auth/status/time-behind")
+@api_key_required("SERVER")
 @rate_limit(30, timedelta(seconds=2))
 async def auth_time_behind() -> jsonify:
     session_ip = await get_ip()
@@ -848,6 +857,84 @@ async def auth_time_behind() -> jsonify:
         return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in time_behind: {e}")
+        return jsonify({"error": "Internal error"}), 500
+
+
+@api_blueprint.route("/api/v1/auth/starter-packs/<client_identifier>", methods=["GET"])
+@api_blueprint.route("/api/v1/auth/starter-packs/<client_identifier>/<int:page>", methods=["GET"])
+@check_api_status("/api/v1/auth/starter-packs")
+@api_key_required("SERVER")
+@rate_limit(30, timedelta(seconds=1))
+async def auth_starter_packs(client_identifier, page) -> jsonify:
+    try:
+        return await retrieve_starter_packs(client_identifier, page)
+    except DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
+    except Exception as e:
+        logger.error(f"Error in auth_starter_packs: {e}")
+        return jsonify({"error": "Internal error"}), 500
+
+
+@api_blueprint.route("/api/v1/auth/starter-packs/total/<client_identifier>", methods=["GET"])
+@check_api_status("/api/v1/auth/starter-packs/total")
+@api_key_required("SERVER")
+@rate_limit(30, timedelta(seconds=1))
+async def auth_starter_packs_total(client_identifier) -> jsonify:
+    try:
+        return await retrieve_starter_packs_total(client_identifier)
+    except DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
+    except Exception as e:
+        logger.error(f"Error in auth_starter_packs: {e}")
+        return jsonify({"error": "Internal error"}), 500
+
+
+@api_blueprint.route("/api/v1/auth/single-starter-pack/<client_identifier>", methods=["GET"])
+@api_blueprint.route("/api/v1/auth/single-starter-pack/<client_identifier>/<int:page>", methods=["GET"])
+@check_api_status("/api/v1/auth/single-starter-pack")
+@api_key_required("SERVER")
+@rate_limit(30, timedelta(seconds=1))
+async def auth_single_starter_pack(client_identifier, page) -> jsonify:
+    try:
+        return await retrieve_single_starter_packs(client_identifier, page)
+    except DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
+    except Exception as e:
+        logger.error(f"Error in auth_single_starter_pack: {e}")
+        return jsonify({"error": "Internal error"}), 500
+
+
+@api_blueprint.route("/api/v1/auth/single-starter-pack/total/<client_identifier>", methods=["GET"])
+@check_api_status("/api/v1/auth/single-starter-pack/total")
+@api_key_required("SERVER")
+@rate_limit(30, timedelta(seconds=1))
+async def auth_single_starter_pack_total(client_identifier) -> jsonify:
+    try:
+        return await retrieve_single_starter_packs_total(client_identifier)
+    except DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
+    except Exception as e:
+        logger.error(f"Error in auth_single_starter_pack_total: {e}")
         return jsonify({"error": "Internal error"}), 500
 
 
@@ -1514,6 +1601,80 @@ async def anon_time_behind() -> jsonify:
         return jsonify({"error": "Not found"}), 404
     except Exception as e:
         logger.error(f"Error in time_behind: {e}")
+        return jsonify({"error": "Internal error"}), 500
+
+
+@api_blueprint.route("/api/v1/anon/starter-packs/<client_identifier>", methods=["GET"])
+@api_blueprint.route("/api/v1/anon/starter-packs/<client_identifier>/<int:page>", methods=["GET"])
+@check_api_status("/api/v1/anon/starter-packs")
+@rate_limit(5, timedelta(seconds=1))
+async def anon_starter_packs(client_identifier, page) -> jsonify:
+    try:
+        return await retrieve_starter_packs(client_identifier, page)
+    except DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
+    except Exception as e:
+        logger.error(f"Error in auth_starter_packs: {e}")
+        return jsonify({"error": "Internal error"}), 500
+
+
+@api_blueprint.route("/api/v1/anon/starter-packs/total/<client_identifier>", methods=["GET"])
+@check_api_status("/api/v1/anon/starter-packs/total")
+@rate_limit(5, timedelta(seconds=1))
+async def anon_starter_packs_total(client_identifier) -> jsonify:
+    try:
+        return await retrieve_starter_packs_total(client_identifier)
+    except DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
+    except Exception as e:
+        logger.error(f"Error in auth_starter_packs: {e}")
+        return jsonify({"error": "Internal error"}), 500
+
+
+@api_blueprint.route("/api/v1/anon/single-starter-pack/<client_identifier>", methods=["GET"])
+@api_blueprint.route("/api/v1/anon/single-starter-pack/<client_identifier>/<int:page>", methods=["GET"])
+@check_api_status("/api/v1/anon/single-starter-pack")
+@rate_limit(5, timedelta(seconds=1))
+async def anon_single_starter_pack(client_identifier, page) -> jsonify:
+    try:
+        return await retrieve_single_starter_packs(client_identifier, page)
+    except DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
+    except Exception as e:
+        logger.error(f"Error in auth_single_starter_pack: {e}")
+        return jsonify({"error": "Internal error"}), 500
+
+
+@api_blueprint.route("/api/v1/anon/single-starter-pack/total/<client_identifier>", methods=["GET"])
+@check_api_status("/api/v1/anon/single-starter-pack/total")
+@rate_limit(5, timedelta(seconds=1))
+async def anon_single_starter_pack_total(client_identifier) -> jsonify:
+    try:
+        return await retrieve_single_starter_packs_total(client_identifier)
+    except DatabaseConnectionError:
+        logger.error("Database connection error")
+        return jsonify({"error": "Connection error"}), 503
+    except BadRequest:
+        return jsonify({"error": "Invalid request"}), 400
+    except NotFound:
+        return jsonify({"error": "Not found"}), 404
+    except Exception as e:
+        logger.error(f"Error in auth_single_starter_pack_total: {e}")
         return jsonify({"error": "Internal error"}), 500
 
 

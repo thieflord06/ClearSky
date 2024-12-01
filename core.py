@@ -1757,3 +1757,143 @@ async def time_behind():
         response = {"data": {"time behind": f"{override}"}}
 
         return response
+
+
+async def retrieve_starter_packs(ident, page):
+    session_ip = await get_ip()
+    api_key = request.headers.get("X-API-Key")
+
+    identifier = await sanitization(ident)
+
+    logger.info(f"<< {session_ip} - {api_key} - starter pack request: {identifier}")
+
+    if identifier:
+        did_identifier, handle_identifier = await pre_process_identifier(identifier)
+        status = await preprocess_status(did_identifier)
+
+        if did_identifier and handle_identifier and status:
+            items_per_page = 100
+            offset = (page - 1) * items_per_page
+
+            starter_packs = await database_handler.get_starter_packs(
+                did_identifier, limit=items_per_page, offset=offset
+            )
+
+            starter_pack_data = {"starter_packs": starter_packs}
+
+        else:
+            starter_packs = None
+
+            starter_pack_data = {"starter_packs": starter_packs}
+
+        data = {"identity": identifier, "status": status, "data": starter_pack_data}
+    else:
+        identifier = "Missing parameter"
+        result = "Missing parameter"
+        starter_pack_data = {"error": result}
+        data = {"data": starter_pack_data}
+
+    logger.info(f">> {session_ip} - {api_key} - starter pack result returned: {identifier}")
+
+    return jsonify(data)
+
+
+async def retrieve_starter_packs_total(ident):
+    session_ip = await get_ip()
+    api_key = request.headers.get("X-API-Key")
+
+    identifier = await sanitization(ident)
+
+    logger.info(f"<< {session_ip} - {api_key} - starter pack total request: {identifier}")
+
+    if identifier:
+        did_identifier, handle_identifier = await pre_process_identifier(identifier)
+        status = await preprocess_status(did_identifier)
+
+        if did_identifier and handle_identifier and status:
+            count = await database_handler.get_starter_packs_count(did_identifier)
+
+            starter_pack_data = {"count": count}
+        else:
+            starter_pack_data = None
+
+        data = {"identifier": identifier, "data": starter_pack_data}
+    else:
+        identifier = "Missing parameter"
+        result = "Missing parameter"
+        starter_pack_data = {"error": result}
+        data = {"data": starter_pack_data}
+
+    logger.info(f">> {session_ip} - {api_key} - starter pack total result returned: {identifier}")
+
+    return jsonify(data)
+
+
+async def retrieve_single_starter_packs(ident, page):
+    session_ip = await get_ip()
+    api_key = request.headers.get("X-API-Key")
+
+    identifier = await sanitization(ident)
+
+    logger.info(f"<< {session_ip} - {api_key} - starter pack request: {identifier}")
+
+    if identifier:
+        did_identifier, handle_identifier = await pre_process_identifier(identifier)
+        status = await preprocess_status(did_identifier)
+
+        if did_identifier and handle_identifier and status:
+            items_per_page = 100
+            offset = (page - 1) * items_per_page
+
+            starter_packs = await database_handler.get_single_starter_packs(
+                did_identifier, limit=items_per_page, offset=offset
+            )
+
+            starter_pack_data = {"starter_packs": starter_packs}
+
+        else:
+            starter_packs = None
+
+            starter_pack_data = {"starter_packs": starter_packs}
+
+        data = {"identity": identifier, "status": status, "data": starter_pack_data}
+    else:
+        identifier = "Missing parameter"
+        result = "Missing parameter"
+        starter_pack_data = {"error": result}
+        data = {"data": starter_pack_data}
+
+    logger.info(f">> {session_ip} - {api_key} - starter pack result returned: {identifier}")
+
+    return jsonify(data)
+
+
+async def retrieve_single_starter_packs_total(ident):
+    session_ip = await get_ip()
+    api_key = request.headers.get("X-API-Key")
+
+    identifier = await sanitization(ident)
+
+    logger.info(f"<< {session_ip} - {api_key} - starter pack total request: {identifier}")
+
+    if identifier:
+        did_identifier, handle_identifier = await pre_process_identifier(identifier)
+        status = await preprocess_status(did_identifier)
+
+        if did_identifier and handle_identifier and status:
+            count = await database_handler.get_single_starter_packs_count(did_identifier)
+
+            starter_pack_data = {"count": count}
+        else:
+            starter_pack_data = None
+
+        data = {"identifier": identifier, "data": starter_pack_data}
+    else:
+        identifier = "Missing parameter"
+        result = "Missing parameter"
+        starter_pack_data = {"error": result}
+        data = {"data": starter_pack_data}
+
+    logger.info(f">> {session_ip} - {api_key} - starter pack total result returned: {identifier}")
+
+    return jsonify(data)
