@@ -808,8 +808,6 @@ async def auth_query_data() -> jsonify:
 
     logger.info(f"data list query request: {session_ip} - {api_key}")
 
-    return jsonify({"error": "Not Implemented"}), 501
-
     try:
         get_list = request.args.get("list")
     except AttributeError:

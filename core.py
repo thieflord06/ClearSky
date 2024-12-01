@@ -11,7 +11,6 @@ import aiofiles
 import aiofiles.os
 import httpx
 import pytz
-from async_lru import alru_cache
 from quart import jsonify, request, session
 
 import database_handler
@@ -303,7 +302,6 @@ def check_api_status(api_name):
     return decorator
 
 
-@alru_cache(maxsize=1)
 async def load_api_statuses():
     query = "SELECT api, status, rate FROM api_endpoint_status"
     pool_name = database_handler.get_connection_pool("write")
@@ -326,7 +324,7 @@ async def load_api_statuses():
                     logger.info(f"API {api} rate changed: rate {old_rate} -> {new_rate}")
 
                 else:
-                    logger.info(f"API {api} status and rate unchanged")
+                    logger.debug(f"API {api} status and rate unchanged")
 
             else:
                 api_status_cache[api] = {"status": new_status, "rate": new_rate}
