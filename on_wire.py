@@ -73,15 +73,15 @@ async def resolve_did(did, did_web_pds=False) -> list | None:  # Take DID and ge
 
     if "did:web" in did:
         logger.info("Resolving did:web")
-        short_did = did[len("did:web:"):]
+        short_did = did[len("did:web:") :]
         url = f"https://{urllib.parse.unquote(short_did)}/.well-known/did.json"
     elif "did:tdw" in did:
         logger.info("Resolving did:tdw")
-        short_did = did[len("did:tdw:"):]
+        short_did = did[len("did:tdw:") :]
         url = f"https://{urllib.parse.unquote(short_did)}/.well-known/did.jsonl"
     elif "did:dht" in did:
         logger.info("Resolving did:dht")
-        short_did = did[len("did:dht:"):]
+        short_did = did[len("did:dht:") :]
         url = f"https://{urllib.parse.unquote(short_did)}/.well-known/did.json"
     elif "did:plc" in did:
         logger.info("Resolving did:plc")
@@ -120,9 +120,11 @@ async def resolve_did(did, did_web_pds=False) -> list | None:  # Take DID and ge
 
                     if did_web_pds:
                         logger.info(f"Getting PDS for {did}")
-                        endpoint = response_json["service"][0][
-                            "serviceEndpoint"] if "did:web" in did or "did:dht" in did else \
-                            response_json[-1]["service"][0]["serviceEndpoint"]
+                        endpoint = (
+                            response_json["service"][0]["serviceEndpoint"]
+                            if "did:web" in did or "did:dht" in did
+                            else response_json[-1]["service"][0]["serviceEndpoint"]
+                        )
                         logger.info(f"Endpoint retrieved for {did}: {endpoint}")
                         return endpoint
 
