@@ -1747,6 +1747,147 @@ async def get_did_web_handle_history(identifier) -> list | None:
         raise InternalServerError
 
 
+async def get_starter_packs(ident, limit=100, offset=0) -> list:
+    starter_packs = []
+    try:
+        pool_name = get_connection_pool("read")
+        async with connection_pools[pool_name].acquire() as connection:
+            result = await connection.fetch(
+                """SELECT name, description, did, created_date, url
+                                                FROM starter_packs
+                                                WHERE did = $1
+                                                ORDER BY created_date DESC
+                                                LIMIT $2
+                                                OFFSET $3""",
+                ident,
+                limit,
+                offset,
+            )
+
+            if result:
+                for record in result:
+                    starter_packs.append(
+                        {
+                            "name": record["name"],
+                            "description": record["description"],
+                            "did": record["did"],
+                            "created_date": record["created_date"].isoformat(),
+                            "url": record["url"],
+                        }
+                    )
+
+                return starter_packs
+            else:
+                return starter_packs
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error("db connection issue.")
+        raise DatabaseConnectionError
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        raise InternalServerError
+
+
+async def get_starter_packs_count(ident) -> int:
+    try:
+        pool_name = get_connection_pool("read")
+        async with connection_pools[pool_name].acquire() as connection:
+            count = await connection.fetchval("SELECT COUNT(*) FROM starter_packs WHERE did = $1", ident)
+
+            return count
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error("db connection issue.")
+        raise DatabaseConnectionError
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        raise InternalServerError
+
+
+async def get_single_starter_packs(ident, limit=100, offset=0):
+    try:
+        pool_name = get_connection_pool("read")
+        async with connection_pools[pool_name].acquire() as connection:
+            result = await connection.fetch(
+                """SELECT s.name, s.description, s.did, s.created_date, s.url
+                                                FROM starter_packs
+                                                JOIN mutelists_users AS mu ON starter_packs.list_uri as s = mu.list_uri
+                                                WHERE mu.subject_did = $1
+                                                ORDER BY s.created_date DESC
+                                                LIMIT $2
+                                                OFFSET $3""",
+                ident,
+                limit,
+                offset,
+            )
+
+            starter_packs = []
+
+            if result:
+                for record in result:
+                    starter_packs.append(
+                        {
+                            "name": record["name"],
+                            "description": record["description"],
+                            "did": record["did"],
+                            "created_date": record["created_date"].isoformat(),
+                            "url": record["url"],
+                        }
+                    )
+
+                return starter_packs
+            else:
+                return starter_packs
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error("db connection issue.")
+        raise DatabaseConnectionError
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        raise InternalServerError
+
+
+async def get_single_starter_packs_count(ident):
+    try:
+        pool_name = get_connection_pool("read")
+        async with connection_pools[pool_name].acquire() as connection:
+            count = await connection.fetchval(
+                """SELECT COUNT(*) FROM starter_packs
+                                                JOIN mutelists_users AS mu ON starter_packs.list_uri as s = mu.list_uri
+                                                WHERE mu.subject_did = $1""",
+                ident,
+            )
+
+            return count
+    except asyncpg.PostgresError as e:
+        logger.error(f"Postgres error: {e}")
+        raise DatabaseConnectionError
+    except asyncpg.InterfaceError as e:
+        logger.error(f"interface error: {e}")
+        raise DatabaseConnectionError
+    except AttributeError:
+        logger.error("db connection issue.")
+        raise DatabaseConnectionError
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        raise InternalServerError
+
+
 async def deactivate_user(user) -> None:
     try:
         pool_name = get_connection_pool("write")
