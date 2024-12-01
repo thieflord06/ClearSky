@@ -1449,16 +1449,19 @@ async def get_dids_per_pds() -> dict | None:
     try:
         pool_name = get_connection_pool("read")
         async with connection_pools[pool_name].acquire() as connection:
-            query = """SELECT users.pds, COUNT(did) AS did_count
+            query = """SELECT users.pds, COUNT(did) AS did_count, pds.status
                         FROM users
                         join pds on users.pds = pds.pds
-                        WHERE users.pds IS NOT NULL AND pds.status is TRUE
-                        GROUP BY users.pds
+                        WHERE users.pds IS NOT NULL
+                        GROUP BY users.pds, pds.status
                         ORDER BY did_count desc"""
 
             results = await connection.fetch(query)
             for record in results:
-                data_dict[record["pds"]] = record["did_count"]
+                data_dict[record["pds"]] = {
+                    "did_count": record["did_count"],
+                    "status": record["status"],
+                }
 
             return data_dict
     except asyncpg.PostgresError as e:
