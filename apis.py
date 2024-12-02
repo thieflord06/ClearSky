@@ -860,7 +860,7 @@ async def auth_time_behind() -> jsonify:
         return jsonify({"error": "Internal error"}), 500
 
 
-@api_blueprint.route("/api/v1/auth/starter-packs/<client_identifier>", methods=["GET"])
+@api_blueprint.route("/api/v1/auth/starter-packs/<client_identifier>", defaults={"page": 1}, methods=["GET"])
 @api_blueprint.route("/api/v1/auth/starter-packs/<client_identifier>/<int:page>", methods=["GET"])
 @check_api_status("/api/v1/auth/starter-packs")
 @api_key_required("SERVER")
@@ -899,7 +899,7 @@ async def auth_starter_packs_total(client_identifier) -> jsonify:
         return jsonify({"error": "Internal error"}), 500
 
 
-@api_blueprint.route("/api/v1/auth/single-starter-pack/<client_identifier>", methods=["GET"])
+@api_blueprint.route("/api/v1/auth/single-starter-pack/<client_identifier>", defaults={"page": 1}, methods=["GET"])
 @api_blueprint.route("/api/v1/auth/single-starter-pack/<client_identifier>/<int:page>", methods=["GET"])
 @check_api_status("/api/v1/auth/single-starter-pack")
 @api_key_required("SERVER")
@@ -1604,7 +1604,7 @@ async def anon_time_behind() -> jsonify:
         return jsonify({"error": "Internal error"}), 500
 
 
-@api_blueprint.route("/api/v1/anon/starter-packs/<client_identifier>", methods=["GET"])
+@api_blueprint.route("/api/v1/anon/starter-packs/<client_identifier>", defaults={"page": 1}, methods=["GET"])
 @api_blueprint.route("/api/v1/anon/starter-packs/<client_identifier>/<int:page>", methods=["GET"])
 @check_api_status("/api/v1/anon/starter-packs")
 @rate_limit(5, timedelta(seconds=1))
@@ -1641,7 +1641,7 @@ async def anon_starter_packs_total(client_identifier) -> jsonify:
         return jsonify({"error": "Internal error"}), 500
 
 
-@api_blueprint.route("/api/v1/anon/single-starter-pack/<client_identifier>", methods=["GET"])
+@api_blueprint.route("/api/v1/anon/single-starter-pack/<client_identifier>", defaults={"page": 1}, methods=["GET"])
 @api_blueprint.route("/api/v1/anon/single-starter-pack/<client_identifier>/<int:page>", methods=["GET"])
 @check_api_status("/api/v1/anon/single-starter-pack")
 @rate_limit(5, timedelta(seconds=1))

@@ -1820,8 +1820,8 @@ async def get_single_starter_packs(ident, limit=100, offset=0):
         async with connection_pools[pool_name].acquire() as connection:
             result = await connection.fetch(
                 """SELECT s.name, s.description, s.did, s.created_date, s.url
-                                                FROM starter_packs
-                                                JOIN mutelists_users AS mu ON starter_packs.list_uri as s = mu.list_uri
+                                                FROM starter_packs AS s
+                                                JOIN mutelists_users AS mu ON s.list_uri = mu.list_uri
                                                 WHERE mu.subject_did = $1
                                                 ORDER BY s.created_date DESC
                                                 LIMIT $2
