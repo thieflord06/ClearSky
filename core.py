@@ -349,9 +349,7 @@ async def get_blocklist(client_identifier, page):
             items_per_page = 100
             offset = (page - 1) * items_per_page
 
-            blocklist = await utils.process_user_block_list(
-                did_identifier, limit=items_per_page, offset=offset
-            )
+            blocklist = await utils.process_user_block_list(did_identifier, limit=items_per_page, offset=offset)
 
             blocklist_data = {
                 "blocklist": blocklist,
