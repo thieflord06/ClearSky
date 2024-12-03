@@ -288,7 +288,7 @@ def check_api_status(api_name):
         async def wrapper(*args, **kwargs):
             api_status = api_status_cache.get(api_name)
             if not api_status:
-                return jsonify({"error": "Not found"}), 404
+                return await func(*args, **kwargs)
 
             status = api_status["status"]
 
@@ -349,18 +349,15 @@ async def get_blocklist(client_identifier, page):
             items_per_page = 100
             offset = (page - 1) * items_per_page
 
-            blocklist, count, pages = await utils.process_user_block_list(
-                did_identifier, limit=items_per_page, offset=offset
-            )
+            blocklist = await utils.process_user_block_list(did_identifier, limit=items_per_page, offset=offset)
 
             blocklist_data = {
                 "blocklist": blocklist,
             }
         else:
             blocklist = None
-            count = 0
 
-            blocklist_data = {"blocklist": blocklist, "count": count}
+            blocklist_data = {"blocklist": blocklist}
 
         data = {"identity": identifier, "status": status, "data": blocklist_data}
     else:
